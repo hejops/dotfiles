@@ -1,0 +1,975 @@
+"query:loona:tags # \"loona\"" loona
+"query:musictheory:tags # \"musictheory\"" musictheory
+"query:classical:tags # \"classical\"" classical
+"query:linux:tags # \"linux\"" "linux"
+"query:tech:tags # \"tech\"" "tech"
+"query:vgm:tags # \"vgm\"" vgm
+
+--------------------------------------------------------------------------------
+
+# uncategorised
+https://adspthepodcast.com/feed
+https://feeds.transistor.fm/oxide-and-friends/
+https://kbd.news/rss2.php
+
+# youtube {{{
+
+https://odysee.com/$/rss/@AncestralCult:0	yt yt_video # AncestralCult
+https://www.youtube.com/feeds/videos.xml?channel_id=UC078EwoJJlUtDYS2Zf_PuzA	yt yt_video # Jay Beard Music
+https://www.youtube.com/feeds/videos.xml?channel_id=UC0ZGpaIfJX8xJ_gHI9Zqaww	yt yt_video # Wyattxhim
+https://www.youtube.com/feeds/videos.xml?channel_id=UC2eYFnH61tmytImy1mTYvhA	yt yt_video # Luke Smith
+https://www.youtube.com/feeds/videos.xml?channel_id=UC3SJs-fPxaLXE84JxWpEeXA	yt yt_video # LivingPianosVideos
+https://www.youtube.com/feeds/videos.xml?channel_id=UC46xhU1EH7aywEgvA9syS3w	yt yt_video # anthonywritescode
+https://www.youtube.com/feeds/videos.xml?channel_id=UC6biysICWOJ-C3P4Tyeggzg	yt yt_video # Low Level Learning
+https://www.youtube.com/feeds/videos.xml?channel_id=UC7YOGHUfC1Tb6E4pudI9STA	yt yt_video # Mental Outlaw
+https://www.youtube.com/feeds/videos.xml?channel_id=UC8ENHE5xdFSwx71u3fDH5Xw	yt yt_video # ThePrimeagen
+https://www.youtube.com/feeds/videos.xml?channel_id=UC8yI8P7Zi3yYTsypera-IQg	yt yt_video # Music Matters
+https://www.youtube.com/feeds/videos.xml?channel_id=UCBBIgxO-8jgVZpsj6uk4aVA	yt yt_video # Bryan Cantrill
+https://www.youtube.com/feeds/videos.xml?channel_id=UCCtWlohLxXq6bp2Ba2Jg-2Q	yt yt_video # Denis Zhdanov
+https://www.youtube.com/feeds/videos.xml?channel_id=UCIrOOZeidxZjoDRFdLqabmA	yt yt_video # Metal Music Theory
+https://www.youtube.com/feeds/videos.xml?channel_id=UCKre6QmGZ270Og0uLylTSVA	yt yt_video # Rust and Cpp Cardiff Meetup
+https://www.youtube.com/feeds/videos.xml?channel_id=UCRTeNftWBh6ePpiqzyMNmFw	yt yt_video # tonebase Piano
+https://www.youtube.com/feeds/videos.xml?channel_id=UCSf-Xx-OHoEE-QVmOAhHqVg	yt yt_video # The Ultimate Classical Music Guide by Dave Hurwitz
+https://www.youtube.com/feeds/videos.xml?channel_id=UCUyeluBRhGPCW4rPe_UvBZQ	yt yt_video # ThePrimeTime
+https://www.youtube.com/feeds/videos.xml?channel_id=UCYovtwjhbubEthCtVCvmZuw	yt yt_video # Yeargdribble
+https://www.youtube.com/feeds/videos.xml?channel_id=UC_iD0xppBwwsrM9DegC5cQQ	yt yt_video # Jon Gjengset
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbEFvUhe-QuH9-0Ksno9dwA	yt yt_video # Open Studio
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbLVvc-agTyWl_4U7iIgfqg	yt yt_video # The Independent Pianist
+https://www.youtube.com/feeds/videos.xml?channel_id=UCeq5QhMvgTTaVFIddrm1GRA	yt yt_video # Ah Geez Dood
+https://www.youtube.com/feeds/videos.xml?channel_id=UChK2DhvPSG3sY0jIYYngVBA	yt yt_video # 지켜츄 Chuu Can Do It
+https://www.youtube.com/feeds/videos.xml?channel_id=UChd9uQdJAWEXQoq-jiPP__Q	yt yt_video # Charlie Looker
+https://www.youtube.com/feeds/videos.xml?channel_id=UCi8C7TNs2ohrc6hnRQ5Sn2w	yt yt_video # Programmers are also human
+https://www.youtube.com/feeds/videos.xml?channel_id=UCp4DtLatjb5dBNHHYcvVXCw	yt yt_video # Josh Wright
+https://www.youtube.com/feeds/videos.xml?channel_id=UCyS4xQE6DK4_p3qXQwJQAyA	yt yt_video # DidYouKnowGaming
+https://www.youtube.com/feeds/videos.xml?channel_id=UCzYLos4qc2oC4r0Efd-tSuw	yt yt_video # Rustacean Station
+https://www.youtube.com/feeds/videos.xml?playlist_id=PLFaVlc8NSbbGH6iJGZFiHnnioR8yB7-em	yt yt_video #  U+모바일tv
+
+}}}
+# music - favs {{{
+
+https://bassdoom.home.blog/feed	music
+https://classicalmjourney.blogspot.com/feeds/posts/default?alt=rss	music classical
+https://kpopdownloadscmm.blogspot.com//feeds/posts/default?alt=rss	music
+https://musiqclassiq.blogspot.com//feeds/posts/default?alt=rss	music classical
+https://www.invisibleoranges.com/feed/	music
+https://www.youtube.com/feeds/videos.xml?channel_id=UC-edt2UC0sKfLP3ZfPML2Zg	yt yt_dl # RareMetalRarities
+https://www.youtube.com/feeds/videos.xml?channel_id=UC09IGk5JS7x-S9NfF4RxU5Q	yt yt_dl # MaltineRecords
+https://www.youtube.com/feeds/videos.xml?channel_id=UC23zHnaKOBqse0-P5wZ32gw	yt yt_dl # Gothiclibrium
+https://www.youtube.com/feeds/videos.xml?channel_id=UC2MCoqGb2I3ocyWPA164liA	yt yt_dl # high information noise
+https://www.youtube.com/feeds/videos.xml?channel_id=UC2zlRzqMd3I9xd3g4nOVx6Q	yt yt_dl # On The Top of Damavand for ever
+https://www.youtube.com/feeds/videos.xml?channel_id=UC3EXY6jOXxa_9E17MP2_nqw	yt yt_dl # Anothertimbre
+https://www.youtube.com/feeds/videos.xml?channel_id=UC5KCBzFSZDtQDGwWn5TQOhA	yt yt_dl # F. Pompeu
+https://www.youtube.com/feeds/videos.xml?channel_id=UC79WiqxijeyNaVWEkQclU5g	yt yt_dl # Rites of Pestilence
+https://www.youtube.com/feeds/videos.xml?channel_id=UC8KRHcFQBLrMBeHhcrMqH7A	yt yt_dl # strugatsky
+https://www.youtube.com/feeds/videos.xml?channel_id=UC91UfjRgIi2fEMkoaxisYmQ	yt yt_dl # Ticafr
+https://www.youtube.com/feeds/videos.xml?channel_id=UC96aWof5PHoA1OOH1keA0xQ	yt yt_dl # Immortal Classical Music
+https://www.youtube.com/feeds/videos.xml?channel_id=UC9B6J4qn5M_TLMh7zX0ISBA	yt yt_dl # Brilliant Classics
+https://www.youtube.com/feeds/videos.xml?channel_id=UCB0ANlFMLDXQHJbAolye8gg	yt yt_dl # elkiensad
+https://www.youtube.com/feeds/videos.xml?channel_id=UCD5Ny_jQ8cs9JXVPWXg9iNw	yt yt_dl # New Wave Of Old School Thrash Metal
+https://www.youtube.com/feeds/videos.xml?channel_id=UCD9fMVm4yPFv63goCFEj9jQ	yt yt_dl # Fledermaus1990
+https://www.youtube.com/feeds/videos.xml?channel_id=UCDLkzWN1rHY4eYkGnVruHVw	yt yt_dl # Atmospheric Black Metal Albums
+https://www.youtube.com/feeds/videos.xml?channel_id=UCDk7EL2ZivCpL_8cSHUWi1w	yt yt_dl # S
+https://www.youtube.com/feeds/videos.xml?channel_id=UCF81AytfSxkAMGjKFnsswnA	yt yt_dl # dismiss yourself
+https://www.youtube.com/feeds/videos.xml?channel_id=UCG2Ymf6JFCwxyqaH6S-UsYQ	yt yt_dl # TheOneAndOnlyZeno
+https://www.youtube.com/feeds/videos.xml?channel_id=UCG5loDqpgFMgkyhOeDEyZuA	yt yt_dl # Underground Black Metal
+https://www.youtube.com/feeds/videos.xml?channel_id=UCHWe_tvTbvLqQl0puYhAkxA	yt yt_dl # Cult of Singularity
+https://www.youtube.com/feeds/videos.xml?channel_id=UCH_hWKV-UoK2mOsX4lB8q6A	yt yt_dl # Mão da Glória
+https://www.youtube.com/feeds/videos.xml?channel_id=UCHePI17SewYev5mDiBH7NyQ	yt yt_dl # Janitor ofLunacy
+https://www.youtube.com/feeds/videos.xml?channel_id=UCJ-YjzpJxteFS5-TUoBIWYQ	yt yt_dl # incontrario motu
+https://www.youtube.com/feeds/videos.xml?channel_id=UCJhR8tk1NawNr4s0gFWDNWg	yt yt_dl # invertedninthchord
+https://www.youtube.com/feeds/videos.xml?channel_id=UCK6nKhTDrADiuSzTWx3l6Vg	yt yt_dl # harmonia mundi music
+https://www.youtube.com/feeds/videos.xml?channel_id=UCK_lWK0-T45ionQI2Z2IhHg	yt yt_dl # sweetbabyjaysus
+https://www.youtube.com/feeds/videos.xml?channel_id=UCLUzzvPKB8YFuBc4QFHIriw	yt yt_dl # Only Black Metal
+https://www.youtube.com/feeds/videos.xml?channel_id=UCMSVWxNp1lkEGpDClzm8Qvw	yt yt_dl # losprimerosVIIVI
+https://www.youtube.com/feeds/videos.xml?channel_id=UCMWYqSmaxiqzpuBuFKbTTMg	yt yt_dl # Yasutaka Nakata  Official
+https://www.youtube.com/feeds/videos.xml?channel_id=UCNS7BQ7gEJxTbEDsffsGqkg	yt yt_dl # POCLANOS
+https://www.youtube.com/feeds/videos.xml?channel_id=UCNyupeKKCyZTuOMyUc6C93w	yt yt_dl # Vwreyth
+https://www.youtube.com/feeds/videos.xml?channel_id=UCOpgOcrw4vv9P0_3kDZ4hRA	yt yt_dl # PurityThroughFire
+https://www.youtube.com/feeds/videos.xml?channel_id=UCOsDYE_zrQMH34LZFoFeH5g	yt yt_dl # ViceWearsBlack - PE and Noise
+https://www.youtube.com/feeds/videos.xml?channel_id=UCPYvBFviZ09XO-S7a30bZ1A	yt yt_dl # ABCDEAF
+https://www.youtube.com/feeds/videos.xml?channel_id=UCPaw_iBkzrlJ4BTO5FqvQ1g	yt yt_dl # oleg gerasimovich
+https://www.youtube.com/feeds/videos.xml?channel_id=UCPe5pc6990sASW4X5PGkiDA	yt yt_dl # Rique Borges
+https://www.youtube.com/feeds/videos.xml?channel_id=UCReSnjPFA6QWSdxY0Bu7eXA	yt yt_dl # SoupyMold
+https://www.youtube.com/feeds/videos.xml?channel_id=UCSnZqC46X115gd1ukXxcFSA	yt yt_dl # Boul God
+https://www.youtube.com/feeds/videos.xml?channel_id=UCTN75DU0MnTw6MN_xZ8NvbQ	yt yt_dl # Oldschool BrutalDeath
+https://www.youtube.com/feeds/videos.xml?channel_id=UCTZ35GQfSb0RsPdREhWZrtg	yt yt_dl # SLAM WORLDWIDE
+https://www.youtube.com/feeds/videos.xml?channel_id=UCTmqHgEi6yLdT8ErXw49QXA	yt yt_dl # The Avant-Void
+https://www.youtube.com/feeds/videos.xml?channel_id=UCYaYZQE2pymOZ0k3iaRdgcw	yt yt_dl # OdiumNostrum
+https://www.youtube.com/feeds/videos.xml?channel_id=UCYfDK5_TfjyRMMJAGXJ-wSw	yt yt_dl # tegosluchamPL
+https://www.youtube.com/feeds/videos.xml?channel_id=UCZepSPsopTcgcnZHusP8_QA	yt yt_dl # Zewen Sama
+https://www.youtube.com/feeds/videos.xml?channel_id=UCdZ7t90tgjwOO9PVhzT5A2g	yt yt_dl # No Gleaming Light
+https://www.youtube.com/feeds/videos.xml?channel_id=UCf63QEKct1a1alE1A6tKKAg	yt yt_dl # calefonxcalectric
+https://www.youtube.com/feeds/videos.xml?channel_id=UCfP6C9bT_llY13EhAfR-ekA	yt yt_dl # You've probably never heard of it.
+https://www.youtube.com/feeds/videos.xml?channel_id=UCfPnAF-DYznLiGWkNg-wxGw	yt yt_dl # MonoTree
+https://www.youtube.com/feeds/videos.xml?channel_id=UCfqPBQecsZl1n0v_SXMyZGg	yt yt_dl # Unexysted
+https://www.youtube.com/feeds/videos.xml?channel_id=UClyH4F1BMA8WmxE9Qfy95YA	yt yt_dl # Joseph Of Arimathea
+https://www.youtube.com/feeds/videos.xml?channel_id=UCmezV9ultue--YEFK8efziQ	yt yt_dl # Cartel
+https://www.youtube.com/feeds/videos.xml?channel_id=UCnfOqYDhvwylz9lygU0lpMA	yt yt_dl # K MUSIC
+https://www.youtube.com/feeds/videos.xml?channel_id=UCo2V-gGj1KA6YMAqFyWHwlQ	yt yt_dl # TAPESTOK INC
+https://www.youtube.com/feeds/videos.xml?channel_id=UCoMFePvJgobTpYpwsOBwmxQ	yt yt_dl # 58RNA3QD
+https://www.youtube.com/feeds/videos.xml?channel_id=UCuajWwDRLLLvN7YvlxcKRnw	yt yt_dl # Death Madness
+https://www.youtube.com/feeds/videos.xml?channel_id=UCva611YXfp8Sk5OZDOZJN7g	yt yt_dl # Rare Metal Albums
+https://www.youtube.com/feeds/videos.xml?channel_id=UCw3mQSE8u2Wiu5ImeyKTPmA	yt yt_dl # peter doolan
+
+# }}}
+# music - rym {{{
+
+https://rateyourmusic.com/~1luv1jah/data/rss	rym
+https://rateyourmusic.com/~Decibelle/data/rss	rym
+https://rateyourmusic.com/~Endrey/data/rss	rym
+https://rateyourmusic.com/~GGrimhail/data/rss	rym
+https://rateyourmusic.com/~Irrbloss/data/rss	rym
+https://rateyourmusic.com/~KitKit/data/rss	rym
+https://rateyourmusic.com/~LilJazy/data/rss	rym
+https://rateyourmusic.com/~Nebs/data/rss	rym
+https://rateyourmusic.com/~RNG/data/rss	rym
+https://rateyourmusic.com/~Rauta/data/rss	rym
+https://rateyourmusic.com/~Reliquary/data/rss	rym
+https://rateyourmusic.com/~RogueFossil/data/rss	rym
+https://rateyourmusic.com/~Stephanii/data/rss	rym kpop
+https://rateyourmusic.com/~YazmeenDessertRose/data/rss	rym
+https://rateyourmusic.com/~andromaeda/data/rss	rym kpop
+https://rateyourmusic.com/~aziaisonline/data/rss	rym kpop
+https://rateyourmusic.com/~bloodie/data/rss	rym
+https://rateyourmusic.com/~conciliator/data/rss	rym
+https://rateyourmusic.com/~cyr/data/rss	rym
+https://rateyourmusic.com/~ince/data/rss	rym
+https://rateyourmusic.com/~jazzusklisto/data/rss	rym
+https://rateyourmusic.com/~lator/data/rss	rym
+https://rateyourmusic.com/~logstar100/data/rss	rym kpop
+https://rateyourmusic.com/~marsb/data/rss	rym
+https://rateyourmusic.com/~mynameischet/data/rss	rym
+https://rateyourmusic.com/~nightwrath/data/rss	rym
+https://rateyourmusic.com/~noname219/data/rss	rym
+https://rateyourmusic.com/~rake/data/rss	rym
+https://rateyourmusic.com/~randomname410/data/rss	rym
+https://rateyourmusic.com/~riquefc/data/rss	rym
+https://rateyourmusic.com/~serpifeu/data/rss	rym kpop
+https://rateyourmusic.com/~siixnights/data/rss	rym kpop
+https://rateyourmusic.com/~stilton/data/rss	rym
+https://rateyourmusic.com/~strugatsky/data/rss	rym
+https://rateyourmusic.com/~suninyourhead/data/rss	rym
+https://rateyourmusic.com/~synchromysticism/data/rss	rym
+https://rateyourmusic.com/~tenshijcjc/data/rss	rym kpop
+https://rateyourmusic.com/~thankyoubranch/data/rss	rym
+https://rateyourmusic.com/~thrasher2809/data/rss	rym
+https://rateyourmusic.com/~xenakis/data/rss	rym
+https://rateyourmusic.com/~ylang/data/rss	rym
+https://rateyourmusic.com/~yofriend/data/rss	rym
+
+# }}}
+# music {{{
+
+http://feeds.feedburner.com/classicstodayreview	music classical
+http://gogogoingnow.wordpress.com/feed/	music
+http://grizzlybutts.com/feed	music
+http://iu.hulnews.top/feed/	music
+http://jpop2000ss.blogspot.com/feeds/posts/default	music
+http://kayokyokuplus.blogspot.sg/	music
+http://metallifestyle.weebly.com/1/feed	music
+http://noisebeneaththesnow.com/feed/	music
+http://pigeonsandplanes.com/feeds/generator/e/n/3.rss	music
+http://sixnoises.com/feed/	music
+http://tinymixtapes.com/feed.xml	music
+http://volt-magazin.de/index.php/rezensionen-reviews-electro-industrial-ebm-post-punk-cold-wave?format=feed&type=rss	music de
+http://www.bardomethodology.com/feed	music
+http://www.churchofzer.com/atom.xml	music # mediafire
+http://www.jrocknews.com/category/releases/feed	music
+http://www.residentadvisor.net/xml/review-album.xml	music
+http://www.secretdecoder.net/feed/	music
+http://www.toiletovhell.com/feed/	music
+http://www.vgmonline.net/feed	music vgm
+http://zenevloed.nl/feed/	music
+https://40000000gallons.blogspot.com/feeds/posts/default?alt=rss	music
+https://aidoruu.blogspot.com/feeds/posts/default	music
+https://alexshenmue.wordpress.com/feed/	music
+https://algleymi.blogspot.com/feeds/posts/default	music label
+https://arioso7.wordpress.com/feed	music classical
+https://ascoven.blogspot.com/feeds/posts/default	music
+https://atertiarysource.blogspot.com/feeds/posts/default?alt=rss	music
+https://autothrall.blogspot.com/feeds/posts/default	music
+https://aziophrenia.com/tag/perfume/feed/	music
+https://berlin030.de/category/musik/rezensionen/feed/	music de
+https://blackmetaldaily.wordpress.com/feed/	music
+https://blackmetalownsyou.blogspot.com/feeds/posts/default?alt=rss	music
+https://centralsauce.com/author/ben-carter/feed	music
+https://coolestsound.jp/atom.xml	music
+https://diyconspiracy.net/feed	music
+https://echoesanddust.com/feed/	music
+https://elbasurerodelemo.blogspot.com//feeds/posts/default?alt=rss	music
+https://exystence.net/feed	music
+https://feed.podbean.com/hatepod/feed.xml	music podcast
+https://feed.podbean.com/heavymetalbebop/feed.xml	music podcast
+https://feeds.buzzsprout.com/1088009.rss	podcast # dissonantharmony
+https://feeds.buzzsprout.com/266909.rss	music classical podcast	# samuel andreyev
+https://feeds.feedburner.com/ElectronickTapes	music
+https://feeds.feedburner.com/MakeBelieveMelodies	music
+https://feeds.feedburner.com/pureidolheart/MSOV	music
+https://feeds.fireside.fm/heavyhole/rss	music podcast
+https://forevercursed.blogspot.com/feeds/posts/default	music
+https://freecityrhymes.substack.com/feed	music
+https://fuckedbynoise.blogspot.com/feeds/posts/default?alt=rss	music
+https://fusion-world-30.blogspot.com/feeds/posts/default	music
+https://groove.de/category/reviews/alben/feed/	music de2
+https://hiphopkr.com/feed/	music
+https://i-support-my-local-scene.blogspot.com//feeds/posts/default?alt=rss	music
+https://idolisnotdead.tumblr.com/rss	music
+https://idolisshit.com/feed/	music
+https://inverted-audio.com/feed/	music
+https://ionarts.blogspot.com//feeds/posts/default?alt=rss	music classical
+https://jpop.xyz/feed	music
+https://jpopmix.com/category/album/feed	music
+https://jspinyin.net/feed/	music
+https://killedincars.com/rss	music
+https://kimikame.com/feed/	music
+https://kpopvocalanalysis.net/feed	music
+https://lairofthebastard.blogspot.com/feeds/posts/default?alt=rss	music
+https://le-drone.com/rss	music fr
+https://machinemusic.net/category/albums-of-the-decade/feed/	music
+https://machinemusic.net/category/interviews/feed/	music
+https://metalintheory.com/feed/	music musictheory
+https://monrakplengthai.blogspot.com/feeds/posts/default?alt=rss	music th
+https://moroccantapestash.blogspot.com//feeds/posts/default?alt=rss	music
+https://mortuusinsomnis06.blogspot.com/feeds/posts/default?alt=rss	music
+https://mqs.link/feed	music
+https://nathanwisnicki.substack.com/feed	music # LimedIBagels
+https://nitter.net/SbgFestival/rss	music classical
+https://nitter.net/basiscape_en/rss	music vgm
+https://nitter.net/monotreemusic/rss	music kpop
+https://noobheavy.com/feed	music
+https://occultblackmetalzine.blogspot.com/feeds/posts/default?alt=rss	music
+https://olddisgruntledbastard.com/feed/	music
+https://on-the-board.blogspot.com/feeds/posts/default?alt=rss	music
+https://openmindsaturatedbrain.blogspot.com/feeds/posts/default?alt=rss	music
+https://opiumhum.blogspot.com//feeds/posts/default?alt=rss	music
+https://pitchfork.com/rss/reviews/best/albums/	music
+https://plaguerages.substack.com/feed	music
+https://plainsugarsub.wordpress.com/feed/	music
+https://r-p-m.jp/features/feed	music jp
+https://r-p-m.jp/news/feed	music jp
+https://randomjpop.blogspot.com/feeds/posts/default?alt=rss
+https://readytohitthemoshpit.blogspot.com/feeds/posts/default?alt=rss	music
+https://repartiseraren.se/feed/	music
+https://ripfork.com/feed/	music
+https://robertgreenbergmusic.com/category/podcast/feed/	podcast music classical
+https://robotnikland.blogspot.com//feeds/posts/default?alt=rss	music vgm
+https://russianpopbliss.wordpress.com/feed/	music
+https://shmuplations.com/feed	music vgm
+https://shop.ascetic.house/products.rss	music label
+https://slam-minded.blogspot.com//feeds/posts/default?alt=rss	music
+https://sparkplugged.net/feed/	music
+https://spotifymines.tumblr.com/rss
+https://taopriest.tumblr.com/rss	music		# hmmmmm
+https://technicaldeathmetal.org/feed/	music
+https://tedgioia.substack.com/feed	music
+https://terraturpossessions.com/feed/	label music
+https://thai-music.blogspot.com/feeds/posts/default?alt=rss	music
+https://thebiaslist.com/feed	music
+https://theclassicreview.com/category/album-reviews/feed/	music classical
+https://theclassicreview.com/category/beginners-guides/feed/	music classical
+https://theeliteextremophile.com/feed	music
+https://thekpoptimist.home.blog/feed	music kpop
+https://theprogressivesubway.com/feed	music
+https://thequietus.com/reviews.atom	music
+https://thesoundoffightingdogs.wordpress.com/feed/	music
+https://thisendlessbreath.blogspot.com/feeds/posts/default?alt=rss	music
+https://twitchrss.appspot.com/vodonly/clubmatryoshka	music twitch
+https://www.attackmagazine.com/technique/beat-dissected/feed/	music
+https://www.attackmagazine.com/technique/deconstructed/feed/	music
+https://www.bensbigblog.com.au/feeds/posts/default?alt=rss	music pop_sci
+https://www.classicalwcrb.org/blog.rss	music classical
+https://www.classicalwcrb.org/cd-of-the-week.rss	music classical
+https://www.deutschlandfunk.de/klassik-pop-et-cetera-100.rss	music classical
+https://www.echinesesong.com/feed/	music cn
+https://www.ethanhein.com/wp/feed/	music classical
+https://www.homicidols.com/feed/	music
+https://www.koreanindie.com/feed/	music
+https://www.lacedrecords.com/blogs/news.atom	music vgm
+https://www.metalcrypt.com/contents.xml	music
+https://www.naxos.com/rss	music classical
+https://www.neue-bachgesellschaft.de/feed	music classical
+https://www.nextmusicfromtokyo.com/?feed=rss2	music
+https://www.passionweiss.com/category/special/passion-features/feed/	music
+https://www.rote-sonne.com/feed	music events
+https://www.sadplanetarium.com/interviews?format=RSS	music
+https://www.secretsofsongwriting.com/feed	music classical
+https://www.theajnaoffensive.com/blogs/news.atom	label music
+https://www.youtube.com/feeds/videos.xml?channel_id=UC-MUFcjuU49I-vVL7H1Antw	yt # DEATH FETISH
+https://www.youtube.com/feeds/videos.xml?channel_id=UC-MYgeVwgOS1w7VXrUe9WLA	yt # Gramophone
+https://www.youtube.com/feeds/videos.xml?channel_id=UC-rE_FVbxyRSP3N6QAIRWMA	yt # atsusiueno
+https://www.youtube.com/feeds/videos.xml?channel_id=UC-u-87CwJquK7ILsj28kkGQ	yt # Primitive Reaction
+https://www.youtube.com/feeds/videos.xml?channel_id=UC03_jfIuezeAMQ6ArDX-5lg	yt # enzo raffler
+https://www.youtube.com/feeds/videos.xml?channel_id=UC0CgB6D2PGZ2y9tWDD3nzMA	yt # Metal Supplier
+https://www.youtube.com/feeds/videos.xml?channel_id=UC0MbImAZ5VBy0CKANa17Rrg	yt # 0000
+https://www.youtube.com/feeds/videos.xml?channel_id=UC0b_YN7x2ShxICagR221ZmA	yt # THAGODSQUAD
+https://www.youtube.com/feeds/videos.xml?channel_id=UC1MwodMRAr8woqUn2yPUS8Q	yt # chordio
+https://www.youtube.com/feeds/videos.xml?channel_id=UC1jo37ffGZwbpDarO0AehbQ	yt # S.D.G.Johann Sebastian Bach
+https://www.youtube.com/feeds/videos.xml?channel_id=UC1ydefMjNRjhFUdj9JZ_zfQ	yt # Lolitina by Aoki Misako
+https://www.youtube.com/feeds/videos.xml?channel_id=UC2eq3mK_I-FCenwE1W_QeVg	yt # 城戸あき子_official
+https://www.youtube.com/feeds/videos.xml?channel_id=UC2jg30Zep4WhZEVhCiR6kyg	yt # Muzikazaile
+https://www.youtube.com/feeds/videos.xml?channel_id=UC2q7OXP-mPxHzJerA9tXe7Q	yt # Ashish Xiangyi Kumar
+https://www.youtube.com/feeds/videos.xml?channel_id=UC2zb5cQbLabj3U9l3tke1pg	yt # smalin
+https://www.youtube.com/feeds/videos.xml?channel_id=UC3B6nMP821PzcaOpE77MToQ	yt # Crescendo Waves
+https://www.youtube.com/feeds/videos.xml?channel_id=UC3Bjw_Ek1FTbhEKZsh9uo1w	yt # 須田景凪 バルーン
+https://www.youtube.com/feeds/videos.xml?channel_id=UC3E35Fy2z_JwCwSSbbeVMew	yt # Wolfspell Records
+https://www.youtube.com/feeds/videos.xml?channel_id=UC3lH9uLAdzY3YkAx3a8wsJw	yt # Propaganda Due
+https://www.youtube.com/feeds/videos.xml?channel_id=UC43VFN8zuWfjR7iIUTj2ADA	yt # Hunter Hunt-Hendrix
+https://www.youtube.com/feeds/videos.xml?channel_id=UC4e08LrQ2WTSgaHWOgzpOMA	yt # Logan Valenti
+https://www.youtube.com/feeds/videos.xml?channel_id=UC4sEiH0I8LrDGtcL5hCopgA	yt # Patrick Hogan
+https://www.youtube.com/feeds/videos.xml?channel_id=UC5OTLkP2gLShPzBPNzoSWaA	yt # Dan The Fugue Guy
+https://www.youtube.com/feeds/videos.xml?channel_id=UC5ev5M1Z14a3FFwuRDCduTA	yt # Amadeus Mozart
+https://www.youtube.com/feeds/videos.xml?channel_id=UC5qQHYfGBR6gN9ma-nGL2FA	yt # Akira Ikegami
+https://www.youtube.com/feeds/videos.xml?channel_id=UC5wB5tkKAGU7PKADzU_LoRw	yt # dods metall
+https://www.youtube.com/feeds/videos.xml?channel_id=UC63X3Dg2AIXj3iZ5e4I3LuQ	yt jp # 3776チャンネル
+https://www.youtube.com/feeds/videos.xml?channel_id=UC65TyZQC54YS_6JlMQycjwA	yt # Butte OSAKA
+https://www.youtube.com/feeds/videos.xml?channel_id=UC6OUaLZVEbK8TY3LdVzJmhw	yt # Cormac Levinthal
+https://www.youtube.com/feeds/videos.xml?channel_id=UC6T5Y4ktQTq568X3aSfWW7Q	yt # Sick Chainsaws Productions
+https://www.youtube.com/feeds/videos.xml?channel_id=UC6ev549nQuFLUZ1vdC70sAA	yt # martinluecker
+https://www.youtube.com/feeds/videos.xml?channel_id=UC6pIPPGWGdqPkMzRNFQHVVQ	yt # Sofronichrist
+https://www.youtube.com/feeds/videos.xml?channel_id=UC6pL1AdVbRGFkyS7AnuuasQ	yt # Naomi
+https://www.youtube.com/feeds/videos.xml?channel_id=UC6tGjOVtv2T1q92cvoABUlw	yt # tricot Official Channel
+https://www.youtube.com/feeds/videos.xml?channel_id=UC6wL0JmwNlMvuxktk7l8S_Q	yt # Ethan Blackburn
+https://www.youtube.com/feeds/videos.xml?channel_id=UC7KYBb8YE6pNk9_WwneT1XQ	yt # Seigneur ReefShark
+https://www.youtube.com/feeds/videos.xml?channel_id=UC7W3i6EM5VQEZ2HM6uy5vsQ	yt # 1Furtwangler
+https://www.youtube.com/feeds/videos.xml?channel_id=UC7brSEzOeLLb0l3QhAtdkgw	yt # Sounds of the Dawn
+https://www.youtube.com/feeds/videos.xml?channel_id=UC7ojalnVGxhYFUJQNtHRuuA	yt # sibarit101
+https://www.youtube.com/feeds/videos.xml?channel_id=UC7zq9NxjVYUN8QXkN7GAbXQ	yt # Utsyo Chakraborty
+https://www.youtube.com/feeds/videos.xml?channel_id=UC8EDVwQkD6QZW4jjvjtheCQ	yt # scream collector
+https://www.youtube.com/feeds/videos.xml?channel_id=UC8IFPN60KGKfHZ-xRX65NTw	yt # dolomuse
+https://www.youtube.com/feeds/videos.xml?channel_id=UC8Ki4ka14Q5F0sHqFaasQDg	yt # Ryan Power
+https://www.youtube.com/feeds/videos.xml?channel_id=UC8MLS5X0vWxxa5nyJxfSA1A	yt # Slav
+https://www.youtube.com/feeds/videos.xml?channel_id=UC8w1hbvFqCD9_rJFV4cdc6w	yt # SHACHI
+https://www.youtube.com/feeds/videos.xml?channel_id=UC995j0fLaZb4RHACU149w1Q	yt # Shibayan Records
+https://www.youtube.com/feeds/videos.xml?channel_id=UC9W3U300JG8OEQB7xQB8gNw	yt # Sergio Cánovas
+https://www.youtube.com/feeds/videos.xml?channel_id=UC9cJLV8SzlNla5MFVY8lSVg	yt # Pentameron
+https://www.youtube.com/feeds/videos.xml?channel_id=UC9g5M2trqPDiGn5fC_dl63g	yt # Rodders
+https://www.youtube.com/feeds/videos.xml?channel_id=UC9pQGeWEtbZr9kN-x066GgA	yt # Kånde •
+https://www.youtube.com/feeds/videos.xml?channel_id=UC9qItJ2Gs8Xfu6y_ERKNsxw	yt # Voices of Music
+https://www.youtube.com/feeds/videos.xml?channel_id=UC9tTOqA9z3WSLE4TFPOiGNw	yt # masyotaiVEVO
+https://www.youtube.com/feeds/videos.xml?channel_id=UCAHK6_CVUjWtJ9i-dQ8Td_A	yt # Xearching For Sounds
+https://www.youtube.com/feeds/videos.xml?channel_id=UCAJLMQjD_IXY9XtBNJmaa7g	yt # 矢川葵
+https://www.youtube.com/feeds/videos.xml?channel_id=UCALwlyC70Vnimqd-lpKYm2Q	yt # Forgotten Baroque
+https://www.youtube.com/feeds/videos.xml?channel_id=UCAhbA8JIVysRncE2c_NiguA	yt # Luci is my name
+https://www.youtube.com/feeds/videos.xml?channel_id=UCAtLsLRrBu9Jl8uCvvkQgNQ	yt # Aaron
+https://www.youtube.com/feeds/videos.xml?channel_id=UCB0d7Vk2entc0SIl-wombYQ	yt # 【le biglemoi 】Official
+https://www.youtube.com/feeds/videos.xml?channel_id=UCB9GUy12LgkeKwGZOTbiecQ	yt # Flightsch Films
+https://www.youtube.com/feeds/videos.xml?channel_id=UCBs8fehcP4gkd8RCEnc5fIQ	yt # Jaddah MY
+https://www.youtube.com/feeds/videos.xml?channel_id=UCBxZUNU_g8P35xzdcabWe0A	yt # Gabri ///
+https://www.youtube.com/feeds/videos.xml?channel_id=UCCJtTLxZAwWFT9ZJ8DNNE8Q	yt # headzpromo
+https://www.youtube.com/feeds/videos.xml?channel_id=UCCVeQFgdi87OnOUSCZo5cLw	yt # David Louie
+https://www.youtube.com/feeds/videos.xml?channel_id=UCDamrw8GbeUEELj2ewoU5Qw	yt # סוכריות גומי צפצוף
+https://www.youtube.com/feeds/videos.xml?channel_id=UCDtrGOn-LIQVTZffV8yV70Q	yt # PukeFlower293
+https://www.youtube.com/feeds/videos.xml?channel_id=UCE4IM82TdhmOl4Qtn8nsaGQ	yt # IndigoMusic
+https://www.youtube.com/feeds/videos.xml?channel_id=UCEGRzmPwLqrIIo6hB58R1Qg	yt # One Man Bands
+https://www.youtube.com/feeds/videos.xml?channel_id=UCEIvT3gzqSqWMxYTR0-rkww	yt rare # Lost Songs
+https://www.youtube.com/feeds/videos.xml?channel_id=UCEQg4Egi8dnNtpsIf9ShsVw	yt # symphony7526
+https://www.youtube.com/feeds/videos.xml?channel_id=UCEfZiXQ_eP2X4qanalEBf3A	yt # Putrescent Sounds
+https://www.youtube.com/feeds/videos.xml?channel_id=UCEf_Bc-KVd7onSeifS3py9g	yt # SMTOWN
+https://www.youtube.com/feeds/videos.xml?channel_id=UCFH6sHDXRaaGJMOBJFgbAfA	yt # Studio31
+https://www.youtube.com/feeds/videos.xml?channel_id=UCFZ-Xo4pEASeoB3MaMifB_A	yt # vividsoundmovie
+https://www.youtube.com/feeds/videos.xml?channel_id=UCFk0uQo3PGmmwoeDInrNdAg	yt # colin booth
+https://www.youtube.com/feeds/videos.xml?channel_id=UCFpBHtIl3ZthBoHmghGYsqA	yt # Hyperion Records
+https://www.youtube.com/feeds/videos.xml?channel_id=UCGKZkZv4xnUIvshcK0cC4-w	yt # domignostika
+https://www.youtube.com/feeds/videos.xml?channel_id=UCGN3RVAodiogEyT4PSwIavg	yt # Le Sheet Music Boi
+https://www.youtube.com/feeds/videos.xml?channel_id=UCH-cDn4Hw8NrkToZpedKFzA	yt # 東賢太郎
+https://www.youtube.com/feeds/videos.xml?channel_id=UCH9x-S_L-2jtJGkG6vWayFw	yt # comet
+https://www.youtube.com/feeds/videos.xml?channel_id=UCHVnft3HuKLibXlndMWgNNg	yt # Korean Metal Album
+https://www.youtube.com/feeds/videos.xml?channel_id=UCHf3FXp545Ydt490jzMLO9g	yt # skrieni
+https://www.youtube.com/feeds/videos.xml?channel_id=UCHqddw4KnkjErjilbLK9V6Q	yt # ドラクエ楽曲分析 / DQ Music Analysis
+https://www.youtube.com/feeds/videos.xml?channel_id=UCI7XI8DiFamTsrNuy4_Unow	yt # Breath of the Wild
+https://www.youtube.com/feeds/videos.xml?channel_id=UCINnzLzVKY7pLKUMdHi7n9g	yt # Nucktmeron 1982
+https://www.youtube.com/feeds/videos.xml?channel_id=UCIWsIsZjkt2McIPr3qCfEyQ	yt # Darius Nixon
+https://www.youtube.com/feeds/videos.xml?channel_id=UCIZDmzlGg0UifIWXGfRQq_w	yt # Mathcore Index
+https://www.youtube.com/feeds/videos.xml?channel_id=UCIrQ5Oohf24tDmxZMn5_3fQ	yt # Dead Forest
+https://www.youtube.com/feeds/videos.xml?channel_id=UCKFODptKFgcb4IfXC1w8lSA	yt # Favola in musica
+https://www.youtube.com/feeds/videos.xml?channel_id=UCKKvNjFvtAgu7egXZtP-EFQ	yt # Willem Tanke
+https://www.youtube.com/feeds/videos.xml?channel_id=UCKV1-wOY0sNjwjBjzO6YqeQ	yt # D Fake
+https://www.youtube.com/feeds/videos.xml?channel_id=UCL5vBtSHVu82OQITU7ahnPA	yt # XjojotheemoviolenceslayerX
+https://www.youtube.com/feeds/videos.xml?channel_id=UCLTZHKDjlCI-QYC2s4zVhCQ	yt # Juancitoamericano
+https://www.youtube.com/feeds/videos.xml?channel_id=UCLum4cHbZEnDcVHGl4Wgs9w	yt # Vampyre Din
+https://www.youtube.com/feeds/videos.xml?channel_id=UCMIZSbYWOQMPX81pqKV-Opg	yt # Supermarkt
+https://www.youtube.com/feeds/videos.xml?channel_id=UCMVQ9keB3oJb8DV81Oo-HHg	yt # MUSIC KOREA
+https://www.youtube.com/feeds/videos.xml?channel_id=UCMdDhBlfEpgW4zbTUkc8OAQ	yt # Amaranth
+https://www.youtube.com/feeds/videos.xml?channel_id=UCNAckPiDYxRWengUlRujs6Q	yt # gerubach
+https://www.youtube.com/feeds/videos.xml?channel_id=UCNBKUWR0HXkHUjL8PlT4PVQ	yt # Цесаревич
+https://www.youtube.com/feeds/videos.xml?channel_id=UCNGp12RSkscxS1OKhz6K3YQ	yt jpop # ノニエルプロデュース
+https://www.youtube.com/feeds/videos.xml?channel_id=UCNMp99d-aNS6TxO8rS_RC0w	yt cn # Chinese Music XiaoYang
+https://www.youtube.com/feeds/videos.xml?channel_id=UCNhqvQMXIgRfjAGmxQqdNRw	yt # Rotana
+https://www.youtube.com/feeds/videos.xml?channel_id=UCNjO5P4H3eTv-3Br-rq0JsA	yt # ashiapmanman
+https://www.youtube.com/feeds/videos.xml?channel_id=UCO5B-ANwaDSkyV9tc7YOn-w	yt # #hcpspirit
+https://www.youtube.com/feeds/videos.xml?channel_id=UCOBjL08luxcjOBdyIvPuZaw	yt # Edgardo
+https://www.youtube.com/feeds/videos.xml?channel_id=UCONuNEpKSCZDvTNooqsI2EQ	yt # 💀 𝔻𝕆 𝕄𝔼 𝔸 𝔽𝔸𝕍𝕆ℝ 𝔸ℕ𝔻 𝕂𝕀𝕃𝕃 𝕄𝔼 💀
+https://www.youtube.com/feeds/videos.xml?channel_id=UCOSJF2_qJ3mA7RYVJ15nVWA	yt # Metal Crypt Promotion
+https://www.youtube.com/feeds/videos.xml?channel_id=UCOdkYXO-GiflPBXzC4dp2xw	yt # Brugmanziah
+https://www.youtube.com/feeds/videos.xml?channel_id=UCOsBk7qhKyyDakjG6s8BTbA	yt # Atmospheric Black Metal Kingdom
+https://www.youtube.com/feeds/videos.xml?channel_id=UCOuivoD24J3P5wnXQIDKaiw	yt # Digital Bach
+https://www.youtube.com/feeds/videos.xml?channel_id=UCPENYtHg4Xhmm6oX8zaQA7Q	yt # GIRLS' GENERATION
+https://www.youtube.com/feeds/videos.xml?channel_id=UCPUZ1hgQgIIYQeMqoJWWoXw	yt # Stabat Mater
+https://www.youtube.com/feeds/videos.xml?channel_id=UCPZ8guklfqqLqb5Qg6_wzwA	yt # Precipotato
+https://www.youtube.com/feeds/videos.xml?channel_id=UCPgD-j2dzxJ0U0Q-LI9fj-A	yt # Mr.Schwarz
+https://www.youtube.com/feeds/videos.xml?channel_id=UCPzvzUz8-he6pcqfF-hA-0A	yt # merry merli (メリーメルリー) OFFICIAL
+https://www.youtube.com/feeds/videos.xml?channel_id=UCQjQIg2wS8ODwekBKbEpvAw	yt # No Big Deal Records CH
+https://www.youtube.com/feeds/videos.xml?channel_id=UCRBtJ5z6vMSGyj-ZDMrAGBw	yt # zankyorecord
+https://www.youtube.com/feeds/videos.xml?channel_id=UCRG_SZa6oF5GP6QziJQF2ZA	yt # purpleschala
+https://www.youtube.com/feeds/videos.xml?channel_id=UCRR-FtXHCtIRxZ2yB1vFGow	yt # Blast Beaten To Death
+https://www.youtube.com/feeds/videos.xml?channel_id=UCRrs3XFhs60GfZzKhT4bAxg	yt # Mortuus Vivens Imperium
+https://www.youtube.com/feeds/videos.xml?channel_id=UCRyh___DDg7uevMvLrjnmdA	yt # Miguel Fontes Meira
+https://www.youtube.com/feeds/videos.xml?channel_id=UCS7BGLjrnM7PyAbqib5Y0KA	yt # The House of Hidden Knowledge
+https://www.youtube.com/feeds/videos.xml?channel_id=UCSEr2_3QFcsA2IxCuO_rxtw	yt # hellheadhoncho
+https://www.youtube.com/feeds/videos.xml?channel_id=UCS_TVr6AQQKjutAujgyIvvw	yt # Colin Marston
+https://www.youtube.com/feeds/videos.xml?channel_id=UCTbp5TV7Z3gBq2cAqbbZq6A	yt # Sheep
+https://www.youtube.com/feeds/videos.xml?channel_id=UCTj3C35RgpN0HoTZYoNXn8Q	yt # Alloy Official
+https://www.youtube.com/feeds/videos.xml?channel_id=UCUBJBvaOnUFsXyF8L-czh4Q	yt # Chugotit 츄갓잇
+https://www.youtube.com/feeds/videos.xml?channel_id=UCUOVvEQ4K7vz4CKKk_FbpuA	yt # FiveDigitCreature
+https://www.youtube.com/feeds/videos.xml?channel_id=UCUVgnIJf6OPm5EQYJQxPnaQ	yt # s w
+https://www.youtube.com/feeds/videos.xml?channel_id=UCUWRvZt9Qa0P-8RX9VKH79w	yt # (´•̥ ω •̥` )
+https://www.youtube.com/feeds/videos.xml?channel_id=UCUXMhig9O30Vb4ysWcJAWFg	yt # pannonia77
+https://www.youtube.com/feeds/videos.xml?channel_id=UCUakZymlEah6hD7KDJUCclA	yt # Will Martin, Composer
+https://www.youtube.com/feeds/videos.xml?channel_id=UCUhfJn88d32udI3ePN9V15A	yt # The Great Repertoire
+https://www.youtube.com/feeds/videos.xml?channel_id=UCUoolO4OWY7pyO3GSUiwTJA	yt # Lusofolias
+https://www.youtube.com/feeds/videos.xml?channel_id=UCVL3Fo6EMLN5Cl7XsWCbkaA	yt # prfm-uk
+https://www.youtube.com/feeds/videos.xml?channel_id=UCVjJEbHnQdSQHVguDPKeD8g	yt # Free Forgotten Music
+https://www.youtube.com/feeds/videos.xml?channel_id=UCVmxzvy0qErh8ckRJB88qjA	yt # George N. Gianopoulos, composer
+https://www.youtube.com/feeds/videos.xml?channel_id=UCVyFFyr810Tc0L0wCVzef_Q	yt cn # 经典流行
+https://www.youtube.com/feeds/videos.xml?channel_id=UCWM16M4tKsoYUuBHCIt4N2w	yt # Playliszt
+https://www.youtube.com/feeds/videos.xml?channel_id=UCWRlb-fo0c4UMQ3ihEGMjbA	yt # MUSIC KOREA 2
+https://www.youtube.com/feeds/videos.xml?channel_id=UCWnT_2RN4BZ0wzJTlZkjLsw	yt # Contemporary MusicNOW
+https://www.youtube.com/feeds/videos.xml?channel_id=UCWubfmD-UY92kgCct3PXvZQ	yt # Asian Shoegaze
+https://www.youtube.com/feeds/videos.xml?channel_id=UCXT98N1gVYV6tzZhJaJjEFQ	yt # FightMalcovich
+https://www.youtube.com/feeds/videos.xml?channel_id=UCXgINWNmKc9qMoOBuoFwd7A	yt # Score'sAnimation
+https://www.youtube.com/feeds/videos.xml?channel_id=UCXmLtLgp_-83OCUXGjTBBfQ	yt # cis moll
+https://www.youtube.com/feeds/videos.xml?channel_id=UCYSV4YWR7uvJQWMOR7arddw	yt # Pour ceux que le langage a désertés
+https://www.youtube.com/feeds/videos.xml?channel_id=UCYTJJKqxqwmIUVnrDoepseg	yt # Felices Cantus Bach
+https://www.youtube.com/feeds/videos.xml?channel_id=UCYY7tJCIFwqVrwOPhkgHR-g	yt # 音楽自己相関可視化プロジェクト
+https://www.youtube.com/feeds/videos.xml?channel_id=UCYfxUOsroDhIEyXiZa_zglA	yt # The Piano Experience
+https://www.youtube.com/feeds/videos.xml?channel_id=UCZB_GZ92dnKnXuLL0AZa5pQ	yt # S.P.'s score videos
+https://www.youtube.com/feeds/videos.xml?channel_id=UCZMNWTrTfFIoj580kGaO8dQ	yt # thenameisgsarci
+https://www.youtube.com/feeds/videos.xml?channel_id=UCZg8JdNmcn82HiTGmb4tbCA	yt # Miguel Velázquez
+https://www.youtube.com/feeds/videos.xml?channel_id=UCZhQjkOvS_aN_Ea6l5ojfXw	yt # Contemporary Classical
+https://www.youtube.com/feeds/videos.xml?channel_id=UCZkBfgFnWZdr2Kcsgcjba4Q	yt # incipitsify
+https://www.youtube.com/feeds/videos.xml?channel_id=UC_7J0C1H37aVphAw_a9_mbw	yt # leeves leeves
+https://www.youtube.com/feeds/videos.xml?channel_id=UC_Iju6sH3ZlFQdC2z-oeYSQ	yt # Noctuelle
+https://www.youtube.com/feeds/videos.xml?channel_id=UC_KukZZ0Ii0kmJfRK_UjpdA	yt # BZK
+https://www.youtube.com/feeds/videos.xml?channel_id=UC_QG8miwKHFNuWY9VpkrI8w	yt # Cateen かてぃん
+https://www.youtube.com/feeds/videos.xml?channel_id=UC_RnmGyvvdu-sngdIsA_tTQ	yt # Post Industrial New Revolution
+https://www.youtube.com/feeds/videos.xml?channel_id=UC_fWOrE7GtGibPQ70_Wwn7w	yt jp # shellfish1004
+https://www.youtube.com/feeds/videos.xml?channel_id=UC_lXMPvtcuJt2hvludG7gRA	yt # Tormented
+https://www.youtube.com/feeds/videos.xml?channel_id=UCa2CStd5GOFu7HhCkgSFvfA	yt # Starlit Signal Records
+https://www.youtube.com/feeds/videos.xml?channel_id=UCaBLxJD8n-JNnzmhxX_9s7g	yt # Blacknoise
+https://www.youtube.com/feeds/videos.xml?channel_id=UCb5xdAHAg-6iDSaX3nh9j7g	yt # MusicArt61
+https://www.youtube.com/feeds/videos.xml?channel_id=UCb83Oa4GvrJ5G46kQ5GxCFA	yt # Yağız Arslan
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbMISEiX4KfykNV9bn26x0w	yt # Classical Music/ /Reference Recording
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbOwwfrNhvOPGC2zKK8SpiA	yt # CrushingDreams
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbX1WGW8HGkxv3SyC6D3ObQ	yt # Jason Marcieski
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbZQKEoWrqoGUaYbjlR20Hg	yt # babybirch18
+https://www.youtube.com/feeds/videos.xml?channel_id=UCb__Bm7VBJWGaXSuHZMkSrQ	yt # ササクレクト/SASAKRECT
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbh4LbQSROknirf5VHLg3NQ	yt # Levertraan
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbo9n5Y8ojo5Q_4RnqPthvA	yt # Daniel Crawford
+https://www.youtube.com/feeds/videos.xml?channel_id=UCc3ilAZ_1sc_dKneVAIT1pw	yt # BÉBE YANA
+https://www.youtube.com/feeds/videos.xml?channel_id=UCcydT7l6MPsvaBqbqV6a5FA	jpop yt # Macaron575
+https://www.youtube.com/feeds/videos.xml?channel_id=UCd2XmEfSt9kbL8s7fU9OPVQ	yt # コドモメンタルINC.公式チャンネル
+https://www.youtube.com/feeds/videos.xml?channel_id=UCdPf5kus9_R9FIc9VP844dg	yt # Simon B.
+https://www.youtube.com/feeds/videos.xml?channel_id=UCdS7bBvL26L39Uegjo2OmGw	yt # Chinoiserie
+https://www.youtube.com/feeds/videos.xml?channel_id=UCdWeaG-8WPWpd6qcuz_-abw	yt # PC Music
+https://www.youtube.com/feeds/videos.xml?channel_id=UCdgoIUUre-_fnATBgQ52YsQ	yt # Kens Death Metal Crypt
+https://www.youtube.com/feeds/videos.xml?channel_id=UCdjTkN38JSTeT9ClrL5NBzw	yt # Crate
+https://www.youtube.com/feeds/videos.xml?channel_id=UCdrJZQNaJDLaXz2ECa-HddQ	yt # Asriel Kujo
+https://www.youtube.com/feeds/videos.xml?channel_id=UCdvCyAgdBbTxb3MQQL9tt_w	yt # TENTENKO Official
+https://www.youtube.com/feeds/videos.xml?channel_id=UCfCPGSzjX3gGsPw0cHmU14g	yt # Perfect Music
+https://www.youtube.com/feeds/videos.xml?channel_id=UCfDgFybeRCgS7-ESDzTy-ZQ	yt # Underground Uploads
+https://www.youtube.com/feeds/videos.xml?channel_id=UCfEeyeK51WExN_wolQIkitg	yt cn # LuLu Qun Music Channel
+https://www.youtube.com/feeds/videos.xml?channel_id=UCfI-Y-HLZG7PQ9s-RW_nFdw	yt # Nextel
+https://www.youtube.com/feeds/videos.xml?channel_id=UCgyKDEKqtf0XDGdGfVc9_oA	yt # thecompactor music rips
+https://www.youtube.com/feeds/videos.xml?channel_id=UCh6zygZeEfcuU02J2e8TRFA	yt # Johann Sebastian
+https://www.youtube.com/feeds/videos.xml?channel_id=UChULGHt--P-FElZ2-1b3IAg	yt # American Bach Soloists
+https://www.youtube.com/feeds/videos.xml?channel_id=UChbD1TDW88uwjq6_G0eRAzA	yt # HAMIDASYSTEM
+https://www.youtube.com/feeds/videos.xml?channel_id=UChiUSlnHrGCc0TVsuQEFteA	yt # yvette young
+https://www.youtube.com/feeds/videos.xml?channel_id=UChsVa08edydL1uIPEDOXXoA	yt # Kevin Hufnagel
+https://www.youtube.com/feeds/videos.xml?channel_id=UChxgpa4YcRUD1nsaol222vQ	yt # CarolusGustavusRex
+https://www.youtube.com/feeds/videos.xml?channel_id=UCiXrqW_4e83LrYlJ8_M39pg	yt # Pianifico
+https://www.youtube.com/feeds/videos.xml?channel_id=UCiZw_nTBq1m7ffSV0fjfDrg	yt # MOMENT SCALE
+https://www.youtube.com/feeds/videos.xml?channel_id=UCilEUY2-Z9KZuwsgjDHEvHQ	yt # Damon J.H.K.
+https://www.youtube.com/feeds/videos.xml?channel_id=UCiw4do67oNWWT_C-Qu5Wg7w	yt # BL▲CK C▼LT
+https://www.youtube.com/feeds/videos.xml?channel_id=UCjKGcOOJhzS-8aRLwATq76A	yt # ancestral star
+https://www.youtube.com/feeds/videos.xml?channel_id=UCjRKtPDqhPla4HCNYSE2l_A	yt # KO SINDOU
+https://www.youtube.com/feeds/videos.xml?channel_id=UCjVdFW16-zuELvfT46d6hhA	yt jpop # 三戸なつめ Official YouTube Channel
+https://www.youtube.com/feeds/videos.xml?channel_id=UCjXYxriEX1BKtMbQyHlKS0g	yt # stigekalder
+https://www.youtube.com/feeds/videos.xml?channel_id=UCj_4c-JWo0u25RjZmC3D_zQ	yt # A1A2B1B2
+https://www.youtube.com/feeds/videos.xml?channel_id=UCjcRvkWqcfVkB114FYD4C9A	yt # Migraine by Noise
+https://www.youtube.com/feeds/videos.xml?channel_id=UCk57cWiAyD_0d8lTAkAeD-g	yt # Nekuro Earnhardt
+https://www.youtube.com/feeds/videos.xml?channel_id=UCkFaqeeugSW5d4-zJt4dl7g	yt # asian gothic label
+https://www.youtube.com/feeds/videos.xml?channel_id=UCkHjNcBJ69YCbUSCQCl_88A	yt # Goût des musique ancienne
+https://www.youtube.com/feeds/videos.xml?channel_id=UCkMXsSWVJyHX69eAa8WuGew	yt # KalteZiegelsteine
+https://www.youtube.com/feeds/videos.xml?channel_id=UCkfCix1fesR6v0tE-fIweNg	yt # miljkmi
+https://www.youtube.com/feeds/videos.xml?channel_id=UCmYq0b8VKp61qD8EWE5K-wg	yt # fyrexianoff
+https://www.youtube.com/feeds/videos.xml?channel_id=UCmep48_X7VUIi1Raojx3BGQ	yt # random albums 1
+https://www.youtube.com/feeds/videos.xml?channel_id=UCmlz4YDLaDGoscoHDVWReuQ	yt # Baroquenoise
+https://www.youtube.com/feeds/videos.xml?channel_id=UCmu-VNWRFQJkDvpYyIDr3cw	yt # Naomi Elizabeth
+https://www.youtube.com/feeds/videos.xml?channel_id=UCmuZrxCjaitdAwaGpkPEchw	yt # Antimessiah
+https://www.youtube.com/feeds/videos.xml?channel_id=UCmzOLCPZMqb86O2kg-uDcww	yt # Scriabin is my Dog
+https://www.youtube.com/feeds/videos.xml?channel_id=UCn5-OHqf7b_sd7knIbZJ6xQ	yt # Anal Device
+https://www.youtube.com/feeds/videos.xml?channel_id=UCnQnf32oGdLX6h7gziVaHgg	yt # A Classical Trove
+https://www.youtube.com/feeds/videos.xml?channel_id=UCnarzCZEW2_SQnNXwgs37rA	yt # flowlists
+https://www.youtube.com/feeds/videos.xml?channel_id=UCnhZuoNcL89qNax7YlWvavQ	yt # 미러볼 뮤직 - Mirrorball Music
+https://www.youtube.com/feeds/videos.xml?channel_id=UCnl5nJnnJCK5Q5e_wByYEmA	yt # Joshua Travis
+https://www.youtube.com/feeds/videos.xml?channel_id=UCnmF6Fy8t1aIDl5jlLqSAqw	yt # MAGIC STRAWBERRY SOUND
+https://www.youtube.com/feeds/videos.xml?channel_id=UCnrIEj8YNRQD1yXLq363ZQA	yt # allarmunumralla
+https://www.youtube.com/feeds/videos.xml?channel_id=UCnxQ8o9RpqxGF2oLHcCn9VQ	yt # fantano
+https://www.youtube.com/feeds/videos.xml?channel_id=UCoBuSw25EynzYRCGYibELvQ	yt # Underground Vibrations
+https://www.youtube.com/feeds/videos.xml?channel_id=UCoTaE27hr6NEbGlGn4vmqvg	yt # M - Lyrics
+https://www.youtube.com/feeds/videos.xml?channel_id=UCoiH2CdEcQmtPEF86KAFSjg	yt # Vertigo 163
+https://www.youtube.com/feeds/videos.xml?channel_id=UCoynZm503HQiQUhJGkR9pYQ	yt # cërclemortüaire
+https://www.youtube.com/feeds/videos.xml?channel_id=UCp-SiR1_OYX2K2XrUV02yPA	yt # riv (Metal Things and Music Promotion)
+https://www.youtube.com/feeds/videos.xml?channel_id=UCp1rOaLfx9c_DRAj27LiaYg	yt # Depressive Black Metal Archive
+https://www.youtube.com/feeds/videos.xml?channel_id=UCpA6yruAIk3TtM9-3lmpmEQ	yt # ElectricLizard
+https://www.youtube.com/feeds/videos.xml?channel_id=UCpYboLibaXcrn8wOwtfFttQ	yt # ヴェクサシオン
+https://www.youtube.com/feeds/videos.xml?channel_id=UCpe3LjesjNTa8osGMEGe4Xg	yt # Roc Vela
+https://www.youtube.com/feeds/videos.xml?channel_id=UCpn_1YDCIfCOHMvdvuY9ToA	yt # 999999999999
+https://www.youtube.com/feeds/videos.xml?channel_id=UCpp8tC_u2GBG0mKd7S9Bd4Q	yt # Gelabque
+https://www.youtube.com/feeds/videos.xml?channel_id=UCppvFdyLmTOYJ3xa1c5fJuw	yt # grinblat
+https://www.youtube.com/feeds/videos.xml?channel_id=UCprLLM0OILMpq2q_kpe_WFw	yt # Béton Brut
+https://www.youtube.com/feeds/videos.xml?channel_id=UCq3Wpi10SyZkzVeS7vzB5Lw	yt # Ichika Nito
+https://www.youtube.com/feeds/videos.xml?channel_id=UCqrox_685YbTlYDpz388qig	yt # Ria Brezova
+https://www.youtube.com/feeds/videos.xml?channel_id=UCrJiJHlSS3BUULZf_FH-zPQ	yt # cgoroo
+https://www.youtube.com/feeds/videos.xml?channel_id=UCrWrNd9oUBgNe2441No8L1w	yt # Sick
+https://www.youtube.com/feeds/videos.xml?channel_id=UCs2t9DlvAuyTBkvk2djGZKw	yt # Genierock
+https://www.youtube.com/feeds/videos.xml?channel_id=UCsCyncBPEzI6pb_pmALJ9Tw	yt # Score Follower
+https://www.youtube.com/feeds/videos.xml?channel_id=UCsJyGt7k004-xgygG-uvR-g	yt # VG
+https://www.youtube.com/feeds/videos.xml?channel_id=UCszyXm5HcAwxVSGeeHQscQg	yt # musanim
+https://www.youtube.com/feeds/videos.xml?channel_id=UCt7fwAhXDy3oNFTAzF2o8Pw	yt # theneedledrop
+https://www.youtube.com/feeds/videos.xml?channel_id=UCuEUz4vLWHKTYdhlQXE4Cwg	yt # cobra cobra
+https://www.youtube.com/feeds/videos.xml?channel_id=UCuJnUsw0Anzgg5-G6p--ctA	yt # music boi
+https://www.youtube.com/feeds/videos.xml?channel_id=UCuOUeCUO27MKsCyZdPMegBA	yt # E.V
+https://www.youtube.com/feeds/videos.xml?channel_id=UCukcQaJk5WAErc6mb8oqZSQ	yt # KuhlauDilfeng2
+https://www.youtube.com/feeds/videos.xml?channel_id=UCuq1H-HXWoW4JL-hX5bWxzw	yt # Death Grips
+https://www.youtube.com/feeds/videos.xml?channel_id=UCvOBu1UI_e2PxVQhM6nWD7w	yt # Paranthropus Slam
+https://www.youtube.com/feeds/videos.xml?channel_id=UCvtY3MPYXQp9aZBt0gQD7-w	yt # Cmaj7
+https://www.youtube.com/feeds/videos.xml?channel_id=UCw9CLkBHqDMIqBUciTEmODg	yt # 𝔐𝔲𝔰𝔦𝔠𝔞 𝔐𝔢𝔡𝔦𝔢𝔳𝔞𝔩𝔢
+https://www.youtube.com/feeds/videos.xml?channel_id=UCwAtCO4m4ySQcwcjyJj0tXg	yt # ARS SONORA
+https://www.youtube.com/feeds/videos.xml?channel_id=UCwH6cA6-EQy7cgdGBoBhU0A	yt # BIRSECK272
+https://www.youtube.com/feeds/videos.xml?channel_id=UCwHvWKzBjDktSbkI9lDvMew	yt # Andrija Čugurović
+https://www.youtube.com/feeds/videos.xml?channel_id=UCwbbr8FKVrWLF8T81RI7Lxg	yt # Bartje Bartmans
+https://www.youtube.com/feeds/videos.xml?channel_id=UCwd83EJH6rr_vPSH1iZdtxg	yt # not looking for New England
+https://www.youtube.com/feeds/videos.xml?channel_id=UCweOkPb1wVVH0Q0Tlj4a5Pw	yt # 1theK (원더케이)
+https://www.youtube.com/feeds/videos.xml?channel_id=UCwgaE3AlYxzpEK8J01xYD7w	yt # Gore Grinder
+https://www.youtube.com/feeds/videos.xml?channel_id=UCx2iiqZuzri08lwGU4zbaBA	yt # Partitura Organum
+https://www.youtube.com/feeds/videos.xml?channel_id=UCxGyXV_cuEBOqnuoaWZ-Wlw	yt # Sean Canzone
+https://www.youtube.com/feeds/videos.xml?channel_id=UCxOjoraUPd0Dq9PAyIhC6tQ	jpop yt # Perfume
+https://www.youtube.com/feeds/videos.xml?channel_id=UCxkJ_8dTQ_GP16JeiRLJ0mg	yt # Harpsichord Vinyl Gallery
+https://www.youtube.com/feeds/videos.xml?channel_id=UCxoWK9DoK8OMmjBouexJ8xA	yt # DNfather
+https://www.youtube.com/feeds/videos.xml?channel_id=UCy86r_b2SLoE5vSVoD2NRlA	yt # Thikk Klassik
+https://www.youtube.com/feeds/videos.xml?channel_id=UCyEW2DhSx51lFu8ZjkzLLWQ	yt # swag lord
+https://www.youtube.com/feeds/videos.xml?channel_id=UCyMeA4gsWcT76u89HTl5EnA	yt # Vladivostok 1969
+https://www.youtube.com/feeds/videos.xml?channel_id=UCyUWjARk-t676ahbmnq4dMQ	yt # ZSunder
+https://www.youtube.com/feeds/videos.xml?channel_id=UCyabCqc2M3J9HItEroLOTvA	yt # Kmac2021
+https://www.youtube.com/feeds/videos.xml?channel_id=UCylZ2Jb1tTgB66LuGtmEBKg	yt # Silly Silky Official
+https://www.youtube.com/feeds/videos.xml?channel_id=UCymibT7pwb0BOtXjmOQm2nQ	yt # Partially Nebulous Observationists
+https://www.youtube.com/feeds/videos.xml?channel_id=UCzF9Ixse6jfk05MdG9bQRQw	yt # Angelolatreia Tremenda
+https://www.youtube.com/feeds/videos.xml?channel_id=UCzUxGzcjmfTh9dFi9NNMizg	yt # Joannes Couchet
+https://www.youtube.com/feeds/videos.xml?playlist_id=PLAjIX596BriE-27j4ATKO37oyaKSaqdnm	yt # IDEAL Work Lists
+https://www.youtube.com/feeds/videos.xml?playlist_id=PLAjIX596BriGdmyKHy_rIcTcPmct2K5G-	yt # World's Most Beautiful Melodies
+https://www.youtube.com/feeds/videos.xml?playlist_id=PLUVp6QIFv05M7nXDL5SqWXjn0f19tfXTv	yt # Aparté Music
+https://www.youtube.com/feeds/videos.xml?playlist_id=PLgHwmy5wpqikUX3mnDrIz8ExvSeQpotBA	yt vgm # videogame heardle
+https://www.youtube.com/feeds/videos.xml?playlist_id=PLjjdqebq5Em1F95Em94lv2EHKCSKiyudT	yt # dizzydizzo
+https://www.youtube.com/feeds/videos.xml?playlist_id=PLk8Jh2wxTcpZIM2Y4PYCTMWr6COcL7TBK	yt # Practice Clinic
+
+# }}}
+
+# musictheory, classical {{{
+
+http://www.georgianchant.org/feed	classical
+https://api.ingentaconnect.com/content/intellect/mms/latest?format=rss	musictheory
+https://api.ingentaconnect.com/content/intellect/mms?format=rss	musictheory
+https://bachtrack.com/rss.xml	classical
+https://blog.twedt.com/feed	classical
+https://bulletproofmusician.com/feed	musictheory
+https://crosseyedpianist.com/feed	musictheory
+https://franklehman.com/feed	musictheory
+https://franspianostudio.me/feed	musictheory
+https://harmonicseries.substack.com/feed	music classical
+https://interlude.hk/feed	classical
+https://melaniespanswick.com/feed	musictheory
+https://michaelkravchuk.com/feed	musictheory
+https://muse.jhu.edu/feeds/latest_articles?jid=774	musictheory jrn
+https://nitter.net/fmlehman/rss
+https://nitter.net/pianotricks/rss	music classical musictheory
+https://onpolishmusic.com/feed	classical
+https://partitura.org/index.php/feed/	classical
+https://peterjfolliard.com/feed	musictheory
+https://pianodao.com/feed	musictheory
+https://practisingthepiano.com/feed	musictheory
+https://rmclassicalguitar.com/feed	musictheory
+https://stringsmagazine.com/feed	classical
+https://thecritic.co.uk/tag/music/feed	classical
+https://themusicsalon.blogspot.com/feeds/posts/default?alt=rss	classical
+https://vgm-in-irregular-time-of-the-day.tumblr.com/rss	musictheory vgm
+https://www.artofcomposing.com/feed	musictheory
+https://www.beyondmusictheory.org/feed	music classical
+https://www.esm.rochester.edu/integral/feed	musictheory
+https://www.helpingyouharmonise.com/feed	musictheory
+https://www.henle.de/blog/de/feed/	classical
+https://www.kairos-music.com/blog/index.xml	classical
+https://www.kpukinskis.com/blog/atom.xml	musictheory
+https://www.musiciansway.com/feed	musictheory
+https://www.nightingalessonata.com/home?format=rss	classical
+https://www.piano-composer-teacher-london.co.uk/blog-1/blog/index.xml	classical musictheory
+https://www.pianoarticlesweekly.com/feed	classical
+https://www.pianosightreading.com.au/feed	musictheory
+https://www.recordedness.org/interviews/feed	music classical
+https://www.reddit.com/user/LogStar100/.rss	reddit musictheory
+https://www.reddit.com/user/Xenoceratops/.rss	reddit musictheory
+https://www.reddit.com/user/Zarlinosuke/.rss	reddit musictheory
+https://www.reddit.com/user/davethecomposer/.rss	reddit musictheory
+https://www.reddit.com/user/lilcareed/.rss	reddit musictheory
+https://www.reddit.com/user/powersurgeee/.rss	reddit musictheory
+https://www.reddit.com/user/vornska/.rss	reddit musictheory
+https://www.youtube.com/feeds/videos.xml?channel_id=UC5toGmOe1-1vdomQt4qQpYg	yt # Society for Music Theory
+https://www.youtube.com/feeds/videos.xml?channel_id=UCAd6NTVHcJgxsX3u1qNzowQ	yt # Poker and Philosophy
+https://www.youtube.com/feeds/videos.xml?channel_id=UCBYAFTEec60guY-W4OU5Jrw	yt # NerdyMusicks
+https://www.youtube.com/feeds/videos.xml?channel_id=UCcEiwy1FJoDKGL9jyl5tA9g	yt # Piano Articles Weekly
+https://www.youtube.com/feeds/videos.xml?playlist_id=PLWGPizxKI7i7Xlc8pA4yWA3J5ktKQLzHL	yt # AlmaDeutscher
+
+# }}}
+# tech {{{
+
+https://moderncss.dev/feed	tech
+http://anandtech.com/rss/	tech
+http://blog.filestack.com/feed/	tech
+http://feed.tedium.co/	tech
+http://feeds.arstechnica.com/arstechnica/index/	tech
+http://feeds.doughellmann.com/DougHellmann	tech
+http://ignorethecode.net/blog/rss/	tech
+http://rssnewsapps.ziffdavis.com/extreme.xml	tech
+http://textslashplain.com/feed/	tech
+http://usn.pw/feed	tech
+http://www.backblaze.com/blog/feed/	tech
+http://www.kroah.com/log/index.rss	tech
+http://www.marco.org/rss	tech
+http://www.osnews.com/files/recent.xml	tech
+http://www.righto.com/feeds/posts/default	tech
+http://www.rntz.net/blog/atom.xml	tech
+https://29a.ch/feed.atom	linux
+https://adamj.eu/tech/feed	tech
+https://alexwlchan.net/feed	tech
+https://archlinux.org/feeds/news/	tech
+https://bas.codes/rss.xml	tech
+https://beza1e1.tuxen.de/blog_en.atom	tech
+https://bkardell.com/blog/feed.rss	tech
+https://blog.codinghorror.com/rss/	tech
+https://blog.erratasec.com/feeds/posts/default?alt=rss	tech
+https://blog.kellybrazil.com/feed	tech
+https://blog.pragmaticengineer.com/feed	tech
+https://briandfoy.github.io/feed	tech
+https://catonmat.net/feed	tech
+https://craftofcoding.wordpress.com//blog/index.xml	tech
+https://daniel-lange.com/feeds/index.rss2	tech
+https://datagenetics.com/feed/rss.xml	tech
+https://drewdevault.com/blog/index.xml	tech
+https://dylanbeattie.net/rss.xml	tech
+https://gist.github.com/romainl.atom	linux
+https://glitch.com/culture/rss/	tech
+https://hacks.mozilla.org/feed	tech
+https://iridakos.com/feed.xml	linux
+https://jvns.ca/atom.xml	tech
+https://karl-voit.at/feeds/lazyblorg-all.atom_1.0.links-and-teaser.xml	tech
+https://kentcdodds.com/blog/rss.xml	tech
+https://lemire.me/blog/feed	tech
+https://lobste.rs/rss	tech
+https://lukesmith.xyz/rss.xml	linux
+https://lunduke.com/index.xml	tech
+https://marienraat.nl/blog/index.xml	tech
+https://medium.com/feed/backticks-tildes	linux
+https://medium.engineering/feed	tech
+https://news.ycombinator.com/rss	tech	# hackernews
+https://newsletter.pragmaticengineer.com/feed	tech
+https://opensource.com/rss.xml	tech
+https://overengineer.dev/blog/feeds/all.xml	tech
+https://phili.pe/feed.xml	tech
+https://privacy-watchdog.io/feed	tech
+https://programming-idioms.org/rss-recently-created	tech
+https://pythonspeed.com/atom.xml	tech
+https://rachelbythebay.com/w/atom.xml	tech
+https://realpython.com/atom.xml	py
+https://rsapkf.org/weblog/feed	tech
+https://softwaredoug.com/feed.xml	tech
+https://spectrum.ieee.org/feed	tech
+https://switchandclick.com/feed	tech
+https://ta180m.exozy.me/posts/index.xml	tech
+https://theheadphonecollector.blogspot.com/feeds/posts/default?alt=rss	tech
+https://torrentfreak.com/feed/	tech
+https://twitchrss.appspot.com/vodonly/theprimeagen	twitch
+https://utcc.utoronto.ca/~cks/space/blog/?atom	tech
+https://vault.lunduke.com/LundukeShowMP3.xml	linux
+https://vimways.org/2019/index.xml	linux
+https://wizardzines.com/index.xml	linux
+https://www.allendowney.com/blog/feed	tech
+https://www.blog.pythonlibrary.org/feed	tech
+https://www.hezmatt.org/~mpalmer/blog/rss.xml	linux
+https://www.linuxjournal.com/node/feed	linux
+https://www.maltegerken.de/feeds/all.atom.xml	linux
+https://www.otsukare.info/feeds/atom.xml	tech
+https://www.posvic.eu/feed/	linux
+https://www.stefanjudis.com/rss.xml	tech
+https://www.swalladge.net/feed.xml	linux
+https://www.technewsworld.com/perl/syndication/rssfull.pl	tech
+https://www.theregister.com/headlines.atom	tech
+https://www.vidarholen.net/contents/blog?feed=rss2	tech
+https://www.youtube.com/feeds/videos.xml?channel_id=UC-VnbnvbOn2vS8SI6S2GqKA	yt # Beginbot
+https://www.youtube.com/feeds/videos.xml?channel_id=UC9-y-6csu5WGm29I7JiwpnA	yt # Computerphile
+https://www.youtube.com/feeds/videos.xml?channel_id=UCAKtTBXNwRJ_EHGq0EbwokQ	yt # Data Heroes
+https://www.youtube.com/feeds/videos.xml?channel_id=UCD5eL38hFtSLiVFP9cCUJEA	yt # Daniel Stenberg
+https://www.youtube.com/feeds/videos.xml?channel_id=UCFzGyNKXPAglNq28qWYTDFA	yt # Kai Hendry
+https://www.youtube.com/feeds/videos.xml?channel_id=UCKPyg5gsnt6h0aA8EBw3i6A	yt r # RichardOnData
+https://www.youtube.com/feeds/videos.xml?channel_id=UCPK_UHtbfcWABCi0F0GPG6w	yt # Vim Conf Live
+https://www.youtube.com/feeds/videos.xml?channel_id=UCVls1GmFKf6WlTraIb_IaJg	yt # DistroTube
+https://www.youtube.com/feeds/videos.xml?channel_id=UCXPHFM88IlFn68OmLwtPmZA	yt # Greg Hurrell
+https://www.youtube.com/feeds/videos.xml?channel_id=UCYVU6rModlGxvJbszCclGGw	yt # Rob Braxman Tech
+https://www.youtube.com/feeds/videos.xml?channel_id=UCa0tJguRNbU6I8OO3nUvXxQ	yt # Josh Branchaud
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbDQ7FIeYB3FHRADAjUjfrg	yt # Greg Wilson
+https://www.youtube.com/feeds/videos.xml?channel_id=UCgREucssIfY9e0Iy3yhse8w	yt # nixcasts
+https://www.youtube.com/feeds/videos.xml?channel_id=UCi8XrDg1bK_MJ0goOnbpTMQ	yt # budlabs
+https://www.youtube.com/feeds/videos.xml?channel_id=UCkf4VIqu3Acnfzuk3kRIFwA	yt # gotbletu
+https://www.youtube.com/feeds/videos.xml?channel_id=UCld68syR8Wi-GY_n4CaoJGA	yt # Brodie Robertson
+https://www.youtube.com/feeds/videos.xml?channel_id=UCljOhRB2a3sQgLCdK9CHQvQ	yt # Calin Leafshade - Linux # leafshadeamp; Productivity Videos
+https://www.youtube.com/feeds/videos.xml?channel_id=UCorzANoC3fX9VVefJHM5wtA	yt # Nick Janetakis
+https://xdg.me/index.xml	tech
+
+# }}}
+
+# journals {{{
+
+http://feeds.feedburner.com/acs/amclct	jrn pharm	# med chem lett
+http://feeds.feedburner.com/acs/jacsat	jrn	# jacs
+http://feeds.feedburner.com/acs/jmcmar	jrn pharm	# j med chem
+http://feeds.feedburner.com/acs/jnprdf	jrn	# j nat prod
+http://feeds.feedburner.com/acs/joceah	jrn	# joc
+http://feeds.feedburner.com/acs/orlef7	jrn	# org lett
+http://onlinelibrary.wiley.com/action/showFeed?jc=15213773&type=etoc&feed=rss	jrn	# acie
+http://onlinelibrary.wiley.com/action/showFeed?jc=18607187&type=etoc&feed=rss	jrn pharm	# chem med chem
+http://rss.sciencedirect.com/publication/science/00452068	jrn # bioorg chem
+http://rss.sciencedirect.com/publication/science/0960894X	jrn pharm # bmcl
+http://www.nature.com/nrd.rss	 jrn pharm	# nat rev drug disc
+https://chemrxiv.org/rss/portal_category/chemrxiv/1906	jrn cdd
+https://feeds.feedburner.com/acs/oprdfk	jrn	# org proc r&d
+https://jcheminf.biomedcentral.com/articles/most-recent/rss.xml	jrn pharm cdd # j cdd
+https://onlinelibrary.wiley.com/action/showFeed?jc=1096987x&type=etoc&feed=rss	jrn # jcc
+https://onlinelibrary.wiley.com/feed/10981128/most-recent	jrn pharm # med research rev
+https://onlinelibrary.wiley.com/feed/18681751/most-recent	jrn cdd # mol inf
+
+# }}}
+# cdd {{{
+
+http://comporgchem.com/blog/?feed=atom	sci cdd
+http://www.dalkescientific.com/writings/diary/diary-rss.xml	sci cdd
+http://www.drugdiscovery.net/feed	sci cdd
+http://www.drugdiscoverytoday.com/rss/news/	sci pharm cdd
+https://baoilleach.blogspot.com//feeds/posts/default?alt=rss	sci cdd
+https://chembl.blogspot.com//feeds/posts/default?alt=rss	sci cdd
+https://cheminf20.org/feed	sci cdd
+https://chemrxiv.org/engage/rss/chemrxiv?categoryId=605c72ef153207001f6470ce	sci cdd
+https://chemrxiv.org/rss/profile/5564693	sci cdd # robin winter
+https://depth-first.com/articles.atom	sci cdd
+https://feeds.feedburner.com/CambridgeMedchemConsultingNews	sci cdd
+https://feeds.feedburner.com/macinchemblog	sci cdd
+https://feeds.transistor.fm/ttp-invent	sci cdd podcast
+https://iwatobipen.wordpress.com/feed/	sci cdd
+https://md.catapult.org.uk/feed/	sci cdd
+https://nextmovesoftware.com/blog/feed/	sci cdd
+https://nitter.net/AISciNet/rss	sci cdd
+https://nitter.net/BZdrazil/rss	sci cdd
+https://nitter.net/CDDVault/rss	sci cdd
+https://nitter.net/Grayson_MN/rss	sci cdd
+https://nitter.net/LabDurrant/rss	sci cdd
+https://nitter.net/NBioscience/rss	sci cdd
+https://nitter.net/NCL_MedChem/rss	sci cdd
+https://nitter.net/RDKit_org/rss	sci cdd
+https://nitter.net/RSC_CICAG/rss	sci cdd
+https://nitter.net/aclarkxyz/rss	sci cdd
+https://nitter.net/andreasbenderuk/rss	sci cdd
+https://nitter.net/benevolent_ai/rss	sci cdd
+https://nitter.net/bio_comp/rss	sci cdd
+https://nitter.net/ccdc_cambridge/rss	sci cdd
+https://nitter.net/dr_greg_landrum/rss	sci cdd
+https://nitter.net/exscientiaAI/rss	sci cdd
+https://nitter.net/lygature/rss	sci cdd
+https://nitter.net/macinchem/rss	sci cdd
+https://nitter.net/pharmenable/rss	sci cdd
+https://nitter.net/rapodaca/rss	sci cdd
+https://nitter.net/rsc_bmcs/rss	sci cdd
+https://nitter.net/synbic/rss	sci cdd
+https://nitter.net/valence_ai/rss	sci cdd
+https://patwalters.github.io/practicalcheminformatics/feed.xml	sci cdd
+https://practicalcheminformatics.blogspot.com//feeds/posts/default?alt=rss	sci cdd
+https://proteinsandwavefunctions.blogspot.com//feeds/posts/default?alt=rss	sci cdd
+https://rdkit.blogspot.com//feeds/posts/default?alt=rss	sci cdd
+https://www.blopig.com/blog/feed/	sci cdd
+https://www.compbiomed.eu/feed	sci cdd
+https://www.ddw-online.com/feed	sci cdd
+https://www.rscbmcs.org/feed	sci cdd
+https://www.scilifelab.se/feed	sci cdd
+https://www.youtube.com/feeds/videos.xml?channel_id=UC0YUefHzYkhmOhfCAjm-aaA	yt # Medicines Discovery Catapult
+https://www.youtube.com/feeds/videos.xml?channel_id=UC20ylcDcTQWIGDnOD34mjWA	yt # BioSolveITTutorials
+https://www.youtube.com/feeds/videos.xml?channel_id=UC2UOI1W8Q48AdCwaAVRilKw	yt # AndyDendy
+https://www.youtube.com/feeds/videos.xml?channel_id=UC3ew3t5al4sN-Zk01DGVKlg	yt # Valence Discovery
+https://www.youtube.com/feeds/videos.xml?channel_id=UCLk_hm1ukiv1z7mwA9qWtbQ	yt # David Koes
+https://www.youtube.com/feeds/videos.xml?channel_id=UCMJBgduhh5y5mvZxjTJvqYw	yt # Collaborative Drug Discovery, Inc.
+https://www.youtube.com/feeds/videos.xml?channel_id=UCMppiEFsUvLPpnLMsWXEnOA	yt # ML for protein engineering seminar series
+https://www.youtube.com/feeds/videos.xml?channel_id=UCT3mRwMjLxgoAfe8IHIFCoA	yt # CCDCCambridge
+https://www.youtube.com/feeds/videos.xml?channel_id=UCUiIfmesH_psiArXT3xcppA	yt # Computational Biomedicine
+https://www.youtube.com/feeds/videos.xml?channel_id=UCXOkV943dmo6rSiVlo7lsBw	yt # AI 4 Scientific Discovery
+https://www.youtube.com/feeds/videos.xml?channel_id=UCfssUOda3kyt1B5bIwBSU6g	yt # Medchem clips
+https://www.youtube.com/feeds/videos.xml?channel_id=UChcbEN9Uw3Od-WMXsW7yn8A	yt # BenevolentAI
+https://www.youtube.com/feeds/videos.xml?channel_id=UCmcWrkHzDFnC07Vk4doQTsw	yt # RSC_CICAG
+https://www.zbh.uni-hamburg.de/forschung/news.atom	sci cdd
+
+# }}}
+# film {{{
+
+http://1morefilmblog.com/feed/	film
+http://aestheticsofthemind.wordpress.com/feed/	film
+http://cinema-scope.com/feed/	film
+http://filmmomaticreviews.wordpress.com/feed/	film
+http://frame.land/all/essays/feed/	film
+http://hotxshare.com/feed/	fdl
+http://inreviewonline.com/category/film/feed	film		# ?
+http://jamesdevereaux.com/feed/	film
+http://kinojoan.co.uk/index.html	film
+http://moviessilently.com/feed/	film
+http://movieworld.ws/feed/	fdl
+http://muchadoaboutcinema.com/feed/	film
+http://nextprojection.com/category/reviews/feed/	film
+http://rarefilm.net/feed/	fdl
+http://rarelust.com/feed/	fdl
+http://sensesofcinema.com/feed/	film
+http://vashivisuals.com/feed/	film
+http://worldscinema.org/feed/	fdl
+http://www.acinemahistory.com/feeds/posts/default?alt=rss	film
+http://www.alicebishop.net/feed/	film
+http://www.bfi.org.uk/latest/feed	film
+http://www.brattleblog.brattlefilm.org/feed/	film
+http://www.criticalcommons.org/lectures/RSS	film
+http://www.davidbordwell.net/blog/feed/	film
+http://www.enic-cine.net/feed/	film
+http://www.filmsufi.com/feeds/posts/default?alt=rss	film
+http://www.jonathanrosenbaum.net/feed/	film
+http://www.movingimagesource.us/articles/rss	film
+http://www.vcinemashow.com/category/reviews/feed/	film
+https://acinephilesreviewoffilm.wordpress.com/feed/	film
+https://arethehillsgoingtomarchoff.blogspot.com/feeds/posts/default?alt=rss	film
+https://asianmoviepulse.com/reviews/feed/	film
+https://blog.animationstudies.org/?feed=rss2	film
+https://blog.reviviendoviejasjoyas.xyz/feed/	fdl
+https://blog.reviviendoviejasjoyas.xyz/feed/	fdl	# need login
+https://blog.reviviendoviejasjoyas.xyz/feed/	film
+https://brightlightsfilm.com/feed/	film
+https://catecinem.wordpress.com/feed/	film
+https://cinema-talk.com/feed/	film
+https://cinemaoftheabstract.blogspot.com//feeds/posts/default?alt=rss	film
+https://cinemasparagus.blogspot.com/feeds/posts/default?alt=rss	film
+https://cinematheque.tube/feeds/videos.xml?videoChannelId=2	film
+https://cinenthusiast.wordpress.com/feed/	film
+https://cinephiliabeyond.org/feed/	film
+https://criticafterdark.blogspot.com/feeds/posts/default?alt=rss	film
+https://diaryofascreenwriter.blogspot.com/feeds/posts/default?alt=rss	film
+https://drsapirstein.blogspot.com/feeds/posts/default?alt=rss	film
+https://filmalert101.blogspot.com/feeds/posts/default?alt=rss	film
+https://filmnomenon.blogspot.com/feeds/posts/default?alt=rss	film
+https://filmstudiesforfree.blogspot.com/feeds/posts/default?alt=rss	film
+https://fredrikonfilm.blogspot.com/feeds/posts/default?alt=rss	film
+https://hawkmenblues.net/feed/	fdl
+https://hdencode.com/tag/movies/feed/	fdl
+https://hkwomenfilmmakers.wordpress.com/feed/	film
+https://hongkongmovietours.blogspot.com/feeds/posts/default?alt=rss	film
+https://internationalcinemareview.blogspot.com/feeds/posts/default?alt=rss	film
+https://itpworld.wordpress.com/feed/
+https://kinoslang.blogspot.com/feeds/posts/default?alt=rss	film
+https://letterboxd.com/follow_freeman/rss/	lb
+https://letterboxd.com/mazintas/rss/	lb
+https://letterboxd.com/tectactoe/rss/	lb
+https://lithub.com/category/newsandculture/film-and-tv/feed/	film
+https://lostmediawiki.com/index.php?title=Special:ExportRDF/Home&xmlmime=rdf	film
+https://lwlies.com/feed/	film
+https://medium.com/feed/@miniflixTV	film
+https://mogambo1924.blogspot.com/feeds/posts/default?alt=rss	fdl
+https://nitter.net/ohakosubs/rss	film
+https://nmasmas2.blogspot.com/feeds/posts/default?alt=rss	film
+https://notesoncinematograph.blogspot.com/feeds/posts/default?alt=rss	film
+https://ohakosubs.tumblr.com/rss	film
+https://pinoyrebyu.wordpress.com/feed/	film
+https://raredoramas.info/feed	fdl
+https://rarefilmm.com/feed/	fdl
+https://read.kinoscope.org/feed/	film
+https://scalisto.blogspot.com/feeds/posts/default?alt=rss	fdl
+https://schneeland-mono.blogspot.com/feeds/posts/default?alt=rss	film
+https://scopophiliacatthecinema.wordpress.com/feed/	film
+https://selfstyledsiren.blogspot.com/feeds/posts/default?alt=rss	film
+https://sergedaney.blogspot.com//feeds/posts/default?alt=rss	film
+https://stephenfollows.com/feed/	film
+https://storiadocgiappone.wordpress.com/feed/	film
+https://stummfilm-magazin.de/?format=feed&type=rss	film
+https://tadleckman.wordpress.com/category/movies/feed/	film
+https://theartofvisionganz.blogspot.com/feeds/posts/default?alt=rss	film
+https://theartsofslowcinema.com/feed/	film
+https://theseventhart.org/feed/	film
+https://thisislandrod.blogspot.com/feeds/posts/default?alt=rss	film
+https://thoseawfulreviews.wordpress.com/feed/	film
+https://unspokencinema.blogspot.com/feeds/posts/default?alt=rss	film
+https://videowatchdog.blogspot.com/feeds/posts/default?alt=rss	film
+https://vimeo.com/filmarchivum/videos/rss	film
+https://vimeo.com/filmmuseummuenchen/videos/rss	film
+https://vimeo.com/glassdistortion/videos/rss	film
+https://vimeo.com/kevinblee/videos/rss	film
+https://vimeo.com/user14337401/videos/rss	film	# davidbordwell
+https://vimeo.com/user39852370/videos/rss	film	# saracwynar
+https://vimeo.com/user83013343/videos/rss	film # citizenjake
+https://vimeo.com/vashi/videos/rss	film
+https://windowsonworlds.com/feed/	film
+https://wipfilms.net/feed/	fdl
+https://www.artforum.com/film/rss	film
+https://www.cinefile.info/blog?format=RSS	film
+https://www.criterion.com/feeds/the-daily	film
+https://www.critic.de/rss-feeds/neue-filmkritiken/	film de2
+https://www.film-faction.com/articles?format=RSS	film
+https://www.filmcomment.com/feed/	film
+https://www.filmedinether.com/feed/	film
+https://www.filmpatrol.com/feeds/posts/default?alt=rss	film
+https://www.flickeralley.com/feed/	film
+https://www.nationalreview.com/author/armond-white/feed/	film
+https://www.nishikata-eiga.com/feeds/posts/default?alt=rss	film
+https://www.theguardian.com/film/series/observer-european-film/rss	film
+https://www.thisisnotafilmblog.net/news?format=RSS	film
+https://www.youtube.com/feeds/videos.xml?channel_id=UC1Yo_8Vgdv_-0otNLqmrwNg	yt # aSionSonoFilm
+https://www.youtube.com/feeds/videos.xml?channel_id=UC3cYcYPnsmXVqqMrqVlc2kg	yt # Little White Lies
+https://www.youtube.com/feeds/videos.xml?channel_id=UC5MXkVkm25a36FJ2sR29fAw	yt # berkay
+https://www.youtube.com/feeds/videos.xml?channel_id=UC7GV-3hrA9kDKrren0QMKMg	yt # CinemaTyler
+https://www.youtube.com/feeds/videos.xml?channel_id=UC9wMJIgU25UtMV3arDeHDyA	yt # Collative Learning
+https://www.youtube.com/feeds/videos.xml?channel_id=UCCe20Iwf2cxvJLxHk1ftc9w	yt # Stephan Graf v. Bothmer
+https://www.youtube.com/feeds/videos.xml?channel_id=UCF4kPRXfuoKj0ZS8hhp6onA	yt # Style is Substance
+https://www.youtube.com/feeds/videos.xml?channel_id=UCILpem6jYQmzMIUBRLl4JiA	yt # Daniel Carreiro
+https://www.youtube.com/feeds/videos.xml?channel_id=UCL5kBJmBUVFLYBDiSiK1VDw	yt # The Cinema Cartography
+https://www.youtube.com/feeds/videos.xml?channel_id=UCN0kmd3jOFtDzAfaZmc-PvA	yt # your cult boyfriend
+https://www.youtube.com/feeds/videos.xml?channel_id=UCNf56PUyMI0wUyZ8KRhg2AQ	yt # Cinema Nippon
+https://www.youtube.com/feeds/videos.xml?channel_id=UCS-84iRcdFoozlaGI0UaZVg	yt # CINE MUDO / Silent movies
+https://www.youtube.com/feeds/videos.xml?channel_id=UCVmsjbnZ4MAUl33GfdhX0Rg	yt # Filmarchiv Austria
+https://www.youtube.com/feeds/videos.xml?channel_id=UCWTFGPpNQ0Ms6afXhaWDiRw	yt # Now You See It
+https://www.youtube.com/feeds/videos.xml?channel_id=UCXYchrloc-E-aMF_L6_itzg	yt # Max Felix
+https://www.youtube.com/feeds/videos.xml?channel_id=UCYNqbXpwkjOmZhY--86CicQ	yt # Lethargic
+https://www.youtube.com/feeds/videos.xml?channel_id=UCZc0EgIRreTb169M20kqsvw	yt fr # Marie Riviere . Actrice
+https://www.youtube.com/feeds/videos.xml?channel_id=UCZxBTW6epnyNIwHHWcSZpYQ	yt # ねこむすめ
+https://www.youtube.com/feeds/videos.xml?channel_id=UC_tMkLTLLDNTbebWHKXJ6-Q	yt # PELICULAS MUDAS / Silent cinema
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbK91LHRLnRmqrWBFLTJnDQ	yt # East Asian Cinema History
+https://www.youtube.com/feeds/videos.xml?channel_id=UCbxDRGGByV8P0Avm-M6Pjfw	yt # Ramon Wakaliwood Experience
+https://www.youtube.com/feeds/videos.xml?channel_id=UCdVVysCPlu8kw-hqg13MWrw	yt # Bradley J. Dixon
+https://www.youtube.com/feeds/videos.xml?channel_id=UCkpzphmJb8xUflqUAg9NBsw	yt # Alan Resnick
+https://www.youtube.com/feeds/videos.xml?channel_id=UCnWhoZnGUmDsE6WHZJOJoCw	yt # Charles M
+https://www.youtube.com/feeds/videos.xml?channel_id=UCnm95FzPtuPHmzAZARj2Hmw	yt # Nathan Conant
+https://www.youtube.com/feeds/videos.xml?channel_id=UCodYv3Bc-NXDNTz8ntYVMIg	yt # tommydan55
+https://www.youtube.com/feeds/videos.xml?channel_id=UCudgYlGIdep1Zjd0b3cb-Bg	yt # The First Movies
+https://www.youtube.com/feeds/videos.xml?channel_id=UCvwXikvldP8Zvk0YlzT775g	yt # Movie-ing with David
+https://www.youtube.com/feeds/videos.xml?channel_id=UCwUBFuggz861PvFtHun1J9w	yt # GEIDAI ANIMATION
+https://www.youtube.com/feeds/videos.xml?channel_id=UCxUR9wLuzgsvA6mpgKtiqGw	yt # Rossatron
+https://www.youtube.com/feeds/videos.xml?channel_id=UCxUR9wLuzgsvA6mpgKtiqGw	yt # Rossatron
+https://www.youtube.com/feeds/videos.xml?playlist_id=PL9MSezZEWTce_M3La7FxvH6B9ijHq86A9	yt # cinemacorona
+https://www.youtube.com/feeds/videos.xml?playlist_id=PLrMEncyd64BdPt-iWyxiAdo19tYm7myf1	yt # filmmakeriq
+
+# }}}

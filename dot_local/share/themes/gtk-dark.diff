@@ -1,0 +1,43 @@
+extra/materia-gtk-theme (20210322-2); must be prettier-formatted
+--- .gtk-dark.css	2024-02-05 21:37:23.630697643 +0000
++++ gtk-dark.css	2024-02-05 21:35:41.889067009 +0000
+@@ -3111,7 +3111,7 @@
+  * Scrollbars
+  */
+ scrollbar {
+-  transition: all 75ms cubic-bezier(0, 0, 0.2, 1);
++  transition: all 0ms cubic-bezier(0, 0, 0.2, 1);
+   background-clip: padding-box;
+ }
+
+@@ -3133,10 +3133,10 @@
+
+ scrollbar > range > trough > slider {
+   transition: background-color 75ms cubic-bezier(0, 0, 0.2, 1);
+-  min-width: 10px;
++  min-width: 24px;
+   min-height: 10px;
+   border: 3px solid transparent;
+-  border-radius: 9999px;
++  /* border-radius: 9999px; */
+   background-clip: padding-box;
+   background-color: rgba(255, 255, 255, 0.38);
+ }
+@@ -3162,7 +3162,7 @@
+ }
+
+ scrollbar > range.fine-tune > trough > slider {
+-  min-width: 4px;
++  min-width: 24px;
+   min-height: 4px;
+ }
+
+@@ -3187,7 +3187,7 @@
+   > range
+   > trough
+   > slider {
+-  min-width: 4px;
++  min-width: 24px;
+   min-height: 4px;
+   margin: 2px;
+   border: 1px solid rgba(30, 30, 30, 0.3);

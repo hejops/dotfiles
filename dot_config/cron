@@ -1,0 +1,95 @@
+# vim:ft=crontab
+# preamble {{{
+# for missed jobs, use anacron
+# generally, safest to source .bashrc from within a script (not here)
+# https://askubuntu.com/a/23438
+# https://cron.help/
+# https://crontab.guru/
+# https://github.com/cdown/checkupdates-cron/blob/master/checkupdates-cron
+# https://stackoverflow.com/a/22744360
+
+# https://libredd.it/r/linuxadmin/comments/7ea2mj/cron_vs_systemd/dq85hno/?context=3
+# systemd has:
+#
+# Sub-minute job repetition rate.
+# Arbitrary calendar expressions.
+# Reliable job start on reboot or in relation to some other service.
+# Better built-in randomization of job timing.
+# You can run jobs manually instead of copying and pasting a command out of a
+# crontab just by using systemctl start on the related service unit.
+
+# https://www.pankajtanwar.in/blog/prevent-duplicate-cron-job-running
+# to prevent multiple cronjobs, consider using flock
+# */30 * * * * /usr/bin/flock -w 0 LOCKFILE COMMAND...
+
+# }}}
+
+# minute hour day(1-31) month day(1-7)
+
+# persistent (every n minutes = */n ...)
+*/10 7-23,0-2 * * *	env DISPLAY=:0 ~/gripts/wall/wall >/dev/null 2>/dev/null
+*/10 7-23,0-2 * * *	~/rust/fours/target/release/fours --board hr --subject LOONA
+
+# * * * * *	env DISPLAY=:0 /bin/notify-send cron
+# */1 * * * *	/bin/sh ~/scripts/dwmstatus >/dev/null 2>/dev/null # now just an autostart with inf loop
+# */30 7-23,0-2 * * *	/bin/python3 ~/scripts/reddit.py loona red_velvet > /tmp/reddit
+# arecord -l | grep 'card 1' (or sth)
+
+# # TODO: only if speaker connected
+# */6 7-23 * * *	XDG_RUNTIME_DIR=/run/user/1000 /usr/bin/ffplay -f lavfi -i "sine=frequency=19500:duration=1" -autoexit -nodisp >/dev/null 2>/dev/null
+# XDG_RUNTIME_DIR required to avoid "Failed to open file 'sine=frequency=22000:duration=0.1' ... "
+# https://askubuntu.com/a/928979
+# https://tk-sls.de/wp/3885
+# https://unix.stackexchange.com/a/536860
+
+# 0 */1 * * *	env DISPLAY=:0 /bin/sh ~/scripts/alert
+# every n hours (0 */n ...)
+0 */1 * * *	/bin/sh ~/scripts/nicowish
+0 */6 * * *	/usr/bin/pkill -f telegram-desktop
+0 */6 * * *	~/.cache/pypoetry/virtualenvs/dita-*/bin/dump_collection
+0 */8 * * *	/bin/rm -r ~/.mozilla/firefox/*/storage/default/file*
+0 */8 * * *	/bin/rm -r ~/.mozilla/firefox/*/storage/default/http*
+0 */8 * * *	/bin/sh ~/scripts/cup
+0 */8 * * *	~/.cache/pypoetry/virtualenvs/dita-*/bin/discogs_marketplace
+1 */3 * * *	/usr/bin/nvim --headless +TSUpdate +qa
+2 */3 * * *	/usr/bin/nvim --headless "+Lazy! sync" +qa
+
+# 0 16 * * *	/bin/python3 ~/scripts/cargo_clean.py
+# 0 20 * * *	/bin/rm -rf "~/.config/teams-for-linux/Partitions/teams-4-linux/Service Worker/Cache"
+# daily (at n hours = 0 n ...)
+# https://gist.github.com/kkoomen/68319b08ab843ce67cf7b282b0b2fd24
+# https://github.com/junegunn/vim-plug/issues/493#issuecomment-226318571
+# note: mbsync is handled by systemd (can it be done here?)
+# notmuch dump --output=FILE
+# paccache -r (need sudo)
+0 12 * * *	/bin/python3 ~/scripts/justwatch.py
+0 12 * * *	/bin/sh ~/scripts/songkick
+0 12 * * *	/usr/bin/curl -s "https://www.biblegateway.com/votd/get/?format=json&version=KJV" > /tmp/verse.json
+0 16 * * *	/usr/bin/find ~/rust -name deps -type d -exec rm -r {} \;
+0 16 * * *	/usr/bin/find ~/rust -name incremental -type d -exec rm -r {} \;
+0 20 * * *	/bin/rm -rf ~/.config/chromium
+0 20 * * *	/bin/rm -rf ~/.config/discordptb/Cache
+0 20 * * *	/bin/rm -rf ~/.local/share/TelegramDesktop/tdata/user_data
+
+# sudo docker system prune
+# sudo docker volume rm $(sudo docker volume ls -f dangling=true -q)
+
+# npm cache clean --force
+# pip cache purge
+# poetry cache clear . --all -vvv
+# weekly
+0 12 * * 2,4,6	/bin/rm -r ~/.cargo/registry
+0 12 * * 2,4,6	/bin/rm ~/.config/trizen/sources/*
+0 12 * * 2,4,6	~/.cache/pypoetry/virtualenvs/dita-*/bin/dump_library
+0 12 * * 3,6	/bin/rm -f /run/media/$USER/Elements/music_slsk/downloading/*
+0 12 * * 3,6	~/.cache/pypoetry/virtualenvs/dita-*/bin/convert_files
+0 12 * * 6	/bin/find /run/media/$USER/Elements/music -type d -empty -exec rmdir {} \;
+1 12 * * 6	/bin/rm ~/.cache/ranger/*
+2 12 * * 6	/usr/bin/yarn cache clean
+
+# 0 10 * * 6	/bin/bash ~/scripts/maildel
+# grep -l redirect "$WATCH_DIR"/* | xargs -r rm || :
+# rustup update
+
+# monthly
+0 12 1 * *	/bin/sh ~/scripts/gp5bak

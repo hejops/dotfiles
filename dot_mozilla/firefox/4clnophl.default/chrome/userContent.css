@@ -1,0 +1,187 @@
+/* userContent.css is for web pages and internal pages like about:newtab and
+ * about:home. userChrome.css is for the user interface */
+
+/* @import "dark_settings_pages.css"; */
+/* @import "addons_manager_alternative_appearance_tb78.css"; */
+
+#tridactyl-reader > main {
+  background-color: #282828;
+  color: #ebdbb2;
+  font-family: serif;
+  font-size: xx-large;
+  width: 80vw !important;
+}
+
+:root {
+  --bg: #282828;
+}
+
+/* https://moderncss.dev/12-modern-css-one-line-upgrades */
+:root {
+  accent-color: #ebdbb2;
+  color-scheme: dark light;
+  filter: contrast(125%);
+  font-variant-ligatures: none;
+  scrollbar-gutter: stable;
+}
+
+code,
+kbd,
+pre {
+  font-variant-ligatures: none;
+}
+
+.fit-content {
+  width: fit-content;
+}
+
+.sidebar,
+.article {
+  overscroll-behavior: contain;
+}
+
+/* dark background */
+/* https://gist.github.com/gmolveau/a802ded1320a7591a289fb7abd0d6c45 */
+
+@-moz-document url-prefix(about:blank) {
+  html > body:empty {
+    background-color: var(--bg) !important;
+  }
+}
+@-moz-document url(about:blank) {
+  html > body:empty {
+    background-color: var(--bg) !important;
+  }
+}
+
+/* https://teddit.net/r/FirefoxCSS/comments/98j1a7/psa_you_can_change_scrollbar_properties_directly/ */
+/* https://github.com/Aris-t2/CustomCSSforFx/issues/160 */
+:root {
+  scrollbar-color: #458588 var(--bg);
+  scrollbar-width: auto;
+
+  /* prevent cancerous white flash on new tab */
+  --tridactyl-bg: var(--bg) !important;
+}
+
+@-moz-document url-prefix("about:reader") {
+  /* can't get monospace to work, too bad */
+  body {
+    font-family:
+      monospace,
+      -moz-fixed !important;
+  }
+
+  /* inherit from user.js */
+  body.sans-serif {
+    font-family: sans-serif !important;
+  }
+  body.serif {
+    font-family: serif !important;
+  }
+}
+
+/* https://gist.github.com/abelcheung/0229ee3ab896feac8126f40eb1405996 */
+/* this seems to not work anymore (FF 122) */
+/* in any case, i almost always just use curl */
+@-moz-document url-prefix(view-source:) {
+  *|*:root {
+    background: none !important;
+  }
+
+  #viewsource {
+    font-family:
+      "Source Code Pro",
+      Inconsolata,
+      /*
+      SFMono-Regular,
+      Menlo,
+      Monaco,
+      Consolas,
+      "Liberation Mono",
+      "Courier New",
+      */
+        monospace,
+      -moz-fixed !important;
+    line-height: 1.5em;
+    /* background-image: url(https://farm9.staticflickr.com/8536/8680613751_71ef92bbdb_o_d.jpg), */
+    /*   linear-gradient(to right, #002b36d0, #002b36d0, #000000d0), */
+    /*   linear-gradient(#00000040 50%, transparent 50%); */
+    background-size:
+      cover,
+      cover,
+      auto 3em;
+    background-position:
+      center,
+      center,
+      top 10px left 0;
+    background-attachment: fixed, fixed, scroll;
+    background-repeat: no-repeat, no-repeat, repeat-y;
+    background-blend-mode: overlay, normal, normal;
+    color: #839496;
+  }
+
+  pre[id]:before,
+  span[id]:before {
+    width: 6ch !important;
+    color: #586e75 !important;
+    margin-left: -7ch !important;
+  }
+  pre {
+    padding-left: 1ch;
+    margin-left: 6ch !important;
+    border-left: 2px solid #073642;
+  }
+  pre > :first-child {
+    padding-right: 1ch;
+  }
+
+  .highlight .start-tag {
+    color: #d33682 !important;
+  }
+  .highlight .end-tag {
+    color: #d33682 !important;
+  }
+  .highlight .comment {
+    color: #586e75 !important;
+  }
+  .highlight .cdata {
+    color: #cb4b16 !important;
+  }
+  .highlight .doctype {
+    color: #268be2 !important;
+  }
+  .highlight .pi {
+    color: #268be2 !important; /* orchid -> blue */
+  }
+  .highlight .entity {
+    color: #b58900 !important; /* violet -> yellow */
+  }
+  .highlight .attribute-name {
+    color: #93a1a1 !important;
+  }
+  .highlight .attribute-value {
+    color: #2aa198 !important;
+    text-shadow: 1px 1px 2px black;
+  }
+  .highlight .markupdeclaration {
+    color: #859900 !important;
+  }
+  .highlight .error,
+  .highlight
+    .error
+    > :-moz-any(
+      .start-tag,
+      .end-tag,
+      .comment,
+      .cdata,
+      .doctype,
+      .pi,
+      .entity,
+      .attribute-name,
+      .attribute-value
+    ) {
+    color: #002b36 !important;
+    background-color: #dc322f !important;
+  }
+}

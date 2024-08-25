@@ -1,0 +1,101 @@
+; vim: ft=gitconfig
+
+; https://jvns.ca/blog/2024/02/16/popular-git-config-options
+
+[user]
+
+; https://stackoverflow.com/a/21574502
+; don't try to expand env vars here; instead do the config in shell, e.g.
+; git config --global user.name "$USER@$HOSTNAME"
+	email = hejops1@gmail.com
+	name = Joseph
+
+[core]
+	; pager = less
+	pager = delta
+	autocrlf = false	; if true, uses windows line endings
+	; excludesfile = defaults to ./ignore
+
+[init]
+	defaultBranch = master
+
+; [credential]
+; 	helper = store		; if enabled, local credentials will always be overriden
+; 	usehttppath = false
+
+[interactive]
+	singleKey = true	; requires readkey
+
+[rerere]
+	enable = true		; https://git-scm.com/book/en/v2/Git-Tools-Rerere
+
+[alias]
+; https://ma.ttias.be/pretty-git-log-in-one-line/
+; https://zwischenzugs.com/2016/06/04/power-git-log-graphing/
+	logline = log --graph --color=always --pretty=format:'%C(yellow)%cs%Creset - %Cblue%h%Creset - %Cgreen%s%Creset (%an)'
+	conf = config --list --show-origin --show-scope
+
+[url "git@github.com:"]
+	insteadOf = "https://github.com/"
+
+; [url "git@github.com:WORK/"]
+; 	insteadOf = "https://github.com/WORK/"
+
+; actions
+
+[branch]
+	sort = committerdate
+
+[commit]
+	verbose = true
+
+[diff]
+; https://git-scm.com/docs/git-diff#Documentation/git-diff.txt---color-movedltmodegt
+; https://luppeng.wordpress.com/2020/10/10/when-to-use-each-of-the-git-diff-algorithms/
+	colorMoved = default	; detect moved blocks of code and style
+				; them differently from the usual removed/added lines
+	colorMovedWS = allow-indentation-change
+	algorithm = histogram	; detect contiguous blocks, to better represent reorderings
+
+[fetch]
+	prune = true		; sync deletions of remote branches
+
+[log]
+	date = iso
+
+[merge]
+	conflictstyle = zdiff3	; smarter diff3 https://ductile.systems/zdiff3/
+
+[pull]
+	rebase = false		; always decide how to handle merges
+
+[rebase]
+	autosquash = true	; useful with git commit --fixup OLD_COMMIT_ID
+
+; misc
+
+[color "status"]			# https://unix.stackexchange.com/a/44283
+	; header = blue
+	remoteBranch = blue
+
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+
+[delta]
+	; https://dandavison.github.io/delta/full---help-output.html
+	navigate = true    # use n and N to move between diff sections
+	side-by-side = true		# best in wide terminals
+	line-numbers-left-format = ""
+	line-numbers-right-format = "│ "
+
+	commit-decoration-style = bold yellow box ul
+	file-decoration-style = none
+	file-style = bold yellow ul
+	hunk-header-decoration-style = yellow box
+	true-color = always
+
+	; https://dandavison.github.io/delta/color-moved-support.html
+	map-styles = bold purple => syntax brown, bold cyan => syntax green

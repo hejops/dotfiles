@@ -1,0 +1,47 @@
+# this file doesn't support inline comments!
+# https://www.mankier.com/5/zathurarc
+# https://github.com/majutsushi/etc/blob/master/zathurarc
+# https://gist.github.com/michaelmrose/9595075b43f24aa903fa
+
+map j scroll down
+map k scroll up
+
+map J navigate next
+map K navigate previous
+map <C-J> zoom out
+map <C-K> zoom in
+# map f follow
+
+# yeah...
+unmap f
+map f toggle_fullscreen
+map [fullscreen] f toggle_fullscreen
+
+# epub font is set by mupdf; i actually don't know what serif font they use
+set font "source code pro 8"
+set window-title-basename "true"
+# strip path; only applies to window name, not status bar!
+set selection-clipboard "clipboard"
+set adjust-open "width"
+
+# dark mode by default
+set recolor true
+set recolor-darkcolor  "#ebdbb2"
+set recolor-lightcolor "#282828"
+# set recolor-darkcolor  "#ececec"
+# set recolor-lightcolor "#000000"
+set recolor-reverse-video "true"
+# true keeps images in original color
+set recolor-keephue "true"
+# idk what this does
+
+set completion-highlight-bg "#6B8E23"
+set completion-highlight-fg "#F0E68C"
+set highlight-active-color "#F0E68C"
+set highlight-color "#CD853F"
+set inputbar-bg "#458588"
+set inputbar-fg "#ebdbb2"
+set notification-bg "#333333"
+set notification-fg "#ebdbb2"
+set statusbar-bg "#131313"
+set statusbar-fg "#ebdbb2"

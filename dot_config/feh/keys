@@ -1,0 +1,49 @@
+# https://github.com/derf/feh/blob/master/examples/keys
+#
+# Comments start with a # sign, do not use them mid-line.
+# Each line must be blank, a comment, or a key definition.
+#
+# key definition: <action name> <key1> [<key2> [<key3>]]
+#
+# Each <key> is an X11 keysym (as output by xev) with optional modifier.
+# For instance, C-x would be Ctrl+X, or 4-space Mod4+Space
+
+# menu_parent h Left
+# menu_child  l Right
+# menu_down   j Down
+# menu_up     k Up
+# menu_select space Return
+
+# Same for image navigation ...
+next_img j Right space
+prev_img k Left BackSpace
+
+# and image movement
+scroll_down  C-k C-Down
+scroll_left  C-l C-Right
+scroll_right C-h C-Left
+scroll_up    C-j C-Up
+
+quit q C-c
+
+# File deletion
+remove   d
+delete   D
+
+# # remove now conflicts with toggle_filenames, so change that
+# toggle_filenames f
+
+# # zooming
+zoom_in  i
+zoom_out o
+# zoom_default d
+# zoom_fit s
+
+# Save the current image as "feh_PID_ID_FILENAME"
+save_image s S
+
+# unbind
+save_filelist
+
+# Toggle actions display (see --draw-actions)
+toggle_actions A

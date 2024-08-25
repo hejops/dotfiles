@@ -1,0 +1,39 @@
+# https://wiki.archlinux.org/index.php/Isync
+# http://pragmaticemacs.com/emacs/migrating-from-offlineimap-to-mbsync-for-mu4e/
+
+IMAPAccount gmail
+Host imap.gmail.com
+User hejops1@gmail.com
+# PassCmd "gpg2 -q --for-your-eyes-only --no-tty -d ~/.passwd/gmail.gpg"
+# gmail now requires 2-step verification (with phone number), too bad
+# https://myaccount.google.com/apppasswords
+PassCmd "cat ~/.passwd/gmail.txt"
+# PassCmd "gpg --quiet --for-your-eyes-only --no-tty --decrypt ~/.passwd/gmail.txt.gpg"
+# SSLType IMAPS  # deprecated
+TLSType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+#CertificateFile ~/.cert/imap.gmail.com.pem		# if ca-certificates doesn't work, try these
+#CertificateFile ~/.cert/Equifax_Secure_CA.pem
+
+IMAPStore gmail-remote
+Account gmail
+
+MaildirStore gmail-local
+SubFolders Verbatim
+# important: the trailing "/" must not be omitted -- else will not fetch properly
+Path ~/.mail/gmail/
+Inbox ~/.mail/gmail/Inbox
+
+Channel gmail
+Far :gmail-remote:
+Near :gmail-local:
+# Exclude everything under the internal [Gmail] folder, except the interesting folders
+Patterns * ![Gmail]* "[Gmail]/Sent Mail" "[Gmail]/Starred" "[Gmail]/All Mail"
+# NOTE: patterns are case-sensitive
+# as of 07.09.21, "All Mail" is correct
+# Patterns *
+# Automatically create missing mailboxes, both locally and on the server
+Create Both
+# Save the synchronization state files in the relevant directory
+SyncState *
+Expunge Far

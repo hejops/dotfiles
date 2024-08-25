@@ -1,0 +1,35 @@
+// vim:set ft=rasi
+// https://github.com/davatorium/rofi/blob/next/doc/rofi-theme.5.markdown
+// https://github.com/davatorium/rofi/blob/next/doc/rofi.1.markdown
+// https://github.com/davatorium/rofi/blob/next/doc/test_xr.txt
+// to override at runtime, use `-theme-str 'foo {...}'`
+configuration {
+
+	dpi: 1;
+	font: "haskplex 12"; // generally, should be kitty size +2
+
+	// terminal:	"urxvt";
+	matching:	"regex";	// fuzzy can be very slow https://github.com/davatorium/rofi/blob/next/doc/rofi.1.markdown#matching
+	modi:		"window,run";
+	scroll-method:	1;		// continuous
+	sorting-method:	"fzf";		// https://github.com/davatorium/rofi/blob/next/doc/rofi.1.markdown#history-and-sorting
+	window-format:	"{c} {t}";
+
+	// case insensitive config not available
+	// https://github.com/davatorium/rofi/issues/784
+
+	kb-accept-entry:	"Return,KP_Enter,Control+space,Control+d";
+	kb-cancel:		"Escape,Control+c";
+	kb-mode-next:		"Shift+Right,Control+Tab";
+	kb-mode-previous:	"Shift+Left,Control+ISO_Left_Tab,Control+h";
+	kb-remove-char-back:	"BackSpace";
+	kb-remove-char-forward:         "Delete";
+	kb-remove-to-eol:	"";
+	kb-row-down:		"Down,Control+j";
+	kb-row-select:		"";
+	kb-row-up:		"Up,Control+k";
+	me-accept-entry:	"MousePrimary";
+	me-select-entry:	"MouseSecondary";
+}
+
+@theme "Pop-Dark"

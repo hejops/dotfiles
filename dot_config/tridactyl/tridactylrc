@@ -1,0 +1,624 @@
+" vim: set filetype=tridactyl
+
+" on first install, do :installnative, :source
+" TODO: figure out why so slow to load (> 35 s)
+" https://github.com/tridactyl/tridactyl/issues/1292
+
+" 01 start
+" 04 tst
+" 13 binds !
+" 22 engine !
+" 24 alias
+" 27 ss binds
+" 29 urlmod
+" 30 quickm
+" 32 invid
+" 34 autocomd
+" 39 autocont !
+" 40 css,end
+
+"exclaim rm -f /tmp/tridactyl
+"exclaim echo $(date +%s) start | tee -a /tmp/tridactyl
+
+" tridactyl's PATH is declared by .xinitrc (i.e. same PATH as dwm)
+
+" documentation
+" https://github.com/tridactyl/tridactyl/blob/21b7546b/src/excmds.ts#L4431 -- hinting
+" https://github.com/tridactyl/tridactyl/blob/master/.tridactylrc -- default config file
+" https://github.com/tridactyl/tridactyl/blob/master/src/excmds.ts -- commands, e.g. urlmodify, hint, autocmd
+" https://github.com/tridactyl/tridactyl/blob/master/src/lib/config.ts -- configs, e.g. hintchars
+" https://github.com/tridactyl/tridactyl/blob/master/src/lib/editor.ts -- command line actions, e.g. forward_char
+" https://github.com/tridactyl/tridactyl/tree/master/src/static/themes -- default themes
+
+" examples
+" https://github.com/dhharris/dotfiles/blob/master/firefox/tridactylrc
+" https://github.com/glacambre/.dotfiles/blob/master/default/.config/tridactyl/tridactylrc
+" https://github.com/neg-serg/dotfiles/blob/master/misc/.config/tridactyl/tridactylrc
+" https://github.com/noctuid/dotfiles/blob/master/browsing/.config/tridactyl/tridactylrc
+" https://gitlab.com/Seirdy/dotfiles/blob/master/.config/tridactyl/tridactylrc
+
+sanitise tridactyllocal tridactylsync
+
+bindurl booking.com y composite js document.location.href.replace(/label=[^&]+&/,"").replace(/sid=[^&]+&/,"").replace(/aid=[^&]+&/,"").replace(/ac_meta=[^&]+&/,"") | clipboard yank
+
+" set newtabfocus page
+colourscheme base16-onedark
+set allowautofocus false
+set hintdelay 0
+set hintfiltermode vimperator-reflow
+set hintnames short
+set modeindicator false
+set newtab about:blank
+set tabsort mru
+set yankto both
+setpref browser.autofocus false
+
+" " <C-,> focuses page (e.g. when address bar), but also closes sidebar
+" " https://github.com/tridactyl/tridactyl/issues/377#issuecomment-832580820
+" set escapehatchsidebarhack false
+
+" command fixamo js tri.excmds.setpref("privacy.resistFingerprinting.block_mozAddonManager", "true").then(tri.excmds.setpref("extensions.webextensions.restrictedDomains", '""').then(tri.excmds.fillcmdline_tmp(3000, "Permissions added to user.js. Please restart Firefox to make them take affect.")))
+
+" treestyletab {{{
+
+" https://github.com/tridactyl/tridactyl/issues/377#issuecomment-895565496
+" https://github.com/isamert/dotfiles/blob/36771682e0e2c37454c703fa08de0df55e4094b6/index.org#treestyletabs-integration
+
+" https://github.com/tridactyl/tridactyl/issues/4897
+" we cannot control other sidebars, too bad
+
+" quite neat, though it doesn't un-collapse the tree
+command ttscrollup js browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", { type:   'scroll', window: 0,  delta:  -30 })
+
+" euro must be some js arg thing
+command ttcollapse js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'collapse-tree', tab: JS_ARGS[1]})€
+command ttcollapse_current_or_parent js browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'get-tree-structure', tab: 'current'}).then(struct => browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'collapse-tree', tab: struct[0].collapsed ? 'parent' : 'current'}))
+command ttcollapse_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'collapse-tree', tab: JS_ARGS[1], recursively: true})€
+command ttexpand js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'expand-tree', tab: JS_ARGS[1]})€
+command ttexpand_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'expand-tree', tab: JS_ARGS[1], recursively: true})€
+command ttfocus js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'focus', tab: JS_ARGS[1]})€
+command ttindent js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'indent', tab: JS_ARGS[1]})€
+command ttindent_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'indent', tab: JS_ARGS[1], followChildren: true})€
+command ttoutdent js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'outdent', tab: JS_ARGS[1]})€
+command ttoutdent_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'outdent', tab: JS_ARGS[1], followChildren: true})€
+
+" Collapse/expand current tree
+bind ZC ttcollapse_recursively root
+bind ZO ttexpand_recursively current
+bind Zc ttcollapse_current_or_parent
+bind Zo ttexpand current
+
+" Collapse/expand all
+bind Zm ttcollapse *
+bind Zr ttexpand *
+
+" Focus parent/root of a tree
+bind ZP ttfocus root
+bind Zp ttfocus parent
+
+" Focus next/previous, skipping over subtrees. May also try nextSiblingCyclic/prevSiblingCyclic:
+bind Zj ttfocus nextSibling
+bind Zk ttfocus prevSibling
+
+" " Indent/outindent current tab
+" bind << ttoutdent_recursively current
+" bind >> ttindent_recursively current
+
+" " https://github.com/noc7c9/dotfiles/blob/b743efd902180447d8a0ffc5a01dce0a2db66db3/firefox/.tridactylrc#L56
+" bind H jsb browser.runtime.sendMessage('treestyletab@piro.sakura.ne.jp', { type: 'collapse-tree', tab: 'current' })
+" bind L jsb browser.runtime.sendMessage('treestyletab@piro.sakura.ne.jp', { type: 'expand-tree', tab: 'current' })
+
+" }}}
+"exclaim echo $(date +%s) tst | tee -a /tmp/tridactyl
+"exclaim echo $(date +%s) | tee -a /tmp/tridactyl
+" global binds {{{
+
+" 9 s total
+
+" https://github.com/tridactyl/tridactyl/blob/master/src/lib/commandline_cmds.ts
+" https://github.com/tridactyl/tridactyl/blob/master/src/lib/editor.ts -- ex mode
+
+" https://github.com/tridactyl/tridactyl/issues/1428
+" https://github.com/glacambre/firefox-patches/issues/1#issuecomment-549145257
+" run these commands to allow some keybinds (e.g. <c-w>) to be overridden. these must be run after every FF update
+" sudo perl -i -pne 's/reserved="true"/               /g' /usr/lib/firefox/browser/omni.ja
+" find ~/.cache/mozilla/firefox -type d -name startupCache | xargs rm -rfv
+" TODO: pacman hook
+" for obvious reasons, these won't work in address/searchbar
+" not all unbinds work in all modes, e.g. <C-w> still closes the tab in normal mode
+
+" https://github.com/tridactyl/tridactyl/issues/3049#issuecomment-739333695
+" https://github.com/tridactyl/tridactyl/issues/350#issuecomment-496033993
+unbind --mode=ex <C-a>
+unbind --mode=ex <C-c>
+unbind --mode=normal <
+unbind --mode=normal <C-h>
+unbind --mode=normal <C-l>
+unbind .
+unbind <<
+unbind <C-f>
+unbind <C-w>
+unbind >>
+unbind A
+unbind ZZ
+unbind gd
+
+" bind <key> <action> is syntactic sugar for
+" set nmaps.<key> <action> and
+" jsb tri.config.set("<mode>", "<key>", "<action>")
+" all 3 are equally slow
+
+" until bind f: 3 s
+
+" https://github.com/glacambre/.dotfiles/blob/c7dc7029d508e5b10dc9a89c39c1c824809877a6/default/.config/tridactyl/tridactylrc#L1
+alias tabsortalpha jsb browser.tabs.query({}).then(tabs => tabs.sort((t1, t2) => t1.url.localeCompare(t2.url)).forEach((tab, index) => browser.tabs.move(tab.id, {index})))
+
+" bind ( jsb tri.excmds.tabprev() //
+" bind ) jsb tri.excmds.tabnext() //
+" bind ;c hint -c [class*="expand"],[class="togg"]
+" bind <Backspace> source
+" bind D composite tabclose | tab #
+" bind D hint -W download
+" bind E followpage next
+" bind F hint -y
+" bind T translate
+" bind W followpage prev
+" bind b tab
+" bind q reader
+" bind x jsb tri.excmds.tabclose() //
+" bind z. !s killall firefox
+" set nmaps.< followpage prev
+" set nmaps.<A-r> source
+" set nmaps.<C-,> tabmove -1
+" set nmaps.<C-S-u> viewsource
+" set nmaps.<F6> current_url tabopen
+" set nmaps.> followpage next
+" unbind a
+bind , jsb tri.excmds.tabnext() //
+bind / fillcmdline tab
+bind ;C composite hint_focus; !s xdotool key Menu
+bind <a-j> tabmove +1
+bind <a-k> tabmove -1
+bind <c-g> tab #
+bind <c-t> tab #
+bind B tab #
+bind J scrollpage 1
+bind K scrollpage -1
+bind P clipboard open
+bind T !s xdotool key alt+v e t t Return
+bind U urlparent
+bind Y hint -y
+bind ZZ !s killall firefox
+bind c jsb tri.excmds.tabprev() //
+bind d jsb tri.excmds.tabclose() //
+bind e current_url open
+bind gD composite tabduplicate | tabdetach
+bind gou composite exclaim_quiet ublock | open
+bind j scrollline 3
+bind k scrollline -3
+bind p clipboard tabopen
+bind q source
+bind s composite tabsortalpha ; tabsort --containers
+bind w fullscreen
+bind x jsb tri.excmds.tabnext() //
+bind y clipboard yank
+bind z jsb tri.excmds.tabprev() //
+bind { followpage prev
+bind } followpage next
+command hint_focus hint -;
+jsb tri.config.set("nmaps", "<C-,>", "tabmove -1")
+jsb tri.config.set("nmaps", "<C-.>", "tabmove +1")
+set nmaps.<C-u> urlroot
+
+bind f hint -c input:not([type=hidden]):not([disabled]), a, area, iframe, textarea, button, select, summary, [onclick], [onmouseover], [onmousedown], [onmouseup], [oncommand], [role='link'], [role='button'], [role='checkbox'], [role='combobox'], [role='listbox'], [role='listitem'], [role='menuitem'], [role='menuitemcheckbox'], [role='menuitemradio'], [role='option'], [role='radio'], [role='scrollbar'], [role='slider'], [role='spinbutton'], [role='tab'], [role='textbox'], [role='treeitem'], [class*='button'], [tabindex]
+
+" until bind a: 3 s
+
+" bind --mode=input <C-c> composite unfocus | mode normal
+" bind --mode=insert <C-c> composite unfocus | mode normal
+" bind --mode=normal <C-c> composite unfocus | mode normal
+bind --mode=ex <C-c> ex.hide_and_clear
+bind --mode=hint <C-c> hint.reset
+
+bind --mode=input <C-i> editor
+bind --mode=insert <C-i> editor
+
+" backward_kill_word has visual quirks in insert/input mode (word delete is not drawn until new text is added)
+bind --mode=ex <C-h> text.backward_word
+bind --mode=ex <C-l> text.forward_word
+bind --mode=ex <C-w> text.backward_kill_word
+bind --mode=input <C-h> text.backward_word
+bind --mode=input <C-l> text.forward_word
+bind --mode=input <C-w> text.backward_kill_word
+bind --mode=insert <C-h> text.backward_word
+bind --mode=insert <C-l> text.forward_word
+bind --mode=insert <C-w> text.backward_kill_word
+
+bind --mode=ex <C-b> text.beginning_of_line
+bind --mode=ex <C-e> text.end_of_line
+bind --mode=ex <C-u> text.backward_kill_line
+bind --mode=ex <C-x> text.kill_line
+bind --mode=input <C-b> text.beginning_of_line
+bind --mode=input <C-e> text.end_of_line
+bind --mode=input <C-u> text.backward_kill_line
+bind --mode=input <C-x> text.kill_line
+bind --mode=insert <C-b> text.beginning_of_line
+bind --mode=insert <C-e> text.end_of_line
+bind --mode=insert <C-u> text.backward_kill_line
+bind --mode=insert <C-x> text.kill_line
+
+" bind --mode=ex <C-e> ex.deselect_completion
+" bind --mode=ex <C-g> composite text.beginning_of_line ; text.forward_word ; text.kill_word
+" bind --mode=ex <C-y> ex.insert_completion
+bind --mode=ex <C-j> ex.next_completion
+bind --mode=ex <C-k> ex.prev_completion
+
+" until end: 2 s
+
+bind D composite get_current_url | download
+bind a composite get_current_url | addfeed
+bind m composite get_current_url | mpvyt
+bind n composite get_current_url | mpvweb
+
+" primary?
+bind gs clipboard tabopen search
+
+bind --mode=visual h js document.getSelection().modify("extend","backward","word")
+bind --mode=visual j js document.getSelection().modify("extend","forward","line")
+bind --mode=visual k js document.getSelection().modify("extend","backward","line")
+bind --mode=visual l js document.getSelection().modify("extend","forward","word")
+
+" bindurl boards.4channel.org/jp --mode=visual R composite js "j " + document.getSelection().toString() | tabopen
+" https://github.com/tridactyl/tridactyl/issues/2719#issuecomment-670849475
+" need both because visual mode is not always reliable
+bind --mode=visual S composite js document.getSelection().toString() | tabopen
+bind --mode=visual s composite js " " + document.getSelection().toString() | fillcmdline tabopen ; text.beginning_of_line ; text.forward_word ; text.forward_char
+" bind s composite js " " + document.getSelection().toString() | fillcmdline tabopen ; text.beginning_of_line ; text.forward_word ; text.forward_char
+
+" https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/excmds.ts#L323
+" set editorcmd to suckless terminal, or use the defaults on other platforms
+js tri.browserBg.runtime.getPlatformInfo().then(os=>{const editorcmd = os.os=="linux" ? "$TERMINAL vim" : "auto"; tri.config.set("editorcmd", editorcmd)})
+"alias editor_rm composite editor | jsb -p tri.native.run(`rm -f '${JS_ARG[0]}'`)
+
+jsb browser.webRequest.onHeadersReceived.addListener(tri.request.clobberCSP,{urls:["<all_urls>"],types:["main_frame"]},["blocking","responseHeaders"])
+
+" As above but execute it and open terminal in folder
+" bind ;g js let uri = document.location.href.replace(/https?:\/\//,"git@").replace("/",":").replace(/$/,".git"); tri.native.run("cd ~/projects; git clone " + uri + "; cd \"$(basename \"" + uri + "\" .git)\"; st")
+
+" }}}
+"exclaim echo $(date +%s) binds | tee -a /tmp/tridactyl
+" search engines {{{
+" suggestions don't work yet: https://github.com/tridactyl/tridactyl/issues/140#issuecomment-469264339
+
+" moved to ~/.config/search_engines due to large speed hit
+
+set searchengine dd
+set searchurls.dd	https://duckduckgo.com/?ia=web&q=
+
+" }}}
+"exclaim echo $(date +%s) engine | tee -a /tmp/tridactyl
+" aliases, external commands {{{
+
+" https://github.com/glacambre/.dotfiles/blob/master/default/.config/tridactyl/tridactylrc
+alias bandcampclose js if (parseInt(document.querySelectorAll("li.genre-wrapper")[0].innerText.match(/([0-9]*) items? in common/)[1]) < 15) { tri.webext.ownTabId().then(id => browserBg.tabs.remove(id)) }
+alias bandcampcloseall jsb tri.messaging.messageAllTabs("excmd_content", "composite", ["bandcampclose"])
+alias gitclone jsb -p tri.native.run("git clone --depth=1 '" + JS_ARG + "' /tmp/" + JS_ARG.split("/").slice(-1))
+alias playAllVideos js tri.native.run("mpv --really-quiet --ontop --keepaspect-window --profile=protocol.http " + Array.from(document.querySelectorAll("a, iframe, video")).reduce((s, e) => {let r=(/^https?:\/\/((www.)?youtu((\.be\/)|(be\.com\/((embed\/)|(watch\?v=))))[^ ]+)|(.+\.webm)$/);let l="";if(e.tagName=="IFRAME")l=e.src.match(r);else if(e.tagName=="A")l=e.href.match(r)||e.innerText.match(r);else if(e.tagName=="VIDEO")l=[e.currentSrc?e.currentSrc:e.src];console.log(l);return s+(l && l.length > 0 && s.indexOf(l[0])<0?"'"+l[0]+"' ":"")},""))
+alias slideshow js tri.excmds.tabqueue(Array.from(new Set(Array.from(document.querySelectorAll("a")).map(e=>e.href).filter(h=>/\.(jpe?g)|(png)|(webp)$/i.test(h)))))
+
+alias print js window.print()
+
+alias archive js tri.excmds.open("https://web.archive.org/save/" + window.location.href)
+
+" view wayback machine archive for current url
+alias view-archive js tri.excmds.open("https://web.archive.org/*/" + window.location.href)
+alias va view-archive
+
+" IMPORTANT: any external command called from native_main must be closed properly;
+" don't expect tridactyl to clean up for you!
+
+" tridactyl now has its own reader mode. visually, it is only slightly inferior
+" to the native one, but the ability to scroll with j/k trumps that
+" https://github.com/tridactyl/tridactyl/blob/dd535a4e32813dc92689b37ba7c272a0c58a6311/CHANGELOG.md?plain=1#L7
+
+" .local/bin is supported
+" TODO: use a function that can collapse all this nonsense
+command addfeed js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('addfeed ' + url))
+command chrome js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('chromium ' + url))
+command download js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('$TERMINAL dl ' + url))
+command mpvweb js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('$TERMINAL mpvweb ' + url))
+command mpvyt js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('mpvyt ' + url))
+command mpvytfast js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('mpvyt -f ' + url))
+command wikibib js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('$TERMINAL streamlit run ~/scripts/wiki_bib.py ' + url))
+command ytquality js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('ytquality ' + url))
+
+" Inject Google Translate
+" This (clearly) is remotely hosted code. Google will be sent the whole
+" contents of the page you are on if you run `:translate`
+" From https://github.com/jeremiahlee/page-translator
+command translate js let googleTranslateCallback = document.createElement('script'); googleTranslateCallback.innerHTML = "function googleTranslateElementInit(){ new google.translate.TranslateElement(); }"; document.body.insertBefore(googleTranslateCallback, document.body.firstChild); let googleTranslateScript = document.createElement('script'); googleTranslateScript.charset="UTF-8"; googleTranslateScript.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit&tl=&sl=&hl="; document.body.insertBefore(googleTranslateScript, document.body.firstChild);
+
+" https://github.com/ipod825/dotfiles/blob/13b81080cbbd2bfffc3a2b7385d6b03f2453df2a/config/tridactyl/tridactylrc#L19
+command tabuniq jsb browser.tabs.query({}).then(tabs => browser.tabs.remove(tabs.filter((tab, index) => tabs.slice(index + 1).find(t => t.url == tab.url)).map(tab => tab.id)))
+command tabcloseallbykeyword jsb -p browser.tabs.query({}).then(tabs => tabs.forEach( t => { if(t.url.includes(JS_ARG)) browser.tabs.remove(t.id) }))
+
+" }}}
+"exclaim echo $(date +%s) alias | tee -a /tmp/tridactyl
+" site-specific binds {{{
+
+" imslp
+" https://imslp.org/index.php?title=Category:Schoenberg%2C_Arnold + &intersect=For_piano&transclude=Template:Catintro
+
+" https://github.com/tridactyl/tridactyl/blob/4cfb4b613b3fc02200289471692a93f9bba20005/src/excmds.ts#L4275
+" https://github.com/tridactyl/tridactyl/blob/85ebbd871fe9553c32a2a172d5a2c6a3a26b46e1/doc/hinting.md
+" https://github.com/tridactyl/tridactyl/blob/85ebbd871fe9553c32a2a172d5a2c6a3a26b46e1/doc/newsletters/tips-and-tricks/1-hint-css-selectors.md
+
+" TODO: bandcamp f triggers download, but also the normal behaviour; this is very annoying
+" TODO: sometimes, when yt music switches to a small window, play-pause-button disappears, even when size is restored
+" bindurl 4chan(nel)?.org/\w+/thread f composite hint -Jcpipe .youtube.linkify href | mpvyt
+bindurl 1fichier.com f hint -Jc .btn-orange.btn-general.ok
+bindurl 1lib.eu f hint -Jc .addDownloadedBook.dlButton.btn-primary.btn
+bindurl bandcamp.com/download f hint -c [href^="https://p4.bcbits.com/download"] -F i => tri.excmds.shellescape(i).then(url => tri.excmds.exclaim_quiet('$TERMINAL dl ' + url))
+bindurl duckduckgo.com f hint .EKtkFWMYpwzMKOYr0GYm, .Bl3t3iYRHX9BeMH_V52u.JhFQAeU7IMxZaS7jCOQm
+bindurl github Y composite js "git clone " + document.location.href.replace(/https?:\/\//,"git@").replace("/",":").replace(/$/,".git") | clipboard yank
+bindurl github.+ov-file y composite js document.location.href.replace("?tab=readme-ov-file","") | clipboard yank
+bindurl github.com/.*/blob/ f hint -c .blob-num,a
+bindurl letterboxd.com f hint -c a.tooltip.text-slug, .prettify, .all-link, .has-menu.frame, .js-reveal.reveal, .next, .add-this-film, .rateit-range
+bindurl libgen.is f hint -Jc [href^="http://library.lol"]
+bindurl movieparadise.org f hint -Jc [href^="https://1fichier.com"], .wpf-field-wrap > input
+bindurl music.youtube.com <space> hint -Jc #play-pause-button
+bindurl music.youtube.com f hint -Jc a.yt-formatted-string.style-scope.yt-simple-endpoint, .ytmusic-menu-renderer.style-scope.watch-button
+bindurl music.youtube.com h hint -Jc .ytmusic-player-bar.style-scope.previous-button
+bindurl music.youtube.com l hint -Jc .ytmusic-player-bar.style-scope.next-button
+bindurl music.youtube.com p hint -Jc #play-pause-button
+bindurl music.youtube.com w hint -Jc .ytmusic-player-bar.style-scope.middle-controls
+bindurl news.ycombinator.com f hint .clicky.togg
+bindurl rateyourmusic.com f hint -Jc a.artist, .album, .searchpage, .label, .btn_xsmall.btn, [href^="/release/mixtape/"], [href^="/release/album/"], [href^="/release/ep/"], #musicrecent > .mbgen > tbody > tr > td > .medium
+bindurl reddit.com f hint .expand
+bindurl rutracker.org/forum/login.php f hint -Jc .long.bold
+bindurl rutracker.org/forum/tracker.php f hint -Jc .bold.hl-tags.ts-text.tLink.med
+bindurl rutracker.org/forum/viewtopic.php f hint .magnet-link.med
+bindurl sci-hub f composite hint -Jcpipe li>[href] href | download
+
+" TODO: discogs.com/artist -> credits -> mpvweb
+" https://github.com/tridactyl/tridactyl/issues/3259#issuecomment-765682631
+" note: stderr is always captured
+bindurl 4chan(nel)?.org/\w+/thread gu urlparent 2
+bindurl reddit.com gu urlparent 3
+" bindurl wikiwand.com y composite js document.location.href.replace("www.wikiwand.com/en","en.wikipedia.org/wiki") | clipboard yank
+
+" >we don't have any concept of the tab a command was executed in; commands work out what the active tab is for themselves
+" TODO: separate binding
+" bind <A-j> composite get_current_url | shellescape | exclaim_quiet rikai | open
+" bindurl boards.4chan(nel)?.org/\w+?/thread f composite hint -Jcpipe .fileThumb href | download
+" bindurl wikiwand.com v composite get_current_url | shellescape | wikibib
+" don't tabclose for processes that are not immediate!
+" how to noop?
+" https://github.com/tridactyl/tridactyl/issues/2055#issuecomment-568247683
+" spaces are not allowed in pipe construction
+bindurl 1fichier.com A composite get_current_url | js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('echo ' + url + ' >> $HOME/to_watch'))
+bindurl boards.4chan.org/wg/thread R composite get_current_url | shellescape | wallchan
+bindurl discogs.com/(artist|label) i composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
+bindurl discogs.com/(release|master) i composite get_current_url | shellescape | exclaim_quiet discogs_release | open
+bindurl discogs.com/release R composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
+bindurl leetcode i composite get_current_url | shellescape | exclaim_quiet chromium --incognito
+bindurl library.lol a composite get_current_url | js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('echo ' + url + ' >> $HOME/to_dl'))
+bindurl localhost:85 i composite get_current_url | shellescape | exclaim_quiet chromium --incognito
+
+" default binding is ;M
+bindurl \.(webp|jpe?g|png) i composite hint -pipe img src | jsb -p tri.excmds.tabopen('images.google.com/searchbyimage?image_url=' + JS_ARG)
+
+" }}}
+"exclaim echo $(date +%s) ss binds | tee -a /tmp/tridactyl
+" urlmodify {{{
+
+" bind L composite urlmodify_js -t https https://sci-hub.se/https | open
+set nmaps.<A-l> composite urlmodify_js -t https https://sci-hub.se/https | open
+
+" bind WB urlmodify -t https https://web.archive.org/web/20230000000000*/https | open
+" for -g, terminal "/" counts, i.e. number must be 1 more negative
+" forks by stars: https://github.com/vysheng/tg -> https://gitpop2.herokuapp.com/vysheng/tg
+" https://github.com/tridactyl/tridactyl/issues/2184#issuecomment-591952920
+bindurl biblegateway.+KJV r urlmodify -s version LUTH1545
+bindurl biblegateway.+LUTH1545 r urlmodify -s version NIV
+bindurl biblegateway.+NIV r urlmodify -s version KJV
+bindurl duckduckgo.com R urlmodify -t duckduckgo.com/ google.com/search
+bindurl imdb.com/title R urlmodify -t imdb.com/title/tt opensubtitles.org/en/search/sublanguageid-all/imdbid-
+bindurl letterboxd.com/(director|studio)/.+release-earliest R urlmodify -t release-earliest your-rating
+bindurl letterboxd.com/(director|studio)/.+your-rating R urlmodify -t your-rating release-earliest
+bindurl letterboxd.com/(director|studio)/[^/]+?/?$ R urlmodify -g -2 by/release-earliest/
+bindurl letterboxd.com/[^/]+/?$ R urlmodify -g -2 films/rated/5/by/release-earliest/
+bindurl music.youtube.com/.*list= gu urlmodify -Q list
+bindurl vid.puffyan.us M urlmodify -t vid.puffyan.us music.youtube.com
+bindurl vid.puffyan.us R urlmodify -t vid.puffyan.us music.youtube.com
+
+" }}}
+"exclaim echo $(date +%s) urlmod | tee -a /tmp/tridactyl
+" quickmarks {{{
+
+" https://github.com/tridactyl/tridactyl/blob/5db0337349e57cafce041c3d7ab1d33fdac0b713/readme.md#bookmarks-and-quickmarks
+" https://github.com/tridactyl/tridactyl/blob/9d6fb1a0aeba7dd256422e73baf66d0dff1775bf/.tridactylrc#L138
+" only one key allowed, so use these wisely!
+" open in new tab: gn<mark>
+
+" quickmark a	https://www.aufladen.de/de/checkout/add-product/eplus-de-direct-15
+" quickmark t	https://github.com/tridactyl/tridactyl/issues?utf8=%E2%9C%93&q=sort%3Aupdated-desc+
+quickmark d	https://www.discogs.com/user/hejops/collection
+quickmark l	http://www.last.fm/user/hejops
+quickmark m	https://monkeytype.com/
+quickmark s	http://en.instr.scorser.com/SC/Piano/All/Popularity.html
+quickmark w	https://web.whatsapp.com
+
+" }}}
+"exclaim echo $(date +%s) quickm | tee -a /tmp/tridactyl
+" invidious {{{
+
+" TODO: include playlist (regex?)
+" bindurl odysee.com f composite hint -Jcpipe .claim-preview href | mpvyt
+" bindurl vid.puffyan.us f composite hint -Jcpipe .h-box>[href^="/watch"] href | mpvyt
+autocmd DocStart github.+readme-ov-file js tri.excmds.urlmodify("-Q", "tab")
+autocmd DocStart rust-lang.github.io/.+%E2%94%82 js tri.excmds.urlmodify("-t","%E2%94%82","")
+autocmd DocStart www.youtube.com js tri.excmds.urlmodify("-t","www.youtube.com","vid.puffyan.us")
+autocmd DocStart www.youtube.com/feeds/videos.xml js tri.excmds.urlmodify("-t","feeds/videos.xml?channel_id=","channel/")
+bindurl music.youtube.com y composite js document.location.href.replace("music.","") | clipboard yank
+bindurl vid.puffyan.us A js tri.native.run('echo ' + document.location.href + ' >> $HOME/to_watch')
+bindurl vid.puffyan.us f composite hint -Jcpipe .thumbnail>[href^="/watch"] href | mpvyt
+bindurl vid.puffyan.us i composite get_current_url | mpvyt
+bindurl vid.puffyan.us y composite js document.location.href.replace("vid.puffyan.us","www.youtube.com") | clipboard yank
+bindurl vid.puffyan.us/watch M composite get_current_url | mpvytfast
+bindurl vid.puffyan.us/watch Q composite get_current_url | ytquality
+bindurl vimeo|dailymotion f composite get_current_url | mpvyt
+set searchurls.y	https://vid.puffyan.us/search?q=
+
+" autocmd BeforeRedirect www.youtube.com js tri.excmds.urlmodify("-t", "www.youtube.com", "vid.puffyan.us")
+" https://github.com/tridactyl/tridactyl/issues/2047
+" https://github.com/tridactyl/tridactyl/issues/2469#issuecomment-644795832
+
+" }}}
+"exclaim echo $(date +%s) invid | tee -a /tmp/tridactyl
+" autocommands {{{
+" https://github.com/tridactyl/tridactyl/blob/412eb7f83bc8a833a1b5141e6c3509a1deb17bfd/src/excmds.ts#L3611
+" https://github.com/tridactyl/tridactyl/blob/79019b65fdb48f8997a019f3b05ce7caffc9c24c/src/excmds.ts#L2082
+
+" autocmd DocStart amazon.de/-/en/gp/product/.+= js tri.excmds.urlmodify("-g", "6", "")
+" autocmd DocStart www.reddit.com js tri.excmds.urlmodify("-t", "www.reddit.com", "teddit.hostux.net")
+" autocmd DocStart www.reddit.com js tri.excmds.urlmodify("-t", "www.reddit.com", "teddit.net")
+autocmd DocStart fandom.com js tri.excmds.urlmodify("-t", "fandom.com", "bw.artemislena.eu")
+autocmd DocStart medium.com js tri.excmds.urlmodify("-t", "medium.com", "scribe.rip")
+" autocmd DocStart wikipedia js tri.excmds.urlmodify("-t", "en.wikipedia.org/wiki", "www.wikiwand.com/en")
+autocmd DocStart www.imdb.com js tri.excmds.urlmodify("-t", "www.imdb.com", "libremdb.iket.me")
+autocmd DocStart www.reddit.com js tri.excmds.urlmodify("-t", "imgur.com", "rimgo.bcow.xyz")
+autocmd DocStart www.reddit.com js tri.excmds.urlmodify("-t", "www.reddit.com", "old.reddit.com")
+
+autocmd DocEnd zoom.us/j/\d+#success tabclose
+autocmd DocStart \w{2}.m.wikipedia.org js tri.excmds.urlmodify("-t", ".m.", ".")
+autocmd DocStart bandcamp.com/?$ js tri.excmds.urlmodify("-g", "-1", "music")
+autocmd DocStart google.com/sorry composite get_current_url | shellescape | exclaim_quiet gredir | open
+autocmd DocStart letterboxd.com/film/[\w\d-:]+?/reviews/by/added/$ js tri.excmds.urlmodify("-g", "-3", "entry-rating")
+autocmd DocStart letterboxd.com/hejops/friends/film/[\w-]+?/$ js tri.excmds.urlmodify("-g", "-2", "by/member-rating")
+autocmd DocStart nitroflare.com/view/\w {15}/.+?\.\w {3}$ js tri.excmds.urlmodify("-g", "-1", "free")
+autocmd DocStart youtube.com/embed js tri.excmds.urlmodify("-t", "/embed/", "/watch?v=")
+
+" }}}
+"exclaim echo $(date +%s) autocomd | tee -a /tmp/tridactyl
+" autocontainers {{{
+
+" edit colors in containers.json
+" TODO: container order?
+" firefox addon not necessary
+" https://github.com/tridactyl/tridactyl/blob/master/src/lib/autocontainers.ts
+" note: has to be placed towards the end? otherwise doesn't take effect
+" note: subdomains don't work
+
+set auconcreatecontainer true
+set autocontainmode strict
+
+autocontain -s bandcamp.com music
+autocontain -s consent.youtube.com music
+autocontain -s discogs.com music
+autocontain -s last.fm music
+autocontain -s metal-archives.com music
+autocontain -s music.youtube.com music
+autocontain -s pianolibrary.org music
+
+autocontain -s archlinux.org tech
+autocontain -s crates.io tech
+autocontain -s digitalocean.com tech
+autocontain -s docs.rs tech
+autocontain -s github.com tech
+autocontain -s githubusercontent.com tech
+autocontain -s gitlab.com tech
+autocontain -s pypi.org tech
+autocontain -s python.org tech
+autocontain -s rust-lang.org tech
+autocontain -s stackexchange.com tech
+autocontain -s stackoverflow.com tech
+
+autocontain -s concerti.de event
+autocontain -s dailymotion.com video
+autocontain -s hoertnagel.de event
+autocontain -s karagarga.in tv
+autocontain -s letterboxd.com tv
+autocontain -s nyaa.si tv
+autocontain -s reservix.de event
+autocontain -s songkick.com event
+autocontain -s vid.puffyan.us video
+autocontain -s vimeo.com video
+
+" containerupdate name newname color icon
+" https://github.com/tridactyl/tridactyl/blob/6957bfd26e24f88d056ee815efcb57c9e4e5172c/src/excmds.ts#L3028
+
+" }}}
+"exclaim echo $(date +%s) autocont | tee -a /tmp/tridactyl
+" css {{{
+" https://utcc.utoronto.ca/~cks/space/blog/web/FirefoxReadablePraise
+" https://www.arp242.net/bookmarklets.html#readable
+
+" my preference is generally: darklarge > ff reader > dark > tri reader. tri
+" reader doesn't adjust font size, and i don't like how it makes the scrollbar
+" disappear. darklarge is extremely good on large screens
+
+" notable domains where js styling won't work: google, hackernews, bandcamp
+
+" wherever dark works, darklarge should too, the only notable exception being
+" discogs
+
+" elements (?) in ublock have '##' prefix (no '.')
+command dark open javascript:(function() { document.querySelectorAll('p, li, div, tr').forEach(function(n) { n.style.background = '#282828'; n.style.color = '#ebdbb2'; }); })();
+command darklarge open javascript:(function() { document.querySelectorAll('p, li, div').forEach(function(n) { n.style.background = '#282828'; n.style.color = '#ebdbb2'; n.style.font = '500 24px/1.7em serif'; }); })();
+
+command nonav open javascript:(function() { document.querySelectorAll('*').forEach(function(n) { var p = getComputedStyle(n).getPropertyValue('position'); if (p === 'fixed' || p === 'sticky') { n.style.cssText += ' ; position: absolute !important;'; } }); })();
+
+" bind E darklarge
+" bind \ darklarge
+bind I reader
+bind R reader
+bind i darklarge
+
+" DocLoad is more reliable (than DocStart) for pages that are slow to load
+" autocmd DocLoad bandcamp.com dark
+" autocmd DocLoad rust-lang.org/stable/book darklarge
+" autocmd DocStart google.com/search dark
+autocmd DocLoad 4chan.org darklarge
+autocmd DocLoad \.amazon\. dark
+autocmd DocLoad biblegateway.com darklarge
+autocmd DocLoad book.leptos.dev darklarge
+autocmd DocLoad discogs.com dark
+autocmd DocLoad djangoproject.com darklarge
+autocmd DocLoad docs.python.org darklarge
+autocmd DocLoad docs.rs darklarge
+autocmd DocLoad duckdb.org darklarge
+autocmd DocLoad georust.org darklarge
+autocmd DocLoad htmx.org darklarge
+autocmd DocLoad internetingishard.netlify.app darklarge
+autocmd DocLoad joyofelixir.com darklarge
+autocmd DocLoad last.fm dark
+autocmd DocLoad learn-haskell.blog darklarge
+autocmd DocLoad letterboxd.com/.+/reviews/ darklarge
+autocmd DocLoad libgen.is dark
+autocmd DocLoad magnetdl.com dark
+autocmd DocLoad musicbrainz.org darklarge
+autocmd DocLoad ocado.com dark
+autocmd DocLoad reddit.com darklarge
+autocmd DocLoad rikai.com dark
+autocmd DocLoad ruby-doc.org darklarge
+autocmd DocLoad ruby-lang.org darklarge
+autocmd DocLoad rubydoc.info darklarge
+autocmd DocLoad serde.rs dark
+autocmd DocLoad skyscanner.net dark
+autocmd DocLoad sorbet.org/docs darklarge
+autocmd DocLoad stackexchange.com dark
+autocmd DocLoad stackoverflow.com dark
+autocmd DocLoad tour.gleam.run darklarge
+autocmd DocLoad transistor.fm dark
+autocmd DocLoad zig.guide dark
+
+" https://github.com/tridactyl/tridactyl/pulls?q=is%3Apr+is%3Aopen+-author%3Aapp%2Fdependabot+
+
+" }}}
+
+" these should be placed later in the config, not earlier
+seturl localhost:[^3] superignore true
+seturl monkeytype.com superignore true
+
+"exclaim echo $(date +%s) css,end | tee -a /tmp/tridactyl

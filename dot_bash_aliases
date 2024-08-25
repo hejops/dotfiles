@@ -1,0 +1,1272 @@
+# vim: set filetype=sh -- .bash_aliases is known, this isn't
+# if possible, this file should remain under 1000 LOC.
+
+# autostart {{{
+
+open_file() {
+	f=$1
+	if
+		[[ -f $f ]] && [[ -s $f ]] &&
+			# file not opened
+			[[ ! -f "$HOME/.vim/swap/${f//\//%}.swp" ]]
+	# && [[ $(cat "$f") != Timeout ]]
+	then
+		# note: nvim generally always spawns with --embed
+		# https://neovim.io/doc/user/starting.html#--embed
+		exec nvim + "$f"
+	fi
+}
+open_file /tmp/hr-loona
+
+if
+	[[ -f /tmp/verse.json ]] && [[ -s /tmp/verse.json ]]
+then
+	{
+		jq -r '.votd | .reference, .content' < /tmp/verse.json |
+			sed -e 's/<[^>]*>//g' |
+			fold -w 65 -s
+		# echo
+	} >&2
+fi
+
+# }}}
+# aliases {{{
+
+# alias ws=wallset
+alias dr=discogs_rate
+alias ex=extract
+alias gm=getmail
+alias lc=leetcode.py # shadows lc binary (who?)
+alias mb=musicbrainz
+alias met=metronome
+alias ns=notify-send
+alias trk=trackratings.py
+alias tt=taptempo
+alias xo=xdg-open
+
+# alias rae="exec ranger "$HDD/emu""
+# alias ram="exec ranger --cmd="sort size" "$HDD/movies""
+alias rab="exec ranger \"\$HDD/books\""
+alias rad="exec ranger \"\$SLSK/complete\""
+alias rat="exec ranger \"\$HDD/torrent\" \"\$HDD/movies\""
+
+# alias drag="dragon-drop --all --and-exit"
+# alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
+alias au="audacious -H"
+alias bh="vb -b"
+alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit"
+alias ci="chromium --incognito"
+alias con="convert_files && fix_genres --auto && fix_tags -a && fix_tags && fix_genres && move_files" # && notify-send ok"
+alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
+alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)"
+alias da="dc artist:"
+alias dc="discogs_collection filter"
+alias dt="discogs_collection top" # | less"
+alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
+alias ht="htop -u \$USER"
+alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
+alias synctime="sudo ntpd --quit --panicgate"
+alias tf="waitdie con; fix_tags"
+
+# }}}
+
+# git {{{
+
+gls() {
+	if [[ $# -gt 0 ]]; then
+		git ls-files | grep "$1"
+	else
+		git ls-files
+	fi
+}
+
+gb() {
+	default_local_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4)
+	[[ -z $default_local_branch ]] && return
+	current_local_branch=$(git branch --show-current)
+
+	if [[ $# -eq 0 ]]; then
+		if [[ $default_local_branch == "$current_local_branch" ]]; then
+			echo "Already on $default_local_branch"
+			# git branch | fzf -1 | awkxargs git switch
+		else
+			git checkout "$default_local_branch"
+			git pull
+		fi
+	else
+		git switch -c "$1" 2> /dev/null ||
+			git switch "$1"
+	fi
+
+}
+
+_() {
+
+	# https://nitaym.github.io/ourstheirs/
+
+	# # merge: attempt to apply (bring in) changes from feature, then master
+	# git checkout master
+	# git merge $feature_branch
+	# git checkout --ours $conflict_file   # to select the changes done in master
+	# git checkout --theirs $conflict_file # to select the changes done in $feature_branch
+	# git add $conflict_file
+	# git merge --continue
+
+	# # rebase: attempt to apply changes from master, then from feature
+	# git checkout $feature_branch
+	# git rebase master
+	# git checkout --ours $conflict_file   # to select the changes done in master
+	# git checkout --theirs $conflict_file # to select the changes done in $feature_branch
+	# git add $conflict_file
+	# git rebase --continue
+
+	:
+}
+
+gld() { # browse git log, showing each commit's diff in fzf preview
+	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
+	{
+		if [[ $# -eq 0 ]]; then
+			git log --oneline
+		else
+			git log --oneline "$1"
+		fi
+	} | fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+}
+
+gac() { # append changes to most recent (unpushed) commit
+	git add "$@"
+	git commit --amend --no-edit
+}
+
+# delete and ignore file, without untracking. warning: the only way to recover
+# is to re-download from repo!
+# https://stackoverflow.com/a/45149731
+# git update-index --assume-unchanged <file>
+
+gL() { # show commits (hash+msg) made in the last week
+	# TODO: allow file/dir $1
+	d=$(date --date="1 week ago")
+	git logline --since="$d" --no-merges | tac
+	# gl --since="$d" --no-merges | tac
+}
+
+gcf() {
+	# https://stackoverflow.com/a/44750379
+	# https://jordanelver.co.uk/blog/2020/06/04/fixing-commits-with-git-commit-fixup-and-git-rebase-autosquash/
+	default_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's|^refs/remotes/origin/||')
+	sha=$(git log --oneline | fzf | cut -d' ' -f1)
+	git commit --fixup "$sha"
+	git rebase -i --autosquash "$default_branch"
+}
+
+gA() { # un-add, unstage
+	git restore --staged "$@" \
+		2> /dev/null || # committed; without --staged, changes are discarded!
+		git reset "$@"  # not committed yet
+}
+
+gc() {
+
+	pcrc
+
+	if [[ $# -gt 0 ]]; then
+
+		# use glob to automatically exclude untracked files
+		arr=()
+		for f in "$@"; do
+			[[ ! -f $f ]] && continue
+			git ls-files | grep -q "$(basename "$f")" && arr+=("$f")
+		done
+
+		git commit -v "${arr[@]}"
+
+		# return
+
+	elif
+		staged=$(git diff --name-only --cached --diff-filter=AMD) &&
+			[[ -n $staged ]]
+	then
+		# commit all staged changes
+		git commit -v
+	else
+		# commit all files that have changed
+		git diff --name-only | xargs git commit -v
+
+	fi
+
+}
+
+gs() {
+	# 1. changed files (twice: porcelain, then diff stat)
+	# 2. untracked files
+	# 3. current number of staged commits
+
+	#  M discogs.go
+	#  M discogs_test.go
+	#  M main.go
+	#
+	#  discogs.go      |  2 +-
+	#  main.go         |  2 +-
+	#  discogs_test.go |  6 +++---
+	#
+	# util_test.go
+	#
+	# No commits staged.
+
+	if
+		# new repo
+		git status | grep -q 'No commits yet'
+	then
+		git status
+		return
+	fi
+
+	{ git status --porcelain | grep -Fv '??'; } 2> /dev/null || return
+	echo
+
+	# note: colors are lost when piping, but sort is more useful than color
+	git diff --stat ./ | # generally, i only want to see the diff stat for current dir
+		grep -F '|' |       # ignore summary line
+		sort -n -k3         # most changes last (more useful in short terminals)
+	echo
+
+	untracked=$(git ls-files --others --exclude-standard)
+	if [[ -n $untracked ]]; then
+		echo "$untracked"
+		echo
+	fi
+
+	git status | grep -P '\d+ commits?' || echo 'No commits staged.'
+}
+
+gp() { # push current branch
+
+	if ! git config --get remote.origin.url > /dev/null; then
+		echo 'no remote; try gnew'
+		return
+	fi
+
+	# shellcheck disable=SC2164
+	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1"
+
+	gpl
+
+	# Set up <branchname>'s tracking information so <upstream> is
+	# considered <branchname>'s upstream branch. If no <branchname> is
+	# specified, then it defaults to the current branch.
+	# git branch --set-upstream-to
+
+	git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"
+
+	[[ $# -eq 1 ]] && { popd || :; }
+
+}
+
+gpl() { # pull
+
+	# [[ $# -eq 1 ]] && cd "$1"
+
+	# TODO: pull/update?
+	# https://devconnected.com/how-to-add-and-update-git-submodules/#Pull_a_Git_Submodule
+	# git submodule update --init --recursive
+	# git submodule update --remote --merge
+
+	if git branch -r | grep -q 'upstream/'; then
+		# pull from upstream
+		# git remote add upstream "$UP"
+		echo "Pulling from upstream"
+		git fetch upstream
+		git rebase upstream/main # or whatever
+		# merge as usual...
+	else
+
+		# git pull
+
+		git fetch
+
+		# set -x
+		if
+			# this is the closest builtin that comes close
+			# git diff --name-status master origin/master
+			pullresult=$(git merge 2>&1) # fail = exit 2
+			[[ $? -eq 2 ]] &&
+				conflicts=$(sed <<< "$pullresult" -rn 's|^\s+||p') &&
+				[[ -n $conflicts ]]
+		then
+			while read -r -u9 conflict; do
+				notify-send "Conflict" "$conflict"
+				git commit -v "$conflict"
+			done 9<<< "$conflicts"
+			git pull
+		else
+			echo "$pullresult"
+		fi
+		# set +x
+
+	fi
+
+	# git submodule foreach git pull origin master
+	# assumes all submodules at repo root
+	for sub in $(git submodule | cut -d' ' -f2-); do
+		cd "$sub" || continue
+		echo -e "\nUpdating submodule: $sub"
+		gpl
+		cd ..
+	done
+
+}
+
+gh() { # open remote url
+
+	if ! repo=$(git config --get remote.origin.url); then
+		echo "Current repo has no remote"
+		return
+	fi
+	repo=${repo%*.git}
+
+	if [[ -f $1 ]] && git ls-files --error-unmatch "$1" &> /dev/null; then
+		# TODO: path must be relativised to repo root
+		# i.e. realpath - repo_root
+
+		# view file at its most recent commit
+		hash=$(git log -n 1 --pretty=format:%h -- "$1")
+		URL="$repo/blob/$hash/$1"
+
+	elif [[ -n $1 ]]; then # view repo at specific commit
+		# TODO: git log oneline -> fzf
+		h=$(git rev-parse --short --verify HEAD)
+		URL="$repo/commit/$h"
+
+		# URL="$repo/tree/$1"
+
+	else
+		URL="$repo"
+	fi
+
+	# URL=$(sed -r 's/[^/]+@//' <<< "$URL")
+
+	[[ $URL != http* ]] && URL=$(tr <<< "$URL" : / | sed -r 's|git@|https://|')
+
+	echo "$URL"
+	# if [[ -n $DISPLAY ]]; then
+	xdg-open "$URL"
+	# fi
+}
+
+gnew() { # push to newly created remote
+
+	# TODO: when starting a new work repo (local or remote), do:
+	# git config --local user.name ...
+	# git config --local user.email ...
+
+	if [[ -f files_to_add ]]; then
+		if [[ -d .git ]] && [[ -d .git_old ]]; then
+			echo 'new and old git histories found, remove new one first: rm -rf ./.git'
+			return
+		fi
+		mv .git .git_old
+	fi
+
+	# echo $GIT_EMAIL
+	# return
+
+	# https://kbroman.org/github_tutorial/pages/init.html
+	# set -euo pipefail
+
+	if [[ ! -d .git ]]; then
+		echo "Creating local tree..."
+		if
+			[[ ! -f .gitignore ]] && find . | grep -Pq '\.py$'
+		then
+			echo "__pycache__" > .gitignore
+		fi
+		git init # idempotent
+
+		if [[ -f files_to_add ]]; then
+			# private repo goes public
+			< files_to_add xargs git add
+			less files_to_add
+		else
+			# git add .
+			find . -maxdepth 1 -type f |
+				grep -v pdf | # TODO: better to remove binary (how?)
+				largs git add
+		fi
+
+		git add tests 2> /dev/null
+
+		git commit -m "initial commit"
+	fi
+
+	if ! remote=$(git config --get remote.origin.url); then
+
+		git branch -M master
+		xdg-open https://github.com/new &
+		read -rp 'Repo name (not URL!): ' repo
+		git remote add origin "https://github.com/hejops/$repo"
+		git push -u origin master
+		git status
+
+	elif [[ $remote != *"hejops"* ]]; then
+
+		# make a private clone of a repo, preserving history
+		# don't remember the use case for this tbh
+
+		xdg-open https://github.com/new &
+		read -rp 'Repo name: ' repo
+		git remote set-url origin "https://github.com/hejops/$repo"
+		git push -u origin master
+		git status
+
+	else
+
+		# own remote already present
+		return
+	fi
+}
+
+gssh() {
+	# init github ssh key
+
+	# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key
+	# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account#adding-a-new-ssh-key-to-your-account
+
+	# password not strictly necessary
+	ssh-keygen -t ed25519 -C hejops1@gmail.com -f "$HOME/.ssh/github_$(date -I)"
+	ssh -T git@github.com 2>&1 | grep -q success && echo ok
+
+	# to actually use the key on startup, add to .xinitrc (or similar);
+
+	# if [[ -z $SSH_AUTH_SOCK ]]; then
+	# 	{
+	# 		pkill ssh-agent
+	# 		eval "$(ssh-agent -s)"
+	# 		ssh-add "$HOME/.ssh/github_2024-06-17"
+	# 	} > /dev/null 2> /dev/null
+	# fi
+
+}
+
+gd() {
+	if [[ $# -eq 0 ]]; then
+		git diff
+		return
+	fi
+	# no local changes, check against last commit
+	if git diff --exit-code "$1" > /dev/null; then
+		git diff HEAD^^ "$1"
+	else
+		git diff "$1"
+	fi
+}
+
+# }}}
+# pre-commit {{{
+alias pcu="pre-commit autoupdate"
+
+pci() {
+	# init
+	local f
+
+	repo_root=$(get_repo_root)
+
+	f="$repo_root/.pre-commit-config.yaml"
+
+	[[ -f $f ]] && return
+
+	# https://pre-commit.com/#command-line-interface
+	# https://pre-commit.com/#quick-start
+	# https://pre-commit.com/hooks.html
+
+	git init
+	cat << EOF > "$f"
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: package.lock.json
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        exclude: \.sql$
+      - id: trailing-whitespace
+EOF
+
+	if find . -name '*.py' | grep -q .; then
+
+		# https://github.com/MarcoGorelli/auto-walrus#usage-as-a-pre-commit-hook
+		# https://github.com/PyCQA/docformatter/blob/master/.pre-commit-config.yaml#L23C1-L28C57
+		# https://github.com/dannysepler/rm_unneeded_f_str#usage
+		# https://github.com/hadialqattan/pycln/blob/master/.pre-commit-config.yaml#L4
+		# https://github.com/hhatto/autopep8#usage-with-pre-commit
+		# https://github.com/pre-commit/mirrors-mypy#using-mypy-with-pre-commit
+
+		cat << EOF >> "$f"
+      - id: name-tests-test
+        args: ["--pytest-test-first"]
+      - id: requirements-txt-fixer
+
+  # reorder-python-imports is no longer compatible with black
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: isort
+        args: [--force-single-line, --profile=black]
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.0
+    hooks:
+      - id: pyupgrade
+        args: ["--py36-plus"]
+
+  # % format -> f-string
+  - repo: https://github.com/ikamensh/flynt/
+    rev: ""
+    hooks:
+      - id: flynt
+
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        args: ["--preview"]
+EOF
+	fi
+
+	# TODO: https://github.com/TekWizely/pre-commit-golang/blob/master/sample-config.yaml#L85
+
+	pcu
+}
+
+pcr() {
+	pci && pre-commit run --all-files
+}
+
+pcrc() {
+	# only files which have changed since latest remote commit
+
+	# check if remote repo exists
+	git config --get remote.origin.url > /dev/null || return
+
+	pci && pre-commit run --all-files --from-ref origin/master --to-ref HEAD
+}
+
+# }}}
+
+# python {{{
+
+# i haven't worked in python in a while, so this may be cleaned up
+
+ve() {
+	return
+
+	# important reading:
+	# https://www.b-list.org/weblog/2022/may/13/boring-python-dependencies/
+	# https://github.com/jazzband/pip-tools
+
+	# "always work in, and deploy in, a virtual environment"; this is how
+	# cargo works.
+
+	# venv comes before pip install (etc), not the other way round, and
+	# python -m pip (in venv) should always be used over bare pip.
+
+	python -m venv .venv
+	. .venv/bin/activate
+
+	# do work, manually add deps to requirements.in (no cargo add, too bad)
+
+	python -m pip install --upgrade pip-tools
+	python -m pip-tools compile --generate-hashes requirements/app.in --output-file requirements/app.txt
+	# python -m pip-tools compile --generate-hashes requirements/tests.in --output-file requirements/tests.txt
+	# if some package doesn't provide wheel, omit --only-binary
+	python -m pip install --only-binary :all: -r requirements/app.txt
+
+	# for monitoring dep updates of a "finished" project, use dependabot
+
+}
+
+alias cx=coac
+
+get_repo_root() {
+	git rev-parse --show-toplevel 2> /dev/null
+}
+
+eval_conda() {
+	# subshell only generates the code, which must then be executed
+	# note: this command alone does not re-source .bashrc, so don't expect
+	# PS1 to change
+	eval "$("$HOME/anaconda3/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
+}
+
+coac() {
+	# set -x
+
+	# local _env
+
+	local DEFAULT_ENV=foo
+
+	if
+		[[ -n $CONDA_PREFIX ]] #&& [[ $CONDA_PREFIX == *${_env} ]]
+	then
+		# echo "Already activated"
+		return
+	elif [[ ! -d $HOME/anaconda3/envs/$DEFAULT_ENV ]]; then
+		echo "\"$DEFAULT_ENV\" environment not found!"
+		return
+	fi
+
+	if ! command -v conda > /dev/null; then
+		echo >&2 'Activating conda...'
+		eval_conda
+	fi
+
+	echo "Activating $DEFAULT_ENV..."
+	conda activate "$DEFAULT_ENV"
+
+	# note: conda activate causes PS1 to be overridden
+
+	# generally always better to set
+	# conda config --set changeps1 false
+	# because you never really know what conda does to PS1
+
+}
+
+# python venvs should now be managed from nvim itself:
+# pyright: function get_python_path
+# pylint: require("lint").linters.pylint.cmd
+
+sl() {
+	# set -x
+	[[ $# -eq 0 ]] && return
+	arr=("$@")
+	f="$(realpath "${arr[0]}")"
+	arr[0]=$f
+	# [[ -f $f ]] &&
+	# check_env "$f"
+	streamlit run "${arr[@]}"
+	cd
+}
+
+pta() { # run all tests
+	# TODO: gls: allow arg that calls from proj root
+	gls | grep 'test.*py' | xargs pytest -xvv
+}
+
+pget() {
+	if [[ -f $1 ]]; then
+		pip3 install -r "$1"
+	elif [[ -n $CONDA_PREFIX ]]; then
+		pip3 install "$@"
+	else
+
+		pip3 install --break-system-packages "$@"
+
+	fi
+}
+
+pup() {
+	if [[ -f $(get_repo_root)/pyproject.toml ]]; then
+		poetry add "$1@latest"
+	else
+		pip install --upgrade "$1"
+	fi
+}
+
+p() {
+	# set -x
+	if [[ $# -eq 0 ]]; then
+		python3
+		return
+	fi
+
+	arr=("$@")
+	f="$(realpath "${arr[0]}")"
+	repo_root="$(get_repo_root)"
+	mod=$(sed <<< "$f" -r "s#$repo_root/##; s#.py##" | tr / .)
+	arr[0]=$mod
+
+	# check_env "$f" # go to file's project root, activate env
+
+	# python3 "${arr[@]}" || :
+	python3 -m "${arr[@]}"
+
+	# command -v deactivate > /dev/null && deactivate
+	# cd || return
+}
+
+pentmd() { # render entry points as markdown
+	# - [`poetry run XXX`](./path/to/script.py)
+	grep < pyproject.toml :main |
+		sed -r 's|^([^ ]+) = "([^:]+):main"|- [`poetry run \1`](./\2.py)|g' |
+		tr . / |
+		sed -r 's#/(/|py)#.\1#g'
+}
+
+# }}}
+# django {{{
+
+alias djnew='django-admin startproject'
+alias djs='./manage.py runserver'
+
+djrmdb() {
+	# nuke db and rebuild
+	# https://simpleisbetterthancomplex.com/tutorial/2016/07/26/how-to-reset-migrations.html
+	# https://stackoverflow.com/questions/29253399/how-to-reset-migrations-in-django-1-7#comment67199335_29266821
+	find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
+	find . -path "*/migrations/*.pyc" -delete
+	rm ./db.sqlite3
+	./manage.py makemigrations "$1"
+	./manage.py migrate
+}
+
+djapp() {
+
+	[[ -d $1 ]] && return
+	app=$1
+
+	./manage.py startapp "$app"
+
+	# startapp doesn't create urls.py
+	cat << EOF > "$app"/urls.py
+from django.urls import path
+
+from . import views
+
+app_name = "$app"
+
+urlpatterns = [
+    # https://docs.djangoproject.com/en/5.0/ref/urls/#django.urls.path
+    path(
+        route="",
+        view=views.IndexView.as_view(),
+        name="index",
+    ),
+]
+EOF
+
+	mkdir -p "$app/templates/$app"
+	touch "$app/templates/$app/index.html"
+
+	cat << EOF >> "$app"/views.py
+from django.views import generic
+from django.shortcuts import get_object_or_404
+from django.db.models import F
+
+from $app.models import *
+
+
+class IndexView(generic.ListView):
+    template_name = "$app/index.html"  # default: <app name>/foo_list.html
+
+    context_object_name = "foo"
+
+    def get_queryset(self):
+        return Foo.objects.filter().order_by("pk")
+EOF
+
+	# {% load static %}
+	# <link rel="stylesheet" href="{% static '${app}s/style.css' %}" />
+	# {% if ${app}_list %}
+	#     <ul>
+	#         {% for ${app} in ${app}_list %}
+	#             <li>
+	#                 <!-- explicit namespacing `app_name` to be declared in ${app}s/urls.py -->
+	#                 <a href="{% url '${app}s:detail' ${app}.name %}">{{ ${app}.name }}</a>
+	#             </li>
+	#         {% endfor %}
+	#     </ul>
+	# {% else %}
+	#     <p>No ${app}s are available.</p>
+	# {% endif %}
+
+}
+
+# }}}
+# rust {{{
+
+# cargo +nightly udeps
+alias cb="cargo build"
+alias cbr="cargo build --release"
+alias ct="cargo test"
+alias cwr="cargo watch -x run"                           # web servers only
+alias sqp='cargo sqlx prepare --workspace; ga .sqlx; gc' # postgres only
+
+sqre() {
+	# regen sqlite db
+	# often required for sqlite, possibly when .sql files are modified are migration
+	# https://github.com/launchbadge/sqlx/discussions/1292#discussioncomment-3015486
+	sqlx database drop
+	sqlx database create
+	sqlx migrate run
+}
+
+cw() {
+	cargo watch -x check -x "test $1"
+}
+
+rsmod() {
+
+	if [[ -f $1 ]]; then
+
+		# convert foo/bar.rs -> foo/bar/mod.rs
+		rs=$1
+		base=${rs/.rs/}
+		mkdir -p "$base"
+		mv "$rs" "$base/mod.rs"
+		# TODO: update lib, pub use, etc
+
+	elif [[ -n $1 ]]; then
+
+		echo "Creating module $1"
+
+		echo "pub mod $1;" >> src/lib.rs # doesn't work?
+		mkdir -p "src/$1"
+		mod="src/$1/mod.rs"
+		# touch "$mod"
+		echo "mod foo;" >> "$mod"
+		echo "pub use foo::*;" >> "$mod"
+
+	fi
+
+}
+# }}}
+# go {{{
+gonew() {
+	[[ $# -ne 1 ]] && return
+	[[ -d $1 ]] && return
+	mcd "$1"
+	go mod init "$1"
+	echo "$1" > .gitignore
+	echo -e "func main(){\n}" > main.go
+	go build # generate go.mod
+	# TODO: lsp not started properly, and LspRestart doesn't work
+	# has to do with gopls not recognising cwd
+	vim + main.go
+}
+
+gob() {
+	if [[ -d $1 ]]; then
+		pushd "$1" > /dev/null || return
+	elif [[ -f $1 ]]; then
+		pushd "$(dirname "$1")" > /dev/null || return
+	fi
+
+	# `go build foo.go` will create a binary foo (instead of the package name)!
+	go build -ldflags "-s -w"
+
+	upx "$(basename "$PWD")" > /dev/null # --brute is usually overkill (think rust release mode)
+
+	# echo "built $(basename "$PWD")"
+	lsl "$(basename "$PWD")"
+
+	popd > /dev/null 2> /dev/null || return
+}
+
+alias gon=gonew
+# }}}
+
+# docker {{{
+
+docl() {
+	sudo docker system prune
+	sudo docker volume rm $(sudo docker volume ls -f dangling=true -q)
+}
+
+# }}}
+# ssh {{{
+
+if [[ -n $REMOTE ]]; then
+
+	sget() {
+		if [[ -f $1 ]]; then
+			rsync --no-relative --files-from="$1" "$REMOTE:/" .
+		else
+			rsync --exclude=".*/" "$REMOTE:$1" .
+		fi
+	}
+
+	sput() {
+		rsync --exclude=".*/" "$@" "$REMOTE:~/"
+	}
+
+fi
+
+# https://gist.github.com/cmbaughman/6a2ae275e0c0f39f42d95a728e07f796
+# https://www.redhat.com/sysadmin/ssh-automation-sshpass
+
+# }}}
+# files, navigation {{{
+
+f() {
+	case $1 in
+
+	n | new | mtime) find "${2:-.}" -maxdepth 1 -type f -printf "%T+\t%p\n" |
+		sort |
+		cut -f2 ;;
+
+	# https://unix.stackexchange.com/a/22448
+	s | sz | size) find "${2:-.}" -type f -exec du -a {} + |
+		sort -n ;;
+
+	esac
+}
+
+fm() { # open file manager with arbitrary args
+
+	# TODO: if glob specified, use that as filter
+	# set -x
+	_dirs=()
+	for x in "$@"; do
+		# ranger crashes if a file is passed
+		if [[ -d $x ]]; then
+			_dirs+=("$x")
+		elif [[ -f $x ]]; then
+			_dirs+=("$(dirname "$x")")
+		fi
+	done
+
+	if [[ ${#_dirs[@]} -eq 0 ]]; then
+		# echo "No valid paths specified"
+		_dirs=(.)
+	fi
+
+	if [[ ${#_dirs[@]} -eq 1 ]] && command -v yazi > /dev/null; then
+		# yazi only allows up to 1 arg, but can smartly position cursor
+		# on a file
+		yazi "${_dirs[0]}"
+	elif [[ ${#_dirs[@]} -eq 1 ]] && command -v lf > /dev/null; then
+		# same as yazi
+		lf "${_dirs[0]}"
+	else
+		ranger "${_dirs[@]}"
+	fi
+
+}
+
+mcd() { # mkdir any number of paths, cd to last
+	# it is uncommon for >1 arg to be passed, so this is more for cd
+	# [[ $# -eq 0 ]] && return
+	local p
+	for p in "$@"; do mkdir -p "$p" || :; done
+	[[ -d $p ]] && cd "$p"
+}
+
+rm() { # use python to robustly prevent accidental deletion of some dir
+	# parsing arbitrary args with bash is nonsense
+
+	if [[ $* == *"$MU"* ]]; then
+		python3 -c "
+import sys
+if \"$MU\" in {x.rstrip('/') for x in sys.argv}:
+    print('FATAL')
+    raise Exception
+" $*
+	fi
+
+	command rm -v "$@"
+}
+
+# }}}
+# stdout manipulation {{{
+
+append() { awk < /dev/stdin '{print $0 "'"$1"'"}'; }
+largs() { xargs < /dev/stdin --no-run-if-empty --delimiter='\n' "$@"; } # split xargs by newline instead of space
+prepend() { awk < /dev/stdin '{print "'"$1"'" $0}'; }
+sum() { < /dev/stdin paste -sd+ | bc; }
+
+jqk() { # https://gist.github.com/pedroxs/f0ee8c515eea0dbce2e23eea7c048e10#file-jq-filters-sh-L2
+	jq < /dev/stdin -r '.. | objects | with_entries(select(.key | contains("'"$1"'"))) | select(. != {}) | .'"$1"
+}
+
+dehtml() {
+	# https://stackoverflow.com/a/19878198
+	sed < /dev/stdin -e 's/<br[^>]*>/\n/g; s/<[^>]*>//g' |
+		# recode xml..utf8 |
+		# https://stackoverflow.com/a/13161719
+		perl -MHTML::Entities -pe 'decode_entities($_);'
+}
+
+yti() { # get info for currently playing file with youtube id)
+	# www-watch?v=bMEfWLA-V00.mp3
+	pactl list sink-inputs |
+		grep media.name |
+		cut -d= -f3 |
+		cut -d. -f1 |
+		prepend 'https://youtube.com/watch?v=' |
+		xargs yt-dlp -j 2> /dev/null |
+		jq -r .title
+}
+
+# }}}
+# web {{{
+
+C() { # alternative to curl
+	python3 -c '
+import codecs
+import sys
+
+from bs4 import BeautifulSoup
+import cloudscraper
+
+byt = cloudscraper.create_scraper().get(sys.argv[1]).content
+s = BeautifulSoup(byt, "html.parser").prettify()
+
+# print(s)
+
+# forcefully decode "unicode-strings" e.g. u002F
+print(codecs.decode(s, "unicode-escape"))
+
+' "$1"
+
+}
+
+nmc() {
+	ssid=$(nmcli --terse device wifi list |
+		fzf --reverse |
+		cut -d: -f8 |
+		xargs)
+	nmcli --ask device wifi connect "$ssid" # password $password
+}
+
+nt() { # check network status in a loop
+	int=5
+	SECONDS=0
+	while true; do
+		# result=$(timeout 1 ping -c 1 google.com 2> /dev/null)
+		# if [[ $? -eq 0 ]]; then
+		if ! result=$(timeout 1 ping -c 1 google.com 2> /dev/null); then
+			echo -en "\r\e[Kalive $SECONDS"
+			notify-send alive
+			[[ $int -lt 80 ]] && ((int *= 2))
+		else
+			# grep <<< "$result" -Po '\d+ ms'
+			echo -en '\r\e[Kdead'
+			int=5
+			SECONDS=0
+		fi
+		sleep $int
+	done
+}
+
+getmail() {
+	if
+		# TODO: use systemctl instead
+		# systemctl reload mbsync
+		! mbsync -Va > /dev/null
+	then
+		echo "Could not fetch"
+	elif mailtag 2>&1 | grep 'No new mail.'; then
+		:
+	else
+		neomutt
+	fi
+}
+
+pacmir() { # regenerate pacman mirrors
+	# TODO: test current speed; if ok, just return
+	country=$(curl -sL ipinfo.io | jq -r .country)
+	url="https://archlinux.org/mirrorlist/?country=$country&protocol=https&use_mirror_status=on"
+	curl -s "$url" |
+		sed -e 's/^#Server/Server/' -e '/^#/d' |
+		rankmirrors --max-time 1 -v -n 99 - |
+		sudo tee /etc/pacman.d/mirrorlist
+
+}
+
+urltitle() {
+	wget -qO- "$1" |
+		perl -l -0777 -ne 'print $1 if /<title.*?>\s*(.*?)\s*<\/title/si'
+}
+
+utm() { # urltitle to markdown
+	title=$(timeout 3 urltitle "$1")
+	[[ -z $title ]] && title=$(awk <<< "$1" -F/ '{print $NF}')
+	echo "[$title]($1)"
+}
+
+# }}}
+
+# ugly funcs that don't warrant a script yet
+
+blog() { $EDITOR "$(date -I)-${1//-/_}.md"; }
+bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
+rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
+yt() { mpv --force-window "ytdl://ytsearch10:\'$*\'"; }
+
+sq() {
+	if [[ ! -f $1 ]]; then echo "Not a file: $1"; fi
+	echo "$2" | sqlite3 "$1"
+}
+
+nps() { # please don't make me do frontend work...
+
+	# # xdg default browser always overrides BROWSER var
+	# # https://github.com/facebook/create-react-app/issues/9531#issuecomment-1022412062
+	# BROWSER=chromium npm start
+
+	# https://peter.sh/experiments/chromium-command-line-switches/#auto-open-devtools-for-tabs
+	chromium --auto-open-devtools-for-tabs http://localhost:3000 &
+	BROWSER=none npm start
+}
+
+np() {
+	pgrep nicotine > /dev/null || return
+
+	# while read -r line; do
+	# 	[[ $line == "" ]] && break
+	# 	[[ $line == http* ]] && break
+	# 	echo "$line" | xclip -sel c
+	# 	xdotool key super+8 ctrl+2 F6 ctrl+v F6 return
+	# 	sleep 2
+	# done < ~/to_dl
+
+	while read -r id; do
+		# 12 because newline included? whatever
+		if [[ $(<<< "$id" wc -c) -eq 12 ]]; then
+			title=$(
+				echo "$id" |
+					prepend http://youtube.com/watch?v= |
+					xargs yt-dlp --dump-single-json --skip-download 2> /dev/null |
+					jq -r '.title' |
+					sed -r '
+						s|\([^)]+\)||g
+						s|\[[^]]+\]||g
+						s|[0-9]{4}.+||g
+						s|SW EXCL.+||g
+					'
+			)
+		else
+			title=$id
+		fi
+		echo "$title" | xclip -sel c
+		xdotool key super+8 ctrl+2 F6 ctrl+v F6 return
+		sleep 2
+	done < /tmp/foo
+	notify-send 'done'
+	rm -iv /tmp/foo
+
+}
+
+nb() { # download audio from rss feeds
+	sort -u -o ~/dita/dita/scrape/discogs.txt{,}
+	less ~/dita/dita/scrape/discogs.txt
+	rm ~/dita/dita/scrape/discogs.txt
+
+	time fetch_rss &&
+		time ~/dita/ytdl &&
+		waitdie mpv
+	vol --auto
+	mpv --profile=bcx ~/testdir
+	rm -rI ~/testdir ~/.config/newsboat/cache.txt
+	np
+}
+
+replace() {
+	# mostly for python module refactors
+	[[ -d ./.git ]] || git rev-parse --is-inside-work-tree > /dev/null 2>&1 || return
+	search=$1
+	replace=$2
+	if ! rg "$search" -n; then
+		echo "Pattern not found"
+		return
+	fi
+	rg "$search" -n | rep "$search" "$replace"
+	read -r -p 'OK?' || return
+	rg "$search" -n | rep "$search" "$replace" -w
+	# if only rep allowed backreferencing the search pattern...
+	git diff
+	# git add -u
+	# git commit -v
+}
+
+sd() { # shutdown
+	# uptime | grep hour || return/reboot
+
+	waitdie mpv pacman curl
+	killall firefox
+
+	# TODO: check for any running cron jobs (pstree, tail -f)
+	# not running:
+	# |-crond
+	# |-dbus-daemon
+
+	# pgrep -u $USER cron
+
+	if pgrep nicotine; then
+		pid=$(waitdie -s nicotine)
+		[[ -n $pid ]] && waitdie -w nicotine
+	fi
+	# pkill nicotine
+	# TODO: if new day (morning), just return
+	echo "Shutting down..."
+	sleep 3
+	pulseaudio -k
+	shutdown now
+}
+
+rt() { # pass an array of relative paths to tagfix
+	# note: dead symlinks are still displayed as if they exist
+
+	larr() {
+		# like xargs, but takes a single multi-line arg and turns it into an array
+		mapfile -t args < /dev/stdin
+		[[ -z ${args[*]} ]] && return # mimic xargs -r
+		exec "$1" "${args[@]}" < /dev/tty
+	}
+
+	fzf --multi --reverse --preview="ls \"$MU\"/{}" < ~/.config/mpv/library |
+		prepend "$MU/" |
+		larr fix_tags
+
+}
+
+# epk() { # check epub 'validity'
+# 	while read -r f; do
+# 		# grepping for htm is not robust
+# 		tail --byte 100 "$f" | grep -aq htm || echo "not ok $f"
+# 	done <<< "$(fnew . | tail -n"$1")"
+# 	# tail < /dev/stdin --byte 100 | grep -a htm || echo "not ok $1"
+# }
+
+vl() {
+	cd ~/loona || return
+
+	# is2.4chan block is ip-dependent
+	grep < /tmp/hr-loona -e jpg -e png |
+		grep -Po 'http\S+' |
+		# grep -v is2 |
+		tac |
+		xargs feh -dFZ
+
+	waitdie mpvweb mpv taggenre.py
+	grep < /tmp/hr-loona -Po 'http[^\"<]+' |
+		grep -e youtu -e vlive -e streamable -e idalso |
+		tac |
+		uniq |
+		xargs mpv # &&
+
+	cd || :
+	exit
+}
+
+rgo() { # mimic live grep in nvim, useful when too lazy to open nvim first
+	# https://github.com/nvim-telescope/telescope.nvim/blob/7b5c5f56a21e82fdcfe5b250278b8dfc4b1cbab4/lua/telescope/config.lua#L646
+	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' "${1:-.}" |
+		fzf -e)
+	# file:line:col:match
+	IFS=':' read -ra array <<< "$match"
+	$EDITOR +"${array[1]}" "${array[0]}"
+}

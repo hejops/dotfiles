@@ -1,0 +1,21 @@
+Monospaced fonts are only added if they can be used in kitty. To check:
+
+fc-list : family spacing | grep spacing | grep -Po '^[^:,]+' | sort -u
+
+Mono: Source Code Pro
+Sans: IBM Plex Sans (firefox, mpv osd)
+Serif: IBM Plex Serif (firefox)
+
+To update:
+wget -c https://github.com/IBM/plex/raw/master/IBM-Plex-Sans/fonts/complete/otf/IBMPlexSans-Regular.otf https://github.com/IBM/plex/raw/master/IBM-Plex-Serif/fonts/complete/otf/IBMPlexSerif-Regular.otf https://github.com/mozilla/Fira/raw/master/otf/FiraMono-Regular.otf https://github.com/googlefonts/silkscreen/raw/main/fonts/otf/Silkscreen-Regular.otf https://github.com/adobe-fonts/source-code-pro/raw/release/OTF/SourceCodePro-Regular.otf
+
+Where are fonts declared?
+
+	~/.Xresources
+	~/.config/dunst/dunstrc
+	~/.config/gtk-3.0/settings.ini
+	~/.config/kitty/kitty.conf
+	~/.config/mpv/mpv.conf
+	~/.config/rofi/config.rasi
+	~/.mozilla/firefox/4clnophl.default/user.js
+	~/dwm/config.h

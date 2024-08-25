@@ -1,0 +1,17 @@
+include "%L"
+
+# https://github.com/kragen/xcompose
+# https://shallowsky.com/blog/linux/typing-greek.html
+# https://wiki.archlinux.org/title/Xorg/Keyboard_configuration#Key_combinations
+# setxkbmap -layout us -option -option compose:rctrl
+# TODO: doesn't refresh in firefox, apparently
+
+<Multi_key> <G> <d>            : "Δ"   U0394    # GREEK CAPITAL LETTER DELTA
+<Multi_key> <g> <D>            : "Δ"   U0394    # GREEK CAPITAL LETTER DELTA
+<Multi_key> <g> <a>            : "α"   U03B1    # GREEK SMALL LETTER ALPHA
+<Multi_key> <g> <b>            : "β"   U03B2    # GREEK SMALL LETTER BETA
+<Multi_key> <g> <d>            : "δ"   U03B4    # GREEK SMALL LETTER DELTA
+<Multi_key> <g> <e>            : "ε"   U03B5    # GREEK SMALL LETTER EPSILON
+<Multi_key> <m> <b>            : "♭"   U0266D    # MUSIC FLAT
+<Multi_key> <m> <n>            : "♮"   U0266E    # MUSIC NATURAL
+<Multi_key> <m> <s>            : "♯"   U0266F    # MUSIC SHARP

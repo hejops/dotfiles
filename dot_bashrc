@@ -1,0 +1,466 @@
+# #!/bin/bash
+# shellcheck shell=bash
+# vim:ft=bash
+# this file is sourced on any unix-like system and should remain under 400 LOC.
+# 200 LOC is possible with extensive sourcing. no functions (except for
+# GIT_PROMPT) should be declared here.
+
+# POSIX compatibility is not a concern; if a script needs to obtain some env
+# vars from here, it should be invoked with bash.
+
+# startup time must remain <= 0.005s
+# TIMEFORMAT='%lU' ; for i in $(seq 1 10) ; do time $SHELL -c exit 2>/dev/null ; done
+
+# return
+
+# environment {{{
+
+paths=(
+
+	# ~/neovim/build/bin # DO NOT install nvim with macports -- https://github.com/neovim/neovim/wiki/Building-Neovim
+	/Applications/Docker.app/Contents/Resources/bin
+	/opt/local/bin                               # mac
+	/usr/local/bin                               # dwm
+	~/.cache/pypoetry/virtualenvs/dita-*3.12/bin # glob only returns first match?
+	~/.cargo/bin                                 # arch installs are preferred over cargo
+	~/.local/bin                                 # TODO: ensure .local/bin precedes /usr/bin?
+	~/go/bin
+	~/rust/fours/target/release
+	~/rust/search/target/release
+)
+
+# to see 'clean' sys.path, run 'python3 -S -m site'
+for p in "${paths[@]}"; do
+	echo "$PATH" | grep -Fq "$p" && continue
+	[[ -d $p ]] && export PATH=$PATH:$p
+done
+# echo "${paths[@]}";
+unset p paths
+
+# # exported by default -- check with 'go env'
+# # https://github.com/golang/wiki/blob/master/GOPATH.md#gopath-variable
+# # https://go.dev/wiki/SettingGOPATH#bash
+# export GOPATH=$HOME/go
+
+# note: TERM is set by x
+export TERMINAL=kitty
+export TERMINAL='wezterm start'
+
+if type nvim > /dev/null 2> /dev/null; then
+	export EDITOR=nvim
+	export MANPAGER="nvim +Man!"
+else
+	export EDITOR=vim
+fi
+export VISUAL=$EDITOR
+alias vim="\$EDITOR -p" # equivalent to -c ':tab ball'
+alias v="vim"
+
+# }}}
+# xdg {{{
+
+# https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+# https://wiki.archlinux.org/index.php/XDG_Base_Directory
+export XDG_CACHE_HOME=$HOME/.cache
+export XDG_CONFIG_DIRS=/etc/xdg
+export XDG_CONFIG_HOME=$HOME/.config
+export XDG_DATA_DIRS=/usr/local/share/:/usr/share/
+export XDG_DATA_HOME=$HOME/.local/share
+export XDG_STATE_HOME=$HOME/.local/state
+
+# not supported: mailcap, mozilla, vim (not worth the effort)
+# requires flags: mbsync
+# todo: move aliases here (then update the last line), texlive?, Xresources
+# user: dict, cron
+export INPUTRC=$XDG_CONFIG_HOME/readline/inputrc
+export NMBGIT=$XDG_DATA_HOME/notmuch/nmbug
+export NOTMUCH_CONFIG=$XDG_CONFIG_HOME/notmuch/config # these also need to be set in systemd
+
+# i have a feeling these must be in xinitrc
+export XCOMPOSECACHE=$XDG_CACHE_HOME/X11/XCompose
+export XCOMPOSEFILE=$XDG_CONFIG_HOME/X11/XCompose
+
+# export HISTFILE="${XDG_STATE_HOME}"/bash/history
+# export XAUTHORITY="$XDG_RUNTIME_DIR"/Xauthority
+# export XINITRC="$XDG_CONFIG_HOME"/X11/xinitrc
+# xdg-ninja rubbish
+export ANDROID_HOME=$XDG_DATA_HOME/android
+export GNUPGHOME=$XDG_DATA_HOME/gnupg
+export JUPYTER_CONFIG_DIR=$XDG_CONFIG_HOME/jupyter
+export KERAS_HOME=$XDG_STATE_HOME/keras
+export LESSHISTFILE=$XDG_CACHE_HOME/less/history
+export MEDNAFEN_HOME=$XDG_CONFIG_HOME/mednafen
+export NODE_REPL_HISTORY=$XDG_DATA_HOME/node_repl_history
+export PARALLEL_HOME=$XDG_CONFIG_HOME/parallel
+export PYLINTRC=$XDG_CONFIG_HOME/pylint/pylintrc
+export PYTHONSTARTUP=$XDG_CONFIG_HOME/python/pythonrc
+export SQLITE_HISTORY=$XDG_CACHE_HOME/sqlite_history
+export TEXMFVAR=$XDG_CACHE_HOME/texlive/texmf-var
+export VD_CONFIG=$XDG_CONFIG_HOME/visidata/config
+
+# # https://www.navidrome.org/docs/usage/configuration-options/#basic-configuration
+# export ND_CONFIGFILE=$XDG_CONFIG_HOME/navidrome/navidrome.toml
+
+# }}}
+# user variables {{{
+
+export FIREFOX_PROFILE=4clnophl.default
+export INVID=vid.puffyan.us
+export NTFS_ILLEGAL='<>:"/\|?*'
+
+# if [[ $(xdpyinfo | awk '/dimensions/ {print $2}') == 3840x2160 ]]; then
+# 	export ROFI_FONT='"fira mono 12"'
+# else
+# 	export ROFI_FONT='"fira mono 9"'
+# fi
+
+# alias time='(TIMEFORMAT="  %1Uu  %1Ss  %1Re"; time m)'
+# https://gist.github.com/linse/3737870#bash-time
+# https://www.gnu.org/software/bash/manual/html_node/Bash-Variables.html#index-TIMEFORMAT
+# alias time="TIMEFORMAT='%lU' ; time"
+
+# gnu time -- /usr/bin/time
+# https://www.man7.org/linux/man-pages/man1/time.1.html
+# https://github.com/amerlyq/airy/blob/cc367c02c4a321b292c2f106ce02010d9835f8d1/open/alias#L14
+
+# GNUTIMEFORMAT="%Uuser %Ssystem %Eelapsed %PCPU (%Xtext+%Ddata %Mmax)k %Iinputs+%Ooutputs (%Fmajor+%Rminor)pagefaults %Wswaps" # default
+GNUTIMEFORMAT="%ee"
+GNUTIMEFORMAT+=" %Uu"
+GNUTIMEFORMAT+=" %Ss"
+GNUTIMEFORMAT+=" mem=%MkB"
+# GNUTIMEFORMAT+=" fault=%F+%R"  # page faults (major, minor)
+GNUTIMEFORMAT+=" io=%I+%OkB/s" # input, output
+# GNUTIMEFORMAT+=" ctx=%c+%w"    # context switches, waits
+GNUTIMEFORMAT+=" exit=%x" # exit code
+# 0.00e 0.00u 0.00s mem=1792kB io=0+0kB/s exit=0
+
+# drives are unnamed after mkfs, run e2label to rename
+# changes take effect after remount
+
+# basically all hardcoded paths have been removed from relevant scripts
+# cd ~/scripts ; ack -o "[^#]*/run/media[^\"']+" | cut -d: -f1 | sort -u
+# allowed: elem (must be hardcoded), driv (deprecated), checklib.py (deprecated)
+
+if [[ -d "/run/media/$USER/Elements" ]]; then
+
+	export HDD="/run/media/$USER/Elements"
+	export MU="$HDD/music"
+	export SLSK="$HDD/music_slsk"
+	export SOURCE="$HDD/music_slsk/complete"
+	export UNTAGGED="$HDD/music_untagged"
+
+fi
+
+# array requires bash
+# for files in <dir> to appear in o, <dir> must be a git repo
+export WORK_DIRS=(
+
+	# ~/react-tutorial
+	# ~/rust/rust-books/zero-to-prod
+	~/blog
+	~/dita
+	~/febe
+	~/gripts
+	~/mappy
+	~/mpv-search
+	~/plaque
+	~/rust/discogs
+	~/rust/discoll
+	~/rust/fours
+	~/rust/lasttree
+	~/rust/search
+	~/scripts
+	~/total-typescript
+
+)
+
+# }}}
+# misc {{{
+
+# complete -c man which
+# set -o ignoreeof
+# export IGNOREEOF=1 # require 2 ctrl-d's to exit; must be declared after set
+# shopt -s autocd # autocomplete is still limited to cmds
+shopt -s checkwinsize
+
+# https://doc.qt.io/qt-5/highdpi.html#high-dpi-support-in-qt
+# should be disabled (0) on prism solo
+export QT_AUTO_SCREEN_SCALE_FACTOR=0
+
+# TODO: to include this when sourcing, LINES needs to be set
+# include hidden files, can be quite slow from $HOME
+export FZF_DEFAULT_OPTS="
+
+--bind ctrl-b:preview-page-up
+--bind ctrl-c:cancel
+--bind ctrl-f:preview-page-down
+--bind ctrl-x:cancel
+--bind down:down
+--bind shift-down:preview-page-down
+--bind shift-up:preview-page-up
+--bind up:up
+--cycle
+--pointer='→'
+--preview-window='bottom,cycle,wrap,border-top,5'
+--preview='less -- {}'
+--prompt='→ '
+
+"
+
+export STREAMLIT_SERVER_RUN_ON_SAVE=true
+# export STREAMLIT_THEME_BASE=light
+
+# }}}
+
+# # not strictly required for lsp? i could be wrong
+# eval "$(~/.rbenv/bin/rbenv init - bash)"
+#
+# # if command -v rbenv > /dev/null; then eval "$(rbenv init -)"; fi
+#
+# # https://old.reddit.com/r/ruby/comments/1cb5yf7/gem_updateinstall_errors_after_installing_ruby_331/l0wbeu0/
+# export GEM_HOME=$HOME/.gem
+# export PATH=$GEM_HOME/bin:$PATH # for ruby-lsp
+
+# when sourced from a script, stop here
+case $- in
+*i*) : ;;
+*) return ;;
+esac
+
+# startup {{{
+
+if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
+
+	cat /tmp/updates
+
+	grep < /tmp/updates '^python ' && echo -e "Beware: new Python\n"
+	# TODO: check $HOME/.local/lib/python3.11
+
+	if sudo pacman -Syu; then
+		rm /tmp/updates
+
+		# may get unset after update? not sure what causes it
+		setxkbmap -layout us -option -option compose:rctrl,caps:menu
+
+	fi
+fi
+
+# }}}
+# macos settings {{{
+
+FIND="find -L" # follow symlinks
+
+if [[ $OSTYPE == darwin* ]]; then
+
+	# time desync cannot be fixed in system settings, even though the same
+	# server is used -- thanks apple!
+	# sudo sntp -sS time.apple.com
+
+	FIND="find ." # path cannot be omitted
+	alias exa=eza # exa is unmaintained; on arch, eza is aliased to exa
+	alias xdg-open=open
+	export BASH_SILENCE_DEPRECATION_WARNING=1
+
+	# osxkeychain is a fairly painless, https based (not ssh) way to access
+	# private repos from multiple accounts
+	# git config --list --show-origin
+	# file:/Library/Developer/CommandLineTools/usr/share/git-core/gitconfig   credential.helper=osxkeychain
+
+	# https://docs.github.com/en/get-started/getting-started-with-git/updating-credentials-from-the-macos-keychain#updating-your-credentials-via-keychain-access
+	# https://gist.github.com/nepsilon/0fd0c779f76d7172f12477ba9d71bb66#how-to-use-mac-keychain-to-store-github-repos-credentials
+	# https://git-scm.com/book/sv/v2/Git-Tools-Credential-Storage
+
+	if
+		[[ -n $COMPANY ]] && ! git config --get user.email | grep -iq "$COMPANY"
+	then
+		[[ -n $WORK_EMAIL ]] && git config --global user.email "$WORK_EMAIL"
+		[[ -n $NAME ]] && git config --global user.name "$NAME"
+	fi
+
+	# for gui (VNC Viewer)
+
+	# docker rm -vf $(docker ps -aq)
+	# docker rmi -f $(docker images -aq)
+
+fi
+
+export FZF_DEFAULT_COMMAND=$FIND
+unset FIND
+
+# }}}
+# aliases {{{
+
+# note: rsync trailing slash: https://unix.stackexchange.com/a/402556
+alias cp="cp -rv"
+alias grep="grep --color=auto"
+alias ln="ln -v"
+alias mkdir="mkdir -p"
+alias mv="mv -v"
+alias pgrep="pgrep --list-full --exact" # TODO: mac has different behaviour
+alias pip=pip3
+alias python=python3
+alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
+alias xargs="xargs --no-run-if-empty --verbose"
+
+# alias cget="curl -JLO" # https://stackoverflow.com/a/8841522
+# alias r="exec bash; clear" # reload this file
+alias _exa="exa --all --long --links --dereference --color=always --git" # helper
+alias c="curl --silent --location --fail"
+alias cg=cget
+alias cget="wget --continue"
+alias cm=chezmoi
+alias cn="cargo new"
+alias ftail="tail -f"
+alias gtime="env time --format \"\$GNUTIMEFORMAT\" -- echo" # aliasing time to gnu time will disable the builtin
+alias ls="_exa --group-directories-first --tree --level 2"  # note: --tree is slow in large dirs
+alias lsc="_exa --time-style=iso --sort created"
+alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permissions --no-user"
+alias prem="pip3 uninstall"
+alias pt="pytest -x -vv --disable-warnings"
+alias qm="vim +Quickmath -c startinsert /tmp/foo"
+alias r=rac
+alias ra=fm
+alias rac="ranger --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
+alias ud="sudo udevadm control --reload-rules && sudo udevadm trigger"
+
+alias gC="git reset --soft HEAD~1" # un-commit
+alias ga="git add"
+alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
+alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
+alias gdnw="git diff --color-words --no-index"
+alias gdw="git diff --color-words"
+alias gig="\$EDITOR .gitignore"
+alias gl="git log --stat --oneline"
+alias gun="git checkout --" # discard all local changes ("undo"); git revert is the same, but also creates a commit
+
+if type pacman > /dev/null 2> /dev/null; then
+
+	alias get="sudo pacman --sync"
+	alias lp="pacman --query --search"
+	alias pclean="paccache --remove && sudo pacman -Scc"
+	alias rem="sudo pacman --remove --recursive" # --cascade
+	alias sp="pacman --sync --search"
+
+elif type port > /dev/null 2> /dev/null; then
+
+	alias get="sudo port install"
+
+fi
+
+# }}}
+# history {{{
+PROMPT_COMMAND='history -a' # save commands immediately after execution
+export HISTCONTROL=ignoreboth:erasedups
+export HISTFILESIZE=10000
+export HISTSIZE=10000
+shopt -s histappend
+# }}}
+# prompt {{{
+
+# allow remapping of c-w in inputrc
+stty werase undef
+
+# https://linuxcommand.org/lc3_man_pages/seth.html
+# https://misc.flogisoft.com/bash/tip_colors_and_formatting
+# https://ss64.com/bash/set.html
+# https://stackoverflow.com/a/3058390 -- PS1 vs PROMPT_COMMAND
+# https://tldp.org/LDP/abs/html/options.html
+# https://wiki.archlinux.org/index.php/Bash/Prompt_customization#Prompts
+# https://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/bash-prompt-escape-sequences.html
+
+set -o vi
+
+# GSHA=$(git rev-parse --short HEAD) # sha is cool but useless
+
+GIT_PROMPT() {
+	# https://gist.github.com/matthewmccullough/47267
+	# https://gist.github.com/nickboldt/4055398#file-bashrc-L50
+
+	# set -x
+
+	[[ $PWD != $HOME* ]] && return # don't check outside home
+	[[ -d ./.git ]] ||
+		# https://stackoverflow.com/a/16925062
+		git rev-parse --is-inside-work-tree > /dev/null 2>&1 || return
+
+	# git branch -r (remote)
+	# git branch -l (local)
+
+	CURRENT_LOCAL_BRANCH=$(git branch --show-current)
+	DEFAULT_LOCAL_BRANCH=$(
+		# refs/remotes/origin/<branch>
+		git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null |
+			# sed 's|^refs/remotes/origin/||'
+			cut -d/ -f4
+	)
+
+	local prompt
+	prompt=''
+
+	# REPO_NAME=$(basename "$(git remote get-url origin)")
+	NUM_BRANCHES=$(git branch | wc -l)
+
+	if [[ $NUM_BRANCHES -eq 1 ]]; then
+		:
+	elif [[ $CURRENT_LOCAL_BRANCH != "$DEFAULT_LOCAL_BRANCH" ]]; then
+		# prompt+="<$REPO_NAME:$CURRENT_LOCAL_BRANCH> "
+		prompt+="<$CURRENT_LOCAL_BRANCH> "
+	# else
+	# 	prompt+="<$REPO_NAME> "
+	fi
+
+	# set -x
+	# sorted by most recently committed
+	REMOTE_BRANCHES=$(git branch -r --sort=-committerdate)
+	if [[ $REMOTE_BRANCHES == *upstream* ]]; then
+		# repo is a fork
+		REM_BRANCH=$(grep <<< "$REMOTE_BRANCHES" -m1 upstream | xargs)
+	else
+		# origin/HEAD -> origin/master
+		REM_BRANCH=$(head <<< "$REMOTE_BRANCHES" -n1 | awk '{print $NF}')
+	fi
+
+	# format is there:here, where each int represents number of commits
+	# ahead of HEAD
+	state=$(git rev-list --left-right --count \
+		"$REM_BRANCH...$CURRENT_LOCAL_BRANCH" 2> /dev/null |
+		tr -s '\t' :)
+	[[ $state != 0:0 ]] && prompt+="$state "
+	# set +x
+
+	echo "$prompt"
+
+}
+
+# apparently, double quotes only evaluate once, while single quotes allow
+# (repeated) expansion at runtime
+# https://stackoverflow.com/a/21219060
+# https://stackoverflow.com/a/23879264
+# PS1='[\A] \W/ $(GIT_PROMPT)> '
+PS1=''
+PS1+='\n'    # newline
+PS1+='[\A] ' # time
+PS1+='$(GIT_PROMPT)'
+PS1+='\n'  # newline
+PS1+='\W/' # cwd with trailing slash -- TODO: relativise to project root
+PS1+=' '
+PS1+='> ' # prompt symbol
+
+if [[ -n $CONDA_PREFIX ]]; then
+	PS1="($(basename "$CONDA_PREFIX")) $PS1"
+fi
+
+# add prefix if current shell was spawned from within ranger
+if
+	ps -e |
+		grep -m1 "$PPID" |
+		grep -Fq ranger
+# grep -qv wezterm-gui
+then
+	PS1="📁 $PS1"
+fi
+
+# }}}
+
+[[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
+[[ -f ~/.config/readline/fzf.bash ]] && . ~/.config/readline/fzf.bash

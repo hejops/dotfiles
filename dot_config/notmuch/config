@@ -1,0 +1,98 @@
+# https://notmuchmail.org
+# https://notmuchmail.org/excluding/
+# https://notmuchmail.org/howto/
+# https://notmuchmail.org/initial_tagging/
+# https://notmuchmail.org/manpages/
+# https://notmuchmail.org/notmuch-mutt/
+# https://notmuchmail.org/special-tags/
+# https://wiki.archlinux.org/index.php/Notmuch
+
+# TODO: setup post sync hook, e.g. tag -inbox -- from:bandcamp
+# https://www.dj-bauer.de/once-forever-mutt-configuration-en.html#part-4-tag-emails-with-notmuch
+
+# available commands:
+# address
+# compact	shrink database
+# config
+# count
+# dump
+# emacs-mua
+# help
+# insert
+# new		apply tags to new mail
+# reindex
+# reply
+# restore
+# search	show time, subject
+# setup
+# show		show contents
+# tag		add tag(s)
+
+# The only value supported here is 'path' which should be the top-level
+# directory where your mail currently exists and to where mail will be
+# delivered in the future. Files should be individual email messages.
+# Notmuch will store its database within a sub-directory of the path
+# configured here named ".notmuch".
+#
+# ~ and $HOME are not expanded. assumed to be relative to cwd, unless an
+# absolute path is provided. thus, callers should ensure they are at ~
+# TODO: look into chezmoitemplates
+# https://www.chezmoi.io/reference/special-files-and-directories/chezmoitemplates/
+# https://github.com/dngray/dotfiles/blob/c53aeadc3a62e2590bc880845ecea417de9cf64d/home/.chezmoitemplates/notmuch/config#L17
+[database]
+path=.mail
+
+#	name		Your full name.
+#	primary_email	Your primary email address.
+#	other_email	A list (separated by ';') of other email addresses at which you receive email.
+#
+# Notmuch will use the various email addresses configured here when
+# formatting replies. It will avoid including your own addresses in the
+# recipient list of replies, and will set the From address based on the
+# address to which the original email was addressed.
+#
+[user]
+name=Joseph Yap
+primary_email=hejops1@gmail.com
+
+#	tags	A list (separated by ';') of the tags that will be
+#		added to all messages incorporated by "notmuch new".
+#
+#	ignore	A list (separated by ';') of file and directory names
+#		that will not be searched for messages by "notmuch new".
+#
+#		NOTE: *Every* file/directory that goes by one of those
+#		names will be ignored, independent of its depth/location
+#		in the mail store.
+#
+[new]
+tags=unread;inbox;
+ignore=
+
+#	exclude_tags
+#		A ;-separated list of tags that will be excluded from
+#		search results by default.  Using an excluded tag in a
+#		query will override that exclusion.
+#
+[search]
+exclude_tags=deleted;spam;
+
+#	synchronize_flags      Valid values are true and false.
+#
+#	If true, then the following maildir flags (in message filenames)
+#	will be synchronized with the corresponding notmuch tags:
+#
+#		Flag	Tag
+#		----	-------
+#		D	draft
+#		F	flagged
+#		P	passed
+#		R	replied
+#		S	unread (added when 'S' flag is not present)
+#
+#	The "notmuch new" command will notice flag changes in filenames
+#	and update tags, while the "notmuch tag" and "notmuch restore"
+#	commands will notice tag changes and update flags in filenames
+#
+[maildir]
+synchronize_flags=true

@@ -1,0 +1,65 @@
+* https://github.com/maestrogerardo/configs/blob/master/keyboard/kinesis/j_qwerty.txt
+* not recommended (firmware will not recognise the file, potentially rejecting all keypresses):
+* unix2dos -n ~/.config/kinesis/qwerty.txt /run/media/$(whoami)/ADVANTAGE2/active/qwerty.txt
+* +-----+---+---+---+---+---+                           +---+---+---+---+---+-----+
+* |     | ! | @ | # | $ | % |                           | ^ | & | * | ( | ) |     |
+* | --- | 1 | 2 | 3 | 4 | 5 |                           | 6 | 7 | 8 | 9 | 0 | --- |
+* +-----+---+---+---+---+---+                           +---+---+---+---+---+-----+
+* |     | Q | W | E | R | T |                           | Y | U | I | O | P |     |
+* | --- |   |   |   |   |   |                           |   |   |   |   |   | --- |
+* +-----+---+---+---+---+---+                           +---+---+---+---+---+-----+
+* |     | A | S | D | F | G |                           | H | J | K | L | : |  |  |
+* | esc |   |   |   |   |   |                           |   |   |   |   | ; |  \  |
+* +-----+---+---+---+---+---+                           +---+---+---+---+---+-----+
+* |     | Z | X | C | V | B |                           | N | M |[<]|[>]| ? |     |
+* |shift|   |   |   |   |   |                           |   |   | , | . | / |shift|
+* +-----+---+---+---+---+---+   +---+---+   +---+---+   +---+---+---+---+---+-----+
+*       | ~ | _ | < | { |       |   |   |   | r |   |       | } | > | + | " |
+*       | ` | - | ( | [ |       |win|alt|   |ctl|tab|       | ] | ) | = | ' |
+*       +---+---+---+---+   +---+---+---+   +---+---+---+   +---+---+---+---+
+*                           | b | l |<  |   |^  | e | s |
+*                           | k | c |hme|   |pup| n | p |
+*                           | s | t +---+   +---+ t | a |
+*                           | p | r |>  |   |v  | e | c |
+*                           |   | l |end|   |pdn| r | e |
+*                           +---+---+---+   +---+---+---+
+
+* https://www.kinesis-ergo.com/wp-content/uploads/Adv2-Users-Manual-01-07-19_us.pdf
+* progm + shift + esc: activate power user mode
+* progm + f1: connect
+
+[']>[\]
+{lshift}{'}>{-lshift}{\}{+lshift}
+
+* [=]>[escape]
+[caps]>[escape]
+[escape]>[caps]
+
+* symbol row
+* `-([])='
+
+* [`]
+[intl-\]>[hyphen]
+{left}>{-lshift}{9}{+lshift}
+[right]>[obrack]
+
+[up]>[cbrack]
+{down}>{-lshift}{0}{+lshift}
+[obrack]>[=]
+[cbrack]>[']
+
+[lctrl]>[rwin]
+[rwin]>[rctrl]
+[rctrl]>[tab]
+[delete]>[lctrl]
+
+* [']>[\]
+
+{lshift}{left}>{-lshift}{,}{+lshift}
+{lshift}{down}>{-lshift}{.}{+lshift}
+
+* i never use the arrow keys, but keep these around just in case
+{lshift}{home}>{left}
+{lshift}{end}>{right}
+{lshift}{pup}>{up}
+{lshift}{pdown}>{down}

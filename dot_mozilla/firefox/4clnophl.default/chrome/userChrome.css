@@ -1,0 +1,299 @@
+/*
+hiding urlbar breaks the session; don't do it!!!
+#navigator-toolbox { z-index: 1; }
+element { background-color: var(--main-bg-color); }
+ */
+
+/*
+moz-extension://b7530ee2-a124-4619-8050-33b1a50ffa7d/options/options.html#!
+ctrl-shift-alt-i, inspector, ctrl-shift-c
+https://0x0.st/iSBd.css
+https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties
+https://gist.github.com/Geobert/8c71ee54038cf339341cf8fa0b26ce01
+https://gist.github.com/spcmd/64e8b8cb5ecb77eaa881
+https://gist.githubusercontent.com/Zren/37bed9ed257347d97233273f32287707/raw/203324e9b5613118983bcb8606d511658c587665/userChrome.css
+https://github.com/tridactyl/tridactyl/issues/2078
+https://teddit.net/r/FirefoxCSS/comments/73dvty/tutorial_how_to_create_and_livedebug_userchromecss
+https://www.eriwen.com/firefox/use-the-dom-inspector/
+
+*/
+
+/* disable these and you get an invisible urlbar */
+@namespace html url("http://www.w3.org/1999/xhtml");
+@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+
+*|*:root {
+  /* i should probably update these to citruszest */
+  background-color: #282828;
+  --beige: #ebdbb2;
+}
+
+*|*:root {
+  --autocomplete-popup-background: var(background-color) !important;
+  --autocomplete-popup-color: white !important;
+  --browser-background: var(background-color) !important;
+  --in-content-box-background: var(background-color);
+  --in-content-page-background: var(background-color);
+  --in-content-page-color: white;
+  --main-bg-color: var(background-color);
+}
+
+/* these are obviously extreme solutions */
+/* but bg seems to work ok; only context menu and search bar highlight is bad */
+
+* {
+  /* background-color: var(background-color) !important; */
+  /* padding: 0px !important;  */
+  /* nonsensically squished together */
+  border: none !important;
+}
+
+/* hide items {{{*/
+
+/* warning: appearance might be weird order is changed */
+
+[class*="searchbar-engine-one-off-add-engine"], /* https://gist.github.com/e-t-l/bcc38e839b667afcb3ade08cb6b68122 */
+.searchbar-search-button[addengines="true"],
+.searchbar-search-button,
+#PanelUI-menu-button,
+#PopupAutoCompleteRichResult .autocomplete-richlistbox,
+#PopupAutoCompleteRichResult,
+#adnauseam_rednoise_org_adnauseam-blockelement,
+#back-button,
+#context-back,	/* https://teddit.net/r/firefox/comments/9eteoj/help_how_to_edit_context_menu/e5rispn/ */
+#context-bookmarklink,
+#context-bookmarkpage,
+#context-forward,
+#context-openlink,
+#context-openlinkintab,
+#context-openlinkinusercontext-menu,
+#context-openlinkprivate,
+#context-pocket,
+#context-reload,
+#context-savepage,
+#context-selectall,
+#context-sendlinktodevice,
+#context-sendpagetodevice,
+#context-sep-navigation,
+#context-sep-open,
+#context-stop,
+#forward-button,
+#identity-box,
+#inspect-separator,
+#page-action-buttons > :not([hidden]):not(toolbartabstop) ~ #pageActionSeparator,
+#pageActionButton,
+#reload-button,
+#searchbar-search-button,
+#sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] #sidebar-header,
+#sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] + #sidebar-splitter,
+#splitter,
+#star-button, /* v 89 */
+#star-button-box,
+#stop-button,
+#stop-reload-button,
+#tabbrowser-tabs .tabbrowser-tab .tab-close-button,
+#throbber-box,
+#unified-extensions-button,
+#urlbar .autocomplete-history-dropmarker,
+#urlbar-go-button,
+#urlbar-reload-button,
+#urlbar-results,
+#urlbar-search-splitter,
+#urlbar-stop-button,
+#urlbar-zoom-button,
+#urlbar:hover > .urlbar-textbox-container > .urlbar-history-dropmarker,
+#urlbarView-results,
+#urlbarView-row-0,
+* + menuseparator,
+.addon-description,
+.card-heading-icon,
+.search-go-button,
+.search-panel-current-engine,
+.search-panel-header > label,
+.search-setting-button,
+.searchbar-engine-button,
+.searchbar-search-button,
+.urlbar-history-dropmarker,
+.urlbarView-row,
+/* #context-savelink, */
+panel#urlbar-results #urlbarView-row-0 {
+  display: none !important;
+}
+/*}}}*/
+
+/* remove borders {{{*/
+
+#searchbar input.searchbar-textbox,
+#urlbar-input,
+#search-container,
+#search-container.chromeclass-toolbar-additional,
+#urlbar-scheme,
+.searchbar-textbox,
+#urlbar-input-container[pageproxystate="valid"]
+  > #tracking-protection-icon-container
+  > #tracking-protection-icon-box
+  > #tracking-protection-icon,
+#identity-box,
+#tracking-protection-icon-container,
+.urlbarView-row[selected] .urlbarView-row-inner,
+#urlbar-background,
+#searchbar:focus-within,
+#urlbar,
+#searchbar,
+#search-container,
+.searchbar-textbox,
+.findbar-textbox,
+.urlbarView:not(.megabar),
+toolbar .toolbarbutton-1,
+#urlbar-container,
+#urlbarView-results,
+.urlbarView-body-inner,
+.urlbarView.megabar
+  .urlbarView-row:not([type="tip"])[selected]
+  > .urlbarView-row-inner,
+.urlbarView.megabar
+  .urlbarView-row:not([type="tip"]):hover
+  > .urlbarView-row-inner,
+.urlbarView-title:not(:empty) ~ .urlbarView-action,
+#urlbar.megabar[focused="true"] > #urlbar-background {
+  color: var(--beige) !important;
+  /* color: white !important; */
+  background-color: var(background-color) !important;
+  background: var(background-color) !important;
+  border: none !important;
+}
+/*}}}*/
+
+/* autocollapsable TST sidebar {{{ */
+/* https://teddit.net/r/FirefoxCSS/comments/en95ja/treestyletabs_autohiding_sidebar_having_some/ */
+
+*|*:root {
+  --thin-tab-width: 35px;
+  --wide-tab-width: 200px;
+}
+
+.tab {
+  background-color: var(background-color) !important;
+  color: var(--beige) !important;
+  counter-increment: tabs;
+  height: 22px;
+  margin-left: -9px;
+  padding: -2em;
+}
+
+#sidebar {
+  max-width: none !important;
+  min-width: 0px !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.25);
+}
+#sidebar-box:not(
+    [sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"]
+  ) {
+  min-width: var(--thin-tab-width) !important;
+  max-width: none !important;
+}
+#sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] {
+  position: relative !important;
+  transition: all 150ms !important; /* used to be 300; 0 is just too jarring */
+  min-width: var(--thin-tab-width) !important;
+  max-width: var(--thin-tab-width) !important;
+  z-index: 1 !important;
+}
+#sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"]:hover {
+  transition: all 150ms !important;
+  min-width: var(--wide-tab-width) !important;
+  max-width: var(--wide-tab-width) !important;
+  margin-right: -165px !important; /*var(--wide-tab-width) - var(--thin-tab-width) = 160px * -1 = -160px*/
+  margin-right: calc(
+    var(--thin-tab-width) - var(--wide-tab-width)
+  ) !important; /* 160px * -1 = -160px*/
+  z-index: 1 !important;
+}
+
+/*}}}*/
+
+/* imposing a max width on searchbar will leave empty space on the right */
+/* #searchbar, */
+/* #search-container .searchbar-textbox { */
+/*   max-width: 200px !important; */
+/* } */
+
+#search-container,
+#searchbar,
+#urlbar,
+#urlbar-container,
+#urlbarView-results,
+.findbar-textbox,
+.searchbar-textbox,
+.urlbarView:not(.megabar),
+toolbar .toolbarbutton-1 {
+  background-color: var(background-color) !important;
+  background: var(background-color) !important;
+  border: none !important;
+  color: var(--beige) !important;
+  margin-inline: 0px !important;
+  padding-block: 0px !important;
+  text-align: -moz-center !important;
+  padding: 0px !important;
+}
+
+#browser-bottombox {
+  background-color: var(background-color) !important;
+}
+#navigator-toolbox {
+  border-bottom: none !important;
+}
+#addonbar-closebutton {
+  visibility: collapse !important;
+}
+
+.findbar-container {
+  background-color: var(background-color);
+  border: none;
+  color: var(--beige);
+}
+
+.close-icon {
+  color: var(--beige);
+  background-color: var(background-color);
+}
+
+#TabsToolbar,
+#status-bar > *,
+#nav-bar,
+#menubar-items {
+  color: var(--beige) !important;
+  text-shadow: white !important;
+  background-color: var(background-color) !important;
+  border: none !important;
+}
+
+tooltip * {
+  background-color: var(background-color) !important;
+  -moz-appearance: none !important;
+  border: none !important;
+}
+
+.tabbrowser-tab[selected] {
+  margin-top: -1px !important;
+}
+
+#PanelUI-button {
+  -moz-border-start: 0px !important;
+  border-image: none !important;
+}
+
+#TabsToolbar {
+  visibility: collapse !important;
+}
+
+/*
+https://gist.github.com/gmolveau/a802ded1320a7591a289fb7abd0d6c45
+*/
+tabbrowser tabpanels,
+browser {
+  background-color: var(background-color) !important;
+}
+
+/* a neat idea, but assumes you don't use the nav/searchbar -- i do */
+/* https://github.com/bjesus/fireside */

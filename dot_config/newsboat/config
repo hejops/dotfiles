@@ -1,0 +1,99 @@
+# this config file must end with a blank line, or else last line won't be recognised
+# https://newsboat.org/releases/2.22.1/docs/newsboat.html
+# https://github.com/meribold/dotfiles/blob/4c158fe58ee772171f4dbf42b64564b8f93ba3b1/home/config/newsboat/config
+
+# https://github.com/newsboat/newsboat/issues/2732
+download-retries 5
+
+# color	element		    text	background
+# set color110 to a variable?
+color	article             white	default
+color	background          white	default
+color	info                color234	color110	bold
+color	listfocus           color234	color110	bold
+color	listfocus_unread    color234	color110	bold
+color	listnormal          white	default
+color	listnormal_unread   white	default		bold
+
+# # regexes are case-insensitive by default
+# highlight article "^.*\.apple\..*$" black black		#doesn't work?
+# highlight article "^.*youtu\.be.*$" color234 color110 bold
+# highlight article "^.*youtube.*$" color234 color110 bold
+# highlight article "^Podcast" black black
+
+# https://newsboat.org/releases/2.22.1/docs/newsboat.html#_dialog_titles
+# https://newsboat.org/releases/2.22.1/docs/newsboat.html#_format_strings
+# no idea how to specify date format, but i don't even look at the date tbh
+
+# articlelist-format  "%4i %f %D   %?T?|%-17T|  ?%t"
+# articlelist-format " %D  %?T?%-20T  ?%> %?T?%-104t&%-126t? "
+# feedlist-format     "%4i %n %11u %t"		#opening screen
+# feedlist-title-format 	%N %V - Your feeds (%u unread, %t total)%?T? - tag ‘%T’&?
+# notify-format       "%d new articles (%n unread articles, %f unread feeds)"
+articlelist-format	"%3i. %t %> %T"
+articlelist-title-format	"%u/%t - %T"
+feedlist-format		"%3U %t %> %T"
+feedlist-title-format	"%> %?T? - tag ‘%T’&? unread feeds: %u/%t"
+itemview-title-format	"%u/%t - %T"
+notify-format		"%d new articles (%n unread)"
+
+# cache-file ("~/.newsboat/cache.db" or "~/.local/share/cache.db")
+# newsboat adheres to XDG, but stupidly places the cache in XDG_DATA_HOME
+cache-file ~/.config/newsboat/cache.db
+
+# bind-key r mark-feed-read feedlist
+# browser "firefox %u &>2 &"
+# browser "w3m %u"
+# datetime-format
+# delete-read-articles-on-quit
+# feed-sort-order firsttag
+# macro m set browser "mpv --profile=nb %u &" ; open-in-browser ; set browser "firefox %u &>2 &" ; redraw
+# macro r set browser "echo %u >> ~/.newsboat/readlist &" ; open-in-browser ; set browser "firefox %u &>2 &" ; redraw
+# refresh-on-startup
+# reload-only-visible-feeds yes
+# reload-time 60
+# show-read-articles no
+# show-read-feeds no
+bind-key ' mark-feed-read
+bind-key ; macro-prefix
+bind-key ENTER open-in-browser-and-mark-read
+bind-key LEFT clear-tag feedlist
+bind-key LEFT quit article
+bind-key LEFT quit articlelist
+bind-key RIGHT next article
+bind-key RIGHT open
+bind-key SPACE open-in-browser article
+bind-key T set-tag
+bind-key \ redraw
+bind-key ^Q hard-quit
+bind-key e open-in-browser article
+bind-key e open-in-browser-and-mark-read articlelist
+bind-key f goto-url
+bind-key i open-in-browser article
+bind-key i open-in-browser-and-mark-read articlelist
+bind-key t toggle-show-read-feeds
+browser "nohup firefox %u &>/dev/null &"
+history-limit 0
+ignore-mode "download" # don't write ignored articles to db
+keep-articles-days 7
+macro , set browser "feh -dFZ %u"; one ; next ; set browser "firefox %u &>2 &"
+prepopulate-query-feeds yes
+reload-threads 16
+scrolloff 10
+swap-title-and-hints yes
+unbind-key ,
+
+bind-key J pagedown
+bind-key J pagedown article
+bind-key K pageup
+bind-key K pageup article
+bind-key h quit
+bind-key j down
+bind-key k up
+bind-key l next-unread article
+bind-key l open articlelist
+bind-key l open feedlist
+
+# asterisk is not a pattern, glob or regex—we simply reserve it to mean "all feeds"
+# https://newsboat.org/releases/2.21/docs/newsboat.html#_filter_language
+# https://newsboat.org/releases/2.21/docs/newsboat.html#_killfiles

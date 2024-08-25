@@ -1,0 +1,523 @@
+-- vim: ts=2 sts=2 sw=2 et
+-- https://vim.fandom.com/wiki/Unused_keys
+-- https://stackoverflow.com/a/3806664 -- mostly visual mode
+-- https://vi.stackexchange.com/a/28080
+
+vim.g.mapleader = " " -- must be declared before declaring lazy plugins
+vim.g.maplocalleader = " "
+
+vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
+-- TODO: set mark and return to it (mz...z"ap)
+
+-- essentials
+vim.keymap.set("c", "<c-h>", "<s-left>")
+vim.keymap.set("c", "<c-j>", "<down>") -- defaults do nothing
+vim.keymap.set("c", "<c-k>", "<up>")
+vim.keymap.set("c", "<c-l>", "<s-right>")
+vim.keymap.set("c", "<c-o>", "<s-tab>")
+vim.keymap.set("i", "<c-c>", "<esc>", { remap = true, silent = true }) -- <c-c> kills cursorline
+vim.keymap.set("i", "<c-h>", "<s-left>")
+vim.keymap.set("i", "<c-j>", "<c-o>$<c-j>")
+vim.keymap.set("i", "<c-l>", "<s-right>")
+vim.keymap.set("n", "!", ":!")
+vim.keymap.set("n", "-", "~h") -- +/- are just j/k
+vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
+vim.keymap.set("n", "<c-c>", "<nop>")
+vim.keymap.set("n", "<c-z>", "<nop>")
+vim.keymap.set("n", "G", "G$zz") -- because of the InsertEnter zz autocmd
+vim.keymap.set("n", "H", "^")
+vim.keymap.set("n", "J", "mzJ`z") -- join without moving cursor
+vim.keymap.set("n", "L", "g_")
+vim.keymap.set("n", "Q", ":bd<cr>")
+vim.keymap.set("n", "U", ":redo<cr>")
+vim.keymap.set("n", "X", '"_X')
+vim.keymap.set("n", "Y", "y$") -- default is redundant with yy
+vim.keymap.set("n", "co", "O<esc>jo<esc>k") -- surround current line with newlines
+vim.keymap.set("n", "gD", "<nop>")
+vim.keymap.set("n", "gf", "<c-W>gF") -- open file under cursor in new tab, jumping to line if possible; uncommonly used
+vim.keymap.set("n", "gg", "gg0")
+vim.keymap.set("n", "j", [[v:count == 0 ? 'gj' : 'j']], { expr = true, silent = true }) -- use g[jk] smartly
+vim.keymap.set("n", "k", [[v:count == 0 ? 'gk' : 'k']], { expr = true, silent = true })
+vim.keymap.set("n", "s", '"_d')
+vim.keymap.set("n", "x", '"_x')
+vim.keymap.set("n", "~", "~h")
+vim.keymap.set("v", "<", "<gv") -- vim puts you back in normal mode by default
+vim.keymap.set("v", ">", ">gv")
+vim.keymap.set("v", "P", '"_dP')
+vim.keymap.set("v", "P", '"_dP')
+
+-- https://unix.stackexchange.com/a/356407
+-- large motions, jumps
+-- vim.keymap.set("n", "<leader>j", "<c-f>zz")
+-- vim.keymap.set("n", "<leader>k", "<c-b>zz")
+vim.keymap.set("n", "<c-b>", "<c-u>zz") -- <c-u/d> is more stable than <c-b/f>
+vim.keymap.set("n", "<c-d>", "<c-d>zz")
+vim.keymap.set("n", "<c-f>", "<c-d>zz")
+vim.keymap.set("n", "<c-i>", "<c-o>zz") -- jumplist; o = forward is more intuitive
+vim.keymap.set("n", "<c-j>", "<c-d>zz")
+vim.keymap.set("n", "<c-k>", "<c-u>zz")
+vim.keymap.set("n", "<c-o>", "<c-i>zz")
+vim.keymap.set("n", "<c-u>", "<c-u>zz")
+vim.keymap.set("n", "N", ":keepjumps normal! N<cr>zzzv", { silent = true })
+vim.keymap.set("n", "n", ":keepjumps normal! n<cr>zzzv", { silent = true })
+vim.keymap.set("n", "{", ":keepjumps normal! {<cr>zz", { silent = true })
+vim.keymap.set("n", "}", ":keepjumps normal! }<cr>zz", { silent = true })
+
+-- TODO: close all other splits (not tabs)
+-- default r behaviour is useless (cl)
+-- nmap ZF zfaft{blDkp$%bli<cR><esc>ld0<cR>zl|	" add folds around a func, like a real man, in any language
+-- tabs and folds; splits are deprecated in favour of tabs
+-- vim.keymap.set("n", "<c-h>", "<c-w><c-k>") -- split
+-- vim.keymap.set("n", "<c-l>", "<c-w><c-j>")
+-- vim.keymap.set("n", "re", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
+vim.keymap.set("n", "<c-h>", "gT")
+vim.keymap.set("n", "<c-l>", "gt")
+vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
+-- vim.keymap.set("n", "<c-t>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
+vim.keymap.set("n", "<c-t>", "<c-6>", { silent = true })
+vim.keymap.set("n", "r", "<nop>")
+vim.keymap.set("n", "rH", ":silent! tabm -1<cr>", { silent = true }) -- do i need this?
+vim.keymap.set("n", "rL", ":silent! tabm +1<cr>", { silent = true })
+vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- delete all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
+vim.keymap.set("n", "rh", "gT")
+vim.keymap.set("n", "ri", "<c-W>_") -- maximise current split height
+vim.keymap.set("n", "rj", "<c-w><c-j>")
+vim.keymap.set("n", "rk", "<c-w><c-k>")
+vim.keymap.set("n", "rl", "gt")
+vim.keymap.set("n", "rx", ":tabo<cr>") -- close all other buffers (but not delete)
+vim.keymap.set("n", "zH", "zM")
+vim.keymap.set("n", "zL", "zR")
+vim.keymap.set("n", "zh", "zm") -- fold
+vim.keymap.set("n", "zl", "zr") -- expand
+
+-- https://stackoverflow.com/a/2439848
+-- https://vim.fandom.com/wiki/Moving_lines_up_or_down
+-- i very rarely use alt nowadays
+vim.keymap.set("i", "<a-j>", "<esc>:m .+1<cr>==gi")
+vim.keymap.set("i", "<a-k>", "<esc>:m .-2<cr>==gi")
+vim.keymap.set("n", "<a-j>", ":m .+1<cr>==")
+vim.keymap.set("n", "<a-k>", ":m .-2<cr>==")
+vim.keymap.set("v", "<a-j>", ":m '>+1<cr>gv=gv")
+vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
+
+-- commands
+-- vim.keymap.set("n", "<c-s>", ":keepjumps normal! mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
+vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true }) -- vim's sort n is not at all like !sort -V
+vim.keymap.set("n", "<f10>", ":colo<cr>")
+vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
+vim.keymap.set("n", "<leader>D", [[:g/\v/d<Left><Left>]])
+vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- remove all undos -- https://stackoverflow.com/a/47524696
+vim.keymap.set("n", "<leader>X", ":call Build()<cr>")
+vim.keymap.set("n", "<leader>n", [[:%g/\v/norm <Left><Left><Left><Left><Left><Left>]])
+vim.keymap.set("n", "<leader>r", [[:%s/\v/g<Left><Left>]]) -- TODO: % -> g/PATT/
+vim.keymap.set("v", "D", [[:g/\v/d<Left><Left>]]) -- delete lines
+vim.keymap.set("v", "n", [[:g/\v/norm <Left><Left><Left><Left><Left><Left>]])
+vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
+
+-- context dependent binds
+-- https://github.com/neovim/neovim/blob/012cfced9b5384fefa11d74346779b1725106d07/runtime/doc/lua-guide.txt#L450
+-- local exec_or_close = [[&buftype == 'nofile' ? ':bd<cr>' : ':call Exec()<cr>']]
+-- vim.keymap.set("n", "<leader>x", exec_or_close, { silent = true, expr = true })
+local update_or_close = [[&buftype == 'nofile' ? ':bd<cr>' : ':update<cr>']] -- close window if scratch
+local x_or_close = [[&modifiable == 0 ? ':bd<cr>' : '"_x']]
+vim.keymap.set("n", "<c-c>", update_or_close, { silent = true, expr = true })
+vim.keymap.set("n", "<cr>", update_or_close, { silent = true, expr = true })
+vim.keymap.set("n", "<leader><space>", update_or_close, { silent = true, expr = true })
+vim.keymap.set("n", "x", x_or_close, { silent = true, expr = true })
+
+-- map <2-rightmouse> <nop>
+-- map <3-rightmouse> <nop>
+-- map <4-leftmouse> <nop>|	" vblock mode
+-- map <4-rightmouse> <nop>
+-- map <A-rightmouse> <c-f>zz|	" doesn't work
+-- map <c-leftmouse> <nop>
+-- mouse
+-- nmap <rightmouse> <cr>
+vim.keymap.set("i", "<rightmouse>", "<esc>")
+vim.keymap.set("n", "<rightmouse>", "<nop>")
+
+-- vim-fugitive; the only plugin allowed in this file, because of how critical it is
+-- most of fugitive's interactive features are better done via telescope (e.g. git log, git status)
+vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
+vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
+
+-- <leader>gd :Gdiffsplit<cr> -- too many colors, viewing diff in commit is less overwhelming
+-- <leader>gm :GMove<space>
+
+-- git add %
+-- git commit --amend --no-edit
+
+vim.keymap.set("n", "<leader>C", function() -- only closures are supported (i.e. no args), not invocations; too bad
+	-- TODO: if no changes, do nothing
+	vim.cmd("silent !pre-commit run --files %")
+	vim.cmd("Git commit -q -v %") -- commit entire file
+end, { desc = "commit current buffer" })
+
+-- git add "$1";
+-- git commit --amend --no-edit
+
+vim.keymap.set("n", "<leader>gc", function()
+	vim.cmd("silent !pre-commit run") -- limit to staged files
+	vim.cmd("Git commit -q -v") -- commit currently staged chunk(s)
+end, { desc = "commit currently staged hunks" })
+
+-- niche
+vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
+vim.keymap.set("n", "<leader>M", '"qp0dd') -- dump q buffer into a newline and cut it (for binding)
+vim.keymap.set("n", "z.", "ZZ") -- lazy exit
+
+-- -- technically doesn't belong here -- https://www.youtube.com/watch?v=AcvxrF2MrrI
+-- command W execute ":silent w !sudo tee % > /dev/null" | :edit!
+
+local ft_binds = { -- {{{
+
+	gitcommit = function()
+		vim.keymap.set("n", "J", "}zz", { buffer = true })
+		vim.keymap.set("n", "K", "{zz", { buffer = true })
+	end,
+
+	man = function()
+		vim.keymap.set("n", "J", "<c-f>zz", { buffer = true })
+		vim.keymap.set("n", "K", "<c-b>zz", { buffer = true })
+	end,
+
+	["qf,help,man,lspinfo,startuptime,Trouble,lazy"] = function()
+		vim.keymap.set("n", "q", "ZZ", { buffer = true })
+		vim.keymap.set("n", "x", "ZZ", { buffer = true })
+		vim.keymap.set("n", "<esc>", "ZZ", { buffer = true })
+	end,
+
+	sh = function()
+		vim.keymap.set("n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>", { buffer = true })
+	end,
+
+	rust = function()
+		-- TODO: <c-l> to exit parens?
+		vim.keymap.set("i", "<c-j>", ";<cr>", { buffer = true })
+		-- vim.keymap.set("n", "<leader>A", "oassert_eq!();<esc>hi", { buffer = true })
+		vim.keymap.set("n", "<leader>a", ":!cargo add ", { buffer = true })
+	end,
+
+	zig = function()
+		vim.keymap.set("i", "<c-j>", ";<cr>", { buffer = true })
+	end,
+
+	-- TODO: also include gomod
+	go = function()
+		vim.keymap.set("n", "<leader>E", "oif err!=nil{panic(err)}<esc>:w<cr>o", { buffer = true }) -- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
+
+		-- TODO: go get foo, and import foo
+		-- https://github.com/ray-x/go.nvim/blob/cde0c7a110c0f65b9e4e6baf342654268efff371/lua/go/goget.lua#L23
+		-- vim.keymap.set("n", "<leader>a", 'gg/import<cr>o"":!go get github.com/', { buffer = true })
+
+		function GoGet(pkg)
+			local url = "github.com/" .. pkg
+
+			-- 1. go get github...
+			vim.system(
+				{ "go", "get", url },
+				{},
+				-- on_exit
+				function(obj)
+					if obj.code == 0 then
+						print("ok: " .. pkg)
+						os.execute("notify-send " .. pkg)
+					else
+						print(obj.signal)
+						print(obj.stdout)
+						print(obj.stderr)
+					end
+				end
+			):wait()
+			-- 2. add import statement (_ "github.com/..."), save
+			-- 3. go mod tidy
+		end
+		vim.keymap.set("n", "<leader>a", ":lua GoGet''<left>", { buffer = true })
+		vim.keymap.set(
+			"n",
+			"<leader>t",
+			":!go mod tidy<cr><cr>",
+			-- ":!go mod tidy<cr><cr>:LspRestart",
+			{ buffer = true }
+		)
+	end,
+
+	markdown = function()
+		-- TODO: if checkbox item (`- [ ]`), toggle check
+		-- https://github.com/tadmccorkle/markdown.nvim#lists
+		vim.keymap.set("n", "<leader>s", require("telescope").extensions.heading.heading, { buffer = true })
+		vim.keymap.set("n", "<c-k>", "ysiw]Ea()<esc>Pgqq", { buffer = true, remap = true }) -- wrap in hyperlink
+		vim.keymap.set("n", "])", ":MDTaskToggle<cr>", { buffer = true, remap = true }) -- wrap in hyperlink
+	end,
+}
+
+for ft, callback in pairs(ft_binds) do
+	vim.api.nvim_create_autocmd("FileType", {
+		pattern = ft,
+		callback = callback,
+	})
+end
+
+-- }}}
+
+local function get_sql_cmd(curr_file)
+	local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)
+	local db = string.gsub(first_line[1], "^-- ", "")
+	-- TODO: check file exists
+
+	-- litecli has nicer (tabular) output, but some ill-placed comments will
+	-- cause syntax error
+	local cmd = string.format("cat %s | litecli -t %s", curr_file, db)
+	-- local cmd = string.format("cat %s | sqlite3 %s", curr_file, db)
+	-- print(cmd)
+	return cmd
+end
+
+-- execute current file and dump stdout to scratch buffer. running tests is
+-- better left to the terminal itself (e.g. wezterm)
+local function exec()
+	-- {{{
+	if vim.bo.filetype == "nofile" then
+		return
+	end
+	-- TODO: vsplit if wide enough
+	-- TODO: async (Dispatch)
+	local h = vim.o.lines * 0.2
+	local front = h .. " new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
+
+	-- c: make %< ; [redraw] ; './'.expand('%<')
+	-- lilypond
+
+	local curr_file = vim.fn.shellescape(vim.fn.expand("%")) -- basename!
+	local cwd = vim.fn.getcwd()
+	-- curr_file = string.format("%s/%s", cwd, curr_file)
+
+	-- TODO: rust: determine if current cursor position is in test
+
+	local runners = {
+
+		gleam = "gleam run",
+		rust = "RUST_BACKTRACE=1 cargo run", -- TODO: spawn new kitty window?
+
+		-- note that :new brings us to repo root (verify with :new|pwd), so we need
+		-- to not only know where we used to be, but also run the basename.go
+		-- correctly
+		-- go = string.format("cd %s; go run %s", cwd, curr_file),
+		-- go = string.format("cd %s; go run *.go", cwd),
+		go = string.format("cd %s; ls *.go | grep -v _test | xargs go run", cwd),
+
+		-- typescript = string.format("tsc %s && node %s", curr_file, string.gsub(curr_file, ".ts", ".js")),
+		-- typescript = "node " .. string.gsub(curr_file, ".ts", ".js"), -- assuming tsc --watch has been started
+		typescript = "ts-node " .. curr_file,
+
+		html = "firefox " .. curr_file,
+		javascript = "node " .. curr_file,
+		python = "python3 " .. curr_file,
+		ruby = "ruby " .. curr_file,
+		sh = "env bash " .. curr_file,
+		zig = "zig run " .. curr_file,
+		sql = get_sql_cmd(curr_file),
+	}
+
+	local ft = vim.bo.filetype
+	local runner = runners[ft]
+
+	if runner == nil then
+		print("No runner configured for " .. ft)
+		return
+	elseif vim.loop.fs_stat(cwd .. "/pyproject.toml") then
+		-- if pyproject.toml, prepend poetry run
+		runner = "poetry run " .. runner
+	elseif vim.loop.fs_stat(cwd .. "/manage.py") then -- django
+		runner = "./manage.py shell < " .. curr_file
+		-- elseif string.find(curr_file, "grammar.js") ~= nil then
+		-- 	-- runner = "tree-sitter generate ; tree-sitter parse ./testfile 2>/dev/null"
+		-- 	-- runner = "tree-sitter generate ; tree-sitter test" -- hard to diff without color
+		-- 	runner = "tsfmt testfile"
+	end
+
+	-- close all unnamed splits
+	for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_get_name(bufnr) == "" then
+			vim.api.nvim_buf_delete(bufnr, { force = true })
+		end
+	end
+
+	-- print(front .. runner)
+	vim.cmd(front .. runner)
+	vim.cmd.wincmd("k") -- return focus to main split
+end -- }}}
+vim.keymap.set("n", "<leader>x", exec, { silent = true })
+
+local function init() -- {{{
+	-- if not saved yet (no filename), force save
+	if vim.fn.expand("%") == "" then
+		vim.ui.input({
+			prompt = "filename: ",
+		}, function(input)
+			-- early return here only applies to the inner scope (closure)
+			if input ~= "" and input ~= nil then
+				vim.cmd("w " .. input)
+			end
+		end)
+	end
+	if vim.fn.expand("%") == "" then
+		return
+	end
+
+	local ft = vim.bo.filetype
+	if ft == "" then -- yes, default is empty string...
+		ft = "sh"
+	end
+
+	-- TODO: double newlines get removed due to splitting
+	local templates = {
+		python = [[\
+#!/usr/bin/env python3
+
+# from glob import glob
+# from pprint import pprint
+# import logging
+# import os
+# import re
+# import shutil
+# import sys
+# import urllib
+
+# import pandas as pd
+# import requests
+# import streamlit as st
+
+# if __name__ == "__main__":
+#     main()
+]],
+		-- rust style string literal
+		sh = [=[
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+        cat << EOF
+Usage: $(basename "$0") [options]
+
+EOF
+        exit
+}
+
+[[ $# -eq 0 ]] && usage
+# [[ ${1:-} = --help ]] && usage
+
+# while getopts "<++>" opt; do
+#       case ${opt} in
+#       \?) usage ;;
+#       esac
+# done
+# shift $((OPTIND - 1))
+]=],
+	}
+
+	local template = templates[ft]
+	if template == nil then
+		-- print("No template for", ft)
+		return
+	end
+
+	-- vim.cmd("0read !cat " .. template)
+
+	-- https://stackoverflow.com/a/32847589
+	local lines = {}
+	for l in template:gmatch("[^\r\n]+") do
+		table.insert(lines, l)
+	end
+	vim.api.nvim_buf_set_lines(0, 0, 0, true, lines)
+	vim.cmd("w")
+
+	vim.cmd("e")
+	vim.cmd("startinsert")
+end -- }}}
+vim.keymap.set("n", "<leader>i", init, { silent = true })
+
+-- example output:
+-- `lua/binds.lua:394	local function yank_path()`
+local function yank_path()
+	local path = vim.fn.expand("%")
+	local lnum = vim.fn.line(".")
+	local line = vim.fn.trim(vim.api.nvim_get_current_line())
+
+	local str = path .. ":" .. lnum .. "\t" .. line .. "\n"
+	vim.fn.setreg("+", str)
+end
+vim.keymap.set("n", "yp", yank_path, { silent = true })
+
+-- a crappy hack meant for copying a serde `Value` and turning it into a struct
+local function replace_selection()
+	-- {{{
+	-- https://github.com/mfussenegger/dotfiles/blob/fa58149048db153fc27c38e5c815d40a7d637851/vim/dot-config/nvim/lua/me/term.lua#L180
+	local mode = vim.api.nvim_get_mode()
+	local pos1
+	local pos2
+	if vim.tbl_contains({ "v", "V", "" }, mode.mode) then
+		pos1 = vim.fn.getpos("v")
+		pos2 = vim.fn.getpos(".")
+	else
+		return
+	end
+
+	-- https://neovim.io/doc/user/builtin.html#getregion()
+	local lines = vim.fn.getregion(pos1, pos2, { type = mode.mode })
+
+	-- replace lines
+	local new = table.concat(lines, "\n")
+	local foo = [[\([^)]+\)]]
+	local types = {
+		-- TODO: serde type -> rust type
+		Number = "usize",
+		Array = "Vec",
+		["["] = "<",
+		["]"] = ">",
+		['"'] = "",
+		[foo] = "",
+	}
+	for k, v in pairs(types) do
+		new = vim.fn.substitute(new, k, v, "g")
+	end
+
+	-- replace current v selection with new lines
+	vim.api.nvim_paste(new .. "\n", false, -1)
+end -- }}}
+vim.keymap.set("v", "C", replace_selection, { silent = true })
+
+local function debug_print()
+	local filetypes = {
+
+		-- zig = 'std.debug.print("{}\n",.{});',
+		go = "fmt.Println(@)",
+		javascript = "console.log(@);",
+		lua = "print(@)",
+		python = 'print(f"{@=}")',
+		rust = 'println!("{:#?}", @);',
+		typescript = "console.log(@);",
+	}
+
+	local ft = vim.bo.filetype
+	local cmd = filetypes[ft]
+	if ft == nil then
+		return
+	end
+
+	local cmd_split = {}
+	for s in string.gmatch(cmd, "([^@]+)") do
+		-- print(s)
+		table.insert(cmd_split, s)
+	end
+
+	local left = cmd_split[1]
+	local right = cmd_split[2]
+
+	vim.cmd.norm("o" .. left .. right)
+	if string.len(right) > 1 then
+		vim.cmd.norm(string.len(right) - 1 .. "h")
+	end
+	vim.cmd.startinsert()
+end
+vim.keymap.set("n", "<leader>p", debug_print, { silent = true })
