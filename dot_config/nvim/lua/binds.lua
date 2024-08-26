@@ -294,6 +294,41 @@ local function exec()
 
 	-- TODO: rust: determine if current cursor position is in test
 
+	local function ts_is_compiled(js, ts)
+		local f1 = io.popen("stat -c %Y " .. js)
+		local js_epoch = f1:read()
+		f1:close()
+
+		local f2 = io.popen("stat -c %Y " .. ts)
+		local ts_epoch = f2:read()
+		f2:close()
+
+		return js_epoch > ts_epoch
+	end
+
+	local function get_ts_runner()
+		-- attempt to run .ts file
+
+		local js = string.gsub(curr_file, ".ts", ".js")
+
+		if vim.loop.fs_stat(js) and ts_is_compiled(js, curr_file) then
+			-- fastest, but requires already compiled js (which is slow)
+			return "node " .. js -- 0.035 s
+		elseif vim.loop.fs_stat("./node_modules/tsx") then
+			-- run with node directly (without transpilation); requires node 22.7.0 + tsx
+			-- https://nodejs.org/api/typescript.html#full-typescript-support
+			return "node --import=tsx " .. curr_file -- 0.140 s
+		elseif vim.loop.fs_stat("/usr/bin/ts-node") then
+			return "ts-node " .. curr_file -- 0.560 s
+		elseif vim.loop.fs_stat("./node_modules/@types/node") then
+			-- https://stackoverflow.com/a/78148646
+			os.execute("tsc " .. curr_file) -- ts -> js, 1.46 s
+			return "node " .. js
+		else
+			error("no suitable ts runner")
+		end
+	end
+
 	local runners = {
 
 		gleam = "gleam run",
@@ -306,17 +341,14 @@ local function exec()
 		-- go = string.format("cd %s; go run *.go", cwd),
 		go = string.format("cd %s; ls *.go | grep -v _test | xargs go run", cwd),
 
-		-- typescript = string.format("tsc %s && node %s", curr_file, string.gsub(curr_file, ".ts", ".js")),
-		-- typescript = "node " .. string.gsub(curr_file, ".ts", ".js"), -- assuming tsc --watch has been started
-		typescript = "ts-node " .. curr_file,
-
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
 		python = "python3 " .. curr_file,
 		ruby = "ruby " .. curr_file,
 		sh = "env bash " .. curr_file,
-		zig = "zig run " .. curr_file,
 		sql = get_sql_cmd(curr_file),
+		typescript = get_ts_runner(),
+		zig = "zig run " .. curr_file,
 	}
 
 	local ft = vim.bo.filetype
