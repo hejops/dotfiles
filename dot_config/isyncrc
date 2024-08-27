@@ -1,6 +1,13 @@
 # https://wiki.archlinux.org/index.php/Isync
 # http://pragmaticemacs.com/emacs/migrating-from-offlineimap-to-mbsync-for-mu4e/
 
+# XDG is finally supported, as of 2022-05-30:
+#
+# https://sourceforge.net/p/isync/isync/ci/cf13630a00e4761e26f054b37875085958800eeb/
+#
+# "By default, the configuration is read from $XDG_CONFIG_HOME/isyncrc, and if
+# that does not exist, ~/.mbsyncrc is tried in turn."
+
 IMAPAccount gmail
 Host imap.gmail.com
 User hejops1@gmail.com
