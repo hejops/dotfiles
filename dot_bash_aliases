@@ -1242,17 +1242,31 @@ rt() { # pass an array of relative paths to tagfix
 # }
 
 vl() {
-	cd ~/loona || return
 
-	# is2.4chan block is ip-dependent
-	grep < /tmp/hr-loona -e jpg -e png |
-		grep -Po 'http\S+' |
-		# grep -v is2 |
+	[[ $# -ne 1 ]] && return
+
+	id=$(c https://a.4cdn.org/hr/catalog.json |
+		jq . |
+		grep -B3 "$1" |
+		grep -Pom1 '\d+')
+
+	[[ -z $id ]] && return
+
+	cd ~/"${1,,}" || return
+
+	# # is2.4chan block is ip-dependent
+	# grep < /tmp/hr-loona -e jpg -e png |
+	# 	grep -Po 'http\S+' |
+	c "https://a.4cdn.org/hr/thread/$id.json" |
+		jq '.[][] | select(.filename != null) | [ (.tim|tostring), .ext ] | join("")' |
+		prepend 'https://i.4cdn.org/hr/' |
 		tac |
-		xargs feh -dFZ
+		xargs feh -dFZ --action "echo -n %F | xclip -sel c"
 
 	waitdie mpvweb mpv taggenre.py
-	grep < /tmp/hr-loona -Po 'http[^\"<]+' |
+
+	# grep < /tmp/hr-loona -Po 'http[^\"<]+' |
+	c "https://a.4cdn.org/hr/thread/$id.json" | jq '.' |
 		grep -e youtu -e vlive -e streamable -e idalso |
 		tac |
 		uniq |
