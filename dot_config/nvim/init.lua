@@ -47,6 +47,8 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 		-- $HOME/.local/share/nvim/lazy/citruszest.nvim/lua/citruszest/highlights/init.lua:29
 		-- 8:    ColorColumn = { bg = C.none }, -- used for the columns set with 'colorcolumn'
 		vim.api.nvim_set_hl(0, "ColorColumn", { bg = "#48D1CC" })
+
+		-- TODO: set lualine?
 	end,
 })
 
@@ -756,7 +758,6 @@ vim.diagnostic.config({
 
 local linters = {
 
-	-- TODO: pylint to auto-resolve whatever is possible
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 	-- https://github.com/mfussenegger/nvim-lint/issues?q=is%3Aissue+vale+
 	-- markdown = { "proselint" }, -- doesn't work
@@ -770,15 +771,15 @@ local linters = {
 	htmldjango = { "djlint" },
 	javascript = { "biomejs" },
 	markdown = { "markdownlint", "proselint" },
-	python = { "pylint" },
 	ruby = { "rubocop" },
 	typescript = { "biomejs" },
 
-	-- ruff is faster than pylint but far behind in features; it has limited AST parsing (if any) and thus only goes for low hanging fruit, e.g. unused imports
-	-- https://github.com/astral-sh/ruff/issues/970
-	-- python = { "ruff" },
+	python = {
+		"ruff",
+		-- "pylint", -- https://github.com/mfussenegger/nvim-lint/issues/606
+	},
 
-	-- # the following example does not produce a single warning in ruff:
+	-- # a good litmus test:
 	-- foo = "%s" % 111
 	-- bar = list([x for x in range(3)])
 	-- if 1:
@@ -789,6 +790,26 @@ local linters = {
 
 -- https://github.com/orumin/dotfiles/blob/62d7afe8a9bf531d1b5c8b13bbb54a55592b34b3/nvim/lua/configs/plugin/lsp/linter_config.lua#L7
 require("lint").linters_by_ft = linters
+
+-- https://github.com/rrunner/dotfiles/blob/d55d90ed5d481fc1138483f76f0970d93784bf0a/nvim/.config/nvim/lua/plugins/linting.lua#L17
+require("lint").linters.ruff.args = {
+	"check",
+	"--select=ALL",
+	"--ignore="
+		.. "ERA" -- allow comments
+		.. ",PD901" -- allow var name df
+		.. ",PLR0913" -- allow >5 func args
+		.. ",PLR2004" -- allow magic constant values
+		.. ",RET504" -- allow unnecessary assignment before return statement
+		.. ",T201", -- allow print()
+	"--force-exclude",
+	"--quiet",
+	"--stdin-filename",
+	vim.api.nvim_buf_get_name(0),
+	"--no-fix", -- --fix won't work in nvim
+	"--output-format=json", -- important
+	"-",
+}
 
 -- https://gist.github.com/Norbiox/652befc91ca0f90014aec34eccee27b2
 -- Set pylint to work in virtualenv
