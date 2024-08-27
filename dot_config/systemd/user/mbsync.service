@@ -1,9 +1,0 @@
-[Unit]
-Description=Mailbox synchronization service
-
-[Service]
-Type=oneshot
-; https://notmuchmail.org/pipermail/notmuch/2019/028931.html
-Environment="NOTMUCH_CONFIG=$HOME/.config/notmuch/config"
-ExecStart=/usr/bin/mbsync -Va
-ExecStartPost=$HOME/scripts/mailtag
