@@ -2,6 +2,9 @@
 # - aerc (go): does not use local storage ootb
 # - himalaya (rust): not a tui ootb
 
+# https://man.freebsd.org/cgi/man.cgi?query=mailcap&sektion=4&manpath=FreeBSD+8.0-RELEASE+and+Ports#end
+set mailcap_path = "~/.config/neomutt/mailcap"
+
 # https://neomutt.org/guide/reference.html
 # https://neomutt.org/guide/advancedusage.html#new-mail
 # https://neomutt.org/test-doc/bestpractice/nativimap

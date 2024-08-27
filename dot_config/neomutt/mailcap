@@ -1,0 +1,9 @@
+# https://github.com/saimn/dotfiles/blob/master/mailcap
+# https://github.com/neomutt/neomutt/issues/1047
+# text/csv; vimpager %s; copiousoutput
+# text/html; cat %s; copiousoutput
+# text/plain; vimpager %s
+application/pdf; zathura %s
+text/html; w3m -I %{charset} -T text/html; copiousoutput
+text/pdf; zathura %s
+text/plain; cat %s; copiousoutput
