@@ -1,0 +1,51 @@
+! vim:ft=xdefaults
+! for changes to take effect run: xrdb -merge ~/.Xresources
+
+! https://github.com/bogdanvlviv/dotX/blob/f207f133f073d9423004e493ad7dcd4273e16437/.Xresources
+! https://github.com/tpope/tpope/blob/d0c97ebf32f34f2791e55e2fb49657a248ad8b13/.Xresources
+! https://jnrowe.github.io/articles/tips/Sharing_Xresources_between_systems.html
+! https://stackoverflow.com/a/36978365
+
+#include ".local/share/nvim/lazy/citruszest.nvim/extra/citruszest_xresources"
+
+! or just xrdb twice
+! xrdb -merge $HOME/.Xresources
+/* xrdb -merge $HOME/.local/share/nvim/lazy/citruszest.nvim/extra/*xresources */
+
+! note: faceName mostly affects dwm statusbar and gtk (e.g. firefox)
+.*faceName: xft:haskplex-11
+
+! see ~/.config/fontconfig/fonts.conf
+Xcursor.size: 32
+Xft.antialias: true
+Xft.autohint: true
+Xft.hinting: true
+Xft.hintstyle: hintslight
+Xft.lcdfilter: lcddefault
+Xft.rgba: vrgb
+
+! https://unix.stackexchange.com/a/433504
+! https://wiki.archlinux.org/title/HiDPI#X_Resources
+
+! note: "maximum" width is detected among all screens
+#if WIDTH > 1920
+Xft.dpi: 192
+#elif WIDTH > 1366
+Xft.dpi: 144
+#else
+Xft.dpi: 96
+#endif
+
+! ! XTerm*altIsNotMeta: true
+! ! XTerm*metaSendsEscape: true
+! ! XTerm*selectToClipboard: true
+!
+! XTerm.vt100.translations:    #override \n\
+!     Shift Ctrl <Key>C: copy-selection(CLIPBOARD) \n\
+!     Shift Ctrl <Key>V: insert-selection(CLIPBOARD) \n\
+!     ! Alt  V: insert-selection(PRIMARY) \n\
+!     ! Ctrl  Insert: copy-selection(CLIPBOARD) \n\
+!     ! Shift  Insert: insert-selection(CLIPBOARD)
+!
+! /* xterm doesn't have a spacing setting */
+! XTerm*renderFont: true
