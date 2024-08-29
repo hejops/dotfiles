@@ -260,19 +260,6 @@ end
 
 -- }}}
 
-local function get_sql_cmd(curr_file)
-	local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)
-	local db = string.gsub(first_line[1], "^-- ", "")
-	-- TODO: check file exists
-
-	-- litecli has nicer (tabular) output, but some ill-placed comments will
-	-- cause syntax error
-	local cmd = string.format("cat %s | litecli -t %s", curr_file, db)
-	-- local cmd = string.format("cat %s | sqlite3 %s", curr_file, db)
-	-- print(cmd)
-	return cmd
-end
-
 -- execute current file and dump stdout to scratch buffer. running tests is
 -- better left to the terminal itself (e.g. wezterm)
 local function exec()
@@ -294,6 +281,21 @@ local function exec()
 
 	-- TODO: rust: determine if current cursor position is in test
 
+	local function get_sql_cmd(file)
+		local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)
+		local db = string.gsub(first_line[1], "^-- ", "")
+		-- TODO: check file exists
+
+		-- litecli has nicer (tabular) output, but some ill-placed comments will
+		-- cause syntax error
+		local cmd = string.format("cat %s | litecli -t %s", file, db)
+		-- local cmd = string.format("cat %s | sqlite3 %s", file, db)
+		-- print(cmd)
+		return cmd
+	end
+
+	-- if the js file newer than the ts file, the ts file can be said to be
+	-- compiled
 	local function ts_is_compiled(js, ts)
 		local f1 = io.popen("stat -c %Y " .. js)
 		local js_epoch = f1:read()
@@ -306,23 +308,22 @@ local function exec()
 		return js_epoch > ts_epoch
 	end
 
-	local function get_ts_runner()
-		-- attempt to run .ts file
+	-- attempt to run .ts file
+	local function get_ts_runner(file)
+		local js = string.gsub(file, ".ts", ".js")
 
-		local js = string.gsub(curr_file, ".ts", ".js")
-
-		if vim.loop.fs_stat(js) and ts_is_compiled(js, curr_file) then
+		if vim.loop.fs_stat(js) and ts_is_compiled(js, file) then
 			-- fastest, but requires already compiled js (which is slow)
 			return "node " .. js -- 0.035 s
 		elseif vim.loop.fs_stat("./node_modules/tsx") then
 			-- run with node directly (without transpilation); requires node 22.7.0 + tsx
 			-- https://nodejs.org/api/typescript.html#full-typescript-support
-			return "node --import=tsx " .. curr_file -- 0.140 s
+			return "node --import=tsx " .. file -- 0.140 s
 		elseif vim.loop.fs_stat("/usr/bin/ts-node") then
-			return "ts-node " .. curr_file -- 0.560 s
+			return "ts-node " .. file -- 0.560 s
 		elseif vim.loop.fs_stat("./node_modules/@types/node") then
 			-- https://stackoverflow.com/a/78148646
-			os.execute("tsc " .. curr_file) -- ts -> js, 1.46 s
+			os.execute("tsc " .. file) -- ts -> js, 1.46 s
 			return "node " .. js
 		else
 			error("no suitable ts runner")
@@ -331,8 +332,21 @@ local function exec()
 
 	local runners = {
 
+		-- the great langs
 		gleam = "gleam run",
-		rust = "RUST_BACKTRACE=1 cargo run", -- TODO: spawn new kitty window?
+		rust = "RUST_BACKTRACE=1 cargo run",
+
+		-- the ok langs
+		html = "firefox " .. curr_file,
+		javascript = "node " .. curr_file,
+		python = "python3 " .. curr_file,
+		ruby = "ruby " .. curr_file,
+		sh = "env bash " .. curr_file,
+		zig = "zig run " .. curr_file,
+
+		-- the iffy langs
+		sql = get_sql_cmd(curr_file),
+		typescript = get_ts_runner(curr_file),
 
 		-- note that :new brings us to repo root (verify with :new|pwd), so we need
 		-- to not only know where we used to be, but also run the basename.go
@@ -341,14 +355,14 @@ local function exec()
 		-- go = string.format("cd %s; go run *.go", cwd),
 		go = string.format("cd %s; ls *.go | grep -v _test | xargs go run", cwd),
 
-		html = "firefox " .. curr_file,
-		javascript = "node " .. curr_file,
-		python = "python3 " .. curr_file,
-		ruby = "ruby " .. curr_file,
-		sh = "env bash " .. curr_file,
-		sql = get_sql_cmd(curr_file),
-		typescript = get_ts_runner(),
-		zig = "zig run " .. curr_file,
+		-- the... kotlin
+		-- https://kotlinlang.org/docs/command-line.html#create-and-run-an-application
+		kotlin = string.format(
+			"kotlinc %s -include-runtime -d %s ; java -jar %s",
+			curr_file,
+			string.gsub(curr_file, ".kt", ".jar"),
+			string.gsub(curr_file, ".kt", ".jar")
+		),
 	}
 
 	local ft = vim.bo.filetype
