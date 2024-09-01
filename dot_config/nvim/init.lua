@@ -725,10 +725,10 @@ require("lspconfig").pyright.setup({
 	end,
 })
 
--- doesn't apply to bash(ls) for some reason, whatever
--- https://github.com/folke/trouble.nvim/issues/52#issuecomment-950044538
-local diagnostics_signs = { Error = "💀", Warning = "⚠", Hint = "ⓘ", Information = "ⓘ" }
+local diagnostics_signs = { Error = "💀", Warn = "🤔", Hint = "🤓", Info = "ⓘ" }
 for type, icon in pairs(diagnostics_signs) do
+	-- https://github.com/folke/trouble.nvim/issues/52#issuecomment-950044538
+	-- https://github.com/folke/trouble.nvim/issues/52#issuecomment-988874117
 	local hl = "DiagnosticSign" .. type
 	vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
 end
