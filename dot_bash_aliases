@@ -215,6 +215,11 @@ gs() {
 	# No commits staged.
 
 	if
+		# not repo
+		! git status > /dev/null
+	then
+		return
+	elif
 		# new repo
 		git status | grep -q 'No commits yet'
 	then
@@ -222,20 +227,45 @@ gs() {
 		return
 	fi
 
-	{ git status --porcelain | grep -Fv '??'; } 2> /dev/null || return
-	echo
+	# 1
 
 	# note: colors are lost when piping, but sort is more useful than color
-	git diff --stat ./ | # generally, i only want to see the diff stat for current dir
-		grep -F '|' |       # ignore summary line
-		sort -n -k3         # most changes last (more useful in short terminals)
+	if
+		diffs=$(
+			git diff --stat ./ | # generally, i only want to see the diff stat for current dir
+				grep -F '|' |       # ignore summary line
+				sort -n -k3         # most changes last (more useful in short terminals)
+		)
+		[[ -n $diffs ]]
+	then
+		{ git status --porcelain | grep -Fv '??'; } 2> /dev/null
+		echo
+		echo "$diffs"
+	else
+		# newly staged files are -not- included in git diff
+		files=$(git status --porcelain |
+			grep '^A' |
+			awk '{print $NF}' |
+			# make paths absolute (default: relative to root)
+			prepend "$(get_repo_root)/" |
+			# then relativise to cwd
+			largs realpath --relative-to=. 2> /dev/null)
+		while read -r f; do
+			lines=$(< "$f" wc -l)
+			echo "./$f | $lines +"
+		done <<< "$files" | column -t
+	fi
 	echo
+
+	# 2
 
 	untracked=$(git ls-files --others --exclude-standard)
 	if [[ -n $untracked ]]; then
 		echo "$untracked"
 		echo
 	fi
+
+	# 3
 
 	git status | grep -P '\d+ commits?' || echo 'No commits staged.'
 }
