@@ -222,8 +222,8 @@ local function keys()
 	local hint_url = {
 		QuickSelectArgs = {
 			patterns = {
-				"https?://\\S+",
-				-- add more
+				-- https://wezfurlong.org/wezterm/config/lua/config/hyperlink_rules.html
+				"\\b\\w+://\\S+[)/a-zA-Z0-9-]+",
 			},
 			action = wezterm.action_callback(function(window, pane)
 				local url = window:get_selection_text_for_pane(pane)
