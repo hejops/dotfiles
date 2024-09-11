@@ -892,6 +892,7 @@ require("conform").setup({
 				"-sr", -- spaces before < etc
 			},
 		},
+		dhall = { command = "dhall", args = { "format" } },
 	},
 	formatters_by_ft = {
 		-- https://github.com/stevearc/conform.nvim#formatters
@@ -928,6 +929,7 @@ require("conform").setup({
 		c = { "astyle" }, -- clang-format requires config ootb
 		cpp = { "astyle" }, -- clang-format requires config ootb
 		css = { "prettier" },
+		dhall = { "dhall" },
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" }, -- need --parser html?
 		htmldjango = { "djlint" },
