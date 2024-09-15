@@ -910,9 +910,9 @@ require("conform").setup({
 			-- https://github.com/SingularisArt/Singularis/blob/856a938fc8554fcf47aa2a4068200bc49cad2182/aspects/nvim/files/.config/nvim/lua/modules/lsp/lsp_config.lua#L50
 
 			"gofumpt", -- https://github.com/mvdan/gofumpt?tab=readme-ov-file#added-rules
-			"goimports", -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 			"golines", -- https://github.com/segmentio/golines#motivation
-			-- "goimports-reviser", -- https://github.com/incu6us/goimports-reviser?tab=readme-ov-file#examples
+			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party)
+			-- "goimports", -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 		},
 
 		markdown = {
