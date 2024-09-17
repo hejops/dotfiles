@@ -23,9 +23,8 @@ https://www.eriwen.com/firefox/use-the-dom-inspector/
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
 *|*:root {
-  /* i should probably update these to citruszest */
-  background-color: #282828;
-  --beige: #ebdbb2;
+  background-color: #121212;
+  --beige: #bfbfbf;
 }
 
 *|*:root {
