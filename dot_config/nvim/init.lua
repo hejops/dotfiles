@@ -375,10 +375,13 @@ telescope.load_extension("heading")
 -- end
 
 local function get_layout_strategy()
-	-- "vertical" is recommended if file previews are important, e.g. git diff, symbol search, or if window is narrow
+	-- "vertical" is recommended if file previews are important, e.g. git diff,
+	-- symbol search, or if window is narrow
+	--
 	-- "center" is recommended if previews are unimportant (or irrelevant)
-	-- for everything else, "horizontal" is a good fallback
-	-- having said that, thinking about layouts is cognitive load and should be aboided
+	--
+	-- for everything else, "horizontal" is a good fallback. having said that,
+	-- thinking about layouts is cognitive load and should be avoided
 	if vim.o.lines > 60 or vim.o.columns < 100 then
 		return "vertical"
 	else
@@ -386,7 +389,7 @@ local function get_layout_strategy()
 	end
 end
 
-vim.api.nvim_create_autocmd("VimResized", {
+vim.api.nvim_create_autocmd({ "VimEnter", "VimResized" }, {
 	callback = function()
 		require("telescope").setup({
 			defaults = { layout_strategy = get_layout_strategy() },
