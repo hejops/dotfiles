@@ -397,44 +397,18 @@ vim.api.nvim_create_autocmd({ "VimEnter", "VimResized" }, {
 	end,
 })
 
-local function telescope_grep_word()
-	telescope_b.grep_string({ word_match = "-w" })
-end
-
--- local function telescope_doc_diagnostics()
--- 	telescope_b.diagnostics({ bufnr = 0 })
--- end
-
--- local function grep()
--- 	local w = vim.fn.expand("<cword>")
--- 	require("telescope.builtin").live_grep({
--- 		default_text = w,
--- 	})
--- end
-
--- vim.keymap.set("n", "<leader>W", grep, { desc = "grep current WORD" })
-vim.keymap.set("n", "<leader>/", telescope_b.live_grep, { desc = "ripgrep" }) -- entire project
--- vim.keymap.set("n", "<leader>W", telescope_grep_word, { desc = "grep current word" }) -- rarely used
--- vim.keymap.set("n", "<leader>z", telescope_b.current_buffer_fuzzy_find, { desc = "grep" }) -- current buf, pre-loaded, rarely used
-
-vim.keymap.set("n", "<leader>w", function()
-	-- this is generally better than grep_string, because it is project-wide for funcs, and func-wide for vars
-	require("trouble").open("lsp_references")
-end)
-
-vim.keymap.set("n", "<leader>h", function()
-	-- inlay hints lead to -a lot- of clutter, so they should not be enabled by default
-	vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
-end, { desc = "toggle inlay hints" })
-
 -- telescope.treesitter is less useful than telescope_b.lsp_*_symbols
+-- vim.keymap.set("n", "<leader>E", telescope.extensions.chezmoi.find_files, { desc = "chezmoi" }) -- i have never used this
+-- vim.keymap.set("n", "<leader>F", telescope.extensions.file_browser.file_browser) -- ls-like, usually annoying to use
 -- vim.keymap.set("n", "<leader>F", telescope.oldfiles, { desc = "recently opened files" })
+-- vim.keymap.set("n", "<leader>z", telescope_b.current_buffer_fuzzy_find, { desc = "grep" }) -- current buf, pre-loaded, rarely used
 vim.keymap.set("n", "<leader>.", telescope.extensions.adjacent.adjacent)
-vim.keymap.set("n", "<leader>E", telescope.extensions.chezmoi.find_files, { desc = "chezmoi" }) -- https://github.com/xvzc/chezmoi.nvim/issues/6
-vim.keymap.set("n", "<leader>F", telescope.extensions.file_browser.file_browser) -- ls-like, usually annoying to use
+vim.keymap.set("n", "<leader>/", telescope_b.live_grep, { desc = "ripgrep" }) -- entire project
+vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
 vim.keymap.set("n", "<leader>b", telescope_b.buffers, { desc = "open buffers" })
 vim.keymap.set("n", "<leader>e", telescope_b.git_files, { desc = "git ls-files" })
 vim.keymap.set("n", "<leader>f", telescope_b.find_files, { desc = "find" })
+vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tabs)
 
 -- vim.keymap.set("n", "<leader>gC", telescope_b.git_bcommits, { desc = "git commits" })
 -- vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" }) -- like git ls-files with diff
@@ -443,21 +417,19 @@ vim.keymap.set("n", "<leader>gb", telescope_b.git_branches, { desc = "git branch
 
 -- vim.keymap.set("n", "<leader>?", telescope_b.help_tags, { desc = "search help" }) -- let's face it; i never use this
 -- vim.keymap.set("n", "<leader>u", telescope.extensions.undo.undo)
-vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
-vim.keymap.set("n", "<leader>H", telescope.extensions.heading.heading)
-vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tabs)
 
--- }}}
--- lsp handler: mason {{{
+vim.keymap.set("n", "<leader>h", function()
+	-- inlay hints lead to -a lot- of clutter (esp in rust), so they should not
+	-- be enabled by default
+	vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
+end, { desc = "toggle inlay hints" })
 
 -- buffer-specific LSP keymaps
-local on_attach = function(_, bufnr)
-	-- if vim.fn.has("nvim-0.10") then
-	-- vim.lsp.inlay_hint.enable(bufnr, true) -- doesn't work?
-	-- end
-	-- This function gets run when an LSP connects to a particular buffer, defining mappings specific for LSP related items.
-	-- It sets the mode, buffer and description for us each time.
-	local nmap = function(keys, func, desc)
+local function on_attach(_, bufnr)
+	-- This function gets run when an LSP connects to a particular buffer,
+	-- defining mappings specific for LSP related items. It sets the mode, buffer
+	-- and description for us each time.
+	local function nmap(keys, func, desc)
 		if desc then
 			desc = "LSP: " .. desc
 		end
@@ -465,33 +437,87 @@ local on_attach = function(_, bufnr)
 		vim.keymap.set("n", keys, func, { buffer = bufnr, desc = desc })
 	end
 
-	-- nmap("<c-k>", vim.lsp.buf.signature_help, "signature documentation") -- != buf.hover! see: https://github.com/neovim/neovim/discussions/25711#discussioncomment-7323330
+	nmap("<leader>a", vim.lsp.buf.code_action, "code action") -- i only want to use code_action for refactoring (extract_function), but it just doesn't work in rust; needs nightly?
+	nmap("<leader>s", telescope_b.lsp_dynamic_workspace_symbols, "document symbols") -- all project files; slow in python?
 	nmap("K", vim.lsp.buf.hover, "hover documentation")
 	nmap("R", vim.lsp.buf.rename, "rename")
-	nmap("gI", vim.lsp.buf.implementation, "go to implementation") -- don't override gi!
 
+	nmap("<leader>i", function()
+		-- vim.lsp.buf.references() -- tui.go|43 col 15| func (p Post) saveImage(subj string) error {
+		-- vim.lsp.buf.incoming_calls() -- tui.go|385 col 19| Update
+
+		local function get_bufnr(fname)
+			for _, bn in pairs(vim.api.nvim_list_bufs()) do
+				if vim.api.nvim_buf_get_name(bn) == fname then
+					return bn
+				end
+			end
+		end
+
+		-- https://github.com/nvim-telescope/telescope.nvim/blob/master/developers.md#entry-maker
+		-- https://github.com/yuepaang/dotfiles/blob/5272e1aef2b0255535d7f575d9a5e32cd75e2cd8/nvim/lua/doodleVim/extend/lsp.lua#L3
+		local function entry_maker(entry)
+			local function make_display()
+				return require("telescope.pickers.entry_display").create({
+					separator = " ",
+					items = {
+						{ width = 0.1 },
+						{ width = 6 },
+						{ width = 0.1 },
+						{ remaining = true },
+					},
+				})({
+					require("telescope.utils").transform_path({}, entry.filename),
+					{ entry.lnum, "TelescopeResultsLineNr" },
+					entry.text,
+					-- file at line; only works if buffer loaded
+					vim.api.nvim_buf_get_lines(get_bufnr(entry.filename) or nil, entry.lnum - 1, entry.lnum, false),
+				})
+			end
+
+			return {
+
+				-- ordinal = (not opts.ignore_filename and filename or "") .. " " .. entry.text,
+				-- ordinal = string.format("%s %s", entry.file, entry.preview),
+				display = make_display,
+				filename = entry.filename, -- or vim.api.nvim_buf_get_name(entry.bufnr),
+				ordinal = entry.text,
+				value = entry,
+
+				-- these are for the preview
+				bufnr = entry.bufnr,
+				col = entry.col,
+				finish = entry.finish,
+				lnum = entry.lnum,
+				start = entry.start,
+				text = entry.text,
+				valid = true,
+			}
+		end
+
+		telescope_b.lsp_incoming_calls({ -- tui.go:385:19:Update
+			-- contrary to the name, show_line only shows the name of the parent func
+			-- (...:parent), but not the actual line itself. Trouble doesn't show the
+			-- line either (and i don't like using trouble anyway)
+			show_line = true,
+			entry_maker = entry_maker,
+		})
+	end, "incoming calls")
+
+	nmap("<leader>S", function()
+		require("telescope.builtin").treesitter({ symbols = { "method", "function" } })
+	end, "treesitter functions")
+
+	-- nmap("<c-k>", vim.lsp.buf.signature_help, "signature documentation") -- != buf.hover! see: https://github.com/neovim/neovim/discussions/25711#discussioncomment-7323330
 	-- nmap("<leader>S", telescope_b.lsp_document_symbols, "document symbols") -- pre-loaded, curr buf only (almost never used)
-	nmap("<leader>I", telescope_b.lsp_incoming_calls, "incoming calls") -- what calls func x?
-	nmap("<leader>O", telescope_b.lsp_outgoing_calls, "outgoing calls") -- what does func x call?
-	nmap("<leader>s", telescope_b.lsp_dynamic_workspace_symbols, "document symbols") -- all project files; slow in python?
-
-	-- this is quite useless ootb, just use telescope_b.grep_string (leader w) instead
-	-- nmap("gr", require("telescope.builtin").lsp_references, "goto references")
-
-	-- vim.keymap.set("n", "gr", function() -- uses quickfix
-	-- 	vim.lsp.buf.references()
-	-- end)
-
-	-- i only want to use code_action for refactoring (extract_function), but it just doesn't work; needs nightly?
-	vim.keymap.set({ "n" }, "<leader>A", vim.lsp.buf.code_action)
-	-- vim.keymap.set({ "i" }, "<c-a>", vim.lsp.buf.code_action)
-
-	-- -- nmap("<leader>d", vim.lsp.buf.type_definition, "type definition")
-	-- nmap("gd", vim.lsp.buf.declaration, "goto declaration") -- != definition
-
-	-- lesser used lsp functionality
+	-- nmap("<leader>d", vim.lsp.buf.type_definition, "type definition")
+	-- nmap("<leader>o", telescope_b.lsp_outgoing_calls, "outgoing calls") -- what does this call? less useful; think of this like goto def, but preview
 	-- nmap("<leader>wa", vim.lsp.buf.add_workspace_folder, "workspace add folder")
 	-- nmap("<leader>wr", vim.lsp.buf.remove_workspace_folder, "workspace remove folder")
+	-- nmap("gI", vim.lsp.buf.implementation, "go to implementation") -- only useful for langs where def and impl can be separate (e.g. TS)
+	-- nmap("gd", vim.lsp.buf.declaration, "goto declaration") -- != definition
+	-- nmap("gr", require("telescope.builtin").lsp_references, "goto references") -- goto def, but more chaotic
+	-- vim.keymap.set({ "i" }, "<c-a>", vim.lsp.buf.code_action)
 
 	-- nmap("<leader>lw", function()
 	-- 	print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
