@@ -233,6 +233,9 @@ require("lazy").setup(
 			dependencies = {
 				-- https://github.com/nvim-telescope/telescope.nvim/wiki/Extensions#different-plugins-with-telescope-integration
 
+				"aznhe21/actions-preview.nvim",
+				-- "rachartier/tiny-code-action.nvim",
+
 				"AckslD/nvim-neoclip.lua", -- yank history; do i use this?
 				"LukasPietzschmann/telescope-tabs", -- do i use this?
 				"MaximilianLloyd/adjacent.nvim",
