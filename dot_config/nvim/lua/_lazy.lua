@@ -487,12 +487,8 @@ require("lazy").setup(
 		-- find ~/.local/share/nvim/lazy/ | grep -P '/colors/.+(vim|lua)' | sort
 		-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3701#issuecomment-1288166768
 
-		"hachy/eva01.vim",
-		"zootedb0t/citruszest.nvim", -- quite possibly the only dark-only colorscheme that implements diff highlight correctly
-		-- "bluz71/vim-moonfly-colors", -- pub and fn same color
-		-- "lalitmee/cobalt2.nvim", -- requires colorbuddy lmaooo
-		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
-		-- "srijs/vim-colors-rusty",
+		"oxfist/night-owl.nvim", -- no name
+		"zootedb0t/citruszest.nvim",
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
 		-- https://vimcolorschemes.com/i/new/b.dark
 		-- }}}
