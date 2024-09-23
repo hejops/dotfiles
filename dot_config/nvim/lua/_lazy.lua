@@ -456,19 +456,28 @@ require("lazy").setup(
 				},
 			},
 		}, -- }}}
-		{ -- indent-blankline {{{
-			-- Add indentation guides even on blank lines
-			"lukas-reineke/indent-blankline.nvim",
-			-- https://github.com/lukas-reineke/indent-blankline.nvim/wiki/Migrate-to-version-3
-			main = "ibl",
-			-- See `:help indent_blankline.txt`
+		{
+			"nvimdev/indentmini.nvim",
 			opts = {
-				-- char = "┊",
-				-- show_trailing_blankline_indent = false,
-				-- show_current_context = true,
-				-- show_current_context_start = true,
+				char = "▎",
+				only_current = true, -- otherwise show all indents
 			},
-		}, -- }}}
+		},
+		-- { -- indent-blankline {{{
+		-- 	-- dims the current indent when you are inside a block, otherwise
+		-- 	-- highlights all indents at the "same level" (e.g. when you are on an
+		-- 	-- `if`); this is quite weird/unintuitive, now that i think about it
+		-- 	"lukas-reineke/indent-blankline.nvim",
+		-- 	-- https://github.com/lukas-reineke/indent-blankline.nvim/wiki/Migrate-to-version-3
+		-- 	main = "ibl",
+		-- 	-- See `:help indent_blankline.txt`
+		-- 	opts = {
+		-- 		-- char = "┊",
+		-- 		-- show_trailing_blankline_indent = false,
+		-- 		-- show_current_context = true,
+		-- 		-- show_current_context_start = true,
+		-- 	},
+		-- }, -- }}}
 		{ -- treesitter {{{
 			"nvim-treesitter/nvim-treesitter",
 			dependencies = {
