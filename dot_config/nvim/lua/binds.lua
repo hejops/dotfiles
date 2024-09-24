@@ -318,9 +318,7 @@ local function exec()
 		elseif vim.loop.fs_stat("./node_modules/tsx") then
 			-- run with node directly (without transpilation); requires node 22.7.0 + tsx
 			-- https://nodejs.org/api/typescript.html#full-typescript-support
-			return "node --import=tsx " .. file -- 0.140 s
-		elseif vim.loop.fs_stat("/usr/bin/ts-node") then
-			return "ts-node " .. file -- 0.560 s
+			return "node --redirect-warnings=/dev/null --import=tsx " .. file
 		elseif vim.loop.fs_stat("./node_modules/@types/node") then
 			-- https://stackoverflow.com/a/78148646
 			os.execute("tsc " .. file) -- ts -> js, 1.46 s
