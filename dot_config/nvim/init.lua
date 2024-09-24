@@ -437,8 +437,9 @@ local function on_attach(_, bufnr)
 		vim.keymap.set("n", keys, func, { buffer = bufnr, desc = desc })
 	end
 
-	-- nmap("<leader>A", vim.lsp.buf.code_action, "code action") -- i only want to use code_action for refactoring (extract_function), but it just doesn't work in rust; needs nightly?
-	nmap("<leader>A", require("actions-preview").code_actions) -- may report "false positive" changes (e.g. go import reorder)
+	require("tiny-code-action").setup()
+
+	nmap("<leader>A", require("tiny-code-action").code_action) -- it actually works!
 	nmap("<leader>s", telescope_b.lsp_dynamic_workspace_symbols, "document symbols") -- all project files; slow in python?
 	nmap("K", vim.lsp.buf.hover, "hover documentation")
 	nmap("R", vim.lsp.buf.rename, "rename")

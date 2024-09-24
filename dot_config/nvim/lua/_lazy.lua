@@ -241,9 +241,10 @@ require("lazy").setup(
 				"MaximilianLloyd/adjacent.nvim",
 				"nvim-lua/plenary.nvim", -- backend
 				"nvim-telescope/telescope-file-browser.nvim", -- netrw-like
-				"nvim-telescope/telescope-ui-select.nvim", -- telescope for code actions, etc
+				"rachartier/tiny-code-action.nvim", -- https://github.com/rachartier/tiny-code-action.nvim/issues/11
 				-- "debugloop/telescope-undo.nvim", -- i don't really use this
 				-- "fcying/telescope-ctags-outline.nvim",
+				-- "nvim-telescope/telescope-ui-select.nvim", -- https://github.com/nvim-telescope/telescope-ui-select.nvim/issues/44
 				-- "tsakirist/telescope-lazy.nvim",
 				{ "crispgm/telescope-heading.nvim", ft = { "markdown" } }, -- headings in markdown
 			},
