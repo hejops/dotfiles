@@ -924,6 +924,15 @@ require("conform").setup({
 			},
 		},
 		dhall = { command = "dhall", args = { "format" } },
+		biome = {
+			command = "biome",
+			prepend_args = {
+				"format",
+				-- https://biomejs.dev/reference/cli/#biome-format
+				"--indent-style=space",
+				-- "--bracket-same-line=true",
+			},
+		},
 	},
 	formatters_by_ft = {
 		-- https://github.com/stevearc/conform.nvim#formatters
@@ -964,8 +973,8 @@ require("conform").setup({
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" }, -- need --parser html?
 		htmldjango = { "djlint" },
-		javascript = { "prettier" },
-		javascriptreact = { "prettier" },
+		javascript = { "biome", "prettier", stop_after_first = true },
+		javascriptreact = { "biome", "prettier", stop_after_first = true },
 		json = { "prettier" },
 		jsonc = { "prettier" },
 		lua = { "stylua" },
@@ -976,7 +985,8 @@ require("conform").setup({
 		sql = { "sql-formatter", "sqlfmt", "sqlfluff", stop_after_first = true },
 		tex = { "latexindent" },
 		toml = { "taplo" },
-		typescript = { "prettier" },
+		typescript = { "biome", "prettier", stop_after_first = true },
+		typescriptreact = { "biome", "prettier", stop_after_first = true },
 		xml = { "xmlformat" },
 		yaml = { "prettier" },
 	},
