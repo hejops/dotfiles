@@ -28,6 +28,14 @@ vim.api.nvim_create_autocmd({
 	end,
 })
 
+-- lint fixes must be applied -before- 'regular' lints
+vim.api.nvim_create_autocmd("BufWritePost", {
+	pattern = { "*.js", "*.ts" },
+	callback = function()
+		vim.cmd([[silent! !biome lint --write %]])
+	end,
+})
+
 vim.api.nvim_create_autocmd({ "BufWritePost", "VimEnter" }, {
 	callback = function()
 		require("lint").try_lint()
