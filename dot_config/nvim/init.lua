@@ -28,6 +28,15 @@ vim.api.nvim_create_autocmd({
 	end,
 })
 
+vim.api.nvim_create_autocmd("BufWritePost", {
+	pattern = { "*.sql" },
+	callback = function()
+		-- quite slow
+		vim.cmd([[silent! !sqlfluff fix --dialect sqlite %]])
+		-- vim.fn.jobstart("sqlfluff fix --dialect sqlite %")
+	end,
+})
+
 -- lint fixes must be applied -before- 'regular' lints
 vim.api.nvim_create_autocmd("BufWritePost", {
 	pattern = { "*.js", "*.ts" },
@@ -813,6 +822,7 @@ local linters = {
 	javascript = { "biomejs" },
 	markdown = { "markdownlint", "proselint" },
 	ruby = { "rubocop" },
+	sql = { "sqlfluff" },
 	typescript = { "biomejs" },
 
 	python = {
@@ -873,6 +883,14 @@ else
 	require("lint").linters.pylint.cmd = "python3"
 	require("lint").linters.pylint.args = { "-m", "pylint", "-f", "json" }
 end
+
+require("lint").linters.sqlfluff.args = {
+	"lint",
+	-- TODO: infer dialect (how?)
+	"--dialect",
+	"sqlite",
+	"--format=json",
+}
 
 -- }}}
 -- formatter: formatter {{{
@@ -992,13 +1010,16 @@ require("conform").setup({
 		ruby = { "rubocop" },
 		rust = { "rustfmt" },
 		sh = { "shfmt" },
-		sql = { "sql-formatter", "sqlfmt", "sqlfluff", stop_after_first = true },
 		tex = { "latexindent" },
 		toml = { "taplo" },
 		typescript = { "biome", "prettier", stop_after_first = true },
 		typescriptreact = { "biome", "prettier", stop_after_first = true },
 		xml = { "xmlformat" },
 		yaml = { "prettier" },
+
+		-- note: none of the sql formatters seem to work; sqlfluff fix is supposed
+		-- to work, but 'Root directory not found'
+		-- sql = { "sqlfluff" },
 	},
 })
 
