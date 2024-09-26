@@ -277,6 +277,11 @@ gp() { # push current branch
 		return
 	fi
 
+	if ! git log > /dev/null; then
+		echo 'no commits yet; try gc'
+		return
+	fi
+
 	# shellcheck disable=SC2164
 	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1"
 
