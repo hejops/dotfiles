@@ -32,7 +32,9 @@ vim.api.nvim_create_autocmd({
 vim.api.nvim_create_autocmd("BufWritePost", {
 	pattern = { "*.js", "*.ts" },
 	callback = function()
-		vim.cmd([[silent! !biome lint --write %]])
+		vim.cmd(
+			[[silent! !biome check --write --formatter-enabled=false --linter-enabled=true --organize-imports-enabled=true %]]
+		)
 	end,
 })
 
