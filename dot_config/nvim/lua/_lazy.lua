@@ -134,14 +134,15 @@ require("lazy").setup(
 					-- formatters
 
 					"black",
+					"gofumpt",
+					"goimports", -- required for autoimport (reviser only performs grouping)
+					"goimports-reviser",
+					"golines",
 					"prettier",
 					"shfmt",
 					"stylua",
 					-- "astyle",
 					-- "clang_format",
-					-- "gofumpt",
-					-- "goimports",
-					-- "golines",
 					-- "rustfmt", -- 'use rustup instead'
 
 					-- linters
