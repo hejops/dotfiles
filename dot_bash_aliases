@@ -501,6 +501,11 @@ gd() {
 alias pcu="pre-commit autoupdate"
 
 pci() {
+	if ! command -v pre-commit > /dev/null; then
+		echo "pre-commit not installed"
+		return
+	fi
+
 	# init
 	local f
 
