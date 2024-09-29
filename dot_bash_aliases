@@ -67,6 +67,7 @@ alias ht="htop -u \$USER"
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
 alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
+alias y="bash ~/gripts/disq/ytm.sh"
 
 # }}}
 
