@@ -144,6 +144,17 @@ vim.api.nvim_create_autocmd("TabLeave", {
 	end,
 })
 
+-- https://github.com/xvzc/chezmoi.nvim?tab=readme-ov-file#treat-all-files-in-chezmoi-source-directory-as-chezmoi-files
+vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+	pattern = { os.getenv("HOME") .. "/.local/share/chezmoi/*" },
+	callback = function(ev)
+		vim.schedule(function()
+			require("chezmoi.commands.__edit").watch(ev.buf)
+		end)
+		-- print("chezmoi watching")
+	end,
+})
+
 -- }}}
 -- plugin binds {{{
 
