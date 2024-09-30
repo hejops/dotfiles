@@ -270,9 +270,9 @@ user_pref("font.minimum-size.x-western", 12);
 user_pref("font.name.monospace.ja", "Source Han Sans JP");
 user_pref("font.name.monospace.x-western", "Source Code Pro");
 user_pref("font.name.sans-serif.ja", "Source Han Sans JP");
-user_pref("font.name.sans-serif.x-western", "IBM Plex Sans");
+user_pref("font.name.sans-serif.x-western", "Inter");
 user_pref("font.name.serif.ja", "Source Han Sans JP");
-user_pref("font.name.serif.x-western", "IBM Plex Serif"); // native reader ignores these settings!
+user_pref("font.name.serif.x-western", "Source Serif"); // native reader ignores these settings!
 user_pref("full-screen-api.warning.timeout", 0);
 user_pref("gecko.handlerService.migrated", true);
 user_pref("gecko.mstone", "48.0.2");
