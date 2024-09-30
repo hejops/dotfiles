@@ -397,3 +397,6 @@ user_pref("xpinstall.signatures.required", false);
 user_pref("xpinstall.whitelist.add", "");
 user_pref("xpinstall.whitelist.add.180", "");
 user_pref("xpinstall.whitelist.required", false);
+user_pref("browser.startup.couldRestoreSession.count", -1);
+user_pref("trailhead.firstrun.branches", "nofirstrun-empty");
+user_pref("browser.aboutwelcome.enabled", false);
