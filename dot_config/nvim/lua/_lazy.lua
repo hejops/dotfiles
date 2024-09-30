@@ -102,8 +102,9 @@ require("lazy").setup(
 						force = true, -- Set true to force apply. Works only when watch = true.
 					},
 					notification = {
-						on_open = true, -- vim.notify when start editing chezmoi-managed file.
-						on_apply = true, -- vim.notify on apply.
+						on_open = true,
+						on_apply = false,
+						on_watch = true, -- "This file will be automatically applied"; requires on_open = true
 					},
 				})
 			end,
