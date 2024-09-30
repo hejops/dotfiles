@@ -390,7 +390,7 @@ user_pref("signon.usage.hasEntry", true);
 user_pref("storage.vacuum.last.index", 1);
 user_pref("svg.context-properties.content.enabled", true);
 user_pref("toolkit.cosmeticAnimations.enabled", false);
-user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true); // important: userChrome.css
+// user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true); // important: userChrome.css
 user_pref("toolkit.scrollbox.clickToScroll.scrollDelay", 0);
 user_pref("toolkit.scrollbox.smoothScroll", false);
 user_pref("toolkit.telemetry.pioneer-new-studies-available", true);
@@ -405,6 +405,10 @@ user_pref("xpinstall.signatures.required", false);
 user_pref("xpinstall.whitelist.add", "");
 user_pref("xpinstall.whitelist.add.180", "");
 user_pref("xpinstall.whitelist.required", false);
+// https://support.mozilla.org/en-US/questions/1423347
+// https://support.mozilla.org/en-US/questions/1296613
 user_pref("browser.startup.couldRestoreSession.count", -1);
 user_pref("trailhead.firstrun.branches", "nofirstrun-empty");
 user_pref("browser.aboutwelcome.enabled", false);
+// https://github.com/Carm01/Mozilla.cfg/blob/07118683d0ef3037a5977a5e2f34e92c297f3b4d/mozilla.cfg#L29
+user_pref("datareporting.policy.dataSubmissionPolicyBypassNotification", true);
