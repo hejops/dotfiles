@@ -390,7 +390,7 @@ user_pref("signon.usage.hasEntry", true);
 user_pref("storage.vacuum.last.index", 1);
 user_pref("svg.context-properties.content.enabled", true);
 user_pref("toolkit.cosmeticAnimations.enabled", false);
-// user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true); // important: userChrome.css
+user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true); // important: userChrome.css
 user_pref("toolkit.scrollbox.clickToScroll.scrollDelay", 0);
 user_pref("toolkit.scrollbox.smoothScroll", false);
 user_pref("toolkit.telemetry.pioneer-new-studies-available", true);
