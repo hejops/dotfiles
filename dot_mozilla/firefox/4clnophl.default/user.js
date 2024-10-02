@@ -412,3 +412,9 @@ user_pref("trailhead.firstrun.branches", "nofirstrun-empty");
 user_pref("browser.aboutwelcome.enabled", false);
 // https://github.com/Carm01/Mozilla.cfg/blob/07118683d0ef3037a5977a5e2f34e92c297f3b4d/mozilla.cfg#L29
 user_pref("datareporting.policy.dataSubmissionPolicyBypassNotification", true);
+user_pref("browser.ml.chat.enabled", false);
+user_pref("reader.parse-on-load.enabled", false);
+user_pref("media.webspeech.synth.enabled", false);
+user_pref("browser.translations.automaticallyPopup", false);
+user_pref("browser.translations.enable", false);
+user_pref("browser.translations.panelShown", false);
