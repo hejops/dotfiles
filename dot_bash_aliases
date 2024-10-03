@@ -1021,7 +1021,7 @@ rm() {
 	: use python to robustly prevent accidental deletion of some dir
 	# parsing arbitrary args with bash is nonsense
 
-	if [[ $* == *"$MU"* ]]; then
+	if [[ -n $MU ]] && [[ $* == *"$MU"* ]]; then
 		python3 -c "
 import sys
 if \"$MU\" in {x.rstrip('/') for x in sys.argv}:
