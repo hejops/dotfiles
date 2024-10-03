@@ -93,13 +93,21 @@ fi
 
 # ublock: google -- disable inline scripts
 
-# something in my userchrome prevents addon popup from being clicked,
-# apparently
-sed -i -r '/legacyUserProfileCustomizations/ s#^#//#' ~/.mozilla/firefox/default/user.js
+# # something in my userchrome prevents addon popup from being clicked,
+# # apparently
+# sed -i -r '/legacyUserProfileCustomizations/ s#^#//#' ~/.mozilla/firefox/default/user.js
+# firefox 'about:addons' # manually enable addons
+# sed -i -r '/legacyUserProfileCustomizations/ s#^// *##' ~/.mozilla/firefox/default/user.js
 
-firefox 'about:addons' # manually enable addons
-
-sed -i -r '/legacyUserProfileCustomizations/ s#^// *##' ~/.mozilla/firefox/default/user.js
+# https://github.com/BryceVandegrift/ffsetup/blob/4b17486ed6e1360076f3f8f297d9cde7adad5c9c/ffsetup.sh#L67
+firefox --headless > /dev/null 2>&1 & # generate extensions.json
+sleep 10
+pkill firefox
+sed -i '
+	s/\(seen":\)false/\1true/g
+	s/\(active":\)false\(,"userDisabled":\)true/\1true\2false/g
+' ~/.mozilla/firefox/default/extensions.json
+sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' ~/.mozilla/firefox/default/pref.js
 
 # # TODO: cookies.sqlite -- block cookies on consent.youtube.com
 # sqlite3 $FF_PROFILE_DIR/cookies.sqlite "INSERT INTO moz_cookies VALUES(5593,'^firstPartyDomain=youtube.com','CONSENT','PENDING+447','.youtube.com','/',1723450203,1660378445948074,1660378204032779,1,0,0,1,0,2);"
