@@ -80,10 +80,6 @@ if [ ! -f ~/.mozilla/native-messaging-hosts/tridactyl.json ]; then
 	# tridactyl :source not really necessary, just restart
 fi
 
-# TODO: remove search engines except ddg; policies.json is ESR-only,
-# tragic...
-# https://mozilla.github.io/policy-templates/#searchengines--remove
-
 # https://github.com/Alex313031/Mercury/blob/673aa3e8f3fcbf3436b12186212708d3aa7b853c/policies/policies.json#L11
 # https://github.com/dm0-/installer/blob/6cf8f0bbdc91757579bdcab53c43754094a9a9eb/configure.pkg.d/firefox.sh#L95
 # https://github.com/yokoffing/Betterfox/blob/master/policies.json
@@ -113,13 +109,22 @@ sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' ~/.mozilla/firefox/
 # sqlite3 $FF_PROFILE_DIR/cookies.sqlite "INSERT INTO moz_cookies VALUES(5593,'^firstPartyDomain=youtube.com','CONSENT','PENDING+447','.youtube.com','/',1723450203,1660378445948074,1660378204032779,1,0,0,1,0,2);"
 # INSERT INTO moz_cookies VALUES(2358,'^firstPartyDomain=youtube.com','CONSENT','PENDING+675','.youtube.com','/',1727208372,1664136373196881,1664136373196881,1,0,0,1,0,2);
 
+# pre-installed search engines can only be hidden, not removed (this is why the
+# default engines can -always- be restored)
+search_lz4=~/.mozilla/firefox/default/search.json.mozlz4
+wget https://github.com/jusw85/mozlz4/releases/download/v0.1.0/mozlz4-linux
+chmod +x mozlz4-linux
+./mozlz4-linux -x "$search_lz4" |
+	# sed 's/{}/{"hidden":true}/g' | # disables all, making google default
+	# sed 's/{}/{"hidden":true}/; s/\(Bing[^{]*{\)/\1"hidden":true/' | # disables 1st (google) and 3rd (bing)
+	jq '.engines[0,2,3]._metaData = {hidden:true}' | # disables all except ddg
+	./mozlz4-linux -z - "$search_lz4"
+rm mozlz4-linux
+
 sqlite3 ~/.mozilla/firefox/default/places.sqlite "DELETE FROM moz_bookmarks;"
 sqlite3 ~/.mozilla/firefox/default/places.sqlite "DELETE FROM moz_places;"
 
-firefox 'about:preferences#search'
-
 # manual action required:
-# change default search engine to ddg
 # wait for tri, then activate sidebar (T)
 # disable menu bar
 # customize toolbar (remove spaces, add search bar)
