@@ -124,7 +124,8 @@ _() {
 	:
 }
 
-gld() { # browse git log, showing each commit's diff in fzf preview
+gld() {
+	: browse git log, showing each commit\'s diff in fzf preview
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
 	{
 		if [[ $# -eq 0 ]]; then
@@ -135,7 +136,8 @@ gld() { # browse git log, showing each commit's diff in fzf preview
 	} | fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
-gac() { # append changes to most recent (unpushed) commit
+gac() {
+	: append ALL changes to most recent unpushed commit
 	git add "$@"
 	git commit --amend --no-edit
 }
@@ -145,7 +147,8 @@ gac() { # append changes to most recent (unpushed) commit
 # https://stackoverflow.com/a/45149731
 # git update-index --assume-unchanged <file>
 
-gL() { # show commits (hash+msg) made in the last week
+gL() {
+	: show commits \(hash+msg\) made in the last week
 	# TODO: allow file/dir $1
 	d=$(date --date="1 week ago")
 	git logline --since="$d" --no-merges | tac
@@ -161,7 +164,8 @@ gcf() {
 	git rebase -i --autosquash "$default_branch"
 }
 
-gA() { # un-add, unstage
+gA() {
+	: un-add, unstage
 	git restore --staged "$@" \
 		2> /dev/null || # committed; without --staged, changes are discarded!
 		git reset "$@"  # not committed yet
@@ -271,7 +275,8 @@ gs() {
 	git status | grep -P '\d+ commits?' || echo 'No commits staged.'
 }
 
-gp() { # push current branch
+gp() {
+	: push current branch
 
 	if ! git config --get remote.origin.url > /dev/null; then
 		echo 'no remote; try gnew'
@@ -299,7 +304,8 @@ gp() { # push current branch
 
 }
 
-gpl() { # pull
+gpl() {
+	: pull
 
 	# [[ $# -eq 1 ]] && cd "$1"
 
@@ -353,7 +359,8 @@ gpl() { # pull
 
 }
 
-gh() { # open remote url
+gh() {
+	: open remote url
 
 	if ! repo=$(git config --get remote.origin.url); then
 		echo "Current repo has no remote"
@@ -390,7 +397,8 @@ gh() { # open remote url
 	# fi
 }
 
-gnew() { # push to newly created remote
+gnew() {
+	: push to newly created remote
 
 	# TODO: when starting a new work repo (local or remote), do:
 	# git config --local user.name ...
@@ -611,33 +619,33 @@ pcrc() {
 
 # i haven't worked in python in a while, so this may be cleaned up
 
-ve() {
-	return
-
-	# important reading:
-	# https://www.b-list.org/weblog/2022/may/13/boring-python-dependencies/
-	# https://github.com/jazzband/pip-tools
-
-	# "always work in, and deploy in, a virtual environment"; this is how
-	# cargo works.
-
-	# venv comes before pip install (etc), not the other way round, and
-	# python -m pip (in venv) should always be used over bare pip.
-
-	python -m venv .venv
-	. .venv/bin/activate
-
-	# do work, manually add deps to requirements.in (no cargo add, too bad)
-
-	python -m pip install --upgrade pip-tools
-	python -m pip-tools compile --generate-hashes requirements/app.in --output-file requirements/app.txt
-	# python -m pip-tools compile --generate-hashes requirements/tests.in --output-file requirements/tests.txt
-	# if some package doesn't provide wheel, omit --only-binary
-	python -m pip install --only-binary :all: -r requirements/app.txt
-
-	# for monitoring dep updates of a "finished" project, use dependabot
-
-}
+# ve() {
+# 	return
+#
+# 	# important reading:
+# 	# https://www.b-list.org/weblog/2022/may/13/boring-python-dependencies/
+# 	# https://github.com/jazzband/pip-tools
+#
+# 	# "always work in, and deploy in, a virtual environment"; this is how
+# 	# cargo works.
+#
+# 	# venv comes before pip install (etc), not the other way round, and
+# 	# python -m pip (in venv) should always be used over bare pip.
+#
+# 	python -m venv .venv
+# 	. .venv/bin/activate
+#
+# 	# do work, manually add deps to requirements.in (no cargo add, too bad)
+#
+# 	python -m pip install --upgrade pip-tools
+# 	python -m pip-tools compile --generate-hashes requirements/app.in --output-file requirements/app.txt
+# 	# python -m pip-tools compile --generate-hashes requirements/tests.in --output-file requirements/tests.txt
+# 	# if some package doesn't provide wheel, omit --only-binary
+# 	python -m pip install --only-binary :all: -r requirements/app.txt
+#
+# 	# for monitoring dep updates of a "finished" project, use dependabot
+#
+# }
 
 alias cx=coac
 
@@ -701,7 +709,8 @@ sl() {
 	cd
 }
 
-pta() { # run all tests
+pta() {
+	: run all tests
 	# TODO: gls: allow arg that calls from proj root
 	gls | grep 'test.*py' | xargs pytest -xvv
 }
@@ -748,7 +757,8 @@ p() {
 	# cd || return
 }
 
-pentmd() { # render entry points as markdown
+pentmd() {
+	: render entry points as markdown
 	# - [`poetry run XXX`](./path/to/script.py)
 	grep < pyproject.toml :main |
 		sed -r 's|^([^ ]+) = "([^:]+):main"|- [`poetry run \1`](./\2.py)|g' |
@@ -965,7 +975,8 @@ f() {
 	esac
 }
 
-fm() { # open file manager with arbitrary args
+fm() {
+	: open file manager with arbitrary args
 
 	# TODO: if glob specified, use that as filter
 	# set -x
@@ -997,7 +1008,8 @@ fm() { # open file manager with arbitrary args
 
 }
 
-mcd() { # mkdir any number of paths, cd to last
+mcd() {
+	: mkdir any number of paths, cd to last
 	# it is uncommon for >1 arg to be passed, so this is more for cd
 	# [[ $# -eq 0 ]] && return
 	local p
@@ -1005,7 +1017,8 @@ mcd() { # mkdir any number of paths, cd to last
 	[[ -d $p ]] && cd "$p"
 }
 
-rm() { # use python to robustly prevent accidental deletion of some dir
+rm() {
+	: use python to robustly prevent accidental deletion of some dir
 	# parsing arbitrary args with bash is nonsense
 
 	if [[ $* == *"$MU"* ]]; then
@@ -1028,7 +1041,8 @@ largs() { xargs < /dev/stdin --no-run-if-empty --delimiter='\n' "$@"; } # split 
 prepend() { awk < /dev/stdin '{print "'"$1"'" $0}'; }
 sum() { < /dev/stdin paste -sd+ | bc; }
 
-jqk() { # https://gist.github.com/pedroxs/f0ee8c515eea0dbce2e23eea7c048e10#file-jq-filters-sh-L2
+jqk() {
+	: https://gist.github.com/pedroxs/f0ee8c515eea0dbce2e23eea7c048e10#file-jq-filters-sh-L2
 	jq < /dev/stdin -r '.. | objects | with_entries(select(.key | contains("'"$1"'"))) | select(. != {}) | .'"$1"
 }
 
@@ -1040,7 +1054,8 @@ dehtml() {
 		perl -MHTML::Entities -pe 'decode_entities($_);'
 }
 
-yti() { # get info for currently playing file with youtube id)
+yti() {
+	: get info for currently playing file with youtube id
 	# www-watch?v=bMEfWLA-V00.mp3
 	pactl list sink-inputs |
 		grep media.name |
@@ -1054,7 +1069,8 @@ yti() { # get info for currently playing file with youtube id)
 # }}}
 # web {{{
 
-C() { # alternative to curl
+C() {
+	: alternative to curl
 	python3 -c '
 import codecs
 import sys
@@ -1082,7 +1098,8 @@ nmc() {
 	nmcli --ask device wifi connect "$ssid" # password $password
 }
 
-nt() { # check network status in a loop
+nt() {
+	: check network status in a loop
 	int=5
 	SECONDS=0
 	while true; do
@@ -1116,7 +1133,8 @@ getmail() {
 	fi
 }
 
-pacmir() { # regenerate pacman mirrors
+pacmir() {
+	: regenerate pacman mirrors
 	# TODO: test current speed; if ok, just return
 	country=$(curl -sL ipinfo.io | jq -r .country)
 	url="https://archlinux.org/mirrorlist/?country=$country&protocol=https&use_mirror_status=on"
@@ -1132,7 +1150,8 @@ urltitle() {
 		perl -l -0777 -ne 'print $1 if /<title.*?>\s*(.*?)\s*<\/title/si'
 }
 
-utm() { # urltitle to markdown
+utm() {
+	: urltitle to markdown
 	title=$(timeout 3 urltitle "$1")
 	[[ -z $title ]] && title=$(awk <<< "$1" -F/ '{print $NF}')
 	echo "[$title]($1)"
@@ -1152,7 +1171,8 @@ sq() {
 	echo "$2" | sqlite3 "$1"
 }
 
-nps() { # please don't make me do frontend work...
+nps() {
+	: please don\'t make me do frontend work...
 
 	# # xdg default browser always overrides BROWSER var
 	# # https://github.com/facebook/create-react-app/issues/9531#issuecomment-1022412062
@@ -1201,7 +1221,8 @@ np() {
 
 }
 
-nb() { # download audio from rss feeds
+nb() {
+	: download audio from rss feeds
 	sort -u -o ~/dita/dita/scrape/discogs.txt{,}
 	less ~/dita/dita/scrape/discogs.txt
 	rm ~/dita/dita/scrape/discogs.txt
@@ -1233,7 +1254,8 @@ replace() {
 	# git commit -v
 }
 
-sd() { # shutdown
+sd() {
+	: shutdown
 	# uptime | grep hour || return/reboot
 
 	waitdie mpv pacman curl
@@ -1258,7 +1280,8 @@ sd() { # shutdown
 	shutdown now
 }
 
-rt() { # pass an array of relative paths to tagfix
+rt() {
+	: pass an array of relative paths to tagfix
 	# note: dead symlinks are still displayed as if they exist
 
 	larr() {
@@ -1273,14 +1296,6 @@ rt() { # pass an array of relative paths to tagfix
 		larr fix_tags
 
 }
-
-# epk() { # check epub 'validity'
-# 	while read -r f; do
-# 		# grepping for htm is not robust
-# 		tail --byte 100 "$f" | grep -aq htm || echo "not ok $f"
-# 	done <<< "$(fnew . | tail -n"$1")"
-# 	# tail < /dev/stdin --byte 100 | grep -a htm || echo "not ok $1"
-# }
 
 vl() {
 
@@ -1317,7 +1332,8 @@ vl() {
 	exit
 }
 
-rgo() { # mimic live grep in nvim, useful when too lazy to open nvim first
+rgo() {
+	: mimic live grep in nvim, useful when too lazy to open nvim first
 	# https://github.com/nvim-telescope/telescope.nvim/blob/7b5c5f56a21e82fdcfe5b250278b8dfc4b1cbab4/lua/telescope/config.lua#L646
 	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' "${1:-.}" |
 		fzf -e)
