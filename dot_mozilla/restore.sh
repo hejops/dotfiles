@@ -121,10 +121,14 @@ chmod +x mozlz4-linux
 	./mozlz4-linux -z - "$search_lz4"
 rm mozlz4-linux
 
+# autohide menu bar
+< ~/.mozilla/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."toolbar-menubar".autohide = true'
+
+# activate TST sidebar
+< ~/.mozilla/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."sidebar-title".value = "Tree Style Tab"'
+
 sqlite3 ~/.mozilla/firefox/default/places.sqlite "DELETE FROM moz_bookmarks;"
 sqlite3 ~/.mozilla/firefox/default/places.sqlite "DELETE FROM moz_places;"
 
 # manual action required:
-# wait for tri, then activate sidebar (T)
-# disable menu bar
 # customize toolbar (remove spaces, add search bar)
