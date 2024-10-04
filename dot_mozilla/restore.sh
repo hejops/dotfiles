@@ -2,13 +2,19 @@ set -euo pipefail
 
 pkill firefox || :
 
-rm -rf ~/.mozilla/firefox
-rm -rf ~/.mozilla/extensions
-rm -rf ~/.mozilla/native-messaging-hosts
+if [[ -d ~/snap ]]; then
+	MOZ_DIR=~/snap/firefox/common/.mozilla/ # ubuntu
+else
+	MOZ_DIR=~/.mozilla
+fi
 
-mkdir -p ~/.mozilla/firefox
+rm -rf $MOZ_DIR/firefox
+rm -rf $MOZ_DIR/extensions
+rm -rf $MOZ_DIR/native-messaging-hosts
 
-cat << EOF > ~/.mozilla/firefox/profiles.ini
+mkdir -p $MOZ_DIR/firefox
+
+cat << EOF > $MOZ_DIR/firefox/profiles.ini
 [Install4F96D1932A9F858E]
 Default=default
 
@@ -18,20 +24,20 @@ IsRelative=1
 Path=default
 EOF
 
-cat << EOF > ~/.mozilla/firefox/installs.ini
+cat << EOF > $MOZ_DIR/firefox/installs.ini
 [4F96D1932A9F858E]
 Default=default
 Locked=1
 EOF
 
-cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default ~/.mozilla/firefox/default
+cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default $MOZ_DIR/firefox/default
 
 # https://askubuntu.com/a/73480
 # https://devicetests.com/install-firefox-addon-command-line
 # https://github.com/LukeSmithxyz/LARBS/blob/master/static/larbs.sh#L232
 # https://stackoverflow.com/a/37739112
 
-EXT_DIR=~/.mozilla/firefox/default/extensions
+EXT_DIR=$MOZ_DIR/firefox/default/extensions
 mkdir -p $EXT_DIR
 
 addons=(
@@ -72,7 +78,7 @@ done
 
 rm -rf "$tmpdir"
 
-if [ ! -f ~/.mozilla/native-messaging-hosts/tridactyl.json ]; then
+if [ ! -f $MOZ_DIR/native-messaging-hosts/tridactyl.json ]; then
 	curl \
 		-fsSl https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh \
 		-o /tmp/trinativeinstall.sh &&
@@ -91,9 +97,9 @@ fi
 
 # # something in my userchrome prevents addon popup from being clicked,
 # # apparently
-# sed -i -r '/legacyUserProfileCustomizations/ s#^#//#' ~/.mozilla/firefox/default/user.js
+# sed -i -r '/legacyUserProfileCustomizations/ s#^#//#' $MOZ_DIR/firefox/default/user.js
 # firefox 'about:addons' # manually enable addons
-# sed -i -r '/legacyUserProfileCustomizations/ s#^// *##' ~/.mozilla/firefox/default/user.js
+# sed -i -r '/legacyUserProfileCustomizations/ s#^// *##' $MOZ_DIR/firefox/default/user.js
 
 # https://github.com/BryceVandegrift/ffsetup/blob/4b17486ed6e1360076f3f8f297d9cde7adad5c9c/ffsetup.sh#L67
 firefox --headless > /dev/null 2>&1 & # generate extensions.json
@@ -102,8 +108,8 @@ pkill firefox
 sed -i '
 	s/\(seen":\)false/\1true/g
 	s/\(active":\)false\(,"userDisabled":\)true/\1true\2false/g
-' ~/.mozilla/firefox/default/extensions.json
-sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' ~/.mozilla/firefox/default/pref.js
+' $MOZ_DIR/firefox/default/extensions.json
+sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' $MOZ_DIR/firefox/default/pref.js
 
 # # TODO: cookies.sqlite -- block cookies on consent.youtube.com
 # sqlite3 $FF_PROFILE_DIR/cookies.sqlite "INSERT INTO moz_cookies VALUES(5593,'^firstPartyDomain=youtube.com','CONSENT','PENDING+447','.youtube.com','/',1723450203,1660378445948074,1660378204032779,1,0,0,1,0,2);"
@@ -111,7 +117,7 @@ sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' ~/.mozilla/firefox/
 
 # pre-installed search engines can only be hidden, not removed (this is why the
 # default engines can -always- be restored)
-search_lz4=~/.mozilla/firefox/default/search.json.mozlz4
+search_lz4=$MOZ_DIR/firefox/default/search.json.mozlz4
 wget https://github.com/jusw85/mozlz4/releases/download/v0.1.0/mozlz4-linux
 chmod +x mozlz4-linux
 ./mozlz4-linux -x "$search_lz4" |
@@ -127,8 +133,8 @@ rm mozlz4-linux
 # activate TST sidebar
 < ~/.mozilla/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."sidebar-title".value = "Tree Style Tab"'
 
-sqlite3 ~/.mozilla/firefox/default/places.sqlite "DELETE FROM moz_bookmarks;"
-sqlite3 ~/.mozilla/firefox/default/places.sqlite "DELETE FROM moz_places;"
+sqlite3 $MOZ_DIR/firefox/default/places.sqlite "DELETE FROM moz_bookmarks;"
+sqlite3 $MOZ_DIR/firefox/default/places.sqlite "DELETE FROM moz_places;"
 
 # manual action required:
 # customize toolbar (remove spaces, add search bar)
