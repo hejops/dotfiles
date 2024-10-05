@@ -232,6 +232,9 @@ gs() {
 		return
 	fi
 
+	# shellcheck disable=SC2164
+	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1" > /dev/null
+
 	# 1
 
 	# note: colors are lost when piping, but sort is more useful than color
@@ -273,10 +276,15 @@ gs() {
 	# 3
 
 	git status | grep -P '\d+ commits?' || echo 'No commits staged.'
+
+	popd > /dev/null 2> /dev/null || :
 }
 
 gp() {
 	: push current branch
+
+	# shellcheck disable=SC2164
+	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1"
 
 	if ! git config --get remote.origin.url > /dev/null; then
 		echo 'no remote; try gnew'
@@ -287,9 +295,6 @@ gp() {
 		echo 'no commits yet; try gc'
 		return
 	fi
-
-	# shellcheck disable=SC2164
-	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1"
 
 	gpl
 
