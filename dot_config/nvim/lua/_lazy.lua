@@ -500,6 +500,9 @@ require("lazy").setup(
 		-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3701#issuecomment-1288166768
 
 		"oxfist/night-owl.nvim", -- no name
+		"paulo-granthon/hyper.nvim",
+		"volbot/voltrix.vim",
+		"yorumicolors/yorumi.nvim",
 		"zootedb0t/citruszest.nvim",
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
 		-- https://vimcolorschemes.com/i/new/b.dark
