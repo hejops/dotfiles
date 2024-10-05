@@ -1,0 +1,34 @@
+* https://github.com/yubo56/su_self_study/blob/master/keeb_maps/advantage360/layout1.txt
+* https://kinesis-ergo.com/wp-content/uploads/Adv360-SmartSet-Direct-Programming-Guide-v12-2-22.pdf
+* i hate how every kinesis kb has different syntax
+*
+* to connect: smartset (left of 6) + v-drive (left of h)
+
+* modifiers
+
+[lctr]>[rwin]
+[rwin]>[rctr]
+[rctr]>[tab]
+[del]>[lctr]
+
+* symbol row
+* `-([])='
+
+[caps]>[hyph]
+{left}>{-lshf}{9}{+lshf}
+[rght]>[obrk]
+
+[up]>[cbrk]
+{down}>{-lshf}{0}{+lshf}
+[obrk]>[eql]
+[cbrk]>[apos]
+
+{lshf}{left}>{-lshf}{comm}{+lshf}
+{lshf}{down}>{-lshf}{perd}{+lshf}
+
+* arrows
+
+{lshf}{home}>{up}
+{lshf}{end}>{left}
+{lshf}{pgup}>{down}
+{lshf}{pgdn}>{rght}
