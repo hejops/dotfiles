@@ -136,6 +136,14 @@ gld() {
 	} | fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
+gS() {
+	: like gs+gld, for files to stage/commit
+	files=$(git status --porcelain)
+	prv_cmd="echo {} | awk '{print \$2}' | xargs git diff --color=always"
+	sel=$(<<< "$files" fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
+	echo "$sel" | awk '{print $2}' | xargs git commit -v
+}
+
 gac() {
 	: append ALL changes to most recent unpushed commit
 	git add "$@"
