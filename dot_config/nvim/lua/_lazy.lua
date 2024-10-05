@@ -148,10 +148,11 @@ require("lazy").setup(
 
 					-- linters
 
+					"gitlint",
+					"golangci-lint",
 					"markdownlint",
 					"pylint",
 					"shellcheck",
-					-- "golangci-lint",
 					-- "ruff",
 				},
 
