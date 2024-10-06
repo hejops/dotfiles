@@ -51,6 +51,7 @@ https://www.eriwen.com/firefox/use-the-dom-inspector/
 
 /* warning: appearance might be weird order is changed */
 
+#TabsToolbar,
 [class*="searchbar-engine-one-off-add-engine"], /* https://gist.github.com/e-t-l/bcc38e839b667afcb3ade08cb6b68122 */
 .searchbar-search-button[addengines="true"],
 .searchbar-search-button,
@@ -280,10 +281,6 @@ tooltip * {
 #PanelUI-button {
   -moz-border-start: 0px !important;
   border-image: none !important;
-}
-
-#TabsToolbar {
-  visibility: collapse !important;
 }
 
 /*
