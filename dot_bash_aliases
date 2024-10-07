@@ -1341,3 +1341,16 @@ rgo() {
 	IFS=':' read -ra array <<< "$match"
 	$EDITOR +"${array[1]}" "${array[0]}"
 }
+
+mw() {
+	cd ~/.mail/account.gmail || return
+	while true; do
+		gmi pull
+		new=$(notmuch count tag:inbox and tag:unread and date:today)
+		if [[ $new -gt 0 ]]; then
+			notify-send -u critical "$new new mail"
+			neomutt
+		fi
+		sleep 10m
+	done
+}
