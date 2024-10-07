@@ -615,6 +615,8 @@ local servers = {
 
 	bashls = {},
 	biome = {},
+	docker_compose_language_service = {},
+	dockerls = {},
 	marksman = {}, -- TODO: md should never have any concept of root_dir
 	taplo = {},
 	yamlls = {},
@@ -732,6 +734,13 @@ mason_lspconfig.setup_handlers({
 	end,
 })
 
+-- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
+require("lspconfig").docker_compose_language_service.setup({
+	root_dir = require("lspconfig").util.root_pattern("docker-compose.yml"), -- add more patterns if needed
+	filetypes = { "yaml.docker-compose" },
+	-- single_file_support = true,
+})
+
 require("lspconfig").gleam.setup({
 	capabilities = capabilities,
 	on_attach = on_attach,
@@ -823,7 +832,7 @@ local linters = {
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 	-- note: the standard rust linter is clippy, which is part of the lsp
 	bash = { "shellcheck" },
-	dockerfile = { "hadolint" },
+	dockerfile = { "hadolint" }, -- can be quite noisy
 	gitcommit = { "gitlint" },
 	go = { "golangcilint" },
 	html = { "markuplint" },
@@ -1330,7 +1339,7 @@ require("nvim-ts-autotag").setup({
 
 vim.filetype.add({
 	pattern = {
-		-- https://github.com/emilioziniades/dotfiles/blob/db7b414c150d3a3ab863a0109786f7f48465dd23/nvim/init.lua#L708-L724
+		-- https://github.com/emilioziniades/dotfiles/blob/db7b414c150d3a3ab863a0109786f7f48465dd23/nvim/init.lua#L708
 		[".*/templates/.*.html"] = function(_, bufnr)
 			local content = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 			for _, line in ipairs(content) do
@@ -1341,6 +1350,13 @@ vim.filetype.add({
 		end,
 		["Dockerfile.*"] = "dockerfile",
 		[".+%.flux"] = "flux",
+		["docker%-compose.*.yml"] = "yaml.docker-compose", -- '-' has special meaning (smh)
+	},
+
+	-- https://github.com/kennethnym/dotfiles/blob/41f03b9091181dc62ce872288685b27f001286f3/nvim/init.lua#L474
+	filename = {
+		["Dockerfile"] = "dockerfile",
+		["docker-compose.yml"] = "yaml.docker-compose",
 	},
 })
 

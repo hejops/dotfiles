@@ -47,7 +47,9 @@ export TERMINAL='wezterm start'
 
 if type nvim > /dev/null 2> /dev/null; then
 	export EDITOR=nvim
-	export MANPAGER="nvim +Man!"
+	if ! cat /etc/*-release | grep -q Ubuntu; then
+		export MANPAGER="nvim +Man!"
+	fi
 else
 	export EDITOR=vim
 fi
@@ -458,4 +460,5 @@ fi
 # }}}
 
 [[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
+[[ -f ~/.bash_aliases_work ]] && . ~/.bash_aliases_work
 [[ -f ~/.config/readline/fzf.bash ]] && . ~/.config/readline/fzf.bash
