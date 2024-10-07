@@ -136,6 +136,14 @@ gld() {
 	} | fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
+gS() {
+	: like gs+gld, for files to stage/commit
+	files=$(git status --porcelain)
+	prv_cmd="echo {} | awk '{print \$2}' | xargs git diff --color=always"
+	sel=$(<<< "$files" fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
+	echo "$sel" | awk '{print $2}' | xargs git commit -v
+}
+
 gac() {
 	: append ALL changes to most recent unpushed commit
 	git add "$@"
@@ -232,6 +240,9 @@ gs() {
 		return
 	fi
 
+	# shellcheck disable=SC2164
+	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1" > /dev/null
+
 	# 1
 
 	# note: colors are lost when piping, but sort is more useful than color
@@ -273,10 +284,15 @@ gs() {
 	# 3
 
 	git status | grep -P '\d+ commits?' || echo 'No commits staged.'
+
+	popd > /dev/null 2> /dev/null || :
 }
 
 gp() {
 	: push current branch
+
+	# shellcheck disable=SC2164
+	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1"
 
 	if ! git config --get remote.origin.url > /dev/null; then
 		echo 'no remote; try gnew'
@@ -287,9 +303,6 @@ gp() {
 		echo 'no commits yet; try gc'
 		return
 	fi
-
-	# shellcheck disable=SC2164
-	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1"
 
 	gpl
 
