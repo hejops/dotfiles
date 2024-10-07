@@ -5,7 +5,7 @@ require("binds")
 require("sets")
 require("autocmds")
 
-require("_lazy")
+require("_lazy") -- TODO: rename to plugins
 
 vim.api.nvim_set_keymap("n", "<leader>nf", ":lua require('neogen').generate()<cr>", { noremap = true, silent = true })
 -- https://github.com/danymat/neogen#supported-languages
@@ -32,7 +32,8 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 	pattern = { "*.sql" },
 	callback = function()
 		-- quite slow
-		vim.cmd([[silent! !sqlfluff fix --dialect sqlite %]])
+		vim.cmd("silent! !sqlfluff fix --dialect sqlite \z
+		--exclude-rules L028 %")
 		-- vim.fn.jobstart("sqlfluff fix --dialect sqlite %")
 	end,
 })
@@ -639,7 +640,7 @@ local servers = {
 		},
 	},
 
-	tsserver = {
+	ts_ls = {
 		-- note: js projects will require jsconfig.json
 		diagnostics = {
 			-- remove unused variable diagnostic messages from tsserver
@@ -652,28 +653,28 @@ local servers = {
 		},
 	},
 
-	sqls = {
-		filetypes = { "sql" },
-		-- on_attach = function(client, bufnr)
-		-- 	client.resolved_capabilities.execute_command = true
-		-- 	highlight.diagnositc_config_sign()
-		-- 	require("sqls").setup({ picker = "telescope" }) -- or default
-		-- end,
-		flags = {
-			allow_incremental_sync = true,
-			debounce_text_changes = 500,
-		},
-		settings = {
-			-- cmd = { "sqls", "-config", "$HOME/.config/sqls/config.yml" },
-			-- alterantively:
-			-- connections = {
-			--   {
-			--     driver = 'postgresql',
-			--     datasourcename = 'host=127.0.0.1 port=5432 user=postgres password=password dbname=user_db sslmode=disable',
-			--   },
-			-- },
-		},
-	},
+	-- sqls = {
+	-- 	filetypes = { "sql" },
+	-- 	-- on_attach = function(client, bufnr)
+	-- 	-- 	client.resolved_capabilities.execute_command = true
+	-- 	-- 	highlight.diagnositc_config_sign()
+	-- 	-- 	require("sqls").setup({ picker = "telescope" }) -- or default
+	-- 	-- end,
+	-- 	flags = {
+	-- 		allow_incremental_sync = true,
+	-- 		debounce_text_changes = 500,
+	-- 	},
+	-- 	settings = {
+	-- 		-- cmd = { "sqls", "-config", "$HOME/.config/sqls/config.yml" },
+	-- 		-- alterantively:
+	-- 		-- connections = {
+	-- 		--   {
+	-- 		--     driver = 'postgresql',
+	-- 		--     datasourcename = 'host=127.0.0.1 port=5432 user=postgres password=password dbname=user_db sslmode=disable',
+	-- 		--   },
+	-- 		-- },
+	-- 	},
+	-- },
 
 	rust_analyzer = {
 		["rust-analyzer"] = {
@@ -820,9 +821,6 @@ vim.diagnostic.config({
 local linters = {
 
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
-	-- https://github.com/mfussenegger/nvim-lint/issues?q=is%3Aissue+vale+
-	-- markdown = { "proselint" }, -- doesn't work
-	-- markdown = { "vale" }, -- riddled with errors
 	-- note: the standard rust linter is clippy, which is part of the lsp
 	bash = { "shellcheck" },
 	dockerfile = { "hadolint" },
@@ -831,23 +829,12 @@ local linters = {
 	html = { "markuplint" },
 	htmldjango = { "djlint" },
 	javascript = { "biomejs" },
+	make = { "checkmake" },
 	markdown = { "markdownlint", "proselint" },
+	python = { "ruff" }, -- pylint is too slow and unreliable
 	ruby = { "rubocop" },
 	sql = { "sqlfluff" },
 	typescript = { "biomejs" },
-
-	python = {
-		"ruff",
-		-- "pylint", -- https://github.com/mfussenegger/nvim-lint/issues/606
-	},
-
-	-- # a good litmus test:
-	-- foo = "%s" % 111
-	-- bar = list([x for x in range(3)])
-	-- if 1:
-	--     raise ValueError
-	-- else:
-	--     pass
 }
 
 -- https://github.com/orumin/dotfiles/blob/62d7afe8a9bf531d1b5c8b13bbb54a55592b34b3/nvim/lua/configs/plugin/lsp/linter_config.lua#L7
@@ -897,18 +884,27 @@ end
 
 require("lint").linters.sqlfluff.args = {
 	"lint",
-	-- TODO: infer dialect (how?)
+	-- TODO: infer dialect (either via heuristics, or some modeline equivalent)
 	"--dialect",
 	"sqlite",
 	"--format=json",
+	"--exclude-rules",
+	"layout.long_lines",
+
+	-- note: fine-grained 'rule options' can only be declared via cfg file (e.g.
+	-- ~/.config/sqlfluff), which my sqlfluff install doesn't seem to recognise
+	-- "--ignore_comment_lines=true",
+	-- https://docs.sqlfluff.com/en/stable/reference/rules.html#rule-layout.long_lines
+	-- https://docs.sqlfluff.com/en/stable/reference/rules.html#rule-references.consistent
+
+	-- https://news.ycombinator.com/item?id=28771656
 }
 
 -- }}}
--- formatter: formatter {{{
+-- formatter: conform {{{
 
 require("conform").setup({
 	-- :h conform-formatters
-	-- why are linters (e.g. shellcheck) listed here?
 	formatters = {
 		latexindent = {
 			-- extra/perl-yaml-tiny
@@ -1322,6 +1318,8 @@ vim.keymap.set("n", "<F12>", random_colorscheme)
 
 -- }}}
 
+require("mini.ai").setup()
+
 require("nvim-ts-autotag").setup({
 	opts = {
 		enable_close = true, -- Auto close tags
@@ -1342,6 +1340,7 @@ vim.filetype.add({
 			end
 		end,
 		["Dockerfile.*"] = "dockerfile",
+		[".+%.flux"] = "flux",
 	},
 })
 
