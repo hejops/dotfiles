@@ -120,8 +120,9 @@ require("lazy").setup(
 						force = true, -- force apply. Works only when watch = true.
 					},
 					notification = {
-						on_open = true, -- vim.notify when start editing chezmoi-managed file.
-						on_apply = true, -- vim.notify on apply.
+						on_open = true,
+						on_apply = false,
+						on_watch = true, -- "This file will be automatically applied"; requires on_open = true
 					},
 				})
 			end,
@@ -152,22 +153,24 @@ require("lazy").setup(
 					-- formatters
 
 					"black",
+					"gofumpt",
+					"goimports", -- required for autoimport (reviser only performs grouping)
+					"goimports-reviser",
+					"golines",
 					"prettier",
 					"shfmt",
 					"stylua",
 					-- "astyle",
 					-- "clang_format",
-					-- "gofumpt",
-					-- "goimports",
-					-- "golines",
 					-- "rustfmt", -- 'use rustup instead'
 
 					-- linters
 
+					"gitlint",
+					"golangci-lint",
 					"markdownlint",
 					"pylint",
 					"shellcheck",
-					-- "golangci-lint",
 					-- "ruff",
 				},
 
@@ -177,40 +180,11 @@ require("lazy").setup(
 		{ -- lualine {{{
 			-- https://github.com/nvim-lualine/lualine.nvim#default-configuration
 			"nvim-lualine/lualine.nvim",
-			opts = {
 
-				-- tabline = {
-				-- 	lualine_a = {
-				-- 		{
-				-- 			"buffers",
-				--
-				-- 			-- hide_filename_extension = false, -- Hide filename extension when set to true.
-				-- 			show_filename_only = false, -- Shows shortened relative path when set to false.
-				-- 			show_modified_status = true, -- Shows indicator when the buffer is modified.
-				--
-				-- 			mode = 2, -- 2: Shows buffer name + buffer index
-				-- 			max_length = vim.o.columns * 2 / 3, -- Maximum width of buffers component,
-				--
-				-- 			-- -- Shows specific buffer name for that filetype ( { `filetype` = `buffer_name`, ... } )
-				-- 			-- filetype_names = {
-				-- 			-- 	TelescopePrompt = "Telescope",
-				-- 			-- 	dashboard = "Dashboard",
-				-- 			-- 	packer = "Packer",
-				-- 			-- 	fzf = "FZF",
-				-- 			-- 	alpha = "Alpha",
-				-- 			-- },
-				--
-				-- 			use_mode_colors = false,
-				-- 			symbols = {
-				-- 				modified = " [+]", -- Text to apped when the buffer is modified
-				-- 				alternate_file = "#", -- Text to prepend to identify the alternate file
-				-- 				-- directory = "", -- Text to show when the buffer is a directory
-				-- 			},
-				-- 		},
-				-- 	},
-				-- },
+			opts = function(_, opts)
+				local gitblame = require("gitblame")
 
-				sections = {
+				opts.sections = {
 
 					-- https://github.com/nvim-lualine/lualine.nvim#available-components
 					-- https://github.com/nvim-lualine/lualine.nvim#component-specific-options
@@ -220,11 +194,8 @@ require("lazy").setup(
 					lualine_c = {
 						"diff",
 						{ "diagnostics", sources = { "nvim_workspace_diagnostic" } },
-						-- {
-						-- 	gitblame.get_current_blame_text,
-						-- 	cond = gitblame.is_blame_text_available and vim.o.columns > 170,
-						-- },
 					},
+
 					lualine_x = { "encoding", "fileformat", "filetype" },
 					lualine_y = {
 						-- "progress",
@@ -235,16 +206,24 @@ require("lazy").setup(
 						end,
 					},
 					lualine_z = { "location" },
-				},
+				}
 
-				options = {
+				-- if vim.o.columns > 170 then
+				-- 	table.insert(opts.sections.lualine_c, {
+				-- 		gitblame.get_current_blame_text,
+				-- 		-- gitblame.get_current_blame_text(), -- func or func call ok, apparently
+				-- 		cond = gitblame.is_blame_text_available, -- cond must be a func, not bool!
+				-- 	})
+				-- end
+
+				opts.options = {
 
 					component_separators = "|",
 					icons_enabled = false,
 					section_separators = "",
 					theme = "auto", -- https://github.com/nvim-lualine/lualine.nvim/blob/master/THEMES.md
-				},
-			},
+				}
+			end,
 		}, -- }}}
 		{ -- telescope {{{
 			"nvim-telescope/telescope.nvim",
@@ -516,6 +495,9 @@ require("lazy").setup(
 		-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3701#issuecomment-1288166768
 
 		"oxfist/night-owl.nvim", -- no name
+		"paulo-granthon/hyper.nvim",
+		"volbot/voltrix.vim",
+		-- "yorumicolors/yorumi.nvim", -- low contrast
 		"zootedb0t/citruszest.nvim",
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
@@ -618,23 +600,14 @@ require("lualine").setup({
 	},
 })
 
--- local gitblame = require("gitblame")
--- -- if width < 170 (mac), not enough space for blame
--- if vim.o.columns > 170 then
--- 	vim.g.gitblame_enabled = true
--- 	vim.g.gitblame_display_virtual_text = 0 -- display in statusline instead
--- 	require("lualine").setup({
--- 		sections = {
--- 			-- https://github.com/f-person/git-blame.nvim#statusline-integration
--- 			-- TODO: can i just append to the existing table?
--- 			lualine_c = {
--- 				"diff",
--- 				{ "diagnostics", sources = { "nvim_workspace_diagnostic" } },
--- 				{ gitblame.get_current_blame_text, cond = gitblame.is_blame_text_available and vim.o.columns > 170 },
--- 			},
--- 		},
--- 	})
--- end
+if vim.o.columns > 170 then
+	-- must be enabled here, apparently
+	vim.cmd("GitBlameEnable")
+	-- displaying blame in inlay is annoying, but displaying in lualine is arguably
+	-- worse because the latency appears to be higher (~1s), which means you won't
+	-- know which line the current blame refers to
+	vim.g.gitblame_display_virtual_text = 1
+end
 
 require("lsp_signature").setup()
 -- print(vim.inspect(require("chezmoi.commands").list()))

@@ -13,7 +13,7 @@ local accepted_file_formats = { "flac", "mp3", "m4a", "opus" }
 -- https://github.com/mpv-player/mpv/blob/2f747341f99d9f8697303be01c67ae3b3437cd18/RELEASE_NOTES#L51
 -- https://github.com/mpv-player/mpv/commit/dfcd561ba9087c2a62cb7034c5e661d0b57ad660
 
-function has_value(tab, val)
+function contains(tab, val)
 	for _, value in ipairs(tab) do
 		if value == val then
 			return true
@@ -126,11 +126,21 @@ function on_file_loaded()
 	path = mp.get_property("path")
 	-- os.execute(string.format("echo '%s %s' > /tmp/mpvscrobble.log", file_format, path))
 
-	-- ignore non mp3s, and files from http (i.e. podcasts)
-	if not has_value(accepted_file_formats, file_format) or path:find("http", 1, true) == 1 then
-		-- msg.info(string.format("The file format %s is not accepted. If you think this is a mistake, you can add the file format to the accepted file format list.", string.format(file_format)))
+	if path:find("music.youtube.com") ~= nil then
+		print(path)
+		new_track()
 		return
 	end
+
+	if
+		-- ignore non mp3s
+		not contains(accepted_file_formats, file_format)
+		-- ignore files from http (i.e. podcasts)
+		or path:find("http", 1, true) == 1
+	then
+		return
+	end
+
 	new_track()
 end
 

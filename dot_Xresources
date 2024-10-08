@@ -17,7 +17,6 @@
 .*faceName: xft:source-code-pro-11
 
 ! see ~/.config/fontconfig/fonts.conf
-Xcursor.size: 32
 Xft.antialias: true
 Xft.autohint: true
 Xft.hinting: true
@@ -31,10 +30,13 @@ Xft.rgba: vrgb
 ! note: "maximum" width is detected among all screens
 #if WIDTH > 1920
 Xft.dpi: 192
+Xcursor.size: 32
 #elif WIDTH > 1366
 Xft.dpi: 144
+Xcursor.size: 24
 #else
 Xft.dpi: 96
+Xcursor.size: 16
 #endif
 
 ! ! XTerm*altIsNotMeta: true

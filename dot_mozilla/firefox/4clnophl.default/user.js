@@ -15,8 +15,8 @@
 // user_pref("browser.display.background_color", "#444");
 // user_pref("browser.display.background_color.dark", "#444");
 
-// user_pref("security.sandbox.content.tempDirSuffix", "3daba8cf-56ca-4e54-81bc-9bac11749eb8"); // prettier-ignore
-// user_pref("security.sandbox.plugin.tempDirSuffix", "50e7dc2c-cc03-4fb4-9127-efc86bb56bb7"); // prettier-ignore
+// user_pref("security.sandbox.content.tempDirSuffix", "3daba8cf-56ca-4e54-81bc-9bac11749eb8");
+// user_pref("security.sandbox.plugin.tempDirSuffix", "50e7dc2c-cc03-4fb4-9127-efc86bb56bb7");
 user_pref("accessibility.browsewithcaret", true);
 user_pref("accessibility.typeaheadfind.autostart", false);
 user_pref("accessibility.typeaheadfind.enablesound", false);
@@ -73,11 +73,16 @@ user_pref("browser.newtab.extensionControlled", true);
 user_pref("browser.newtab.privateAllowed", true);
 user_pref("browser.newtab.url", "about:blank");
 user_pref("browser.newtabpage.activity-stream.asrouter.providers.cfr", "null");
-user_pref("browser.newtabpage.activity-stream.asrouter.providers.message-groups", "null"); // prettier-ignore
-user_pref("browser.newtabpage.activity-stream.asrouter.providers.messaging-experiments", "null"); // prettier-ignore
-user_pref("browser.newtabpage.activity-stream.asrouter.providers.whats-new-panel", "null"); // prettier-ignore
-user_pref("browser.newtabpage.activity-stream.asrouter.userprefs.cfr.addons", false); // prettier-ignore
-user_pref("browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features", false); // prettier-ignore
+// biome-ignore format:
+user_pref("browser.newtabpage.activity-stream.asrouter.providers.message-groups", "null");
+// biome-ignore format:
+user_pref("browser.newtabpage.activity-stream.asrouter.providers.messaging-experiments", "null");
+// biome-ignore format:
+user_pref("browser.newtabpage.activity-stream.asrouter.providers.whats-new-panel", "null");
+// biome-ignore format:
+user_pref("browser.newtabpage.activity-stream.asrouter.userprefs.cfr.addons", false);
+// biome-ignore format:
+user_pref("browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features", false);
 user_pref("browser.newtabpage.activity-stream.discoverystream.config", "[]");
 user_pref("browser.newtabpage.activity-stream.feeds.system.topstories", false);
 user_pref("browser.newtabpage.activity-stream.feeds.topsites", false);
@@ -184,7 +189,8 @@ user_pref("devtools.toolbox.footer.height", 324);
 user_pref("devtools.toolbox.host", "window");
 user_pref("devtools.toolbox.selectedTool", "netmonitor");
 user_pref("devtools.toolbox.sidebar.width", 1009);
-user_pref("devtools.toolbox.tabsOrder", "netmonitor,storage,inspector,webconsole,jsdebugger,styleeditor,performance,memory,accessibility,application"); // prettier-ignore
+// biome-ignore format:
+user_pref("devtools.toolbox.tabsOrder", "netmonitor,storage,inspector,webconsole,jsdebugger,styleeditor,performance,memory,accessibility,application");
 user_pref("devtools.toolsidebar-height.inspector", 350);
 user_pref("devtools.toolsidebar-width.inspector", 1280);
 user_pref("devtools.toolsidebar-width.inspector.splitsidebar", 640);
@@ -199,7 +205,8 @@ user_pref("dom.apps.reset-permissions", true);
 user_pref("dom.battery.enabled", false);
 user_pref("dom.event.clipboardevents.enabled", false);
 user_pref("dom.mozApps.used", true);
-user_pref("dom.popup_allowed_events", "change click dblclick mouseup notificationclick reset submit touchend keypress"); // prettier-ignore
+// biome-ignore format:
+user_pref("dom.popup_allowed_events", "change click dblclick mouseup notificationclick reset submit touchend keypress");
 user_pref("dom.private-attribution.submission.enabled", false); // https://blog.privacyguides.org/2024/07/14/mozilla-disappoints-us-yet-again-2/
 user_pref("dom.security.https_only_mode", true);
 user_pref("e10s.rollout.cohort", "optedIn");
@@ -215,7 +222,8 @@ user_pref("extensions.fxmonitor.firstAlertShown", true);
 user_pref("extensions.getAddons.databaseSchema", 6);
 user_pref("extensions.incognito.migrated", true);
 user_pref("extensions.pendingOperations", false);
-user_pref("extensions.pictureinpicture.enable_picture_in_picture_overrides", true); // prettier-ignore
+// biome-ignore format:
+user_pref("extensions.pictureinpicture.enable_picture_in_picture_overrides", true);
 user_pref("extensions.pocket.enabled", false);
 user_pref("extensions.privatebrowsing.notification", true);
 user_pref("extensions.sidebar-button.shown", true);
@@ -397,3 +405,16 @@ user_pref("xpinstall.signatures.required", false);
 user_pref("xpinstall.whitelist.add", "");
 user_pref("xpinstall.whitelist.add.180", "");
 user_pref("xpinstall.whitelist.required", false);
+// https://support.mozilla.org/en-US/questions/1423347
+// https://support.mozilla.org/en-US/questions/1296613
+user_pref("browser.startup.couldRestoreSession.count", -1);
+user_pref("trailhead.firstrun.branches", "nofirstrun-empty");
+user_pref("browser.aboutwelcome.enabled", false);
+// https://github.com/Carm01/Mozilla.cfg/blob/07118683d0ef3037a5977a5e2f34e92c297f3b4d/mozilla.cfg#L29
+user_pref("datareporting.policy.dataSubmissionPolicyBypassNotification", true);
+user_pref("browser.ml.chat.enabled", false);
+user_pref("reader.parse-on-load.enabled", false);
+user_pref("media.webspeech.synth.enabled", false);
+user_pref("browser.translations.automaticallyPopup", false);
+user_pref("browser.translations.enable", false);
+user_pref("browser.translations.panelShown", false);

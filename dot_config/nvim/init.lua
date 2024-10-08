@@ -7,7 +7,7 @@ require("autocmds")
 require("binds")
 require("sets")
 
-require("_lazy")
+require("_lazy") -- TODO: rename to plugins
 
 -- plugin autocmds {{{
 
@@ -28,7 +28,8 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 	pattern = { "*.sql" },
 	callback = function()
 		-- quite slow
-		vim.cmd([[silent! !sqlfluff fix --dialect sqlite %]])
+		vim.cmd("silent! !sqlfluff fix --dialect sqlite \z
+		--exclude-rules L028 %")
 		-- vim.fn.jobstart("sqlfluff fix --dialect sqlite %")
 	end,
 })
@@ -181,6 +182,17 @@ vim.api.nvim_create_autocmd("User", {
 vim.api.nvim_create_autocmd("TabLeave", {
 	callback = function()
 		vim.g.lasttab = vim.fn.tabpagenr()
+	end,
+})
+
+-- https://github.com/xvzc/chezmoi.nvim?tab=readme-ov-file#treat-all-files-in-chezmoi-source-directory-as-chezmoi-files
+vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+	pattern = { os.getenv("HOME") .. "/.local/share/chezmoi/*" },
+	callback = function(ev)
+		vim.schedule(function()
+			require("chezmoi.commands.__edit").watch(ev.buf)
+		end)
+		-- print("chezmoi watching")
 	end,
 })
 
@@ -602,6 +614,9 @@ local servers = {
 
 	-- biome = {},
 	bashls = {},
+	biome = {},
+	docker_compose_language_service = {},
+	dockerls = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
 	taplo = {},
 	texlab = {},
@@ -641,53 +656,6 @@ local servers = {
 				6133, -- declared but never used
 				6196,
 			},
-		},
-	},
-
-	-- -- i want to like deno, but it is hard to configure (specifically wrt TS
-	-- -- codes e.g 6133), and the docs are somewhat obtuse
-	-- denols = { -- requires deno.json; comes with linter ootb (like rust)
-	-- 	settings = {
-	-- 		deno = {
-	-- 			-- enable = true,
-	-- 			suggest = {
-	-- 				imports = {
-	-- 					hosts = { ["https://deno.land"] = true },
-	-- 				},
-	-- 			},
-	-- 			inlayHints = {
-	--
-	-- 				enumMemberValues = { enabled = true },
-	-- 				functionLikeReturnTypes = { enable = true },
-	-- 				parameterNames = { enabled = "all", suppressWhenArgumentMatchesName = true },
-	-- 				parameterTypes = { enabled = true },
-	-- 				propertyDeclarationTypes = { enabled = true },
-	-- 				variableTypes = { enabled = true, suppressWhenTypeMatchesName = true },
-	-- 			},
-	-- 		},
-	-- 	},
-	-- },
-
-	sqls = {
-		filetypes = { "sql" },
-		-- on_attach = function(client, bufnr)
-		-- 	client.resolved_capabilities.execute_command = true
-		-- 	highlight.diagnositc_config_sign()
-		-- 	require("sqls").setup({ picker = "telescope" }) -- or default
-		-- end,
-		flags = {
-			allow_incremental_sync = true,
-			debounce_text_changes = 500,
-		},
-		settings = {
-			-- cmd = { "sqls", "-config", "$HOME/.config/sqls/config.yml" },
-			-- alterantively:
-			-- connections = {
-			--   {
-			--     driver = 'postgresql',
-			--     datasourcename = 'host=127.0.0.1 port=5432 user=postgres password=password dbname=user_db sslmode=disable',
-			--   },
-			-- },
 		},
 	},
 
@@ -743,6 +711,13 @@ mason_lspconfig.setup_handlers({
 			filetypes = (servers[server_name] or {}).filetypes,
 		})
 	end,
+})
+
+-- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
+require("lspconfig").docker_compose_language_service.setup({
+	root_dir = require("lspconfig").util.root_pattern("docker-compose.yml"), -- add more patterns if needed
+	filetypes = { "yaml.docker-compose" },
+	-- single_file_support = true,
 })
 
 require("lspconfig").gleam.setup({
@@ -838,35 +813,20 @@ vim.diagnostic.config({
 local linters = {
 
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
-	-- https://github.com/mfussenegger/nvim-lint/issues?q=is%3Aissue+vale+
-	-- markdown = { "proselint" }, -- doesn't work
-	-- markdown = { "vale" }, -- riddled with errors
 	-- note: the standard rust linter is clippy, which is part of the lsp
 	bash = { "shellcheck" },
-	dockerfile = { "hadolint" },
+	dockerfile = { "hadolint" }, -- can be quite noisy
+	gitcommit = { "gitlint" },
 	go = { "golangcilint" },
 	html = { "markuplint" },
 	htmldjango = { "djlint" },
 	javascript = { "biomejs" },
+	make = { "checkmake" },
 	markdown = { "markdownlint", "proselint" },
+	python = { "ruff" }, -- pylint is too slow and unreliable
 	ruby = { "rubocop" },
 	sql = { "sqlfluff" },
 	typescript = { "biomejs" },
-
-	gitcommit = { "gitlint" },
-
-	python = {
-		"ruff",
-		-- "pylint", -- https://github.com/mfussenegger/nvim-lint/issues/606
-	},
-
-	-- # a good litmus test:
-	-- foo = "%s" % 111
-	-- bar = list([x for x in range(3)])
-	-- if 1:
-	--     raise ValueError
-	-- else:
-	--     pass
 }
 
 if vim.fn["globpath"](".", "commitlint.config.js") ~= "" then
@@ -931,10 +891,20 @@ end
 
 require("lint").linters.sqlfluff.args = {
 	"lint",
-	-- TODO: infer dialect (how?)
+	-- TODO: infer dialect (either via heuristics, or some modeline equivalent)
 	"--dialect",
 	"sqlite",
 	"--format=json",
+	"--exclude-rules",
+	"layout.long_lines",
+
+	-- note: fine-grained 'rule options' can only be declared via cfg file (e.g.
+	-- ~/.config/sqlfluff), which my sqlfluff install doesn't seem to recognise
+	-- "--ignore_comment_lines=true",
+	-- https://docs.sqlfluff.com/en/stable/reference/rules.html#rule-layout.long_lines
+	-- https://docs.sqlfluff.com/en/stable/reference/rules.html#rule-references.consistent
+
+	-- https://news.ycombinator.com/item?id=28771656
 }
 
 -- }}}
@@ -942,7 +912,6 @@ require("lint").linters.sqlfluff.args = {
 
 require("conform").setup({
 	-- :h conform-formatters
-	-- why are linters (e.g. shellcheck) listed here?
 	formatters = {
 		latexindent = {
 			-- extra/perl-yaml-tiny
@@ -1296,12 +1265,22 @@ require("cmp-gitcommit").setup({})
 require("util"):random_colorscheme()
 vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
 
+require("nvim-ts-autotag").setup({
+	opts = {
+		enable_close = true, -- Auto close tags
+		enable_rename = true, -- Auto rename pairs of tags
+		enable_close_on_slash = false, -- Auto close on trailing </
+	},
+})
+
+-- require("mini.ai").setup()
+
 -- }}}
 
 -- is there a better place to put this?
 vim.filetype.add({
 	pattern = {
-		-- https://github.com/emilioziniades/dotfiles/blob/db7b414c150d3a3ab863a0109786f7f48465dd23/nvim/init.lua#L708-L724
+		-- https://github.com/emilioziniades/dotfiles/blob/db7b414c150d3a3ab863a0109786f7f48465dd23/nvim/init.lua#L708
 		[".*/templates/.*.html"] = function(_, bufnr)
 			local content = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 			for _, line in ipairs(content) do
@@ -1311,5 +1290,13 @@ vim.filetype.add({
 			end
 		end,
 		["Dockerfile.*"] = "dockerfile",
+		[".+%.flux"] = "flux",
+		["docker%-compose.*.yml"] = "yaml.docker-compose", -- '-' has special meaning (smh)
+	},
+
+	-- https://github.com/kennethnym/dotfiles/blob/41f03b9091181dc62ce872288685b27f001286f3/nvim/init.lua#L474
+	filename = {
+		["Dockerfile"] = "dockerfile",
+		["docker-compose.yml"] = "yaml.docker-compose",
 	},
 })

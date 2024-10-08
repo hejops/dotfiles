@@ -17,10 +17,10 @@
 *       | ~ | _ | < | { |       |   |   |   | r |   |       | } | > | + | " |
 *       | ` | - | ( | [ |       |win|alt|   |ctl|tab|       | ] | ) | = | ' |
 *       +---+---+---+---+   +---+---+---+   +---+---+---+   +---+---+---+---+
-*                           | b | l |<  |   |^  | e | s |
+*                           | b | l |^  |   |v  | e | s |
 *                           | k | c |hme|   |pup| n | p |
 *                           | s | t +---+   +---+ t | a |
-*                           | p | r |>  |   |v  | e | c |
+*                           | p | r |<  |   |>  | e | c |
 *                           |   | l |end|   |pdn| r | e |
 *                           +---+---+---+   +---+---+---+
 
@@ -58,8 +58,8 @@
 {lshift}{left}>{-lshift}{,}{+lshift}
 {lshift}{down}>{-lshift}{.}{+lshift}
 
-* i never use the arrow keys, but keep these around just in case
-{lshift}{home}>{left}
-{lshift}{end}>{right}
-{lshift}{pup}>{up}
-{lshift}{pdown}>{down}
+* i use the arrow keys sometimes, so keep these around just in case
+{lshift}{home}>{up}
+{lshift}{end}>{left}
+{lshift}{pup}>{down}
+{lshift}{pdown}>{right}
