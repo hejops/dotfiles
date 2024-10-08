@@ -17,8 +17,6 @@
 
 paths=(
 
-	# ~/neovim/build/bin # DO NOT install nvim with macports -- https://github.com/neovim/neovim/wiki/Building-Neovim
-	/Applications/Docker.app/Contents/Resources/bin
 	/opt/local/bin                               # mac
 	/snap/go/current/bin                         # ubuntu
 	/usr/local/bin                               # dwm
@@ -215,15 +213,6 @@ export STREAMLIT_SERVER_RUN_ON_SAVE=true
 
 # }}}
 
-# # not strictly required for lsp? i could be wrong
-# eval "$(~/.rbenv/bin/rbenv init - bash)"
-#
-# # if command -v rbenv > /dev/null; then eval "$(rbenv init -)"; fi
-#
-# # https://old.reddit.com/r/ruby/comments/1cb5yf7/gem_updateinstall_errors_after_installing_ruby_331/l0wbeu0/
-# export GEM_HOME=$HOME/.gem
-# export PATH=$GEM_HOME/bin:$PATH # for ruby-lsp
-
 # when sourced from a script, stop here
 case $- in
 *i*) : ;;
@@ -345,6 +334,9 @@ if type pacman > /dev/null 2> /dev/null; then
 	alias rem="sudo pacman --remove --recursive" # --cascade
 	alias sp="pacman --sync --search"
 
+elif type apt > /dev/null 2> /dev/null; then
+	alias get="sudo apt install"
+
 elif type port > /dev/null 2> /dev/null; then
 
 	alias get="sudo port install"
@@ -423,6 +415,8 @@ GIT_PROMPT() {
 		# origin/HEAD -> origin/master
 		REM_BRANCH=$(head <<< "$REMOTE_BRANCHES" -n1 | awk '{print $NF}')
 	fi
+
+	# TODO: this may not be meaningful at work
 
 	# format is there:here, where each int represents number of commits
 	# ahead of HEAD
