@@ -1,7 +1,7 @@
-# A TOML linter such as https://taplo.tamasfe.dev/ can use this schema to
-# validate your config. If you encounter any issues, please make an issue at
-# https://github.com/yazi-rs/schemas.
 "$schema" = "https://yazi-rs.github.io/schemas/yazi.json"
+
+# TODO: disable icons
+# TODO: color scheme
 
 [manager]
 linemode = "size"      # what gets displayed next to items
@@ -26,13 +26,14 @@ ueberzug_offset = [0, 0, 0, 0]
 ueberzug_scale = 1
 
 [opener]
-edit = [
+edit = [{ run = '$EDITOR "$@"', desc = "$EDITOR", block = true, for = "unix" }]
 
-  { run = '${EDITOR:=nvim} "$@"', desc = "$EDITOR", block = true, for = "unix" },
-
+open = [
+  # { run = 'feh -dFZ "$@"', desc = "Open", for = "linux" },
+  # i like that mimeapps is easily configurable, but i don't like that you can't (?) specify args
+  { run = 'mimeopen "$@"', desc = "Open", for = "linux" }, # ~/.config/mimeapps.list
+  { run = 'xdg-open "$@"', desc = "Open", for = "linux" },
 ]
-
-open = [{ run = 'xdg-open "$@"', desc = "Open", for = "linux" }]
 
 reveal = [
 
@@ -40,12 +41,9 @@ reveal = [
   { run = '''exiftool "$1"; echo "Press enter to exit"; read _''', block = true, desc = "Show EXIF", for = "unix" },
 
 ]
-extract = [
-  #
 
-  { run = 'unar "$1"', desc = "Extract here", for = "unix" },
+# extract = [{ run = 'unar "$1"', desc = "Extract here", for = "unix" }]
 
-]
 play = [
 
   { run = 'mpv --force-window "$@"', orphan = true, for = "unix" },
@@ -76,6 +74,10 @@ rules = [
   { mime = "inode/x-empty", use = [
     "edit",
     "reveal",
+  ] },
+
+  { mime = "application/epub+zip", use = [
+    "open",
   ] },
 
   { mime = "application/*zip", use = [
@@ -112,34 +114,26 @@ suppress_preload = false
 
 [plugin]
 
-preloaders = [
-  { name = "*", cond = "!mime", run = "mime", multi = true, prio = "high" },
-  # Image
-  { mime = "image/*", run = "image" },
-  # Video
-  { mime = "video/*", run = "video" },
-  # PDF
-  { mime = "application/pdf", run = "pdf" },
-]
-previewers = [
-  { name = "*/", run = "folder", sync = true },
-  # Code
-  { mime = "text/*", run = "code" },
-  { mime = "*/{xml,javascript,x-wine-extension-ini}", run = "code" },
-  # JSON
-  { mime = "application/json", run = "json" },
-  # Image
-  { mime = "image/vnd.djvu", run = "noop" },
-  { mime = "image/*", run = "image" },
-  # Video
-  { mime = "video/*", run = "video" },
-  # PDF
-  { mime = "application/pdf", run = "pdf" },
-  # Archive
-  { mime = "application/*zip", run = "archive" },
-  { mime = "application/x-{tar,bzip*,7z-compressed,xz,rar}", run = "archive" },
-  # Fallback
-  { name = "*", run = "file" },
+# https://github.com/sxyazi/yazi/tree/shipped/yazi-plugin/preset/plugins
+
+# https://yazi-rs.github.io/docs/configuration/yazi/#plugin.previewers
+
+# name (String): Glob expression for matching the file name. Case insensitive
+# by default, add \s to the beginning to make it sensitive.
+#
+# mime (String): Glob expression for matching the mime-type. Case insensitive
+# by default, add \s to the beginning to make it sensitive.
+#
+# run (String): The name of the Lua plugin to be ran.
+#
+# sync (Boolean): Whether to run in the sync context, default is false.
+
+# apparently, most file previews just work ootb, which is quite good
+# TODO: epub (bsdtar), mp3/flac/etc (mediainfo)
+
+prepend_previewers = [
+  #
+  { mime = "audio/*", run = "media" },
 ]
 
 [input]
@@ -211,4 +205,4 @@ sort_reverse = false
 [log]
 enabled = false
 
-[headsup]
+# [headsup]
