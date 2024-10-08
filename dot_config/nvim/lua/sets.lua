@@ -15,11 +15,28 @@ vim.o.undodir = vim.fn.expand("~/.vim/undo2//")
 
 vim.opt.formatoptions:append("ro") -- auto insert comment on newline; only works in languages that have a default commentstring (i.e. not json)
 
+local function get_repo_root()
+	return vim.fn.system("git rev-parse --show-toplevel 2> /dev/null")
+end
+
+local titlestring =
+	-- :h statusline
+	"%f " -- path to file, relative to cwd
+	.. "[%LL] " -- lines
+	.. "%a" -- "Argument list status as in default title." (?)
+	.. "%r" -- [RO]
+	.. "%m" -- [+]
+
+local root = get_repo_root()
+if root ~= "" then
+	titlestring = root .. ": " .. titlestring
+end
+
 -- vim.g.netrw_browse_split=4	-- open in vsplit
 -- vim.o.spellsuggest = 5 -- show less suggestions
+vim.g.lasttab = 1
 vim.g.netrw_altv = 1
 vim.g.netrw_banner = 0
-vim.g.lasttab = 1
 vim.g.netrw_keepdir = 0 -- set pwd correctly
 vim.g.netrw_liststyle = 3 -- tree
 vim.g.netrw_preview = 1 -- press p (not automatic)
@@ -68,7 +85,7 @@ vim.o.startofline = false -- don't put cursor at start of line (e.g. after gg)
 vim.o.timeout = true
 vim.o.timeoutlen = 1000
 vim.o.title = true -- set custom window title
-vim.o.titlestring = "nvim: %f [%LL] %a%r%m"
+vim.o.titlestring = titlestring
 vim.o.ttimeoutlen = 0 -- re-enter normal mode instantly
 vim.o.ttyfast = true -- speed improvement?
 vim.o.undofile = true -- write undo history to a file
