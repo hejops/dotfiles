@@ -155,22 +155,23 @@ fi
 # for files in <dir> to appear in o, <dir> must be a git repo
 export WORK_DIRS=(
 
-	# ~/react-tutorial
-	# ~/rust/rust-books/zero-to-prod
-	~/blog
+	# ~/blog
+	# ~/febe
+	# ~/rust/discogs
+	# ~/rust/discoll
+	# ~/rust/fours
+	# ~/rust/search
 	~/dita
-	~/febe
+	~/gone
 	~/gripts
+	~/ibb
 	~/mappy
 	~/mpv-search
 	~/plaque
-	~/rust/discogs
-	~/rust/discoll
-	~/rust/fours
 	~/rust/lasttree
-	~/rust/search
 	~/scripts
-	~/total-typescript
+	~/ts/handbook
+	~/ytm
 
 )
 
@@ -304,6 +305,8 @@ alias xargs="xargs --no-run-if-empty --verbose"
 
 # alias cget="curl -JLO" # https://stackoverflow.com/a/8841522
 # alias r="exec bash; clear" # reload this file
+# alias ra=fm
+# alias rac=r
 alias _exa="exa --all --long --links --dereference --color=always --git" # helper
 alias c="curl --silent --location --fail"
 alias cg=cget
@@ -318,9 +321,7 @@ alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permis
 alias prem="pip3 uninstall"
 alias pt="pytest -x -vv --disable-warnings"
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
-alias r=rac
-alias ra=fm
-alias rac="ranger --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
+alias r="fm" # --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
 alias ud="sudo udevadm control --reload-rules && sudo udevadm trigger"
 
 alias gC="git reset --soft HEAD~1" # un-commit
