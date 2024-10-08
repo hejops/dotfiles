@@ -20,6 +20,7 @@ paths=(
 	# ~/neovim/build/bin # DO NOT install nvim with macports -- https://github.com/neovim/neovim/wiki/Building-Neovim
 	/Applications/Docker.app/Contents/Resources/bin
 	/opt/local/bin                               # mac
+	/snap/go/current/bin                         # ubuntu
 	/usr/local/bin                               # dwm
 	~/.cache/pypoetry/virtualenvs/dita-*3.12/bin # glob only returns first match?
 	~/.cargo/bin                                 # arch installs are preferred over cargo
@@ -32,7 +33,7 @@ paths=(
 # to see 'clean' sys.path, run 'python3 -S -m site'
 for p in "${paths[@]}"; do
 	echo "$PATH" | grep -Fq "$p" && continue
-	[[ -d $p ]] && export PATH=$PATH:$p
+	[[ -d $p ]] && export PATH=$p:$PATH # important: prepend, not append
 done
 # echo "${paths[@]}";
 unset p paths
@@ -334,6 +335,7 @@ alias gdw="git diff --color-words"
 alias gig="\$EDITOR .gitignore"
 alias gl="git log --stat --oneline"
 alias gun="git checkout --" # discard all local changes ("undo"); git revert is the same, but also creates a commit
+# alias gun="git restore" # this is just an alias to `git checkout` -- https://stackoverflow.com/a/31281748
 
 if type pacman > /dev/null 2> /dev/null; then
 
