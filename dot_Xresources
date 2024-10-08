@@ -12,8 +12,9 @@
 ! xrdb -merge $HOME/.Xresources
 /* xrdb -merge $HOME/.local/share/nvim/lazy/citruszest.nvim/extra/*xresources */
 
-! note: faceName mostly affects dwm statusbar and gtk (e.g. firefox)
-.*faceName: xft:haskplex-11
+! note: faceName mostly affects dwm statusbar (?)
+! TODO: non-latin fallbacks?
+.*faceName: xft:source-code-pro-11
 
 ! see ~/.config/fontconfig/fonts.conf
 Xcursor.size: 32
