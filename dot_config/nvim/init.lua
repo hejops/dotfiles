@@ -1,17 +1,13 @@
 -- TODO: root_pattern for lua; set root to .config/nvim?
 -- structuring: see https://github.com/arnvald/viml-to-lua
 
+require("util")
+
+require("autocmds")
 require("binds")
 require("sets")
-require("autocmds")
 
 require("_lazy")
-
-vim.api.nvim_set_keymap("n", "<leader>nf", ":lua require('neogen').generate()<cr>", { noremap = true, silent = true })
--- https://github.com/danymat/neogen#supported-languages
--- google_docstrings
--- i can't remember why i placed this so far up
-require("neogen").setup({ snippet_engine = "luasnip" })
 
 -- plugin autocmds {{{
 
@@ -53,6 +49,7 @@ vim.api.nvim_create_autocmd({ "BufWritePost", "VimEnter" }, {
 	end,
 })
 
+-- must be declared before colorscheme is set
 vim.api.nvim_create_autocmd("ColorScheme", {
 	callback = function()
 		-- must be called after any colorscheme change
@@ -65,19 +62,54 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 		-- enforce hl colorcolumn (citruszest unsets it)
 		-- $HOME/.local/share/nvim/lazy/citruszest.nvim/lua/citruszest/highlights/init.lua:29
 		-- 8:    ColorColumn = { bg = C.none }, -- used for the columns set with 'colorcolumn'
-		vim.api.nvim_set_hl(0, "ColorColumn", { bg = "#48D1CC" })
+		-- TODO: should follow lualine main color
+		vim.api.nvim_set_hl(0, "ColorColumn", { bg = "#444444" })
 
 		-- TODO: set lualine?
 	end,
 })
 
--- autocmd User VimtexEventInitPost VimtexView
--- autocmd User VimtexEventQuit call vimtex#compiler#clean(0)
--- autocmd VimLeave *.tex silent exec "!sh ~/scripts/fkill %"
+-- tectonic integration in vimtex is pretty poor
+
+-- if vim.loop.fs_stat("Tectonic.toml") then
+-- 	-- https://github.com/IndianBoy42/LunarVim/blob/170df925da72f617d70326b28e558502a67f1003/lua/lv-vimtex/init.lua#L12
+-- 	vim.g.vimtex_compiler_tectonic = {
+-- 		["options"] = { "--synctex", "--keep-logs" },
+-- 	}
+-- 	vim.g.vimtex_compiler_generic = { cmd = "watchexec -e tex -- tectonic --synctex --keep-logs *.tex" }
+-- 	vim.g.vimtex_compiler_method = "tectonic"
+-- 	-- vim.g.vimtex_view_method = "skim"
+-- end
+
+-- hacked together from exec
+local function tectonic_build()
+	-- close all unnamed splits
+	for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_get_name(bufnr) == "" then
+			vim.api.nvim_buf_delete(bufnr, { force = true })
+		end
+	end
+
+	local h = vim.o.lines * 0.2
+	local cmd = h .. " new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! tectonic -X build"
+	vim.cmd(cmd)
+	os.execute([[
+lsof ./build/default/default.pdf > /dev/null 2> /dev/null || zathura ./build/default/default.pdf 2> /dev/null &
+]])
+	vim.cmd.wincmd("k")
+end
 
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 	pattern = { "*.tex" },
-	command = "VimtexClean",
+	callback = function()
+		-- relies on correct project path
+		if vim.loop.fs_stat("Tectonic.toml") then
+			tectonic_build()
+		elseif in_tex() then
+			vim.cmd("VimtexCompile")
+			vim.cmd("VimtexClean")
+		end
+	end,
 })
 
 vim.api.nvim_create_autocmd({ "VimEnter" }, {
@@ -85,7 +117,15 @@ vim.api.nvim_create_autocmd({ "VimEnter" }, {
 		"*.tex",
 		-- "*.cls",
 	},
-	command = "VimtexCompile",
+	callback = function()
+		if vim.loop.fs_stat("Tectonic.toml") then
+			tectonic_build()
+		-- else
+		elseif in_tex() then
+			vim.cmd("VimtexCompile")
+			vim.cmd("VimtexClean")
+		end
+	end,
 })
 
 -- vim.api.nvim_create_autocmd("User", {
@@ -147,9 +187,6 @@ vim.api.nvim_create_autocmd("TabLeave", {
 -- }}}
 -- plugin binds {{{
 
--- vim.keymap.set("n", "<leader>T", ":NvimTreeToggle<cr>")
--- vim.keymap.set("n", "<leader>o", ":SymbolsOutline<cr>")
--- vim.keymap.set("n", "<leader>p", ":Lazy profile<cr>")
 vim.keymap.set("n", "<leader>J", ":TSJToggle<cr>")
 vim.keymap.set("n", "<leader>T", ":tabe ")
 vim.keymap.set("n", "<leader>gB", ":GitBlameToggle<cr>") -- must be explicitly enabled on mac (due to lacking horizontal space)
@@ -216,8 +253,6 @@ vim.keymap.set("n", "<leader>j", function()
 end, { desc = "next diagnostic message" })
 
 vim.keymap.set("n", "<leader>k", function()
-	-- TODO: next works, but previous doesn't; not sure if this is related:
-	-- https://github.com/folke/trouble.nvim/issues/494
 	require("trouble").open({ mode = "diagnostics" })
 	require("trouble").prev({ skip_groups = true, jump = true })
 end, { desc = "previous diagnostic message" })
@@ -225,6 +260,11 @@ end, { desc = "previous diagnostic message" })
 vim.keymap.set("n", "<leader>l", function()
 	require("trouble").toggle({ mode = "diagnostics", focus = true })
 end)
+
+-- google_docstrings
+-- https://github.com/danymat/neogen#supported-languages
+require("neogen").setup({ snippet_engine = "luasnip" })
+vim.keymap.set("n", "<leader>nf", require("neogen").generate, { noremap = true, silent = true })
 
 -- }}}
 -- navigator: telescope {{{
@@ -235,24 +275,14 @@ local telescope_b = require("telescope.builtin")
 
 local telescope_actions = require("telescope.actions")
 
-local function in_git_repo()
-	-- https://www.reddit.com/r/neovim/comments/y2t9rt/comment/is4wjmb/
-	-- https://www.reddit.com/r/neovim/comments/vkckjb/comment/idosy7m/
-	-- maybe use this cond to lazy-start gitsigns
-	vim.fn.system("git rev-parse --is-inside-work-tree")
-	return vim.v.shell_error == 0
-end
-
 vim.api.nvim_create_autocmd("VimEnter", {
 	callback = function()
 		-- mostly to avoid find from mac home
-		if vim.fn.argv(0) == "" and in_git_repo() and vim.bo.filetype ~= "man" then
+		if vim.fn.argv(0) == "" and require("util").in_git_repo() and vim.bo.filetype ~= "man" then
 			telescope_b.find_files()
 		end
 	end,
 })
-
--- local telescope_trouble = require("trouble.providers.telescope")
 
 telescope.setup({
 
@@ -264,7 +294,7 @@ telescope.setup({
 		border = true, -- if false, all text is disabled!
 		dynamic_preview_title = true, -- useful, since you don't have to look away from the right pane
 		layout_config = { preview_cutoff = 0 },
-		layout_strategy = "horizontal",
+		layout_strategy = require("util").get_layout_strategy(),
 		prompt_title = false, -- this is almost always overridden anyway
 		results_title = false,
 		sorting_strategy = "descending", -- closest match on bottom (near prompt)
@@ -282,38 +312,34 @@ telescope.setup({
 			-- https://github.com/nvim-telescope/telescope.nvim/blob/24778fd72fcf39a0b1a6f7c6f4c4e01fef6359a2/doc/telescope.txt#L2617
 			i = {
 
-				-- ["<c-o>"] = telescope_actions.select_tab_drop,
+				-- ["<c-i>"] = telescope_actions.preview_scrolling_up,
+				-- ["<c-s-t>"] = require("trouble.sources.telescope").open(),
+				-- ["<c-s-t>"] = telescope_trouble.open_with_trouble,
 				-- ["<c-s>"] = telescope_actions.select_horizontal, -- open in horiz split
+				-- ["<c-u>"] = telescope_actions.preview_scrolling_down,
 				-- ["<c-x>"] = require("telescope.actions.layout").toggle_prompt_position,
+				["<c-b>"] = telescope_actions.preview_scrolling_up,
+				["<c-c>"] = telescope_actions.close,
+				["<c-f>"] = telescope_actions.preview_scrolling_down,
 				["<c-j>"] = telescope_actions.move_selection_next,
 				["<c-k>"] = telescope_actions.move_selection_previous,
-				["<c-l>"] = function()
-					vim.cmd("normal E")
-				end,
-
-				-- ["<c-i>"] = telescope_actions.preview_scrolling_up,
-				-- ["<c-u>"] = telescope_actions.preview_scrolling_down,
-				["<c-b>"] = telescope_actions.preview_scrolling_up,
-				["<c-f>"] = telescope_actions.preview_scrolling_down,
-
-				["<c-c>"] = telescope_actions.close,
-				["<c-d>"] = telescope_actions.select_tab_drop, -- reuse tab, if buffer already open
-				["<c-e>"] = telescope_actions.select_tab_drop,
 				["<c-p>"] = require("telescope.actions.layout").toggle_preview,
-				-- ["<c-s-t>"] = telescope_trouble.open_with_trouble,
-				-- ["<c-s-t>"] = require("trouble.sources.telescope").open(),
 				["<c-t>"] = require("telescope.actions.layout").cycle_layout_next, -- TODO: why must input twice?
-				["<cr>"] = telescope_actions.select_tab_drop,
+				["<cr>"] = telescope_actions.select_tab_drop, -- reuse tab, if buffer already open
 				["<esc>"] = telescope_actions.close,
+
+				-- ["<c-l>"] = function() -- ???
+				-- 	vim.cmd("normal E")
+				-- end,
 			},
 
 			n = {
 
+				-- ["t"] = require("trouble.sources.telescope").open(),
+				-- ["t"] = telescope_trouble.open_with_trouble,
 				["<c-c>"] = telescope_actions.close,
 				["<c-s>"] = telescope_actions.select_horizontal,
 				["<cr>"] = telescope_actions.select_tab_drop,
-				-- ["t"] = telescope_trouble.open_with_trouble,
-				-- ["t"] = require("trouble.sources.telescope").open(),
 			},
 		},
 	},
@@ -362,7 +388,7 @@ telescope.setup({
 			treesitter = true,
 			picker_opts = {
 				-- layout_config = { width = 0.8, preview_width = 0.5 },
-				layout_strategy = "center",
+				layout_strategy = require("util").get_layout_strategy(),
 				sorting_strategy = "ascending",
 			},
 		},
@@ -393,25 +419,10 @@ telescope.load_extension("heading")
 -- 	return self
 -- end
 
-local function get_layout_strategy()
-	-- "vertical" is recommended if file previews are important, e.g. git diff,
-	-- symbol search, or if window is narrow
-	--
-	-- "center" is recommended if previews are unimportant (or irrelevant)
-	--
-	-- for everything else, "horizontal" is a good fallback. having said that,
-	-- thinking about layouts is cognitive load and should be avoided
-	if vim.o.lines > 60 or vim.o.columns < 100 then
-		return "vertical"
-	else
-		return "horizontal"
-	end
-end
-
 vim.api.nvim_create_autocmd({ "VimEnter", "VimResized" }, {
 	callback = function()
 		require("telescope").setup({
-			defaults = { layout_strategy = get_layout_strategy() },
+			defaults = { layout_strategy = require("util").get_layout_strategy() },
 		})
 	end,
 })
@@ -445,9 +456,6 @@ end, { desc = "toggle inlay hints" })
 
 -- buffer-specific LSP keymaps
 local function on_attach(_, bufnr)
-	-- This function gets run when an LSP connects to a particular buffer,
-	-- defining mappings specific for LSP related items. It sets the mode, buffer
-	-- and description for us each time.
 	local function nmap(keys, func, desc)
 		if desc then
 			desc = "LSP: " .. desc
@@ -526,7 +534,8 @@ local function on_attach(_, bufnr)
 	end, "incoming calls")
 
 	nmap("<leader>S", function()
-		require("telescope.builtin").treesitter({ symbols = { "method", "function" } })
+		-- TS has no project-wide scope, too bad
+		require("telescope.builtin").treesitter({ symbols = { "method", "function", "type" } })
 	end, "treesitter functions")
 
 	-- nmap("<c-k>", vim.lsp.buf.signature_help, "signature documentation") -- != buf.hover! see: https://github.com/neovim/neovim/discussions/25711#discussioncomment-7323330
@@ -548,7 +557,7 @@ end
 -- https://github.com/fatih/dotfiles/blob/52e459c991e1fa8125fb28d4930f13244afecd17/init.lua#L748
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("UserLspConfig", {}),
-	callback = function(ev)
+	callback = function(ev) -- goto def + tabdrop
 		local opts = { buffer = ev.buf }
 
 		-- vim.keymap.set("n", "<leader>cl", vim.lsp.codelens.run, opts)
@@ -577,18 +586,8 @@ vim.api.nvim_create_autocmd("LspAttach", {
 	end,
 })
 
--- -- https://neovim.io/doc/user/lsp.html#lsp-inlay_hint -- requires 0.10
--- -- https://vinnymeller.com/posts/neovim_nightly_inlay_hints/#globally
--- vim.api.nvim_create_autocmd("LspAttach", {
--- 	-- group = vim.api.nvim_create_augroup("UserLspConfig", {}),
--- 	callback = function(args)
--- 		local client = vim.lsp.get_client_by_id(args.data.client_id)
--- 		if client.server_capabilities.inlayHintProvider then
--- 			vim.lsp.inlay_hint.enable(args.buf, true)
--- 		end
--- 		-- whatever other lsp config you want
--- 	end,
--- })
+-- }}}
+-- lsp handler: mason {{{
 
 -- print(vim.fn.stdpath("data"))
 
@@ -601,16 +600,17 @@ local servers = {
 	-- https://github.com/blackbhc/nvim/blob/4ae2692403a463053a713e488cf2f3a762c583a2/lua/plugins/lspconfig.lua#L399
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
 
+	-- biome = {},
 	bashls = {},
-	biome = {},
-	marksman = {}, -- TODO: md should never have any concept of root_dir
+	marksman = {}, -- why should md ever have any concept of root_dir?
 	taplo = {},
+	texlab = {},
 	yamlls = {},
 	zls = {},
 
 	-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md
 	gopls = {
-		gopls = { -- i have absolutely no idea why we need a gopls table
+		gopls = { -- i have absolutely no idea why gopls needs to stutter
 
 			staticcheck = true, -- https://staticcheck.io/docs/checks/
 			symbolScope = "workspace", -- don't show ~/go, /usr/lib
@@ -628,18 +628,45 @@ local servers = {
 		},
 	},
 
-	tsserver = {
+	-- lspconfig says tsserver will be deprecated, but doesn't allow ts_ls yet???
+	-- https://github.com/neovim/nvim-lspconfig/commit/bdbc65aadc708ce528efb22bca5f82a7cca6b54d
+	ts_ls = {
 		-- note: js projects will require jsconfig.json
 		diagnostics = {
 			-- remove unused variable diagnostic messages from tsserver
 			ignoredCodes = {
-				-- declared but never used
-				-- TODO: these warnings should probably be enabled for real (production) work
-				6133,
+				-- the -only- place these codes are documented:
+				-- https://github.com/typescript-language-server/typescript-language-server/blob/master/src/utils/errorCodes.ts
+				-- note: these warnings should probably be enabled for real (production) work
+				6133, -- declared but never used
 				6196,
 			},
 		},
 	},
+
+	-- -- i want to like deno, but it is hard to configure (specifically wrt TS
+	-- -- codes e.g 6133), and the docs are somewhat obtuse
+	-- denols = { -- requires deno.json; comes with linter ootb (like rust)
+	-- 	settings = {
+	-- 		deno = {
+	-- 			-- enable = true,
+	-- 			suggest = {
+	-- 				imports = {
+	-- 					hosts = { ["https://deno.land"] = true },
+	-- 				},
+	-- 			},
+	-- 			inlayHints = {
+	--
+	-- 				enumMemberValues = { enabled = true },
+	-- 				functionLikeReturnTypes = { enable = true },
+	-- 				parameterNames = { enabled = "all", suppressWhenArgumentMatchesName = true },
+	-- 				parameterTypes = { enabled = true },
+	-- 				propertyDeclarationTypes = { enabled = true },
+	-- 				variableTypes = { enabled = true, suppressWhenTypeMatchesName = true },
+	-- 			},
+	-- 		},
+	-- 	},
+	-- },
 
 	sqls = {
 		filetypes = { "sql" },
@@ -670,12 +697,10 @@ local servers = {
 			-- https://hw0lff.github.io/rust-analyzer-docs/2021-11-01/index.html
 			checkOnSave = {
 				enable = true,
-				allFeatures = true,
+				allFeatures = true, -- https://rust-analyzer.github.io/manual.html#features
 				command = "clippy", -- https://rust-lang.github.io/rust-clippy/master/index.html
 			},
 			completion = {
-				-- addCallParenthesis is great 90% of the time, but the 10% of the time
-				-- that i don't want it (println), the parens are extremely frustrating
 				addCallParenthesis = true,
 				-- postfix = { enable = false },
 				-- addCallArgumentSnippets = false,
@@ -725,6 +750,20 @@ require("lspconfig").gleam.setup({
 	on_attach = on_attach,
 })
 
+require("lspconfig.configs").elvish_lsp = {
+	default_config = {
+		cmd = { "elvish", "-lsp" },
+		filetypes = { "elvish" },
+		root_dir = require("lspconfig/util").root_pattern("foo.elv"),
+		settings = {},
+	},
+}
+
+require("lspconfig").elvish_lsp.setup({
+	on_attach = on_attach,
+	capabilities = capabilities,
+})
+
 -- because ruby paths are a mess, tools should not be installed by mason
 require("lspconfig")["sorbet"].setup({
 	-- https://sorbet.org/docs/adopting
@@ -738,27 +777,17 @@ require("lspconfig")["sorbet"].setup({
 	cmd = { "srb", "tc", "--lsp", "--disable-watchman", "." },
 })
 
--- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L106
+-- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L90
 local function get_python_path(workspace) -- {{{
 	local util = require("lspconfig/util")
+
 	-- Use activated virtualenv.
 	if vim.env.VIRTUAL_ENV then
 		return util.path.join(vim.env.VIRTUAL_ENV, "bin", "python")
 	end
 
-	-- Find and use virtualenv from poetry in workspace directory.
-	-- important: for `poetry env info` to detect venv,
-	-- ~/.cache/pypoetry/virtualenvs/proj-xyz-<version> and
-	-- version declared in ~/.cache/pypoetry/virtualenvs/envs.toml
-	-- must correspond
-	-- https://stackoverflow.com/a/65376300
-	-- if this separation between code and packages is not desired, run
-	-- poetry config virtualenvs.in-project true
-	-- this reverts to the 'traditional' way of keeping a .venv directory in the project
-	local poetryMatch = vim.fn.glob(util.path.join(workspace, "poetry.lock"))
-	if poetryMatch ~= "" then
+	if vim.fn.glob(util.path.join(workspace, "poetry.lock")) ~= "" then
 		local poetry = vim.fn.trim(vim.fn.system("poetry --directory " .. workspace .. " env info -p"))
-		-- print(util.path.join(poetry, "bin", "python"))
 		return util.path.join(poetry, "bin", "python")
 	end
 
@@ -815,7 +844,6 @@ local linters = {
 	-- note: the standard rust linter is clippy, which is part of the lsp
 	bash = { "shellcheck" },
 	dockerfile = { "hadolint" },
-	gitcommit = { "gitlint" },
 	go = { "golangcilint" },
 	html = { "markuplint" },
 	htmldjango = { "djlint" },
@@ -824,6 +852,8 @@ local linters = {
 	ruby = { "rubocop" },
 	sql = { "sqlfluff" },
 	typescript = { "biomejs" },
+
+	gitcommit = { "gitlint" },
 
 	python = {
 		"ruff",
@@ -839,6 +869,12 @@ local linters = {
 	--     pass
 }
 
+if vim.fn["globpath"](".", "commitlint.config.js") ~= "" then
+	-- npm install --save-dev @commitlint/{cli,config-conventional}
+	-- echo "export default { extends: ['@commitlint/config-conventional'] };" > commitlint.config.js
+	table.insert(linters.gitcommit, "commitlint")
+end
+
 -- https://github.com/orumin/dotfiles/blob/62d7afe8a9bf531d1b5c8b13bbb54a55592b34b3/nvim/lua/configs/plugin/lsp/linter_config.lua#L7
 require("lint").linters_by_ft = linters
 
@@ -846,18 +882,27 @@ require("lint").linters_by_ft = linters
 require("lint").linters.ruff.args = {
 	"check",
 	"--select=ALL",
-	"--ignore="
-		.. "ERA" -- allow comments
-		.. ",PD901" -- allow var name df
-		.. ",PLR0913" -- allow >5 func args
-		.. ",PLR2004" -- allow magic constant values
-		.. ",RET504" -- allow unnecessary assignment before return statement
-		.. ",T201", -- allow print()
+	"--target-version=py310", -- type hints = 39, Optional (etc) = 310
+	"--ignore=" .. table.concat({
+
+		"ERA", -- allow comments
+		"I001", -- ignore import sort order (handled by isort hook)
+		"PD901", -- allow var name df
+		"PLR0913", -- allow >5 func args
+		"PLR2004", -- allow magic constant values
+		"RET504", -- allow unnecessary assignment before return statement
+		"S101", -- allow assert
+		"SIM108", -- don't suggest ternary
+		"T201", -- allow print()
+		"TD", -- allow TODO
+		--
+	}, ","),
+
 	"--force-exclude",
 	"--quiet",
 	"--stdin-filename",
 	vim.api.nvim_buf_get_name(0),
-	"--no-fix", -- --fix won't work in nvim
+	"--no-fix", -- --fix should never be used, because it destroys undos
 	"--output-format=json", -- important
 	"-",
 }
@@ -893,7 +938,7 @@ require("lint").linters.sqlfluff.args = {
 }
 
 -- }}}
--- formatter: formatter {{{
+-- formatter: conform {{{
 
 require("conform").setup({
 	-- :h conform-formatters
@@ -933,6 +978,15 @@ require("conform").setup({
 		},
 		rustfmt = {
 			prepend_args = {
+				-- defaults:
+				-- rustfmt.toml
+				-- imports_granularity = Preserve
+				-- fn_params_layout = Tall
+				-- fn_single_line = false
+				-- format_code_in_doc_comments = false
+				-- group_imports = Preserve
+				-- wrap_comments = false
+
 				-- https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#configuration-options
 				"--config",
 				"imports_granularity=Item,"
@@ -966,13 +1020,6 @@ require("conform").setup({
 		-- https://github.com/stevearc/conform.nvim#formatters
 		-- not all are provided by Mason! (e.g. astyle)
 		-- Conform will run multiple formatters sequentially
-
-		-- -- biome uses hard tabs by default, which is crazy
-		-- -- https://biomejs.dev/formatter/#options
-		-- javascript = { { "biome", "biome-check", "prettierd", "prettier" } },
-		-- javascriptreact = { { "biome", "biome-check", "prettierd", "prettier" } },
-		-- typescript = { { "biome", "biome-check", "prettierd", "prettier" } },
-		-- typescriptreact = { { "biome", "biome-check", "prettierd", "prettier" } },
 
 		go = {
 			-- https://github.com/SingularisArt/Singularis/blob/856a938fc8554fcf47aa2a4068200bc49cad2182/aspects/nvim/files/.config/nvim/lua/modules/lsp/lsp_config.lua#L50
@@ -1034,42 +1081,44 @@ require("nvim-treesitter.configs").setup({
 	-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3579#issuecomment-1278662119
 	sync_install = #vim.api.nvim_list_uis() == 0,
 
-	ensure_installed = { -- parsers
-
-		-- https://github.com/nvim-treesitter/nvim-treesitter/issues/1097#issuecomment-1329917848
-		-- :checkhealth nvim-treesitter
+	ensure_installed = {
 
 		"bash",
 		"css",
 		"csv",
-		"diff", -- warning: highlighting may break if spell is enabled
+		"diff",
 		"gitcommit",
 		"gitignore",
 		"go",
+		"gomod",
+		"gosum",
 		"html",
 		"htmldjango",
+		"javascript",
+		"jsdoc",
+		"json",
+		"jsonc",
+		"latex",
 		"lua",
+		"markdown",
+		"markdown_inline",
+		"muttrc",
 		"python",
 		"rasi",
 		"rust",
+		"sql",
+		"toml",
+		"typescript",
 		"vim",
 		"vimdoc",
+		"yaml",
+		"zig",
 		-- "scheme",
 	},
 
 	auto_install = false, -- if true, parsers will be force-installed every time
 	highlight = { enable = true }, -- https://github.com/nvim-treesitter/nvim-treesitter#highlight
 	indent = { enable = true },
-
-	-- tree_docs = {
-	-- 	-- https://github.com/nvim-treesitter/nvim-tree-docs
-	-- 	-- doesn't work
-	-- 	enable = true,
-	-- 	keymaps = {
-	-- 		doc_node_at_cursor = "yd",
-	-- 		-- doc_all_in_range = "<leader>GDD",
-	-- 	},
-	-- },
 
 	textobjects = {
 		select = {
@@ -1091,6 +1140,7 @@ require("nvim-treesitter.configs").setup({
 			enable = true,
 			set_jumps = false, -- whether to set jumps in the jumplist
 			goto_next_start = {
+				-- note: for md sections, use tadmccorkle
 				-- TODO: zz after? probably need autocmd
 				["gj"] = "@function.outer", -- default gj behavior is now in j
 				["gJ"] = "@class.outer", -- default gJ (join with spaces) is never desired
@@ -1108,20 +1158,21 @@ require("nvim-treesitter.configs").setup({
 				["gH"] = "@class.outer",
 			},
 		},
-		swap = {
-			-- only works in params, not data structures (e.g. arrays)
-			-- in python, swapping args is never necessary, as params should always be specified as keywords (not positionally)
-			-- in rust, swapping args may be useful in one-off instances, static typing + function signature help
-			enable = true,
-			swap_next = {
-				["[]"] = "@parameter.inner",
-				["gsj"] = "@function.outer",
-			},
-			swap_previous = {
-				["]["] = "@parameter.inner",
-				["gsk"] = "@function.outer",
-			},
-		},
+		-- swap = {
+		-- 	-- only works in params, not data structures (e.g. arrays)
+		-- 	--
+		-- 	-- in python, swapping args is never necessary, as params should always
+		-- 	-- be specified as keywords (not positionally)
+		-- 	enable = true,
+		-- 	swap_next = {
+		-- 		["[]"] = "@parameter.inner",
+		-- 		["gsj"] = "@function.outer",
+		-- 	},
+		-- 	swap_previous = {
+		-- 		["]["] = "@parameter.inner",
+		-- 		["gsk"] = "@function.outer",
+		-- 	},
+		-- },
 	},
 
 	incremental_selection = { -- need to see a demo
@@ -1143,14 +1194,14 @@ vim.cmd("set foldexpr=nvim_treesitter#foldexpr()") -- https://www.jmaguire.tech/
 
 local ts_repeat_move = require("nvim-treesitter.textobjects.repeatable_move")
 
--- Repeat TS movements with ; and ,
--- ensure ; goes forward and , goes backward regardless of the last direction
-vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move_next)
-vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_previous)
+-- -- Repeat TS movements with ; and ,
+-- -- ensure ; goes forward and , goes backward regardless of the last direction
+-- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move_next)
+-- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_previous)
 
 -- vim way: ; goes to the direction you were moving.
--- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
--- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
+vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
+vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
 
 -- the above keymaps make fFtT non-repeatable; correct that
 vim.keymap.set({ "n", "x", "o" }, "F", ts_repeat_move.builtin_F)
@@ -1175,6 +1226,11 @@ require("luasnip.loaders.from_vscode").load({
 	},
 })
 
+-- https://github.com/m3idnotfree/Zkdqay9Co4/blob/f86e44c7ca3de055eb79e19e16557cea01c11bc5/nvim/snippets/gitcommit/init.lua
+-- seems neat, until you see 'util.luasnip.format':
+-- https://github.com/m3idnotfree/Zkdqay9Co4/blob/f86e44c7ca3de055eb79e19e16557cea01c11bc5/nvim/lua/util/luasnip/format.lua
+-- luasnip.filetype_extend("gitcommit", foo)
+
 luasnip.config.setup({})
 
 cmp.setup({
@@ -1185,21 +1241,19 @@ cmp.setup({
 	},
 	mapping = cmp.mapping.preset.insert({
 
-		-- ["<C-Space>"] = cmp.mapping.complete({}),
-		-- ["<C-n>"] = cmp.mapping.select_next_item(),
-		-- ["<C-p>"] = cmp.mapping.select_prev_item(),
-		["<C-h>"] = cmp.mapping.scroll_docs(-4),
-		["<C-l>"] = cmp.mapping.scroll_docs(4),
+		-- ["<c-space>"] = cmp.mapping.complete({}),
+		["<c-,>"] = cmp.mapping.scroll_docs(4),
+		["<c-m>"] = cmp.mapping.scroll_docs(-4),
 
-		["<C-j>"] = cmp.mapping.select_next_item(),
-		["<C-k>"] = cmp.mapping.select_prev_item(),
+		["<c-j>"] = cmp.mapping.select_next_item(),
+		["<c-k>"] = cmp.mapping.select_prev_item(),
 
 		["<cr>"] = cmp.mapping.confirm({
 			behavior = cmp.ConfirmBehavior.Replace,
 			select = true,
 		}),
 
-		["<Tab>"] = cmp.mapping(function(fallback)
+		["<tab>"] = cmp.mapping(function(fallback)
 			if cmp.visible() then
 				cmp.select_next_item()
 			elseif luasnip.expand_or_locally_jumpable() then
@@ -1208,15 +1262,15 @@ cmp.setup({
 				fallback()
 			end
 		end, { "i", "s" }),
-		["<S-Tab>"] = cmp.mapping(function(fallback)
-			if cmp.visible() then
-				cmp.select_prev_item()
-			elseif luasnip.locally_jumpable(-1) then
-				luasnip.jump(-1)
-			else
-				fallback()
-			end
-		end, { "i", "s" }),
+		-- ["<s-tab>"] = cmp.mapping(function(fallback)
+		-- 	if cmp.visible() then
+		-- 		cmp.select_prev_item()
+		-- 	elseif luasnip.locally_jumpable(-1) then
+		-- 		luasnip.jump(-1)
+		-- 	else
+		-- 		fallback()
+		-- 	end
+		-- end, { "i", "s" }),
 	}),
 	sources = {
 		{
@@ -1231,94 +1285,20 @@ cmp.setup({
 		{ name = "luasnip" },
 		{ name = "buffer" },
 		{ name = "path" },
+		-- { name = "gitcommit" }, -- dunno how this is supposed to work -- https://github.com/Cassin01/cmp-gitcommit#usage
 	},
 })
 
--- }}}
-function random_colorscheme() -- {{{
-	-- sliced and diced from tssm/nvim-random-colors
-
-	local function map(f, xs)
-		local result = {}
-		for _, x in ipairs(xs) do
-			local mapped = f(x)
-			local function _0_()
-				if 0 == select("#", mapped) then
-					return nil
-				else
-					return mapped
-				end
-			end
-			table.insert(result, _0_())
-		end
-		return result
-	end
-
-	local function concat(...)
-		local function run_21(f, xs)
-			for _, x in ipairs(xs) do
-				f(x)
-			end
-			-- return nil
-		end
-		local result = {}
-		local function _0_(xs)
-			for _, x in ipairs(xs) do
-				table.insert(result, x)
-			end
-			return nil
-		end
-		run_21(_0_, { ... })
-		return result
-	end
-
-	local packpath = "~/.local/share/nvim/lazy/"
-	local path_template = "*/colors/*.%s"
-
-	local globpath = vim.fn["globpath"]
-
-	local paths = concat(
-		globpath(packpath, string.format(path_template, "lua"), false, true),
-		globpath(packpath, string.format(path_template, "vim"), false, true)
-	)
-
-	-- :t tail (basename)
-	-- :r root (strip extension)
-	local function scheme_name(path)
-		return vim.fn["fnamemodify"](path, ":t:r")
-	end
-
-	local all_schemes = map(scheme_name, paths)
-	local scheme = all_schemes[((os.time() % #all_schemes) + 1)]
-
-	-- vim.cmd("echom '" .. scheme .. "'")
-	-- vim.api.nvim_exec(("colorscheme " .. scheme), false)
-	vim.cmd("colorscheme " .. scheme)
-end
-
--- must be called before setting `colorscheme`
-require("citruszest").setup({
-	option = {
-		transparent = false,
-		bold = false,
-		italic = false, -- requiring explicit disable is lamentable; kitty can override italic, but wezterm can't!
-	},
-})
-
-random_colorscheme()
-
-vim.keymap.set("n", "<F12>", random_colorscheme)
+require("cmp-gitcommit").setup({})
 
 -- }}}
 
-require("nvim-ts-autotag").setup({
-	opts = {
-		enable_close = true, -- Auto close tags
-		enable_rename = true, -- Auto rename pairs of tags
-		enable_close_on_slash = false, -- Auto close on trailing </
-	},
-})
+require("util"):random_colorscheme()
+vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
 
+-- }}}
+
+-- is there a better place to put this?
 vim.filetype.add({
 	pattern = {
 		-- https://github.com/emilioziniades/dotfiles/blob/db7b414c150d3a3ab863a0109786f7f48465dd23/nvim/init.lua#L708-L724
@@ -1333,27 +1313,3 @@ vim.filetype.add({
 		["Dockerfile.*"] = "dockerfile",
 	},
 })
-
-local function get_bufs_loaded()
-	-- return list of (open) buffer paths that are git tracked
-	-- Git commit <paths>
-	local bufs_loaded = {}
-
-	for _, buf_num in ipairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_is_loaded(buf_num) then
-			local buf_name = vim.api.nvim_buf_get_name(buf_num)
-			if buf_name ~= "" then
-				-- TODO: check if git tracked
-				-- git ls-files --error-unmatch
-				-- print(buf_num, buf_name)
-				table.insert(bufs_loaded, buf_name)
-			end
-		end
-	end
-
-	-- print(bufs_loaded)
-
-	return bufs_loaded
-end
-
--- get_bufs_loaded()
