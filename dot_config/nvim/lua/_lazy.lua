@@ -198,7 +198,11 @@ require("lazy").setup(
 				-- 	})
 				-- end
 
+				-- opts.message_when_not_committed = "  Not Committed Yet"
+				-- opts.enabled = false
+
 				opts.options = {
+					-- message_when_not_committed = "  Not Committed Yet",
 
 					component_separators = "|",
 					icons_enabled = false,
@@ -735,6 +739,13 @@ require("lualine").setup({
 		},
 	},
 })
+
+-- https://github.com/f-person/git-blame.nvim/blob/master/lua/gitblame/config.lua
+vim.g.gitblame_message_when_not_committed = ""
+vim.g.gitblame_message_template = "<author>: <summary> (<sha> <date>)"
+-- vim.g.gitblame_date_format = "%r | %Y-%m-%d %H:%M:%S"
+vim.g.gitblame_date_format = "%Y-%m-%d %H:%M"
+vim.g.gitblame_virtual_text_column = 80
 
 if vim.o.columns > 170 then
 	-- must be enabled here, apparently
