@@ -995,8 +995,8 @@ require("conform").setup({
 
 			"gofumpt", -- https://github.com/mvdan/gofumpt?tab=readme-ov-file#added-rules
 			"golines", -- https://github.com/segmentio/golines#motivation
-			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party)
-			-- "goimports", -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
+			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party); note: may break on ubuntu? idk
+			-- "goimports", -- required for autoimport, but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 		},
 
 		markdown = {
@@ -1067,7 +1067,6 @@ require("nvim-treesitter.configs").setup({
 		"jsdoc",
 		"json",
 		"jsonc",
-		"latex",
 		"lua",
 		"markdown",
 		"markdown_inline",
@@ -1082,6 +1081,7 @@ require("nvim-treesitter.configs").setup({
 		"vimdoc",
 		"yaml",
 		"zig",
+		-- "latex", -- requires tree-sitter-cli
 		-- "scheme",
 	},
 
@@ -1264,6 +1264,8 @@ require("cmp-gitcommit").setup({})
 
 require("util"):random_colorscheme()
 vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
+
+-- require("mini.ai").setup()
 
 require("nvim-ts-autotag").setup({
 	opts = {
