@@ -159,13 +159,16 @@ local function get_output(command)
 	return handle:close()
 end
 
--- there should probably be a better (distro-agnostic) check; it might have to
--- do with dpi (declared in Xresources)
-if get_output("grep Ubuntu /etc/lsb-release"
-) then
-	config.font_size = 12.0 -- dpi 96
+-- dpi is declared (in Xresources) conditionally, based on monitor resolution
+if
+	get_output(
+		-- "grep Ubuntu /etc/lsb-release"
+		"xrdb -query | grep dpi | grep 96"
+	)
+then
+	config.font_size = 12.0 -- 3840x1200 -> dpi 96
 else
-	config.font_size = 10.0 -- 4k, dpi 192
+	config.font_size = 10.0 -- 4k -> dpi 192
 end
 
 -- config.font, config.font_size = wezterm.font_with_fallback({ "B612 Mono" }), 9.0
