@@ -55,7 +55,7 @@ alias rat="exec yazi \"\$HDD/torrent\" \"\$HDD/movies\""
 # alias pq="cd ~/plaque/ ; go build ; ./plaque"
 alias au="audacious -H"
 alias bh="vb -b"
-alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit"
+alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit" # TODO: handle >1 video device (just increment n until file not exist)
 alias ci="chromium --incognito"
 alias con="convert_files && fix_genres --auto && fix_tags -a && fix_tags && fix_genres && move_files" # && notify-send ok"
 alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
@@ -66,6 +66,7 @@ alias dt="discogs_collection top"
 alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
 alias h="htop -u \$USER"
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
+alias lock="dm-tool lock || slock" # ubuntu suspend does not lock
 alias md="\$EDITOR -c 'set ft=markdown'"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
 alias n="NO_COLOR=1 node --import=tsx"
@@ -232,6 +233,7 @@ gs() {
 	# 2. untracked files
 	# 3. current number of staged commits
 
+	# (1)
 	#  M discogs.go
 	#  M discogs_test.go
 	#  M main.go
@@ -240,8 +242,10 @@ gs() {
 	#  main.go         |  2 +-
 	#  discogs_test.go |  6 +++---
 	#
+	# (2)
 	# util_test.go
 	#
+	# (3)
 	# No commits staged.
 
 	if
@@ -282,22 +286,24 @@ gs() {
 			# make paths absolute (default: relative to root)
 			prepend "$(get_repo_root)/" |
 			# then relativise to cwd
-			largs realpath --relative-to=. 2> /dev/null)
-		[[ -n $diffs ]]
+			largs realpath --relative-to=. 2> /dev/null) &&
+			[[ -z $files ]]
 	then
-		while read -r f; do
+		: no files added
+	else
+		echo "$files" | column -t | while read -r f; do
 			lines=$(< "$f" wc -l)
 			echo "./$f | $lines +"
 		done <<< "$files" | column -t
-	else
-		echo "Nothing staged"
 	fi
 	echo
 
 	# 2
 
-	untracked=$(git ls-files --others --exclude-standard)
-	if [[ -n $untracked ]]; then
+	if
+		untracked=$(git ls-files --others --exclude-standard) &&
+			[[ -n $untracked ]]
+	then
 		echo "$untracked"
 		echo
 	fi
@@ -1425,4 +1431,17 @@ rgo() {
 	# file:line:col:match
 	IFS=':' read -ra array <<< "$match"
 	$EDITOR +"${array[1]}" "${array[0]}"
+}
+
+mw() {
+	cd ~/.mail/account.gmail || return
+	while true; do
+		gmi pull
+		new=$(notmuch count tag:inbox and tag:unread and date:today)
+		if [[ $new -gt 0 ]]; then
+			notify-send -u critical "$new new mail"
+			neomutt
+		fi
+		sleep 15m
+	done
 }

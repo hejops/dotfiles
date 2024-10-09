@@ -182,7 +182,8 @@ require("lazy").setup(
 			"nvim-lualine/lualine.nvim",
 
 			opts = function(_, opts)
-				local gitblame = require("gitblame")
+				local navic = require("nvim-navic")
+				-- local gitblame = require("gitblame")
 
 				opts.sections = {
 
@@ -208,16 +209,20 @@ require("lazy").setup(
 					lualine_z = { "location" },
 				}
 
-				-- if vim.o.columns > 170 then
-				-- 	table.insert(opts.sections.lualine_c, {
-				-- 		gitblame.get_current_blame_text,
-				-- 		-- gitblame.get_current_blame_text(), -- func or func call ok, apparently
-				-- 		cond = gitblame.is_blame_text_available, -- cond must be a func, not bool!
-				-- 	})
-				-- end
+				opts.winbar = {
+					lualine_c = {
+						{
+							function()
+								return navic.get_location()
+							end,
+							cond = function()
+								return navic.is_available()
+							end,
+						},
+					},
+				}
 
 				opts.options = {
-
 					component_separators = "|",
 					icons_enabled = false,
 					section_separators = "",
@@ -349,16 +354,22 @@ require("lazy").setup(
 			"f-person/git-blame.nvim",
 
 			opts = {
+				-- https://github.com/f-person/git-blame.nvim/blob/master/lua/gitblame/config.lua
 
-				enabled = false,
-				date_format = "%r",
-				display_virtual_text = 1, -- display in statusline by default
-				highlight_group = "Question",
-				-- message_template = "[<summary> :: <date> :: <author>]",
-				message_template = "<summary> | <date> | <author>",
-				message_when_not_committed = "---",
+				-- date_format = "%r | %Y-%m-%d %H:%M:%S"
+				-- highlight_group = "Question",
+				date_format = "%Y-%m-%d %H:%M",
+				delay = 0,
+				enabled = vim.o.columns > 170,
+				message_template = "<author>: <summary> (<sha> <date>)",
+				message_when_not_committed = "-",
 				use_blame_commit_file_urls = true,
-				-- virtual_text_column = 81,
+				virtual_text_column = 81, -- should be hl + 1 (2?)
+
+				-- displaying blame in inlay is annoying, but displaying in lualine is
+				-- arguably worse because the latency appears to be higher (~1s), which
+				-- means you won't know which line the current blame refers to
+				display_virtual_text = 1,
 			},
 		}, -- }}}
 		{ -- refactoring {{{
@@ -583,31 +594,6 @@ require("nvim-lightbulb").setup({
 		win_opts = { focusable = false },
 	},
 })
-
-local navic = require("nvim-navic")
-require("lualine").setup({
-	winbar = {
-		lualine_c = {
-			{
-				function()
-					return navic.get_location()
-				end,
-				cond = function()
-					return navic.is_available()
-				end,
-			},
-		},
-	},
-})
-
-if vim.o.columns > 170 then
-	-- must be enabled here, apparently
-	vim.cmd("GitBlameEnable")
-	-- displaying blame in inlay is annoying, but displaying in lualine is arguably
-	-- worse because the latency appears to be higher (~1s), which means you won't
-	-- know which line the current blame refers to
-	vim.g.gitblame_display_virtual_text = 1
-end
 
 require("lsp_signature").setup()
 -- print(vim.inspect(require("chezmoi.commands").list()))
