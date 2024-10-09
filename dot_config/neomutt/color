@@ -1,0 +1,114 @@
+# vim:ft=neomuttrc
+
+# http://www.mutt.org/doc/manual/#color
+# https://github.com/shuber2/mutt-gruvbox/blob/master/colors-gruvbox-shuber.muttrc
+# https://github.com/zootedb0t/citruszest.nvim/blob/2128952f4b9d92c107269b54640a2ace58e02a7d/lua/citruszest/palettes/colors.lua
+
+# requires TERM=xterm-direct
+set color_directcolor = yes
+
+color attachment #00bfff #121212
+color bold #bfbfbf #121212
+color error #ff5454 #121212
+color hdrdefault #bfbfbf #121212
+color indicator #bfbfbf #363636
+color markers #a1a1a1 #121212
+color normal #bfbfbf #121212
+color quoted #bfbfbf #121212
+color quoted1 #00ffff #121212
+color quoted2 #bfbfbf #121212
+color quoted3 #00ffff #121212
+color quoted4 #bfbfbf #121212
+color quoted5 #00ffff #121212
+color search #121212 #ff7431
+color sidebar_divider #bfbfbf #121212
+color sidebar_new #00cc7a #121212
+color signature #00ffff #121212
+color status #121212 #bfbfbf
+color tilde #a1a1a1 #121212
+color tree #00cc7a #121212
+color underline #bfbfbf #595959
+
+color index #00ffff #121212 ~O # old
+color index #00bfff #121212 ~P # from me
+color index #00cc7a #121212 ~N # new
+color index #ff5454 #121212 ~= # duplicate
+color index #af74ee #121212 ~Q # replied
+color index #ffd700 #121212 ~F # flagged
+color index #121212 #ff5454 ~D # deleted
+color index #121212 #bfbfbf ~T # tagged
+
+color header #00ffff #121212 "^Received:"
+color header #00ffff #121212 "^X-Spam-Status:"
+color header #00cc7a #121212 "^Subject:"
+color header #ffd700 #121212 "^(To:|From:)"
+
+# color body #bfbfbf #121212 "\*[A-Za-z -]+\*"
+color body #121212 #ffd700 "[;:]-*[)>(<lt;|]"
+color body #00ffff #121212 "^ Regie:.+"
+color body #00cc7a #121212 "[a-z](3, 256)://[-a-zA-Z0-9@:%._\+~# = /?&,]+"
+color body #00cc7a #121212 "^gpg: Good signature from"
+color body #ff7431 #121212 "[-a-z_0-9.%$]+@[-a-z_0-9.]+\.[-a-z][-a-z]+"
+color body #ff7431 #121212 "mailto:[-a-z_0-9.]+@[-a-z_0-9.]+"
+color body #ff5454 #121212 "^gpg: BAD signature from"
+color body #ff5454 #121212 "^gpg: Can't.*$"
+color body #ff5454 #121212 "^gpg: Note: This key has expired!"
+color body #ffd700 #121212 "^-.*PGP.*-*"
+color body #ffd700 #121212 "^gpg: There is no indication that the signature belongs to the owner."
+color body #ffd700 #121212 "^gpg: WARNING:.*$"
+color body #ffd700 #121212 "^gpg: can't handle these multiple signatures"
+color body #ffd700 #121212 "^gpg: invalid node with packet of type"
+color body #ffd700 #121212 "^gpg: signature verification suppressed"
+
+color compose header #bfbfbf #121212
+color compose security_encrypt #af74ee #121212
+color compose security_sign #00bfff #121212
+color compose security_both #00cc7a #121212
+color compose security_none #ff7431 #121212
+
+# i tried finding colors closest to the standard 256 ANSI colors via euclidean
+# distance. initially, the results were pretty poor, but after changing
+# `indicator` to 238, `from me` to 33, and `replied` to 135, it looks halfway
+# decent.
+
+# color attachment color255 color233
+# color bold color255 color233
+# color error color255 color233
+# color hdrdefault color255 color233
+# color indicator color255 color238
+# color markers color255 color233
+# color normal color255 color233
+# color quoted color255 color233
+# color quoted1 color51 color233
+# color quoted2 color255 color233
+# color quoted3 color51 color233
+# color quoted4 color255 color233
+# color quoted5 color51 color233
+# color search color233 color255
+# color sidebar_divider color255 color233
+# color sidebar_new color255 color233
+# color signature color51 color233
+# color status color233 color255
+# color tilde color255 color233
+# color tree color255 color233
+# color underline color255 color255
+#
+# color index color51 color233 ~O # old
+# color index color33 color233 ~P # from me
+# color index color255 color233 ~N # new
+# color index color255 color233 ~= # duplicate
+# color index color135 color233 ~Q # replied
+# color index color220 color233 ~F # flagged
+# color index color233 color255 ~D # deleted
+# color index color233 color255 ~T # tagged
+#
+# color header color51 color233 "^Received:"
+# color header color51 color233 "^X-Spam-Status:"
+# color header color255 color233 "^Subject:"
+# color header color220 color233 "^(To:|From:)"
+#
+# color compose header color255 color233
+# color compose security_encrypt color255 color233
+# color compose security_sign color255 color233
+# color compose security_both color255 color233
+# color compose security_none color255 color233

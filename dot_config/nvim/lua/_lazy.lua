@@ -37,6 +37,10 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+function in_tex()
+	return vim.bo.filetype == "tex" and not vim.loop.fs_stat("Tectonic.toml")
+end
+
 require("lazy").setup(
 	{
 		-- essentials {{{
@@ -59,28 +63,42 @@ require("lazy").setup(
 		"tpope/vim-surround",
 		"tridactyl/vim-tridactyl", -- syntax highlighting
 		"wansmer/treesj", -- :TS[Join|Split|Toggle], very useful for go
-		"windwp/nvim-ts-autotag", -- i don't like autoclosing parens, but i do like autoclosing (and renaming!) tags
+		"windwp/nvim-ts-autotag", -- for html, jsx (?)
 		-- "Zeioth/garbage-day.nvim", -- kill lsps that hog memory (tsserver?)
 		-- "lewis6991/satellite.nvim", -- i hate scrollbars
 		-- "nvim-tree/nvim-tree.lua", -- :NvimTree (rarely used; just fuzzy find)
 		-- "simrat39/symbols-outline.nvim", -- like github's (almost never used; workspace symbols is more intuitive)
-		-- { "tadmccorkle/markdown.nvim", ft = "markdown", opts = {} }, -- meh; https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
 		{ "akinsho/git-conflict.nvim", version = "*", config = true },
 		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} }, -- https://github.com/folke/todo-comments.nvim?tab=readme-ov-file#-trouble-todo
-		{ "lervag/vimtex", ft = { "tex", "bib" } },
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
+		{ "rhysd/vim-go-impl", ft = { "go" } }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
+		{ "vague2k/huez.nvim", opts = {} },
 
-		-- {
-		-- 	"toppair/peek.nvim", -- requires deno (95 MB), slow, and ugly
-		-- 	ft = "markdown",
-		-- 	-- event = { "VeryLazy" },
-		-- 	build = "deno task --quiet build:fast",
-		-- 	config = function()
-		-- 		require("peek").setup()
-		-- 		vim.api.nvim_create_user_command("PeekOpen", require("peek").open, {})
-		-- 		vim.api.nvim_create_user_command("PeekClose", require("peek").close, {})
-		-- 	end,
-		-- },
+		{
+			-- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
+			"tadmccorkle/markdown.nvim",
+			ft = "markdown",
+			opts = {
+				-- i don't need any mappings tyvm
+				mappings = false,
+			},
+		},
+
+		{
+			"lervag/vimtex",
+			ft = { "tex", "bib" },
+			enabled = in_tex(),
+		},
+
+		{
+			"quarto-dev/quarto-nvim",
+			ft = { "qmd" },
+			-- https://github.com/quarto-dev/quarto-nvim?tab=readme-ov-file#configure
+			dependencies = {
+				-- "jmbuhr/otter.nvim", -- enable appropriate lsp(s) within qmd
+				"nvim-treesitter/nvim-treesitter",
+			},
+		},
 
 		{
 			-- https://github.com/ray-x/lsp_signature.nvim/issues/311
@@ -98,8 +116,8 @@ require("lazy").setup(
 			config = function()
 				require("chezmoi").setup({
 					edit = {
-						watch = true, -- Set true to automatically apply on save.
-						force = true, -- Set true to force apply. Works only when watch = true.
+						watch = true, -- automatically apply on save.
+						force = true, -- force apply. Works only when watch = true.
 					},
 					notification = {
 						on_open = true,
@@ -116,8 +134,8 @@ require("lazy").setup(
 			-- https://roobert.github.io/2022/12/03/Extending-Neovim/#neovim-plugins-which-solve-problems
 			--
 			-- afaik, mason-null-ls is essentially only for installing everything
-			-- automatically (mason's ensure_installed only applies to lsps). this is not
-			-- essential, but nice to have
+			-- automatically (mason's ensure_installed only applies to lsps). this is
+			-- not essential, but nice to have
 			--
 			-- null-ls has been deprecated, and is now replaced by none-ls
 			--
@@ -215,9 +233,6 @@ require("lazy").setup(
 			"nvim-telescope/telescope.nvim",
 			dependencies = {
 				-- https://github.com/nvim-telescope/telescope.nvim/wiki/Extensions#different-plugins-with-telescope-integration
-
-				"aznhe21/actions-preview.nvim",
-				-- "rachartier/tiny-code-action.nvim",
 
 				"AckslD/nvim-neoclip.lua", -- yank history; do i use this?
 				"LukasPietzschmann/telescope-tabs", -- do i use this?
@@ -424,6 +439,7 @@ require("lazy").setup(
 
 				-- "norcalli/snippets.nvim",
 				"rafamadriz/friendly-snippets", -- user-friendly snippets
+				"cassin01/cmp-gitcommit",
 			},
 		}, -- }}}
 
@@ -474,7 +490,9 @@ require("lazy").setup(
 		}, -- }}}
 		-- colorschemes {{{
 
-		-- many colorschemes don't highlight diffs properly -- this is the fault of the colorscheme, not treesitter
+		-- almost every colorscheme i've tried is really bad at diffs, specifically
+		-- contrast between added and deleted lines
+
 		-- ack -i diffadd ~/.local/share/nvim/lazy/
 		-- find ~/.local/share/nvim/lazy/ -name '*lua' | \xargs ack 'text.diff.add'
 		-- find ~/.local/share/nvim/lazy/ | grep -P '/colors/.+(vim|lua)' | sort
@@ -485,6 +503,24 @@ require("lazy").setup(
 		"volbot/voltrix.vim",
 		-- "yorumicolors/yorumi.nvim", -- low contrast
 		"zootedb0t/citruszest.nvim",
+		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
+		-- "crusoexia/vim-monokai", -- mid contrast
+		-- "gosukiwi/vim-atom-dark", -- bad diff
+		-- "hachy/eva01.vim", -- don't like the low contrast one
+		-- "jaredgorski/spacecamp", -- almost great, except for the awful grey-on-white lualine
+		-- "mhartington/oceanic-next", -- has light
+		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
+		-- "morhetz/gruvbox", -- bad diff
+		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
+		-- "ray-x/aurora", -- mid contrast
+		-- "rockyzhang24/arctic.nvim", -- requires lush
+		-- "srijs/vim-colors-rusty", -- not matched by regex
+		-- "tomasiser/vim-code-dark", -- mid contrast
+		-- "tomasr/molokai", -- mid diff
+		-- "vague2k/vague.nvim", -- bad contrast
+		-- "xero/miasma.nvim", -- nauseating
+		-- https://github.com/paulopatto/dotfiles/blob/67848a890db8c4578614f2de448cf323c450ad2f/nvim/lua/core/plugins.lua#L39 (mid)
+
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
 		-- https://vimcolorschemes.com/i/new/b.dark
 		-- }}}
@@ -528,178 +564,6 @@ vim.g.loaded_netrwPlugin = 1
 
 -- optionally enable 24-bit colour
 vim.opt.termguicolors = true
-
--- require("nvim-tree").setup({
--- 	-- maybe this will get me to be less reliant on ranger...
--- 	-- TODO: open in tab
--- 	-- https://github.com/alex-courtis/arch/blob/b5f24e0e7b6554b338e40b3d60f1be437f273023/config/nvim/lua/amc/nvim-tree.lua
--- 	-- create_in_closed_folder = true,
--- 	hijack_cursor = false,
--- 	-- open_on_setup = true,
--- 	-- open_on_setup_file = true,
--- 	-- focus_empty_on_setup = true,
--- 	sync_root_with_cwd = true,
--- 	view = {
--- 		adaptive_size = false,
--- 		-- mappings = {
--- 		-- 	list = {
--- 		-- 		{ key = { "<2-RightMouse>", "<C-]>" }, action = "" }, -- cd
--- 		-- 		{ key = "<C-v>", action = "" }, -- vsplit
--- 		-- 		{ key = "<C-x>", action = "" }, -- split
--- 		-- 		{ key = "<C-t>", action = "" }, -- tabnew
--- 		-- 		{ key = "<BS>", action = "" }, -- close_node
--- 		-- 		{ key = "<Tab>", action = "" }, -- preview
--- 		-- 		{ key = "D", action = "" }, -- trash
--- 		-- 		{ key = "[e", action = "" }, -- prev_diag_item
--- 		-- 		{ key = "]e", action = "" }, -- next_diag_item
--- 		-- 		{ key = "[c", action = "" }, -- prev_git_item
--- 		-- 		{ key = "]c", action = "" }, -- next_git_item
--- 		-- 		{ key = "-", action = "" }, -- dir_up
--- 		-- 		{ key = "s", action = "" }, -- system_open
--- 		-- 		{ key = "W", action = "" }, -- collapse_all
--- 		-- 		{ key = "g?", action = "" }, -- toggle_help
--- 		--
--- 		-- 		{ key = "d", action = "cd" }, -- remove
--- 		-- 		{ key = "x", action = "remove" }, -- cut
--- 		--
--- 		-- 		{ key = "t", action = "cut" },
--- 		-- 		{ key = "<Space>p", action = "prev_diag_item" },
--- 		-- 		{ key = "<Space>.", action = "next_diag_item" },
--- 		-- 		{ key = "<Space>k", action = "prev_git_item" },
--- 		-- 		{ key = "<Space>j", action = "next_git_item" },
--- 		-- 		{ key = "u", action = "dir_up" },
--- 		-- 		{ key = "'", action = "close_node" },
--- 		-- 		{ key = '"', action = "collapse_all" },
--- 		-- 		{ key = "?", action = "toggle_help" },
--- 		-- 	},
--- 		-- },
--- 	},
--- 	renderer = {
--- 		full_name = true,
--- 		group_empty = true,
--- 		special_files = {},
--- 		symlink_destination = false,
--- 		indent_markers = {
--- 			enable = true,
--- 		},
--- 		icons = {
--- 			git_placement = "signcolumn",
--- 			show = {
--- 				file = true,
--- 				folder = false,
--- 				folder_arrow = false,
--- 				git = true,
--- 			},
--- 		},
--- 	},
--- 	update_focused_file = {
--- 		enable = true,
--- 		update_root = true,
--- 		ignore_list = { "help" },
--- 	},
--- 	diagnostics = {
--- 		enable = true,
--- 		show_on_dirs = true,
--- 	},
--- 	filters = {
--- 		custom = {
--- 			"^.git$",
--- 		},
--- 	},
--- 	actions = {
--- 		change_dir = {
--- 			enable = false,
--- 			restrict_above_cwd = true,
--- 		},
--- 		open_file = {
--- 			resize_window = true,
--- 			window_picker = {
--- 				chars = "aoeui",
--- 			},
--- 		},
--- 		remove_file = {
--- 			close_window = false,
--- 		},
--- 	},
--- 	log = {
--- 		enable = false,
--- 		truncate = true,
--- 		types = {
--- 			all = false,
--- 			config = false,
--- 			copy_paste = false,
--- 			diagnostics = false,
--- 			git = false,
--- 			profile = false,
--- 			watcher = false,
--- 		},
--- 	},
--- }) -- }}}
--- require("symbols-outline").setup({ -- {{{
--- 	-- https://github.com/simrat39/symbols-outline.nvim#configuration
--- 	highlight_hovered_item = true, -- only for hover in main, high cpu usage
--- 	show_guides = true,
--- 	auto_preview = false, -- ugly
--- 	position = "right", -- not ideal for narrow screens
--- 	relative_width = true,
--- 	width = 25,
--- 	auto_close = false,
--- 	-- show_numbers = false,
--- 	-- show_relative_numbers = false,
--- 	-- show_symbol_details = true,
--- 	preview_bg_highlight = "Pmenu",
--- 	autofold_depth = nil,
--- 	auto_unfold_hover = true,
--- 	fold_markers = { "", ">" },
--- 	wrap = false,
--- 	keymaps = {
--- 		close = { "<Esc>", "q" },
--- 		goto_location = "<Cr>",
--- 		focus_location = "o",
--- 		hover_symbol = "<C-space>",
--- 		toggle_preview = "K",
--- 		rename_symbol = "R",
--- 		code_actions = "a",
--- 		fold = "h",
--- 		unfold = "l",
--- 		fold_all = "H",
--- 		unfold_all = "L",
--- 		fold_reset = "z",
--- 	},
--- 	lsp_blacklist = {},
--- 	symbol_blacklist = {},
--- 	symbols = {
---
--- 		Array = { icon = "array", hl = "@constant" },
--- 		Boolean = { icon = "bool", hl = "@boolean" },
--- 		Class = { icon = "class", hl = "@type" },
--- 		Component = { icon = "component", hl = "@function" },
--- 		Constant = { icon = "const", hl = "@constant" },
--- 		Constructor = { icon = "constructor", hl = "@constructor" },
--- 		Enum = { icon = "enum", hl = "@type" },
--- 		Enummember = { icon = "enum_mem", hl = "@field" },
--- 		Event = { icon = "event", hl = "@type" },
--- 		Field = { icon = "field", hl = "@field" },
--- 		File = { icon = "file", hl = "@text.uri" },
--- 		Fragment = { icon = "fragment", hl = "@constant" },
--- 		Function = { icon = "func", hl = "@function" },
--- 		Interface = { icon = "interface", hl = "@type" },
--- 		Key = { icon = "key", hl = "@type" },
--- 		Method = { icon = "method", hl = "@method" },
--- 		Module = { icon = "module", hl = "@namespace" },
--- 		Namespace = { icon = "namespace", hl = "@namespace" },
--- 		Null = { icon = "null", hl = "@type" },
--- 		Number = { icon = "num", hl = "@number" },
--- 		Object = { icon = "obj", hl = "@type" },
--- 		Operator = { icon = "op", hl = "@operator" },
--- 		Package = { icon = "package", hl = "@namespace" },
--- 		Property = { icon = "prop", hl = "@method" },
--- 		String = { icon = "str", hl = "@string" },
--- 		Struct = { icon = "struct", hl = "@type" },
--- 		Typeparameter = { icon = "type_param", hl = "@parameter" },
--- 		Variable = { icon = "var", hl = "@constant" },
--- 	},
--- }) -- }}}
 
 require("illuminate").configure({ providers = { "lsp", "treesitter" }, under_cursor = true })
 require("neoclip").setup()
@@ -758,3 +622,28 @@ end
 
 require("lsp_signature").setup()
 -- print(vim.inspect(require("chezmoi.commands").list()))
+
+require("nvim-ts-autotag").setup({
+	opts = {
+		enable_close = true, -- Auto close tags
+		enable_rename = true, -- Auto rename pairs of tags
+		enable_close_on_slash = false, -- Auto close on trailing </
+	},
+})
+
+-- must be called before setting `colorscheme`
+require("citruszest").setup({
+	option = {
+		transparent = false,
+		bold = false,
+		italic = false,
+	},
+})
+
+require("night-owl").setup({
+	bold = false,
+	italics = false,
+	underline = false,
+	undercurl = false,
+	transparent_background = false,
+})

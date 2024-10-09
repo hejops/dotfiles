@@ -5,7 +5,7 @@ element { background-color: var(--main-bg-color); }
  */
 
 /*
-moz-extension://b7530ee2-a124-4619-8050-33b1a50ffa7d/options/options.html#!
+
 ctrl-shift-alt-i, inspector, ctrl-shift-c
 https://0x0.st/iSBd.css
 https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties
@@ -15,6 +15,7 @@ https://gist.githubusercontent.com/Zren/37bed9ed257347d97233273f32287707/raw/203
 https://github.com/tridactyl/tridactyl/issues/2078
 https://teddit.net/r/FirefoxCSS/comments/73dvty/tutorial_how_to_create_and_livedebug_userchromecss
 https://www.eriwen.com/firefox/use-the-dom-inspector/
+moz-extension://b7530ee2-a124-4619-8050-33b1a50ffa7d/options/options.html#!
 
 */
 
@@ -47,9 +48,19 @@ https://www.eriwen.com/firefox/use-the-dom-inspector/
   border: none !important;
 }
 
+/* these don't work, which suggests that gtk is responsible? */
+:root,
+#sidebar,
+scrollbar,
+*|*:root {
+  scrollbar-width: 240px !important;
+  scrollbar-color: #ffffff;
+  /* scrollbar-color: rgba(128, 128, 128, 0.2509803922) transparent !important; */
+}
+
 /* hide items {{{*/
 
-/* warning: appearance might be weird order is changed */
+/* warning: appearance might be weird if order is changed */
 
 #TabsToolbar,
 [class*="searchbar-engine-one-off-add-engine"], /* https://gist.github.com/e-t-l/bcc38e839b667afcb3ade08cb6b68122 */
@@ -113,9 +124,10 @@ https://www.eriwen.com/firefox/use-the-dom-inspector/
 .search-setting-button,
 .searchbar-engine-button,
 .searchbar-search-button,
+.searchbar-search-button[addengines="true"],
 .urlbar-history-dropmarker,
 .urlbarView-row,
-/* #context-savelink, */
+[class*="searchbar-engine-one-off-add-engine"], /* https://gist.github.com/e-t-l/bcc38e839b667afcb3ade08cb6b68122 */
 panel#urlbar-results #urlbarView-row-0 {
   display: none !important;
 }
@@ -156,13 +168,18 @@ toolbar .toolbarbutton-1,
   > .urlbarView-row-inner,
 .urlbarView-title:not(:empty) ~ .urlbarView-action,
 #urlbar.megabar[focused="true"] > #urlbar-background {
-  color: var(--beige) !important;
-  /* color: white !important; */
   background-color: var(background-color) !important;
   background: var(background-color) !important;
   border: none !important;
+  color: var(--beige) !important;
 }
+
 /*}}}*/
+
+/* note: as of FF 130, either FF's or TST sidebar bg color changed. this was
+* fixed by switching to Photon color scheme in TST options
+* moz-extension://ff186869-a788-4c06-b149-2ec5b6d3f99e/options/options.html#!
+*/
 
 /* autocollapsable TST sidebar {{{ */
 /* https://teddit.net/r/FirefoxCSS/comments/en95ja/treestyletabs_autohiding_sidebar_having_some/ */

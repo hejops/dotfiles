@@ -3,11 +3,8 @@
 -- https://stackoverflow.com/a/3806664 -- mostly visual mode
 -- https://vi.stackexchange.com/a/28080
 
-vim.g.mapleader = " " -- must be declared before declaring lazy plugins
+vim.g.mapleader = " " -- must be declared before declaring lazy plugins (citation needed)
 vim.g.maplocalleader = " "
-
-vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
--- TODO: set mark and return to it (mz...z"ap)
 
 -- essentials
 vim.keymap.set("c", "<c-h>", "<s-left>")
@@ -44,7 +41,7 @@ vim.keymap.set("n", "~", "~h")
 vim.keymap.set("v", "<", "<gv") -- vim puts you back in normal mode by default
 vim.keymap.set("v", ">", ">gv")
 vim.keymap.set("v", "P", '"_dP')
-vim.keymap.set("v", "P", '"_dP')
+vim.keymap.set("v", "x", '"_x')
 
 -- https://unix.stackexchange.com/a/356407
 -- large motions, jumps
@@ -66,14 +63,11 @@ vim.keymap.set("n", "}", ":keepjumps normal! }<cr>zz", { silent = true })
 -- TODO: close all other splits (not tabs)
 -- default r behaviour is useless (cl)
 -- nmap ZF zfaft{blDkp$%bli<cR><esc>ld0<cR>zl|	" add folds around a func, like a real man, in any language
--- tabs and folds; splits are deprecated in favour of tabs
--- vim.keymap.set("n", "<c-h>", "<c-w><c-k>") -- split
--- vim.keymap.set("n", "<c-l>", "<c-w><c-j>")
+-- tabs and folds; splits are only used for exec
 -- vim.keymap.set("n", "re", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
 vim.keymap.set("n", "<c-h>", "gT")
 vim.keymap.set("n", "<c-l>", "gt")
 vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
--- vim.keymap.set("n", "<c-t>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
 vim.keymap.set("n", "<c-t>", "<c-6>", { silent = true })
 vim.keymap.set("n", "r", "<nop>")
 vim.keymap.set("n", "rH", ":silent! tabm -1<cr>", { silent = true }) -- do i need this?
@@ -141,20 +135,13 @@ vim.keymap.set("n", "<rightmouse>", "<nop>")
 vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
 vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 
--- <leader>gd :Gdiffsplit<cr> -- too many colors, viewing diff in commit is less overwhelming
--- <leader>gm :GMove<space>
+-- TODO: git add % + git commit --amend --no-edit
 
--- git add %
--- git commit --amend --no-edit
-
-vim.keymap.set("n", "<leader>C", function() -- only closures are supported (i.e. no args), not invocations; too bad
+vim.keymap.set("n", "<leader>C", function()
 	-- TODO: if no changes, do nothing
 	vim.cmd("silent !pre-commit run --files %")
 	vim.cmd("Git commit -q -v %") -- commit entire file
 end, { desc = "commit current buffer" })
-
--- git add "$1";
--- git commit --amend --no-edit
 
 vim.keymap.set("n", "<leader>gc", function()
 	vim.cmd("silent !pre-commit run") -- limit to staged files
@@ -164,10 +151,9 @@ end, { desc = "commit currently staged hunks" })
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
 vim.keymap.set("n", "<leader>M", '"qp0dd') -- dump q buffer into a newline and cut it (for binding)
-vim.keymap.set("n", "z.", "ZZ") -- lazy exit
-
--- -- technically doesn't belong here -- https://www.youtube.com/watch?v=AcvxrF2MrrI
--- command W execute ":silent w !sudo tee % > /dev/null" | :edit!
+vim.keymap.set("n", "z/", "ZZ") -- lazy exit
+vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
+-- TODO: set mark and return to it (mz...z"ap)
 
 local ft_binds = { -- {{{
 
@@ -191,10 +177,15 @@ local ft_binds = { -- {{{
 		vim.keymap.set("n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>", { buffer = true })
 	end,
 
+	typescript = function()
+		vim.keymap.set("n", "<leader>a", ":!npm install ", { buffer = true })
+	end,
+
 	rust = function()
 		-- TODO: <c-l> to exit parens?
-		vim.keymap.set("i", "<c-j>", ";<cr>", { buffer = true })
+
 		-- vim.keymap.set("n", "<leader>A", "oassert_eq!();<esc>hi", { buffer = true })
+		vim.keymap.set("i", "<c-j>", ";<cr>", { buffer = true })
 		vim.keymap.set("n", "<leader>a", ":!cargo add ", { buffer = true })
 	end,
 
@@ -232,22 +223,36 @@ local ft_binds = { -- {{{
 			-- 2. add import statement (_ "github.com/..."), save
 			-- 3. go mod tidy
 		end
+
 		vim.keymap.set("n", "<leader>a", ":lua GoGet''<left>", { buffer = true })
-		vim.keymap.set(
-			"n",
-			"<leader>t",
-			":!go mod tidy<cr><cr>",
-			-- ":!go mod tidy<cr><cr>:LspRestart",
-			{ buffer = true }
-		)
+		vim.keymap.set("n", "<leader>t", function()
+			vim.system({ "go", "mod", "tidy" })
+			vim.cmd("LspRestart")
+			vim.cmd("Trouble refresh")
+		end, { buffer = true })
 	end,
 
 	markdown = function()
 		-- TODO: if checkbox item (`- [ ]`), toggle check
 		-- https://github.com/tadmccorkle/markdown.nvim#lists
-		vim.keymap.set("n", "<leader>s", require("telescope").extensions.heading.heading, { buffer = true })
+
+		local function mn()
+			require("markdown.nav").next_heading()
+			vim.cmd.norm("zz")
+		end
+
+		local function mp()
+			require("markdown.nav").prev_heading()
+			vim.cmd.norm("zz")
+		end
+
+		-- vim.keymap.set("n", "J", mn, { buffer = true, remap = true })
+		-- vim.keymap.set("n", "K", mp, { buffer = true, remap = true }) -- TS hover
+		-- vim.keymap.set("n", "gk", require("markdown.nav").prev_heading, { buffer = true, remap = true })
 		vim.keymap.set("n", "<c-k>", "ysiw]Ea()<esc>Pgqq", { buffer = true, remap = true }) -- wrap in hyperlink
-		vim.keymap.set("n", "])", ":MDTaskToggle<cr>", { buffer = true, remap = true }) -- wrap in hyperlink
+		vim.keymap.set("n", "<leader>s", require("telescope").extensions.heading.heading, { buffer = true })
+		-- vim.keymap.set("n", "[[", mp, { buffer = true, remap = true })
+		-- vim.keymap.set("n", "]]", mn, { buffer = true, remap = true })
 	end,
 }
 
@@ -260,24 +265,20 @@ end
 
 -- }}}
 
--- execute current file and dump stdout to scratch buffer. running tests is
--- better left to the terminal itself (e.g. wezterm)
+-- run current file and dump stdout to scratch buffer
 local function exec()
 	-- {{{
+	-- running tests is better left to the terminal itself (e.g. wezterm)
 	if vim.bo.filetype == "nofile" then
 		return
 	end
-	-- TODO: vsplit if wide enough
+	-- TODO: vnew if wide enough
 	-- TODO: async (Dispatch)
 	local h = vim.o.lines * 0.2
 	local front = h .. " new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
 
-	-- c: make %< ; [redraw] ; './'.expand('%<')
-	-- lilypond
-
 	local curr_file = vim.fn.shellescape(vim.fn.expand("%")) -- basename!
 	local cwd = vim.fn.getcwd()
-	-- curr_file = string.format("%s/%s", cwd, curr_file)
 
 	-- TODO: rust: determine if current cursor position is in test
 
@@ -334,33 +335,30 @@ local function exec()
 		gleam = "gleam run",
 		rust = "RUST_BACKTRACE=1 cargo run",
 
-		-- the ok langs
+		-- the normal langs
+		dhall = "dhall-to-json --file " .. curr_file,
+		elvish = "elvish " .. curr_file,
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
+		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
 		python = "python3 " .. curr_file,
 		ruby = "ruby " .. curr_file,
 		sh = "env bash " .. curr_file,
 		zig = "zig run " .. curr_file,
 
 		-- the iffy langs
-		sql = get_sql_cmd(curr_file),
-		typescript = get_ts_runner(curr_file),
+		-- typescript = "NO_COLOR=1 deno run --check=all " .. curr_file,
+		sql = get_sql_cmd, --(curr_file),
+		typescript = get_ts_runner, --(curr_file),
 
 		-- note that :new brings us to repo root (verify with :new|pwd), so we need
 		-- to not only know where we used to be, but also run the basename.go
 		-- correctly
-		-- go = string.format("cd %s; go run %s", cwd, curr_file),
-		-- go = string.format("cd %s; go run *.go", cwd),
-		go = string.format("cd %s; ls *.go | grep -v _test | xargs go run", cwd),
-
-		-- the... kotlin
-		-- https://kotlinlang.org/docs/command-line.html#create-and-run-an-application
-		kotlin = string.format(
-			"kotlinc %s -include-runtime -d %s ; java -jar %s",
-			curr_file,
-			string.gsub(curr_file, ".kt", ".jar"),
-			string.gsub(curr_file, ".kt", ".jar")
-		),
+		go = string.format("cd %s; ", cwd)
+			-- https://stackoverflow.com/a/43953582
+			.. "ls *.go | " -- import functions from same package
+			.. "grep -v _test | " -- ignore test files (ugh)
+			.. "xargs go run",
 	}
 
 	local ft = vim.bo.filetype
@@ -369,6 +367,8 @@ local function exec()
 	if runner == nil then
 		print("No runner configured for " .. ft)
 		return
+	elseif type(runner) == "function" then
+		runner = runner(curr_file)
 	elseif vim.loop.fs_stat(cwd .. "/pyproject.toml") then
 		-- if pyproject.toml, prepend poetry run
 		runner = "poetry run " .. runner
@@ -387,13 +387,24 @@ local function exec()
 		end
 	end
 
+	-- https://old.reddit.com/r/neovim/comments/mq4pxn/best_way_to_get_current_buffer_content_as_a_lua/gufgtv8/
+	if require("util"):buf_contains("@observablehq/plot") then
+		local tmpfile = "/tmp/foo.html"
+		-- vim.cmd(front .. runner .. " | tee " .. tmpfile)
+		vim.cmd(string.format("%s %s | tee %s", front, runner, tmpfile))
+		os.execute("firefox " .. tmpfile)
+		vim.cmd.wincmd("k")
+		return
+	end
+
 	-- print(front .. runner)
 	vim.cmd(front .. runner)
 	vim.cmd.wincmd("k") -- return focus to main split
 end -- }}}
 vim.keymap.set("n", "<leader>x", exec, { silent = true })
 
-local function init() -- {{{
+local function init()
+	-- {{{
 	-- if not saved yet (no filename), force save
 	if vim.fn.expand("%") == "" then
 		vim.ui.input({
@@ -410,7 +421,10 @@ local function init() -- {{{
 	end
 
 	local ft = vim.bo.filetype
-	if ft == "" then -- yes, default is empty string...
+	if
+		ft == "" -- yes, default is empty string...
+		or ft == "conf"
+	then
 		ft = "sh"
 	end
 
@@ -479,19 +493,7 @@ EOF
 	vim.cmd("e")
 	vim.cmd("startinsert")
 end -- }}}
-vim.keymap.set("n", "<leader>i", init, { silent = true })
-
--- example output:
--- `lua/binds.lua:394	local function yank_path()`
-local function yank_path()
-	local path = vim.fn.expand("%")
-	local lnum = vim.fn.line(".")
-	local line = vim.fn.trim(vim.api.nvim_get_current_line())
-
-	local str = path .. ":" .. lnum .. "\t" .. line .. "\n"
-	vim.fn.setreg("+", str)
-end
-vim.keymap.set("n", "yp", yank_path, { silent = true })
+vim.keymap.set("n", "<leader>I", init, { silent = true })
 
 -- a crappy hack meant for copying a serde `Value` and turning it into a struct
 local function replace_selection()
@@ -532,6 +534,7 @@ end -- }}}
 vim.keymap.set("v", "C", replace_selection, { silent = true })
 
 local function debug_print()
+	-- {{{
 	local filetypes = {
 
 		-- zig = 'std.debug.print("{}\n",.{});',
@@ -563,5 +566,16 @@ local function debug_print()
 		vim.cmd.norm(string.len(right) - 1 .. "h")
 	end
 	vim.cmd.startinsert()
-end
+end -- }}}
 vim.keymap.set("n", "<leader>p", debug_print, { silent = true })
+
+-- example output:
+-- `lua/binds.lua:394	local function yank_path()`
+local function yank_path()
+	local path = vim.fn.expand("%")
+	local lnum = vim.fn.line(".")
+	local line = vim.fn.trim(vim.api.nvim_get_current_line())
+	local str = path .. ":" .. lnum .. "\t" .. line .. "\n"
+	vim.fn.setreg("+", str)
+end
+vim.keymap.set("n", "yp", yank_path, { silent = true })

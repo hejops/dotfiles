@@ -7,25 +7,18 @@ vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 -- restore last cursor position
 vim.api.nvim_create_autocmd("BufReadPost", {
 	command = [[if line("'\"") > 1 && line("'\"") <= line("$") | execute "normal! g`\"" | endif]],
-	-- callback = function()
-	-- 	local l = vim.fn.line([["'\""]])
-	-- 	local total_line = vim.fn.line("$")
-	-- 	if 1 < l and l <= total_line then
-	-- 		vim.cmd([["normal! g`\""]])
-	-- 	end
-	-- end,
 })
 
 vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "norm zz" })
 
 -- highlight yanked text
-local highlight_group = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
+-- local highlight_group = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
 vim.api.nvim_create_autocmd("TextYankPost", {
 	callback = function()
 		vim.highlight.on_yank()
 	end,
-	group = highlight_group,
-	pattern = "*",
+	-- group = highlight_group,
+	-- pattern = "*",
 })
 
 -- show line diagnostics on hover
@@ -80,17 +73,8 @@ end
 -- compile md -> pdf
 vim.api.nvim_create_autocmd("BufWritePost", {
 	pattern = { "*.md" },
-	-- command = [[silent exec "!opout % 2>/dev/null &" | execute ':redraw!']],
 	callback = md_to_pdf,
 })
-
--- vim.api.nvim_create_user_command("W", "!sudo -S make install", { bang = true }) -- sudo save
--- vim.api.nvim_create_autocmd({ "VimLeave" }, {
--- 	pattern = { "config.h" },
--- 	-- command = "!sudo make install",
--- 	-- nvim doesn't accept/pass stdin atm https://github.com/neovim/neovim/issues/12103
--- 	command = "!cd ~/dwm; sudo make install",
--- })
 
 vim.api.nvim_create_autocmd({ "WinEnter" }, {
 	-- group = vim.api.nvim_create_augroup("colorcolumn", { clear = true }),

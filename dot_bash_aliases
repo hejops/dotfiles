@@ -3,6 +3,8 @@
 
 # autostart {{{
 
+# TODO: sudo clean journal log
+
 open_file() {
 	f=$1
 	if
@@ -16,7 +18,7 @@ open_file() {
 		exec nvim + "$f"
 	fi
 }
-open_file /tmp/hr-loona
+# open_file /tmp/hr-loona
 
 if
 	[[ -f /tmp/verse.json ]] && [[ -s /tmp/verse.json ]]
@@ -44,29 +46,35 @@ alias trk=trackratings.py
 alias tt=taptempo
 alias xo=xdg-open
 
-# alias rae="exec ranger "$HDD/emu""
-# alias ram="exec ranger --cmd="sort size" "$HDD/movies""
-alias rab="exec ranger \"\$HDD/books\""
-alias rad="exec ranger \"\$SLSK/complete\""
-alias rat="exec ranger \"\$HDD/torrent\" \"\$HDD/movies\""
+alias rab="exec yazi \"\$HDD/books\""
+alias rad="exec yazi \"\$SLSK/complete\"" # TODO: investigate `ya pub`
+alias rag="exec yazi \"\$HDD/guitar\""
+alias rat="exec yazi \"\$HDD/torrent\" \"\$HDD/movies\""
 
 # alias drag="dragon-drop --all --and-exit"
-# alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
+# alias pq="cd ~/plaque/ ; go build ; ./plaque"
 alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit"
 alias ci="chromium --incognito"
 alias con="convert_files && fix_genres --auto && fix_tags -a && fix_tags && fix_genres && move_files" # && notify-send ok"
 alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
-alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)"
+alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
 alias da="dc artist:"
 alias dc="discogs_collection filter"
-alias dt="discogs_collection top" # | less"
+alias dt="discogs_collection top"
 alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
-alias ht="htop -u \$USER"
+alias h="htop -u \$USER"
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
+alias md="\$EDITOR -c 'set ft=markdown'"
+alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
+alias n="NO_COLOR=1 node --import=tsx"
+alias pq="~/plaque/plaque"
 alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
+alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
+alias tx="tectonic -X"
+alias tz=trizen
 alias y="bash ~/gripts/disq/ytm.sh"
 
 # }}}
@@ -128,12 +136,15 @@ gld() {
 	: browse git log, showing each commit\'s diff in fzf preview
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
 	{
-		if [[ $# -eq 0 ]]; then
-			git log --oneline
-		else
+		if [[ -f $1 ]]; then
 			git log --oneline "$1"
+		else
+			git log --oneline
 		fi
-	} | fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+	} |
+		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
+		awk '{print $1}' |
+		xargs git show
 }
 
 gS() {
@@ -191,10 +202,16 @@ gc() {
 			[[ ! -f $f ]] && continue
 			git ls-files | grep -q "$(basename "$f")" && arr+=("$f")
 		done
+		# TODO: this loop commits renamed files, but does not commit
+		# their old names
 
 		git commit -v "${arr[@]}"
 
-		# return
+	elif
+		# file(s) have been renamed
+		git status --porcelain | grep -Pq '^R  \S+? -> \S+$'
+	then
+		git commit -v "${arr[@]}"
 
 	elif
 		staged=$(git diff --name-only --cached --diff-filter=AMD) &&
@@ -276,7 +293,9 @@ gs() {
 		echo "$files" | column -t | while read -r f; do
 			lines=$(< "$f" wc -l)
 			echo "./$f | $lines +"
-		done
+		done <<< "$files" | column -t
+		else
+		echo "Nothing staged"
 	fi
 	echo
 
@@ -559,7 +578,7 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        args: ["--baseline", ".secrets.baseline"]
+        # args: ["--baseline", ".secrets.baseline"]
         exclude: package.lock.json
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -605,7 +624,7 @@ EOF
 
   # % format -> f-string
   - repo: https://github.com/ikamensh/flynt/
-    rev: ""
+    rev: 1.0.1
     hooks:
       - id: flynt
 
@@ -872,7 +891,7 @@ EOF
 
 # cargo +nightly udeps
 alias cb="cargo build"
-alias cbr="cargo build --release"
+alias cbr="cargo build --release && cp target/release/\$(basename \$PWD) ."
 alias ct="cargo test"
 alias cwr="cargo watch -x run"                           # web servers only
 alias sqp='cargo sqlx prepare --workspace; ga .sqlx; gc' # postgres only
@@ -917,38 +936,65 @@ rsmod() {
 }
 # }}}
 # go {{{
-gonew() {
+
+# https://gist.githubusercontent.com/alexedwards/3b40775846535d0014ab1ff477e4a568/raw/15f15b499f626a6e3949c237d52a3e8aace1b05b/Makefile
+
+# alias gonew=gon
+alias gobe="go test -bench=. -run=^$ ./..."         # run benchmarks only -- https://stackoverflow.com/a/16161605
+alias gor="\ls *.go | grep -v _test | xargs go run" # won't work with args
+
+gop() {
+	# https://go.dev/blog/pprof
+
+	# https://github.com/google/pprof/blob/a8630aee4ab9e36dfc54c2e0a4df49abb8345dbd/internal/driver/commands.go#L125
+	go tool pprof -web -nodefraction=0.1 ./*.prof 2> /dev/null
+}
+
+gopk() {
+	f=$1
+	pkg=${f/.go/}
+	[[ -d $pkg ]] && return
+	mkdir "$pkg"
+	sed -i -r "s/^package main/package $pkg/" "$f"
+	mv "$f" "$pkg"
+}
+
+gon() {
 	[[ $# -ne 1 ]] && return
 	[[ -d $1 ]] && return
-	mcd "$1"
-	go mod init "$1"
-	echo "$1" > .gitignore
-	echo -e "func main(){\n}" > main.go
-	go build # generate go.mod
-	# TODO: lsp not started properly, and LspRestart doesn't work
-	# has to do with gopls not recognising cwd
-	vim + main.go
-}
-
-gob() {
-	if [[ -d $1 ]]; then
-		pushd "$1" > /dev/null || return
-	elif [[ -f $1 ]]; then
-		pushd "$(dirname "$1")" > /dev/null || return
+	if [[ -f ./go.mod ]]; then
+		mkdir "$1"
+		echo -e "package $1\nfunc foo(){\n}" > "$1/$1.go"
+		vim + "$1/$1.go"
+	else
+		mcd "$1"
+		go mod init "$1"
+		echo "$1" > .gitignore
+		echo -e "func main(){\n}" > main.go
+		go build # generate go.mod
+		vim + main.go
 	fi
-
-	# `go build foo.go` will create a binary foo (instead of the package name)!
-	go build -ldflags "-s -w"
-
-	upx "$(basename "$PWD")" > /dev/null # --brute is usually overkill (think rust release mode)
-
-	# echo "built $(basename "$PWD")"
-	lsl "$(basename "$PWD")"
-
-	popd > /dev/null 2> /dev/null || return
 }
 
-alias gon=gonew
+gob() { # build and run (gor won't work with args)
+	name=$(< go.mod head -n1 | cut -d' ' -f2)
+	go build && ./"$name" "$@"
+}
+
+# https://leg100.github.io/en/posts/building-bubbletea-programs/
+
+# ideally i would like gow to be spawned in a background tab (not window!),
+# then gowr in the main tab, BUT wezterm tabs mess with bubbletea dims
+gow() { # watch code changes, trigger re-build, and kill process
+	name=$(< go.mod head -n1 | cut -d' ' -f2)
+	while :; do
+		go build && pkill "$name"
+		# inotifywait --event attrib $(find . -name '*.go') > /dev/null || return
+		find . -name '*.go' -print0 | xargs -0 inotifywait --event attrib > /dev/null || return
+	done
+}
+gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run app
+
 # }}}
 
 # docker {{{
@@ -1000,6 +1046,11 @@ f() {
 fm() {
 	: open file manager with arbitrary args
 
+	if command -v yazi > /dev/null; then
+		yazi "$@"
+		return
+	fi
+
 	# TODO: if glob specified, use that as filter
 	# set -x
 	_dirs=()
@@ -1017,12 +1068,9 @@ fm() {
 		_dirs=(.)
 	fi
 
-	if [[ ${#_dirs[@]} -eq 1 ]] && command -v yazi > /dev/null; then
-		# yazi only allows up to 1 arg, but can smartly position cursor
-		# on a file
-		yazi "${_dirs[0]}"
-	elif [[ ${#_dirs[@]} -eq 1 ]] && command -v lf > /dev/null; then
-		# same as yazi
+	if [[ ${#_dirs[@]} -eq 1 ]] && command -v lf > /dev/null; then
+		# lf only allows up to 1 arg, but can smartly position cursor
+		# on a file; i haven't used lf in forever
 		lf "${_dirs[0]}"
 	else
 		ranger "${_dirs[@]}"
@@ -1091,7 +1139,15 @@ yti() {
 # }}}
 # web {{{
 
-C() {
+,c() {
+	c "$1" | prettier --parser html
+	# c "$1" | lynx -stdin -dump
+	# tidy injects extra stuff
+}
+
+,,c() {
+	# uses a different user agent from curl
+	# C() {
 	: alternative to curl
 	python3 -c '
 import codecs
@@ -1110,6 +1166,24 @@ print(codecs.decode(s, "unicode-escape"))
 
 ' "$1"
 
+}
+
+alias C=,,c
+
+upload() { # upload file to catbox.moe, copy link to clipboard
+
+	# https://github.com/Allypost/bash-scripts/blob/fa4b1006a1c022484c3d48a05ec0ff1c94b9a541/catbox#L116
+	# https://github.com/mananapr/dotfiles/blob/9dc9196224c2c84e4265e517dc36af1c79637eb7/bin/catbox
+	# https://github.com/search?type=code&q=curl+catbox.moe+language%3AShell+fileupload
+
+	link=$(
+		curl -s --form "reqtype=fileupload" \
+			--form "fileToUpload=@$1" \
+			https://catbox.moe/user/api.php #| tee /dev/null
+	)
+
+	echo -en "Uploaded to: \e[1m$link\n" # idk what that escape does
+	echo -n "$link" | xclip -sel c
 }
 
 nmc() {
@@ -1142,17 +1216,9 @@ nt() {
 }
 
 getmail() {
-	if
-		# TODO: use systemctl instead
-		# systemctl reload mbsync
-		! mbsync -Va > /dev/null
-	then
-		echo "Could not fetch"
-	elif mailtag 2>&1 | grep 'No new mail.'; then
-		:
-	else
-		neomutt
-	fi
+	mail 2>&1 | grep 'No new mail.'
+	[[ $(notmuch count tag:inbox and tag:unread and date:today) -eq 0 ]] && return
+	TERM=xterm-direct neomutt
 }
 
 pacmir() {
@@ -1187,8 +1253,37 @@ blog() { $EDITOR "$(date -I)-${1//-/_}.md"; }
 bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
 rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
 yt() { mpv --force-window "ytdl://ytsearch10:\'$*\'"; }
+zd() { zip -jr "$1" "$1"; }                                 # zip directory (flat)
+zin() { < /dev/stdin zip --junk-paths --names-stdin "$1"; } # pipe files from stdin to zip
+
+ys() { # read youtube subs in less
+	yt-dlp -j "$1" |
+		jq . |
+		grep '=vtt' |
+		grep -v tlang |
+		tail -n1 | # auto subs are listed first
+		cut -d'"' -f4 |
+		xargs curl -sL |
+		dehtml |
+		grep -v -- '-->' |
+		grep -Pv '^\s*$' |
+		tr '\n' ' ' |
+		fold --spaces |
+		less
+}
 
 sq() {
+
+	# TODO: sqlite in prod
+	# https://fractaledmind.github.io/2023/09/07/enhancing-rails-sqlite-fine-tuning/#pragmas-summary
+
+	# PRAGMA busy_timeout = 5000;
+	# PRAGMA cache_size = 2000;
+	# PRAGMA journal_mode = WAL;
+	# PRAGMA journal_size_limit = 67108864; -- 64 megabytes
+	# PRAGMA mmap_size = 134217728; -- 128 megabytes
+	# PRAGMA synchronous = NORMAL;
+
 	if [[ ! -f $1 ]]; then echo "Not a file: $1"; fi
 	echo "$2" | sqlite3 "$1"
 }
@@ -1319,39 +1414,14 @@ rt() {
 
 }
 
-vl() {
-
-	[[ $# -ne 1 ]] && return
-
-	id=$(c https://a.4cdn.org/hr/catalog.json |
-		jq . |
-		grep -B3 "$1" |
-		grep -Pom1 '\d+')
-
-	[[ -z $id ]] && return
-
-	cd ~/"${1,,}" || return
-
-	# # is2.4chan block is ip-dependent
-	# grep < /tmp/hr-loona -e jpg -e png |
-	# 	grep -Po 'http\S+' |
-	c "https://a.4cdn.org/hr/thread/$id.json" |
-		jq '.[][] | select(.filename != null) | [ (.tim|tostring), .ext ] | join("")' |
-		prepend 'https://i.4cdn.org/hr/' |
-		tac |
-		xargs feh -dFZ --action "echo -n %F | xclip -sel c"
-
-	waitdie mpvweb mpv taggenre.py
-
-	# grep < /tmp/hr-loona -Po 'http[^\"<]+' |
-	c "https://a.4cdn.org/hr/thread/$id.json" | jq '.' |
-		grep -e youtu -e vlive -e streamable -e idalso |
-		tac |
-		uniq |
-		xargs mpv # &&
-
-	cd || :
-	exit
+epk() {
+	: check epub validity
+	for f in *.epub; do
+		if ! unzip -l "$f" > /dev/null 2> /dev/null; then
+			echo "$f"
+			rm "$f" > /dev/null
+		fi
+	done | sort >> failed
 }
 
 rgo() {
