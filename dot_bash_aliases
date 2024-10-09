@@ -215,6 +215,7 @@ gs() {
 	# 2. untracked files
 	# 3. current number of staged commits
 
+	# (1)
 	#  M discogs.go
 	#  M discogs_test.go
 	#  M main.go
@@ -223,8 +224,10 @@ gs() {
 	#  main.go         |  2 +-
 	#  discogs_test.go |  6 +++---
 	#
+	# (2)
 	# util_test.go
 	#
+	# (3)
 	# No commits staged.
 
 	if
@@ -257,7 +260,7 @@ gs() {
 		{ git status --porcelain | grep -Fv '??'; } 2> /dev/null
 		echo
 		echo "$diffs"
-	else
+	elif
 		# newly staged files are -not- included in git diff
 		files=$(git status --porcelain |
 			grep '^A' |
@@ -265,18 +268,24 @@ gs() {
 			# make paths absolute (default: relative to root)
 			prepend "$(get_repo_root)/" |
 			# then relativise to cwd
-			largs realpath --relative-to=. 2> /dev/null)
-		while read -r f; do
+			largs realpath --relative-to=. 2> /dev/null) &&
+			[[ -z $files ]]
+	then
+		: no files added
+	else
+		echo "$files" | column -t | while read -r f; do
 			lines=$(< "$f" wc -l)
 			echo "./$f | $lines +"
-		done <<< "$files" | column -t
+		done
 	fi
 	echo
 
 	# 2
 
-	untracked=$(git ls-files --others --exclude-standard)
-	if [[ -n $untracked ]]; then
+	if
+		untracked=$(git ls-files --others --exclude-standard) &&
+			[[ -n $untracked ]]
+	then
 		echo "$untracked"
 		echo
 	fi
@@ -1364,6 +1373,6 @@ mw() {
 			notify-send -u critical "$new new mail"
 			neomutt
 		fi
-		sleep 10m
+		sleep 15m
 	done
 }
