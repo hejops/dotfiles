@@ -146,9 +146,21 @@ local font = wezterm.font_with_fallback({
 	"Source Code Pro",
 })
 
+local function get_output(command)
+	local handle = io.popen(command)
+	_ = handle:read("*a")
+	return handle:close()
+end
+
+-- there should probably be a better (distro-agnostic) check
+if get_output("grep Ubuntu /etc/lsb-release") then
+	config.font_size = 12.0
+else
+	config.font_size = 10.0
+end
+
 config.cell_width = 0.9
 config.font = font
-config.font_size = 10.0
 config.harfbuzz_features = { "calt=0", "clig=0", "liga=0" }
 config.warn_about_missing_glyphs = false
 config.window_frame = { font = font, font_size = 10 }
@@ -160,6 +172,8 @@ config.window_frame = { font = font, font_size = 10 }
 -- config.enable_kitty_graphics = false -- ranger: iterm2
 -- config.window_background_opacity = 0.8 -- see opacity-rule in picom.conf
 config.color_scheme = "citruszest"
+config.default_cwd = wezterm.home_dir
+-- config.default_domain = "unix"
 config.default_prog = { "bash" } -- source .bashrc
 config.enable_scroll_bar = false
 config.hide_tab_bar_if_only_one_tab = true
@@ -173,49 +187,16 @@ config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 local function keys()
 	local leader = "SHIFT|CTRL"
 
-	local keys = {
-
-		-- https://github.com/wez/wezterm/tree/main/docs/config/lua/keyassignment
-
-		-- https://github.com/wez/wezterm/blob/30345b36d8a00fed347e4df5dadd83915a7693fb/wezterm-gui/src/overlay/quickselect.rs#L26
-		-- https://github.com/wez/wezterm/blob/main/docs/config/lua/config/quick_select_patterns.md#quick_select_patterns
-		-- https://github.com/wez/wezterm/blob/main/docs/quickselect.md
-
-		-- https://github.com/wez/wezterm/blob/main/docs/config/lua/keyassignment/PromptInputLine.md#example-of-interactively-renaming-the-current-tab
-		-- https://github.com/wez/wezterm/blob/main/docs/config/lua/keyassignment/Search.md#search
-
-		-- https://github.com/wez/wezterm/blob/main/docs/config/launch.md#the-launcher-menu
-
-		-- both SpawnWindow and SpawnTab should (sanely) default to cwd
-		{ key = "e", mods = "CTRL", action = act.SpawnWindow },
-		{ key = "t", mods = "CTRL", action = act.SpawnTab("CurrentPaneDomain") },
-
-		-- { key = '+', mods = 'CTRL', action = act.IncreaseFontSize },
-
-		{ key = "h", mods = leader, action = act.ActivateTabRelative(-1) },
-		{ key = "j", mods = leader, action = act.ScrollByPage(1) },
-		{ key = "k", mods = leader, action = act.ScrollByPage(-1) },
-		{ key = "l", mods = leader, action = act.ActivateTabRelative(1) },
-		{ key = "w", mods = leader, action = act.EmitEvent("watch") },
-
-		{ key = "x", mods = leader, action = act.EmitEvent("view-history-in-pager") },
-
-		-- note: ctrl-l is bound to readline's forward-word
-		{
-			key = "z",
-			mods = "CTRL",
-			action = act.ClearScrollback("ScrollbackAndViewport"),
-			-- action = act.Multiple({
-			-- 	act.ClearScrollback("ScrollbackAndViewport"),
-			-- 	act.SendKey({ key = "L", mods = "CTRL" }),
-			-- }),
-		},
+	-- https://wezfurlong.org/wezterm/config/lua/keyassignment/PromptInputLine.html#example-of-interactively-renaming-the-current-tab
+	local rename_tab = {
+		-- initial_value = "My Tab Name", -- nightly only
+		description = "Rename tab",
+		action = wezterm.action_callback(function(window, pane, line)
+			if line then
+				window:active_tab():set_title(line)
+			end
+		end),
 	}
-
-	-- TODO: use weruio (?) instead of numbers (when the need arises)
-	for i = 0, 9 do
-		table.insert(keys, { key = tostring(i), mods = leader, action = act.ActivateTab(i) })
-	end
 
 	-- https://github.com/wez/wezterm/issues/1362#issuecomment-1000457693
 	-- https://wezfurlong.org/wezterm/config/lua/keyassignment/QuickSelectArgs.html
@@ -233,9 +214,61 @@ local function keys()
 		},
 	}
 
-	table.insert(keys, { key = "g", mods = "CTRL", action = wezterm.action(hint_url) })
+	local SpawnTabNext = function()
+		-- https://old.reddit.com/r/wezterm/comments/1d71ei3/how_to_make_spawntab_spawn_a_new_tab_next_to/l759axf/
+		local function active_tab_index(window)
+			for _, item in ipairs(window:mux_window():tabs_with_info()) do
+				if item.is_active then
+					return item.index
+				end
+			end
+		end
 
-	return keys
+		return wezterm.action_callback(function(win, pane)
+			local prev_active_tab_index = active_tab_index(win)
+			win:perform_action(act.SpawnTab("CurrentPaneDomain"), pane)
+			win:perform_action(act.MoveTab(prev_active_tab_index + 1), pane)
+		end)
+	end
+
+	local _keys = {
+
+		-- https://github.com/wez/wezterm/tree/main/docs/config/lua/keyassignment
+
+		-- https://github.com/wez/wezterm/blob/30345b36d8a00fed347e4df5dadd83915a7693fb/wezterm-gui/src/overlay/quickselect.rs#L26
+		-- https://github.com/wez/wezterm/blob/main/docs/config/lua/config/quick_select_patterns.md#quick_select_patterns
+		-- https://github.com/wez/wezterm/blob/main/docs/quickselect.md
+
+		-- https://github.com/wez/wezterm/blob/main/docs/config/lua/keyassignment/PromptInputLine.md#example-of-interactively-renaming-the-current-tab
+		-- https://github.com/wez/wezterm/blob/main/docs/config/lua/keyassignment/Search.md#search
+
+		-- https://github.com/wez/wezterm/blob/main/docs/config/launch.md#the-launcher-menu
+
+		-- both SpawnWindow and SpawnTab default to cwd
+		{ key = "e", mods = "CTRL", action = act.SpawnWindow },
+		-- { key = "t", mods = "CTRL", action = act.SpawnTab("CurrentPaneDomain") },
+		{ key = "t", mods = "CTRL", action = SpawnTabNext() },
+
+		{ key = "t", mods = leader, action = act.SpawnCommandInNewTab({ cwd = wezterm.home_dir }) },
+
+		{ key = "h", mods = leader, action = act.ActivateTabRelative(-1) },
+		{ key = "j", mods = leader, action = act.ScrollByPage(1) },
+		{ key = "k", mods = leader, action = act.ScrollByPage(-1) },
+		{ key = "l", mods = leader, action = act.ActivateTabRelative(1) },
+
+		{ key = "g", mods = "CTRL", action = act(hint_url) },
+		{ key = "r", mods = leader, action = act.PromptInputLine(rename_tab) },
+		{ key = "w", mods = leader, action = act.EmitEvent("watch") },
+		{ key = "x", mods = leader, action = act.EmitEvent("view-history-in-pager") },
+		{ key = "z", mods = "CTRL", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
+	}
+
+	-- TODO: use weruio (?) instead of numbers (when the need arises)
+	for i = 0, 9 do
+		table.insert(_keys, { key = tostring(i), mods = leader, action = act.ActivateTab(i) })
+	end
+
+	return _keys
 end
 
 config.keys = keys()
