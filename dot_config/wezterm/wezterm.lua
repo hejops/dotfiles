@@ -75,7 +75,7 @@ wezterm.on(
 	-- run tests in a vim split
 	-- https://github.com/rwxrob/dot/blob/fa81b2b138805276a35b458196b67ddb87660505/scripts/goentrtest
 	-- https://github.com/vouch/vouch-proxy/blob/ad2e9ac8ad03e7d22cdbb44abc47c74ad046071a/do.sh#L109C1-L109C38
-	function(window, pane)
+	function(window, pane) -- {{{
 		-- determine what lang we are in. we always assume we are at project root
 
 		-- ideally, the table should be something like
@@ -87,10 +87,11 @@ wezterm.on(
 		-- but this is fine for now
 
 		local watchers = {
-			["Cargo.toml"] = { "cargo", "watch", "-x", "check", "-x", "test" },
-			["go.mod"] = { "bash", "-c", "find . -name '*.go' | entr -cr go test" },
-			["pyproject.toml"] = { "bash", "-c", "find . -name '*.py' | entr -cr poetry run pytest -x -vv" },
+
 			-- ["pyproject.toml"] = { "poetry", "run", "pytest", "-x", "-vv" },
+			["Cargo.toml"] = { "cargo", "watch", "-x", "check", "-x", "test" },
+			["go.mod"] = { "bash", "-c", "find . -name '*.go' | entr -cr go test ./..." },
+			["pyproject.toml"] = { "bash", "-c", "find . -name '*.py' | entr -cr poetry run pytest -x -vv" },
 		}
 
 		-- https://github.com/rust-lang/rust/blob/master/src/doc/rustc/src/tests/index.md#cli-arguments
@@ -113,42 +114,50 @@ wezterm.on(
 				return
 			end
 		end
-	end
+	end -- }}}
 )
 
 -- font {{{
 
 -- wezterm.font("Haskplex", {weight="Regular", stretch="Normal", style="Normal"})
 
+-- wezterm ls-fonts --list-system | cut -d, -f1 | grep ^wez | cut -d'(' -f2 | sort -u | append ,
+
+-- note: source han sans is implicitly used as fallback for cn/jp/kr (which is
+-- why scp goes great with it). scp also has cyrillic
 local font = wezterm.font_with_fallback({
 	-- quirky
-	-- "Silkscreen", -- allcaps
-	-- "mononoki", -- can get very crowded
+	-- "mononoki", -- very cramped
 	-- "Intel One Mono", -- cramped {x}, too wide
-	-- "Monaspace Argon", -- large
-	-- "Terminus", -- if you like pretending to be in the login shell
+	-- "Monaspace Argon", -- cramped
+	-- "Terminus", -- too thin
+	-- "Silkscreen", -- allcaps
 	-- "Z003", -- hilarious
 
 	-- round
-	-- "Inconsolata", -- classic
-	-- "Uiua386", -- comic sans-ish
-	-- "Google Sans Mono", -- a bit too round...
+	-- "Google Sans Mono", -- somewhat round (but exact same size as SCP); latin only
+	-- "Commit Mono", -- tall, vertically cramped
+	-- "Inconsolata", -- classic (small)
+	-- "Uiua386", -- comic sans-ish (not very readable imo)
+	-- "Geist Mono", -- chonky
 
 	-- narrow
+	-- "Mplus Code 60", -- too tall, otherwise quite good
 	-- "Iosevka",
 
 	-- regular
-	-- "IBM Plex Mono", -- too tall
-	-- "Fira Mono", -- feels cramped
-	-- "SF Mono", -- '--' too close
-	-- "Martian Mono", -- very large
-	-- "Haskplex", -- literally the same as SCP
+	-- "IBM Plex Mono", -- tall
+	-- "Fira Mono", -- cramped
+	-- "SF Mono", -- '--' too close (almost ligature-ish)
+	-- "Input Mono", -- why so short?
 	"Source Code Pro",
 })
 
 config.cell_width = 0.9
 config.font = font
 config.font_size = 10.0
+-- config.font, config.font_size = wezterm.font_with_fallback({ "Source Code Pro" }), 10.0
+-- config.font, config.font_size = wezterm.font_with_fallback({ "B612 Mono" }), 9.0
 config.harfbuzz_features = { "calt=0", "clig=0", "liga=0" }
 config.warn_about_missing_glyphs = false
 config.window_frame = { font = font, font_size = 10 }
@@ -188,7 +197,7 @@ local function keys()
 
 		-- both SpawnWindow and SpawnTab should (sanely) default to cwd
 		{ key = "e", mods = "CTRL", action = act.SpawnWindow },
-		{ key = "t", mods = "CTRL", action = act.SpawnTab("CurrentPaneDomain") },
+		{ key = "t", mods = leader, action = act.SpawnTab("CurrentPaneDomain") },
 
 		-- { key = '+', mods = 'CTRL', action = act.IncreaseFontSize },
 
@@ -223,7 +232,8 @@ local function keys()
 		QuickSelectArgs = {
 			patterns = {
 				-- https://wezfurlong.org/wezterm/config/lua/config/hyperlink_rules.html
-				"\\b\\w+://\\S+[)/a-zA-Z0-9-]+",
+				-- "\\b\\w+://\\S+[)/a-zA-Z0-9-]+",
+				"\\b\\w+://\\S+[/a-zA-Z0-9-]+",
 			},
 			action = wezterm.action_callback(function(window, pane)
 				local url = window:get_selection_text_for_pane(pane)
