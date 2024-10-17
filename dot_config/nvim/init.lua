@@ -67,7 +67,12 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 		-- TODO: should follow lualine main color
 		vim.api.nvim_set_hl(0, "ColorColumn", { bg = "#444444" })
 
-		-- TODO: set lualine?
+		-- enforce diff colors
+		local green = "#00CC7A"
+		local red = "#FF5454"
+		-- https://github.com/neovim/neovim/blob/b3109084c2c3675aa886bf16ff15f50025f30096/runtime/doc/treesitter.txt#L459
+		vim.api.nvim_set_hl(0, "@diff.plus", { fg = green })
+		vim.api.nvim_set_hl(0, "@diff.minus", { fg = red })
 	end,
 })
 
