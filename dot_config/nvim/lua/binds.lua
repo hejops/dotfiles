@@ -283,7 +283,7 @@ local function exec()
 		front = h .. " new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
 	end
 
-	local curr_file = vim.fn.shellescape(vim.fn.expand("%")) -- basename!
+	local curr_file = vim.fn.shellescape(vim.fn.expand("%")) -- relative to cwd
 	local cwd = vim.fn.getcwd()
 
 	-- TODO: rust: determine if current cursor position is in test
@@ -319,12 +319,16 @@ local function exec()
 	local function get_ts_runner(file)
 		local js = string.gsub(file, ".ts", ".js")
 
+		-- cd first, so that child's node_modules/tsx can be found
+		vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
+
 		if vim.loop.fs_stat(js) and ts_is_compiled(js, file) then
 			-- fastest, but requires already compiled js (which is slow)
 			return "node " .. js -- 0.035 s
 		elseif vim.loop.fs_stat("./node_modules/tsx") then
 			-- run with node directly (without transpilation); requires node 22.7.0 + tsx
 			-- https://nodejs.org/api/typescript.html#full-typescript-support
+			file = vim.fn.expand("%:.")
 			return "node --redirect-warnings=/dev/null --import=tsx " .. file
 		elseif vim.loop.fs_stat("./node_modules/@types/node") then
 			-- https://stackoverflow.com/a/78148646
