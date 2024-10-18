@@ -29,6 +29,7 @@ vim.keymap.set("n", "Q", ":bd<cr>")
 vim.keymap.set("n", "U", ":redo<cr>")
 vim.keymap.set("n", "X", '"_X')
 vim.keymap.set("n", "Y", "y$") -- default is redundant with yy
+vim.keymap.set("n", "ZX", ":wqa<cr>")
 vim.keymap.set("n", "co", "O<esc>jo<esc>k") -- surround current line with newlines
 vim.keymap.set("n", "gD", "<nop>")
 vim.keymap.set("n", "gf", "<c-W>gF") -- open file under cursor in new tab, jumping to line if possible; uncommonly used
