@@ -272,10 +272,15 @@ local function exec()
 	if vim.bo.filetype == "nofile" then
 		return
 	end
-	-- TODO: vnew if wide enough
 	-- TODO: async (Dispatch)
-	local h = vim.o.lines * 0.2
-	local front = h .. " new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
+	local front
+	if vim.o.columns > 100 then -- vsplit if wide enough
+		local w = math.floor(vim.o.columns * 0.33)
+		front = w .. " vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
+	else
+		local h = vim.o.lines * 0.2
+		front = h .. " new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
+	end
 
 	local curr_file = vim.fn.shellescape(vim.fn.expand("%")) -- basename!
 	local cwd = vim.fn.getcwd()
