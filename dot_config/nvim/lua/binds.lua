@@ -404,12 +404,14 @@ local function exec()
 		vim.cmd(string.format("%s %s | tee %s", front, runner, tmpfile))
 		os.execute("firefox " .. tmpfile)
 		vim.cmd.wincmd("k")
+		vim.cmd.wincmd("h")
 		return
 	end
 
 	-- print(front .. runner)
 	vim.cmd(front .. runner)
 	vim.cmd.wincmd("k") -- return focus to main split
+	vim.cmd.wincmd("h")
 end -- }}}
 vim.keymap.set("n", "<leader>x", exec, { silent = true })
 
