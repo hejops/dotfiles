@@ -363,7 +363,7 @@ bindurl duckduckgo.com f hint .EKtkFWMYpwzMKOYr0GYm, .Bl3t3iYRHX9BeMH_V52u.JhFQA
 bindurl github Y composite js "git clone " + document.location.href.replace(/https?:\/\//,"git@").replace("/",":").replace(/$/,".git") | clipboard yank
 bindurl github.+ov-file y composite js document.location.href.replace("?tab=readme-ov-file","") | clipboard yank
 bindurl github.com/.*/blob/ f hint -c .blob-num,a
-bindurl letterboxd.com f hint -c a.tooltip.text-slug, .prettify, .all-link, .has-menu.frame, .js-reveal.reveal, .next, .add-this-film, .rateit-range
+bindurl letterboxd.com f hint -Jc a.tooltip.text-slug, .prettify, .all-link, .has-menu.frame, .js-reveal.reveal, .next, .add-this-film, .rateit-range, .-director.-contributor.search-result > .content > p.film-metadata > a.text-slug
 bindurl libgen.is f hint -Jc [href^="http://library.lol"]
 bindurl movieparadise.org f hint -Jc [href^="https://1fichier.com"], .wpf-field-wrap > input
 bindurl music.youtube.com <space> hint -Jc #play-pause-button
