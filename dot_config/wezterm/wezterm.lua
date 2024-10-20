@@ -43,6 +43,7 @@
 -- memory leak
 
 local wezterm = require("wezterm")
+local log = wezterm.log_info
 
 local act = wezterm.action
 local config = {}
@@ -294,31 +295,111 @@ local function keys()
 		end
 	end
 
+	local function resize(win, pane)
+		local tab = pane:tab()
+		local panes = tab:panes_with_info() -- https://wezfurlong.org/wezterm/config/lua/MuxTab/panes_with_info.html
+
+		-- force right panes to have equal height
+		local height = panes[1].height
+		local r_height = math.floor(height / (#panes - 1)) -- before recalc
+
+		for x = 2, #panes do
+			panes = tab:panes_with_info() -- recalc
+			-- log(panes[x])
+			local p = panes[x].pane
+
+			local diff = p:get_dimensions().viewport_rows - r_height
+			local dir = diff > 0
+					-- and x < #panes
+					and "Up"
+				or "Down"
+
+			log("pane", x, #panes, "has height", p:get_dimensions().viewport_rows, "need", r_height, dir, diff)
+
+			-- adjust Up on first split ignored
+			-- adjust Down on last split ignored
+			-- https://github.com/wez/wezterm/issues/4038
+
+			-- > lua: opening new split: 4
+			-- > lua: pane 2 4 has height 32 need 20 Up 12 (manual AdjustPaneSize call would have worked)
+			-- > lua: height is now 32
+			-- > lua: pane 3 4 has height 2 need 20 Down -18
+			-- > lua: height is now 20
+			-- > lua: pane 4 4 has height 8 need 20 Down -12
+			-- > lua: height is now 1
+
+			-- https://wezfurlong.org/wezterm/config/lua/pane/index.html
+			-- https://wezfurlong.org/wezterm/config/lua/keyassignment/AdjustPaneSize.html
+
+			if diff == 0 then
+				log("already ok")
+			else
+				-- win:perform_action({ AdjustPaneSize = { dir, math.abs(diff) } }, p)
+				win:perform_action(act.AdjustPaneSize({ dir, math.abs(diff) }), p)
+			end
+
+			log("height is now", tab:panes_with_info()[x].height)
+		end
+	end
+
 	local test_keys = {
+		-- https://github.com/nathanaelkane/dotfiles/blob/8b6c3f59157ccd85a51e20b580930f160d29e121/config/wezterm.lua#L163
+		-- https://github.com/uolot/dotfiles/blob/aa07dd01fddab8c7ffaa2230f298946671979e1a/wezterm/balance.lua#L108
+
 		{
 			mods = leader,
 			key = "t",
 			action = wezterm.action_callback(function(win, pane)
 				local tab = pane:tab()
-				local panes = tab:panes_with_info()
-
-				local active_idx = get_active_index(panes)
+				local panes = tab:panes_with_info() -- https://wezfurlong.org/wezterm/config/lua/MuxTab/panes_with_info.html
+				local active_pane = panes[get_active_index(panes)].pane
 
 				if #panes == 1 then
-					win:perform_action(act.SplitHorizontal, pane)
-				else
-					panes[#panes].pane:activate()
-					win:perform_action(act.SplitVertical, pane)
+					log("first pane, splitting horiz (2)")
+					win:perform_action(act.SplitHorizontal, panes[1].pane)
+					active_pane:activate()
+					return
+				elseif #panes == 3 then
+					return
 				end
 
-				panes[active_idx].pane:activate()
-
-				-- tab:set_zoomed(false)
-				-- pane:split({ direction = "Bottom", size = 0.4 })
+				log("opening new split:", #panes + 1)
+				panes[#panes].pane:activate()
+				panes[#panes].pane:split({ direction = "Bottom" })
+				resize(win, pane)
+				active_pane:activate()
 			end),
 		},
+
+		-- for possible bug report
+		-- {
+		-- 	mods = "SHIFT|CTRL",
+		-- 	key = "t",
+		-- 	action = wezterm.action_callback(function(win, pane)
+		-- 		local tab = pane:tab()
+		-- 		local panes = tab:panes_with_info()
+		-- 		panes[#panes].pane:activate()
+		-- 		panes[#panes].pane:split({ direction = "Bottom" })
+		-- 		for _, p in ipairs(panes) do
+		-- 			win:perform_action({ AdjustPaneSize = { "Up", 3 } }, p.pane)
+		-- 		end
+		-- 		panes[1].pane:activate()
+		-- 	end),
+		-- },
+
+		-- 'fullscreen' = pane:set_zoomed(true)
+
+		-- TODO: on closing left pane (pane 1), activate pane 2 and move it left
+		-- TODO: on closing any pane, resize all right panes
+		-- TODO: RotatePanes
+
+		-- { key = "k", mods = leader, action = wezterm.action.AdjustPaneSize({ "Up", 12 }) },
+
+		-- { key = "j", mods = leader, action = act.ActivatePaneDirection("Right") },
+		-- { key = "k", mods = leader, action = act.ActivatePaneDirection("Left") },
 	}
 
+	-- return test_keys
 	return _keys
 end
 
