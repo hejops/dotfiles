@@ -45,8 +45,10 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 
 -- lint fixes must be applied -before- 'regular' lints
 vim.api.nvim_create_autocmd("BufWritePost", {
-	pattern = { "*.js", "*.ts" },
+	pattern = { "*.js", "*.ts", "*.jsx", "*.tsx" },
 	callback = function()
+		-- vim.cmd([[silent! !./node_modules/.bin/biome format --write %]])
+		-- lint fixes must be applied -before- 'regular' lints
 		vim.cmd(
 			[[silent! !biome check --write --formatter-enabled=false --linter-enabled=true --organize-imports-enabled=true %]]
 		)
@@ -75,7 +77,12 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 		-- TODO: should follow lualine main color
 		vim.api.nvim_set_hl(0, "ColorColumn", { bg = "#444444" })
 
-		-- TODO: set lualine?
+		-- enforce diff colors
+		local green = "#00CC7A"
+		local red = "#FF5454"
+		-- https://github.com/neovim/neovim/blob/b3109084c2c3675aa886bf16ff15f50025f30096/runtime/doc/treesitter.txt#L459
+		vim.api.nvim_set_hl(0, "@diff.plus", { fg = green })
+		vim.api.nvim_set_hl(0, "@diff.minus", { fg = red })
 	end,
 })
 
@@ -620,7 +627,6 @@ local servers = {
 	-- https://github.com/blackbhc/nvim/blob/4ae2692403a463053a713e488cf2f3a762c583a2/lua/plugins/lspconfig.lua#L399
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
 
-	-- biome = {},
 	bashls = {},
 	biome = {},
 	docker_compose_language_service = {},
@@ -720,6 +726,18 @@ mason_lspconfig.setup_handlers({
 		})
 	end,
 })
+
+local function root_directory()
+	local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
+	local toplevel = vim.fn.system(cmd)
+	if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
+		return vim.fn.getcwd()
+	end
+	return toplevel:sub(0, -2)
+end
+
+require("lspconfig").ts_ls.setup({ root_dir = root_directory() }) -- ts_ls not at root is generally fine
+require("lspconfig").biome.setup({ root_dir = root_directory() }) -- important: use root biome.json
 
 -- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
 require("lspconfig").docker_compose_language_service.setup({
@@ -829,12 +847,14 @@ local linters = {
 	html = { "markuplint" },
 	htmldjango = { "djlint" },
 	javascript = { "biomejs" },
+	javascriptreact = { "biomejs" },
 	make = { "checkmake" },
 	markdown = { "markdownlint", "proselint" },
 	python = { "ruff" }, -- pylint is too slow and unreliable
 	ruby = { "rubocop" },
 	sql = { "sqlfluff" },
 	typescript = { "biomejs" },
+	typescriptreact = { "biomejs" },
 }
 
 if vim.fn["globpath"](".", "commitlint.config.js") ~= "" then
@@ -921,6 +941,52 @@ require("lint").linters.sqlfluff.args = {
 require("conform").setup({
 	-- :h conform-formatters
 	formatters = {
+		black = {
+			-- https://black.readthedocs.io/en/stable/the_black_code_style/future_style.html#preview-style
+			prepend_args = { "--preview" },
+		},
+		isort = {
+			prepend_args = { "--force-single-line-imports", "--profile", "black" },
+		},
+
+		prettier = {
+			prepend_args = { "--print-width", "80" },
+		},
+
+		biome = { cwd = root_directory }, -- important: work biome.json is at top-level
+
+		shfmt = {
+			prepend_args = {
+				"-i", -- always use tabs
+				"0",
+				"-s", -- simplify
+				"-sr", -- spaces before < etc
+			},
+		},
+
+		rustfmt = {
+			prepend_args = {
+				-- defaults:
+				-- rustfmt.toml
+				-- imports_granularity = Preserve
+				-- fn_params_layout = Tall
+				-- fn_single_line = false
+				-- format_code_in_doc_comments = false
+				-- group_imports = Preserve
+				-- wrap_comments = false
+
+				-- https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#configuration-options
+				"--config",
+				"imports_granularity=Item,"
+					.. "fn_params_layout=Vertical,"
+					.. "fn_single_line=true,"
+					.. "format_code_in_doc_comments=true,"
+					.. "group_imports=StdExternalCrate,"
+					.. "wrap_comments=true",
+			},
+		},
+
+		dhall = { command = "dhall", args = { "format" } },
 		latexindent = {
 			-- extra/perl-yaml-tiny
 			-- extra/perl-file-homedir
@@ -945,52 +1011,6 @@ require("conform").setup({
 				local curr_file = vim.fn.expand("%")
 				return string.find(curr_file, "dwm.c") == nil
 			end,
-		},
-		black = {
-			-- https://black.readthedocs.io/en/stable/the_black_code_style/future_style.html#preview-style
-			prepend_args = { "--preview" },
-		},
-		prettier = {
-			prepend_args = { "--print-width", "80" },
-		},
-		rustfmt = {
-			prepend_args = {
-				-- defaults:
-				-- rustfmt.toml
-				-- imports_granularity = Preserve
-				-- fn_params_layout = Tall
-				-- fn_single_line = false
-				-- format_code_in_doc_comments = false
-				-- group_imports = Preserve
-				-- wrap_comments = false
-
-				-- https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#configuration-options
-				"--config",
-				"imports_granularity=Item,"
-					.. "fn_params_layout=Vertical,"
-					.. "fn_single_line=true,"
-					.. "format_code_in_doc_comments=true,"
-					.. "group_imports=StdExternalCrate,"
-					.. "wrap_comments=true",
-			},
-		},
-		shfmt = {
-			prepend_args = {
-				"-i", -- always use tabs
-				"0",
-				"-s", -- simplify
-				"-sr", -- spaces before < etc
-			},
-		},
-		dhall = { command = "dhall", args = { "format" } },
-		biome = {
-			command = "biome",
-			prepend_args = {
-				"format",
-				-- https://biomejs.dev/reference/cli/#biome-format
-				"--indent-style=space",
-				-- "--bracket-same-line=true",
-			},
 		},
 	},
 	formatters_by_ft = {
@@ -1025,8 +1045,6 @@ require("conform").setup({
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" }, -- need --parser html?
 		htmldjango = { "djlint" },
-		javascript = { "biome", "prettier", stop_after_first = true },
-		javascriptreact = { "biome", "prettier", stop_after_first = true },
 		json = { "prettier" },
 		jsonc = { "prettier" },
 		lua = { "stylua" },
@@ -1036,10 +1054,13 @@ require("conform").setup({
 		sh = { "shfmt" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
-		typescript = { "biome", "prettier", stop_after_first = true },
-		typescriptreact = { "biome", "prettier", stop_after_first = true },
 		xml = { "xmlformat" },
 		yaml = { "prettier" },
+
+		javascript = { "biome", "prettier", stop_after_first = true },
+		javascriptreact = { "biome", "prettier", stop_after_first = true },
+		typescript = { "biome", "prettier", stop_after_first = true },
+		typescriptreact = { "biome", "prettier", stop_after_first = true },
 
 		-- note: none of the sql formatters seem to work; sqlfluff fix is supposed
 		-- to work, but 'Root directory not found'

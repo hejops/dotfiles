@@ -289,7 +289,7 @@ alias grep="grep --color=auto"
 alias ln="ln -v"
 alias mkdir="mkdir -p"
 alias mv="mv -v"
-alias pgrep="pgrep --list-full --exact" # TODO: mac has different behaviour
+alias pgrep="pgrep --list-full --exact"
 alias pip=pip3
 alias python=python3
 alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
@@ -299,6 +299,7 @@ alias xargs="xargs --no-run-if-empty --verbose"
 # alias r="exec bash; clear" # reload this file
 # alias ra=fm
 # alias rac=r
+# alias ud="sudo udevadm control --reload-rules && sudo udevadm trigger"
 alias _exa="exa --all --long --links --dereference --color=always --git" # helper
 alias c="curl --silent --location --fail"
 alias cg=cget
@@ -314,10 +315,11 @@ alias prem="pip3 uninstall"
 alias pt="pytest -x -vv --disable-warnings"
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
 alias r="fm" # --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
-alias ud="sudo udevadm control --reload-rules && sudo udevadm trigger"
 
-alias gC="git reset --soft HEAD~1" # un-commit
+alias gC="git reset --soft HEAD~1"        # un-commit
+alias gD="git --no-pager diff --no-index" # default pager (not delta)
 alias ga="git add"
+alias gap="git add --patch"
 alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
 alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
 alias gdnw="git diff --color-words --no-index"
@@ -325,7 +327,6 @@ alias gdw="git diff --color-words"
 alias gig="\$EDITOR .gitignore"
 alias gl="git log --stat --oneline"
 alias gun="git checkout --" # discard all local changes ("undo"); git revert is the same, but also creates a commit
-# alias gun="git restore" # this is just an alias to `git checkout` -- https://stackoverflow.com/a/31281748
 
 if type pacman > /dev/null 2> /dev/null; then
 
@@ -336,6 +337,7 @@ if type pacman > /dev/null 2> /dev/null; then
 	alias sp="pacman --sync --search"
 
 elif type apt > /dev/null 2> /dev/null; then
+
 	alias get="sudo apt install"
 
 elif type port > /dev/null 2> /dev/null; then
@@ -375,6 +377,7 @@ GIT_PROMPT() {
 
 	# set -x
 
+	# TODO: could allow /tmp, but this is only for testing purposes
 	[[ $PWD != $HOME* ]] && return # don't check outside home
 	[[ -d ./.git ]] ||
 		# https://stackoverflow.com/a/16925062
@@ -394,37 +397,42 @@ GIT_PROMPT() {
 	local prompt
 	prompt=''
 
-	# REPO_NAME=$(basename "$(git remote get-url origin)")
-	NUM_BRANCHES=$(git branch | wc -l)
-
-	if [[ $NUM_BRANCHES -eq 1 ]]; then
-		:
-	elif [[ $CURRENT_LOCAL_BRANCH != "$DEFAULT_LOCAL_BRANCH" ]]; then
-		# prompt+="<$REPO_NAME:$CURRENT_LOCAL_BRANCH> "
-		prompt+="<$CURRENT_LOCAL_BRANCH> "
-	# else
-	# 	prompt+="<$REPO_NAME> "
+	if [[ $(git branch | wc -l) -ne 1 ]]; then
+		prompt+="<$CURRENT_LOCAL_BRANCH:$(git rev-parse --short HEAD)> "
 	fi
 
 	# set -x
-	# sorted by most recently committed
-	REMOTE_BRANCHES=$(git branch -r --sort=-committerdate)
-	if [[ $REMOTE_BRANCHES == *upstream* ]]; then
-		# repo is a fork
+	# sorted branches, most recently committed first
+	REMOTE_BRANCHES=$(git branch --sort=-committerdate) # default: local branches only
+	# REMOTE_BRANCHES=$(git branch --remotes --sort=-committerdate)
+	if
+		[[ $REMOTE_BRANCHES == *upstream* ]] # repo is a fork
+	then
 		REM_BRANCH=$(grep <<< "$REMOTE_BRANCHES" -m1 upstream | xargs)
 	else
-		# origin/HEAD -> origin/master
-		REM_BRANCH=$(head <<< "$REMOTE_BRANCHES" -n1 | awk '{print $NF}')
+		REM_BRANCH=$DEFAULT_LOCAL_BRANCH # compare local branch against local master
 	fi
 
-	# TODO: this may not be meaningful at work
+	# TODO: list number of dead local branches?
+	# git branch -vv | grep -c ': gone]'
 
 	# format is there:here, where each int represents number of commits
 	# ahead of HEAD
-	state=$(git rev-list --left-right --count \
-		"$REM_BRANCH...$CURRENT_LOCAL_BRANCH" 2> /dev/null |
-		tr -s '\t' :)
-	[[ $state != 0:0 ]] && prompt+="$state "
+	state=$(
+		git rev-list --left-right --count \
+			"$REM_BRANCH...$CURRENT_LOCAL_BRANCH" 2> /dev/null
+	)
+	if [[ $state == '0	0' ]]; then
+		: up to date with master
+	else
+		# state=$(<<< "$state" tr -s '\t' :)
+		# probably better to destructure fields (readarray?), but this
+		# is fine for now
+		state=$(<<< "$state" sed -r 's/^0\t//g')
+		state=$(<<< "$state" sed -r 's/\t/ commits behind, /g')
+		state+=" commits ahead of $REM_BRANCH"
+		prompt+="$state"
+	fi
 	# set +x
 
 	echo "$prompt"

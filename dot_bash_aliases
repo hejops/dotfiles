@@ -66,7 +66,7 @@ alias dt="discogs_collection top"
 alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
 alias h="htop -u \$USER"
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
-alias lock="dm-tool lock || slock" # ubuntu suspend does not lock
+alias lock="xset dpms force off ; dm-tool lock || slock" # ubuntu suspend does not lock
 alias md="\$EDITOR -c 'set ft=markdown'"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
 alias n="NO_COLOR=1 node --import=tsx"
@@ -82,32 +82,62 @@ alias y="bash ~/gripts/disq/ytm.sh"
 
 # git {{{
 
+# shellcheck disable=SC2120
 gls() {
-	if [[ $# -gt 0 ]]; then
-		git ls-files | grep "$1"
-	else
-		git ls-files
-	fi
+	# if [[ $# -gt 0 ]]; then
+	# 	git ls-files | grep "$1"
+	# else
+	# 	git ls-files
+	# fi
+	git ls-files "${1:-}"
 }
 
 gb() {
-	default_local_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4)
-	[[ -z $default_local_branch ]] && return
+	default_local_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4) ||
+		# no remote branches
+		# return
+		:
+	# [[ -z $default_local_branch ]] && return
 	current_local_branch=$(git branch --show-current)
 
 	if [[ $# -eq 0 ]]; then
 		if [[ $default_local_branch == "$current_local_branch" ]]; then
 			echo "Already on $default_local_branch"
-			# git branch | fzf -1 | awkxargs git switch
 		else
 			git checkout "$default_local_branch"
 			git pull
 		fi
 	else
-		git switch -c "$1" 2> /dev/null ||
+
+		# always base new branches on master
+		git checkout master
+		git pull || return
+		# assume create; then fallback to existing
+		if git switch --create "$1" 2> /dev/null; then
+			# git switch --create does not produce output, for some
+			# reason (but git switch does)
+			echo "Switched to new branch $1"
+		else
 			git switch "$1"
+		fi
 	fi
 
+}
+
+gB() {
+	branch=$(git branch | fzf | sed -r 's/^[ *]+//')
+	[[ -z $branch ]] && return
+	gb "$branch"
+}
+
+gbd() {
+	: prune local branches that no longer exist on remote -- unstaged changes will be lost!
+	# https://stackoverflow.com/a/46192689
+	git branch -vv |
+		grep ': gone]' |
+		grep -v "\*" |
+		awk '{ print $1; }' |
+		xargs -r git branch -D
 }
 
 _() {
@@ -137,7 +167,7 @@ gld() {
 	: browse git log, showing each commit\'s diff in fzf preview
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
 	{
-		if [[ -f $1 ]]; then
+		if [[ -f $1 ]] || [[ -d $1 ]]; then
 			git log --oneline "$1"
 		else
 			git log --oneline
@@ -146,6 +176,7 @@ gld() {
 		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
 		awk '{print $1}' |
 		xargs git show
+	# TODO: open in browser?
 }
 
 gS() {
@@ -159,6 +190,11 @@ gS() {
 gac() {
 	: append ALL changes to most recent unpushed commit
 	git add "$@"
+	git commit --amend --no-edit
+}
+
+gapc() {
+	git add --patch "$@"
 	git commit --amend --no-edit
 }
 
@@ -333,10 +369,8 @@ gp() {
 
 	gpl
 
-	# Set up <branchname>'s tracking information so <upstream> is
-	# considered <branchname>'s upstream branch. If no <branchname> is
-	# specified, then it defaults to the current branch.
-	# git branch --set-upstream-to
+	# --set-upstream[-to]: sets the default remote branch for the current
+	# local branch
 
 	git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"
 
@@ -397,6 +431,24 @@ gpl() {
 		cd ..
 	done
 
+}
+
+gplm() {
+	: pull latest master
+	git checkout master
+	git fetch
+	if ! git merge; then
+		# discard all local changes
+		git merge 2>&1 | grep '^\s' | xargs git checkout --
+		git merge
+	fi
+}
+
+gmm() {
+	: merge master into dev branch
+	# https://stackoverflow.com/a/20103414
+	git fetch origin # gets you up to date with origin
+	git merge origin/master
 }
 
 gh() {
@@ -1006,6 +1058,13 @@ docl() {
 	sudo docker volume rm $(sudo docker volume ls -f dangling=true -q)
 }
 
+dokill() {
+	docker stop $(docker ps -a -q)
+	docker rm $(docker ps -a -q)
+	# docker ps -a -q | xargs docker stop
+	# docker ps -a -q | xargs docker rm
+}
+
 # }}}
 # ssh {{{
 
@@ -1427,10 +1486,14 @@ epk() {
 }
 
 rgo() {
-	: mimic live grep in nvim, useful when too lazy to open nvim first
+	: useful when you know what to look for but dont want to open vim
 	# https://github.com/nvim-telescope/telescope.nvim/blob/7b5c5f56a21e82fdcfe5b250278b8dfc4b1cbab4/lua/telescope/config.lua#L646
-	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' "${1:-.}" |
-		fzf -e)
+	# match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' "${1:-.}" |
+	# 	fzf -e)
+	# $1 = fzf query generally more useful than $1 = file
+	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' . |
+		fzf -e -q "${1:-}")
+	[[ -z $match ]] && return
 	# file:line:col:match
 	IFS=':' read -ra array <<< "$match"
 	$EDITOR +"${array[1]}" "${array[0]}"
@@ -1446,6 +1509,14 @@ mw() {
 			neomutt
 		fi
 		sleep 15m
+	done
+}
+
+watchmem() {
+	pid="$(< /dev/stdin)"
+	while true; do
+		ps -o %cpu,%mem,cmd -p "$pid"
+		sleep 1
 	done
 }
 
