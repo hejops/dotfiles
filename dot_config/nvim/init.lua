@@ -34,6 +34,15 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 	end,
 })
 
+-- trying to make vil files pretend to be json causes problems with both
+-- prettier and biome
+vim.api.nvim_create_autocmd("BufWritePost", {
+	pattern = { "*.vil" },
+	callback = function()
+		vim.cmd([[silent! !cat % | jq | sponge %]])
+	end,
+})
+
 -- lint fixes must be applied -before- 'regular' lints
 vim.api.nvim_create_autocmd("BufWritePost", {
 	pattern = { "*.js", "*.ts" },
@@ -477,8 +486,7 @@ local function on_attach(_, bufnr)
 	end
 
 	require("tiny-code-action").setup()
-
-	nmap("<leader>A", require("tiny-code-action").code_action) -- it actually works!
+	nmap("<leader>A", require("tiny-code-action").code_action)
 	nmap("<leader>s", telescope_b.lsp_dynamic_workspace_symbols, "document symbols") -- all project files; slow in python?
 	nmap("K", vim.lsp.buf.hover, "hover documentation")
 	nmap("R", vim.lsp.buf.rename, "rename")
@@ -511,7 +519,7 @@ local function on_attach(_, bufnr)
 					require("telescope.utils").transform_path({}, entry.filename),
 					{ entry.lnum, "TelescopeResultsLineNr" },
 					entry.text,
-					-- file at line; only works if buffer loaded
+					-- file at line; only correct if buffer loaded, otherwise reads from current buf
 					vim.api.nvim_buf_get_lines(get_bufnr(entry.filename) or nil, entry.lnum - 1, entry.lnum, false),
 				})
 			end
@@ -679,7 +687,7 @@ local servers = {
 	lua_ls = {
 		Lua = {
 			diagnostics = {
-				globals = { "vim" },
+				globals = { "vim", "mp" },
 				disable = { "missing-fields" },
 			},
 			telemetry = { enable = false },
@@ -1265,8 +1273,6 @@ require("cmp-gitcommit").setup({})
 require("util"):random_colorscheme()
 vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
 
--- require("mini.ai").setup()
-
 require("nvim-ts-autotag").setup({
 	opts = {
 		enable_close = true, -- Auto close tags
@@ -1274,8 +1280,6 @@ require("nvim-ts-autotag").setup({
 		enable_close_on_slash = false, -- Auto close on trailing </
 	},
 })
-
--- require("mini.ai").setup()
 
 -- }}}
 
