@@ -170,6 +170,12 @@ if
 	)
 then
 	config.font_size = 12.0 -- 3840x1200 -> dpi 96
+
+	-- https://github.com/wez/wezterm/issues/284#issuecomment-1177628870
+	wezterm.on("gui-startup", function()
+		local _, _, window = wezterm.mux.spawn_window({})
+		window:gui_window():maximize()
+	end)
 else
 	config.font_size = 10.0 -- 4k -> dpi 192
 end
