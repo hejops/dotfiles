@@ -478,8 +478,11 @@ gnew() {
 				largs git add
 		fi
 
-		git add tests 2> /dev/null
+		# git add tests/* 2> /dev/null
 
+	fi
+
+	if ! git log > /dev/null 2> /dev/null; then
 		git commit -m "initial commit"
 	fi
 
@@ -1392,7 +1395,7 @@ sd() {
 	# TODO: if new day (morning), just return
 	echo "Shutting down..."
 	sleep 3
-	pulseaudio -k
+	# pulseaudio -k
 	shutdown now
 }
 
@@ -1445,3 +1448,8 @@ mw() {
 		sleep 15m
 	done
 }
+
+# while read -r line; do
+# 	echo "$line" | xclip -sel c
+# 	xdotool key super+8 F6 ctrl+v enter
+# done < "$1"
