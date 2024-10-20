@@ -505,10 +505,8 @@ require("lazy").setup(
 		-- find ~/.local/share/nvim/lazy/ | grep -P '/colors/.+(vim|lua)' | sort
 		-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3701#issuecomment-1288166768
 
+		"nvimdev/oceanic-material",
 		"oxfist/night-owl.nvim", -- no name
-		"paulo-granthon/hyper.nvim",
-		"volbot/voltrix.vim",
-		-- "yorumicolors/yorumi.nvim", -- low contrast
 		"zootedb0t/citruszest.nvim",
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
@@ -518,6 +516,7 @@ require("lazy").setup(
 		-- "mhartington/oceanic-next", -- has light
 		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
 		-- "morhetz/gruvbox", -- bad diff
+		-- "paulo-granthon/hyper.nvim", -- blue against black
 		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
 		-- "ray-x/aurora", -- mid contrast
 		-- "rockyzhang24/arctic.nvim", -- requires lush
@@ -525,7 +524,9 @@ require("lazy").setup(
 		-- "tomasiser/vim-code-dark", -- mid contrast
 		-- "tomasr/molokai", -- mid diff
 		-- "vague2k/vague.nvim", -- bad contrast
+		-- "volbot/voltrix.vim",
 		-- "xero/miasma.nvim", -- nauseating
+		-- "yorumicolors/yorumi.nvim", -- low contrast
 		-- https://github.com/paulopatto/dotfiles/blob/67848a890db8c4578614f2de448cf323c450ad2f/nvim/lua/core/plugins.lua#L39 (mid)
 
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
