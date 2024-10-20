@@ -461,6 +461,8 @@ fi
 
 # }}}
 
+[[ -f ~/.opam/opam-init/init.sh ]] && . ~/.opam/opam-init/init.sh
+
 [[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
 [[ -f ~/.bash_aliases_work ]] && . ~/.bash_aliases_work
 [[ -f ~/.config/readline/fzf.bash ]] && . ~/.config/readline/fzf.bash
