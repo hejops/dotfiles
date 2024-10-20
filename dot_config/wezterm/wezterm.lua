@@ -117,6 +117,8 @@ wezterm.on(
 	end -- }}}
 )
 
+config.pane_focus_follows_mouse = true
+
 -- font {{{
 
 -- wezterm.font("Haskplex", {weight="Regular", stretch="Normal", style="Normal"})
@@ -282,6 +284,40 @@ local function keys()
 	for i = 0, 9 do
 		table.insert(_keys, { key = tostring(i), mods = leader, action = act.ActivateTab(i) })
 	end
+
+	local function get_active_index(panes)
+		for i, p in ipairs(panes) do
+			-- wezterm.log_info(i, p)
+			if p.is_active then
+				return i
+			end
+		end
+	end
+
+	local test_keys = {
+		{
+			mods = leader,
+			key = "t",
+			action = wezterm.action_callback(function(win, pane)
+				local tab = pane:tab()
+				local panes = tab:panes_with_info()
+
+				local active_idx = get_active_index(panes)
+
+				if #panes == 1 then
+					win:perform_action(act.SplitHorizontal, pane)
+				else
+					panes[#panes].pane:activate()
+					win:perform_action(act.SplitVertical, pane)
+				end
+
+				panes[active_idx].pane:activate()
+
+				-- tab:set_zoomed(false)
+				-- pane:split({ direction = "Bottom", size = 0.4 })
+			end),
+		},
+	}
 
 	return _keys
 end
