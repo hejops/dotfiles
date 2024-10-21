@@ -37,15 +37,14 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
-function in_tex()
-	return vim.bo.filetype == "tex" and not vim.loop.fs_stat("Tectonic.toml")
-end
+-- local function in_tex()
+-- 	return vim.bo.filetype == "tex" and not vim.loop.fs_stat("Tectonic.toml")
+-- end
 
 require("lazy").setup(
 	{
 		-- essentials {{{
 
-		"ahmedkhalf/project.nvim", -- cd to repo root (else autochdir), most useful for go
 		"aymericbeaumet/vim-symlink", -- TODO: can this just be an autocmd?
 		"ecridge/vim-kinesis",
 		"jbyuki/quickmath.nvim", -- :Quickmath
@@ -62,7 +61,6 @@ require("lazy").setup(
 		"tpope/vim-sleuth", -- detect tabstop and shiftwidth automatically
 		"tpope/vim-surround",
 		"tridactyl/vim-tridactyl", -- syntax highlighting
-		"wansmer/treesj", -- :TS[Join|Split|Toggle], very useful for go
 		"windwp/nvim-ts-autotag", -- for html, jsx (?)
 		-- "Zeioth/garbage-day.nvim", -- kill lsps that hog memory (tsserver?)
 		-- "lewis6991/satellite.nvim", -- i hate scrollbars
@@ -73,6 +71,15 @@ require("lazy").setup(
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
 		{ "rhysd/vim-go-impl", ft = { "go" } }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
 		{ "vague2k/huez.nvim", opts = {} },
+		{ "wansmer/treesj", opts = {} }, -- :TS[Join|Split|Toggle], very useful for go
+
+		{
+			-- cd to repo root (else autochdir), most useful for go
+			"ahmedkhalf/project.nvim",
+			config = function()
+				require("project_nvim").setup({})
+			end,
+		},
 
 		{
 			-- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
@@ -87,7 +94,8 @@ require("lazy").setup(
 		{
 			"lervag/vimtex",
 			ft = { "tex", "bib" },
-			enabled = in_tex(),
+			-- enabled = in_tex(),
+			enabled = vim.bo.filetype == "tex" and not vim.loop.fs_stat("Tectonic.toml"),
 		},
 
 		{
@@ -157,6 +165,7 @@ require("lazy").setup(
 					"goimports", -- required for autoimport (reviser only performs grouping)
 					"goimports-reviser",
 					"golines",
+					"isort",
 					"prettier",
 					"shfmt",
 					"stylua",
@@ -170,8 +179,8 @@ require("lazy").setup(
 					"golangci-lint",
 					"markdownlint",
 					"pylint",
+					"ruff",
 					"shellcheck",
-					-- "ruff",
 				},
 
 				--
@@ -235,7 +244,6 @@ require("lazy").setup(
 			dependencies = {
 				-- https://github.com/nvim-telescope/telescope.nvim/wiki/Extensions#different-plugins-with-telescope-integration
 
-				"AckslD/nvim-neoclip.lua", -- yank history; do i use this?
 				"LukasPietzschmann/telescope-tabs", -- do i use this?
 				"MaximilianLloyd/adjacent.nvim",
 				"nvim-lua/plenary.nvim", -- backend
@@ -245,6 +253,7 @@ require("lazy").setup(
 				-- "fcying/telescope-ctags-outline.nvim",
 				-- "nvim-telescope/telescope-ui-select.nvim", -- https://github.com/nvim-telescope/telescope-ui-select.nvim/issues/44
 				-- "tsakirist/telescope-lazy.nvim",
+				{ "AckslD/nvim-neoclip.lua", opts = {} }, -- yank history; do i use this?
 				{ "crispgm/telescope-heading.nvim", ft = { "markdown" } }, -- headings in markdown
 			},
 		},
@@ -404,9 +413,8 @@ require("lazy").setup(
 			"neovim/nvim-lspconfig",
 			dependencies = {
 
-				"folke/neodev.nvim", -- for init.lua and plugin development only
 				"williamboman/mason-lspconfig.nvim",
-				-- "rcarriga/nvim-notify", -- does not affect fidget
+				{ "folke/neodev.nvim", opts = {} }, -- for init.lua and plugin development only
 				{ "j-hui/fidget.nvim", tag = "legacy", opts = {} }, -- status updates for LSP
 				{
 					"williamboman/mason.nvim",
@@ -432,6 +440,11 @@ require("lazy").setup(
 				},
 				-- "https://github.com/Zeioth/mason-extra-cmds", -- MasonUpdateAll
 			},
+
+			-- -- https://github.com/jellydn/ts-inlay-hints?tab=readme-ov-file#neovim-settings
+			-- opts = {
+			-- 	inlay_hints = { enabled = true },
+			-- },
 		}, -- }}}
 		{ -- nvim-cmp {{{
 			"hrsh7th/nvim-cmp", -- Autocompletion
@@ -505,9 +518,32 @@ require("lazy").setup(
 		-- find ~/.local/share/nvim/lazy/ | grep -P '/colors/.+(vim|lua)' | sort
 		-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3701#issuecomment-1288166768
 
+		{
+			"zootedb0t/citruszest.nvim",
+			config = function()
+				require("citruszest").setup({
+					option = {
+						transparent = false,
+						bold = false,
+						italic = false,
+					},
+				})
+			end,
+		},
+
+		{
+			"oxfist/night-owl.nvim", -- no name
+			opts = {
+				bold = false,
+				italics = false,
+				underline = false,
+				undercurl = false,
+				transparent_background = false,
+			},
+		},
+
 		"nvimdev/oceanic-material",
-		"oxfist/night-owl.nvim", -- no name
-		"zootedb0t/citruszest.nvim",
+		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "gosukiwi/vim-atom-dark", -- bad diff
@@ -544,7 +580,6 @@ require("lazy").setup(
 		-- defaults = { lazy = true },
 		install = {
 			missing = true,
-			-- colorscheme = { "tokyonight" },
 		},
 		-- performance = {
 		-- 	rtp = {
@@ -574,10 +609,6 @@ vim.g.loaded_netrwPlugin = 1
 vim.opt.termguicolors = true
 
 require("illuminate").configure({ providers = { "lsp", "treesitter" }, under_cursor = true })
-require("neoclip").setup()
-require("neodev").setup()
-require("project_nvim").setup()
-require("treesj").setup({})
 
 require("nvim-lightbulb").setup({
 	autocmd = { enabled = true },
@@ -596,7 +627,7 @@ require("nvim-lightbulb").setup({
 	},
 })
 
-require("lsp_signature").setup()
+-- require("lsp_signature").setup()
 -- print(vim.inspect(require("chezmoi.commands").list()))
 
 require("nvim-ts-autotag").setup({
@@ -605,21 +636,4 @@ require("nvim-ts-autotag").setup({
 		enable_rename = true, -- Auto rename pairs of tags
 		enable_close_on_slash = false, -- Auto close on trailing </
 	},
-})
-
--- must be called before setting `colorscheme`
-require("citruszest").setup({
-	option = {
-		transparent = false,
-		bold = false,
-		italic = false,
-	},
-})
-
-require("night-owl").setup({
-	bold = false,
-	italics = false,
-	underline = false,
-	undercurl = false,
-	transparent_background = false,
 })

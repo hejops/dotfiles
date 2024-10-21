@@ -570,8 +570,9 @@ command darklarge open javascript:(function() { document.querySelectorAll('p, li
 command nonav open javascript:(function() { document.querySelectorAll('*').forEach(function(n) { var p = getComputedStyle(n).getPropertyValue('position'); if (p === 'fixed' || p === 'sticky') { n.style.cssText += ' ; position: absolute !important;'; } }); })();
 
 " bind E darklarge
+" bind I reader
 " bind \ darklarge
-bind I reader
+bind I dark
 bind R reader
 bind i darklarge
 
@@ -612,6 +613,11 @@ autocmd DocLoad stackoverflow.com dark
 autocmd DocLoad tour.gleam.run darklarge
 autocmd DocLoad transistor.fm dark
 autocmd DocLoad zig.guide dark
+autocmd DocLoad yr.no dark
+autocmd DocStart overview.novum-engineering.com darklarge
+autocmd DocLoad docs.influxdata.com darklarge
+
+" gitlab unloads code blocks when out of view, so dark always has to be applied manually
 
 " https://github.com/tridactyl/tridactyl/pulls?q=is%3Apr+is%3Aopen+-author%3Aapp%2Fdependabot+
 

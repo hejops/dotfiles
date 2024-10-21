@@ -387,12 +387,6 @@ GIT_PROMPT() {
 	# git branch -l (local)
 
 	CURRENT_LOCAL_BRANCH=$(git branch --show-current)
-	DEFAULT_LOCAL_BRANCH=$(
-		# refs/remotes/origin/<branch>
-		git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null |
-			# sed 's|^refs/remotes/origin/||'
-			cut -d/ -f4
-	)
 
 	local prompt
 	prompt=''
@@ -409,31 +403,44 @@ GIT_PROMPT() {
 		[[ $REMOTE_BRANCHES == *upstream* ]] # repo is a fork
 	then
 		REM_BRANCH=$(grep <<< "$REMOTE_BRANCHES" -m1 upstream | xargs)
+
 	else
-		REM_BRANCH=$DEFAULT_LOCAL_BRANCH # compare local branch against local master
+
+		REM_BRANCH=$(
+			# refs/remotes/origin/master (or main)
+			git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null |
+				cut -d/ -f4
+			# cut -d/ -f3-
+		)
+
 	fi
 
-	# TODO: list number of dead local branches?
-	# git branch -vv | grep -c ': gone]'
-
-	# format is there:here, where each int represents number of commits
-	# ahead of HEAD
+	# format is there \t here, where each int represents number of commits
+	# ahead of local HEAD
 	state=$(
 		git rev-list --left-right --count \
-			"$REM_BRANCH...$CURRENT_LOCAL_BRANCH" 2> /dev/null
+			"origin/$REM_BRANCH...$CURRENT_LOCAL_BRANCH" 2> /dev/null |
+			\xargs
 	)
-	if [[ $state == '0	0' ]]; then
+	if [[ $state == '0 0' ]]; then
 		: up to date with master
 	else
 		# state=$(<<< "$state" tr -s '\t' :)
 		# probably better to destructure fields (readarray?), but this
 		# is fine for now
-		state=$(<<< "$state" sed -r 's/^0\t//g')
-		state=$(<<< "$state" sed -r 's/\t/ commits behind, /g')
+		state=$(<<< "$state" sed -r '
+			s/^0 //g			# not behind master
+			s/ / commits behind, /g
+		')
 		state+=" commits ahead of $REM_BRANCH"
 		prompt+="$state"
 	fi
 	# set +x
+
+	# list number of dead local branches
+	if dead=$(git branch -vv | grep -c ': gone]'); then
+		prompt+=" ($dead dead branches)"
+	fi
 
 	echo "$prompt"
 
@@ -457,20 +464,20 @@ if [[ -n $CONDA_PREFIX ]]; then
 	PS1="($(basename "$CONDA_PREFIX")) $PS1"
 fi
 
-# add prefix if current shell was spawned from within ranger
 if
-	ps -e |
-		grep -m1 "$PPID" |
-		grep -Fq ranger
-# grep -qv wezterm-gui
+	# current shell was spawned from within file manager
+	! ps --pid $PPID | grep -q wezterm
 then
 	PS1="📁 $PS1"
 fi
 
 # }}}
 
+# shellcheck disable=SC1090
 [[ -f ~/.opam/opam-init/init.sh ]] && . ~/.opam/opam-init/init.sh
-
+# shellcheck disable=SC1090
 [[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
+# shellcheck disable=SC1090
 [[ -f ~/.bash_aliases_work ]] && . ~/.bash_aliases_work
+# shellcheck disable=SC1090
 [[ -f ~/.config/readline/fzf.bash ]] && . ~/.config/readline/fzf.bash

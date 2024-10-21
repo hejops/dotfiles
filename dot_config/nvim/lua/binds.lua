@@ -286,8 +286,6 @@ local function exec()
 	local curr_file = vim.fn.shellescape(vim.fn.expand("%")) -- relative to cwd
 	local cwd = vim.fn.getcwd()
 
-	-- TODO: rust: determine if current cursor position is in test
-
 	local function get_sql_cmd(file)
 		local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)
 		local db = string.gsub(first_line[1], "^-- ", "")
@@ -326,16 +324,21 @@ local function exec()
 			-- fastest, but requires already compiled js (which is slow)
 			return "node " .. js -- 0.035 s
 		elseif vim.loop.fs_stat("./node_modules/tsx") then
-			-- run with node directly (without transpilation); requires node 22.7.0 + tsx
+			-- run with node directly (without transpilation); requires tsx
+			-- npm install --save-dev tsx
 			-- https://nodejs.org/api/typescript.html#full-typescript-support
 			file = vim.fn.expand("%:.")
-			return "node --redirect-warnings=/dev/null --import=tsx " .. file
+			-- --enable-source-maps doesn't seem to report source line number correctly
+			-- node:internal/process/esm_loader:40
+			--       internalBinding('errors').triggerUncaughtException(
+			return "node --no-warnings --import=tsx " .. file
 		elseif vim.loop.fs_stat("./node_modules/@types/node") then
 			-- https://stackoverflow.com/a/78148646
 			os.execute("tsc " .. file) -- ts -> js, 1.46 s
 			return "node " .. js
 		else
-			error("no suitable ts runner")
+			-- TODO: force install?
+			error("No suitable ts runner; try npm install --save-dev tsx")
 		end
 	end
 
@@ -343,7 +346,7 @@ local function exec()
 
 		-- the great langs
 		gleam = "gleam run",
-		rust = "RUST_BACKTRACE=1 cargo run",
+		rust = "RUST_BACKTRACE=1 cargo run", -- TODO: if vim.fn.line(".") >= line num of first match of '#[cfg(test)]', run 'cargo test' instead
 
 		-- the normal langs
 		dhall = "dhall-to-json --file " .. curr_file,
@@ -361,14 +364,26 @@ local function exec()
 		sql = get_sql_cmd, --(curr_file),
 		typescript = get_ts_runner, --(curr_file),
 
-		-- note that :new brings us to repo root (verify with :new|pwd), so we need
-		-- to not only know where we used to be, but also run the basename.go
-		-- correctly
-		go = string.format("cd %s; ", cwd)
-			-- https://stackoverflow.com/a/43953582
-			.. "ls *.go | " -- import functions from same package
-			.. "grep -v _test | " -- ignore test files (ugh)
-			.. "xargs go run",
+		-- -- note that :new brings us to repo root (verify with :new|pwd), so we need
+		-- -- to not only know where we used to be, but also run the basename.go
+		-- -- correctly
+		-- go = string.format("cd %s; ", cwd)
+		-- 	-- https://stackoverflow.com/a/43953582
+		-- 	.. "ls *.go | " -- import functions from same package
+		-- 	.. "grep -v _test | " -- ignore test files (ugh)
+		-- 	.. "xargs go run",
+
+		-- TODO: it is not clear which cmd should be used
+		go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
+
+		-- -- the... kotlin
+		-- -- https://kotlinlang.org/docs/command-line.html#create-and-run-an-application
+		-- kotlin = string.format(
+		-- 	"kotlinc %s -include-runtime -d %s ; java -jar %s",
+		-- 	curr_file,
+		-- 	string.gsub(curr_file, ".kt", ".jar"),
+		-- 	string.gsub(curr_file, ".kt", ".jar")
+		-- ),
 	}
 
 	local ft = vim.bo.filetype

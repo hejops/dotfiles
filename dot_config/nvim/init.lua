@@ -43,17 +43,17 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 	end,
 })
 
--- lint fixes must be applied -before- 'regular' lints
-vim.api.nvim_create_autocmd("BufWritePost", {
-	pattern = { "*.js", "*.ts", "*.jsx", "*.tsx" },
-	callback = function()
-		-- vim.cmd([[silent! !./node_modules/.bin/biome format --write %]])
-		-- lint fixes must be applied -before- 'regular' lints
-		vim.cmd(
-			[[silent! !biome check --write --formatter-enabled=false --linter-enabled=true --organize-imports-enabled=true %]]
-		)
-	end,
-})
+-- vim.api.nvim_create_autocmd("BufWritePost", {
+-- 	pattern = { "*.js", "*.ts", "*.jsx", "*.tsx" },
+-- 	callback = function()
+-- 		-- vim.cmd([[silent! !./node_modules/.bin/biome format --write %]])
+-- 		-- lint fixes must be applied -before- 'regular' lints
+-- 		-- may not be desired at work
+-- 		vim.cmd(
+-- 			[[silent! !biome check --write --formatter-enabled=false --linter-enabled=true --organize-imports-enabled=true %]]
+-- 		)
+-- 	end,
+-- })
 
 vim.api.nvim_create_autocmd({ "BufWritePost", "VimEnter" }, {
 	callback = function()
@@ -61,10 +61,9 @@ vim.api.nvim_create_autocmd({ "BufWritePost", "VimEnter" }, {
 	end,
 })
 
--- must be declared before colorscheme is set
 vim.api.nvim_create_autocmd("ColorScheme", {
 	callback = function()
-		-- must be called after any colorscheme change
+		-- must be called after any colorscheme change (i.e. not ColorSchemePre)
 		-- on change, current line will not have marks, but this is not an issue
 		-- if you're really picky, you could do a normal mode hl or whatever
 		require("eyeliner").setup({ highlight_on_key = false }) -- always show highlights, without keypress
@@ -618,6 +617,26 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 -- print(vim.fn.stdpath("data"))
 
+local function root_directory()
+	local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
+	local toplevel = vim.fn.system(cmd)
+	if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
+		return vim.fn.getcwd()
+	end
+	return toplevel:sub(0, -2)
+end
+
+-- https://github.com/jellydn/ts-inlay-hints?tab=readme-ov-file#neovim-settings
+local js_ts_hints = {
+	includeInlayEnumMemberValueHints = true,
+	includeInlayFunctionLikeReturnTypeHints = true,
+	includeInlayFunctionParameterTypeHints = true,
+	includeInlayParameterNameHints = "all", -- 'none' | 'literals' | 'all';
+	includeInlayParameterNameHintsWhenArgumentMatchesName = true,
+	includeInlayPropertyDeclarationTypeHints = true,
+	includeInlayVariableTypeHints = false,
+}
+
 -- :Mason
 -- https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers
 -- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
@@ -628,76 +647,100 @@ local servers = {
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
 
 	bashls = {},
-	biome = {},
-	docker_compose_language_service = {},
 	dockerls = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
+	pyright = {},
 	taplo = {},
 	texlab = {},
 	yamlls = {},
 	zls = {},
 
+	-- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
+	docker_compose_language_service = {
+		root_dir = require("lspconfig").util.root_pattern("docker-compose.yml"), -- add more patterns if needed
+		filetypes = { "yaml.docker-compose" },
+		-- single_file_support = true,
+	},
+
 	-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md
 	gopls = {
-		gopls = { -- i have absolutely no idea why gopls needs to stutter
+		settings = {
+			gopls = { -- i have absolutely no idea why gopls needs to stutter
 
-			staticcheck = true, -- https://staticcheck.io/docs/checks/
-			symbolScope = "workspace", -- don't show ~/go, /usr/lib
-			usePlaceholders = false,
+				staticcheck = true, -- https://staticcheck.io/docs/checks/
+				symbolScope = "workspace", -- don't show ~/go, /usr/lib
+				usePlaceholders = false,
 
-			hints = { -- https://github.com/golang/tools/blob/master/gopls/doc/inlayHints.md
-				assignVariableTypes = true,
-				compositeLiteralFields = true,
-				compositeLiteralTypes = true,
-				constantValues = true,
-				functionTypeParameters = true,
-				parameterNames = true,
-				rangeVariableTypes = true,
+				hints = { -- https://github.com/golang/tools/blob/master/gopls/doc/inlayHints.md
+					assignVariableTypes = true,
+					compositeLiteralFields = true,
+					compositeLiteralTypes = true,
+					constantValues = true,
+					functionTypeParameters = true,
+					parameterNames = true,
+					rangeVariableTypes = true,
+				},
 			},
 		},
 	},
 
-	-- lspconfig says tsserver will be deprecated, but doesn't allow ts_ls yet???
-	-- https://github.com/neovim/nvim-lspconfig/commit/bdbc65aadc708ce528efb22bca5f82a7cca6b54d
+	biome = {
+		root_dir = root_directory(), -- important: use root biome.json
+	},
+
 	ts_ls = {
-		-- note: js projects will require jsconfig.json
-		diagnostics = {
-			-- remove unused variable diagnostic messages from tsserver
-			ignoredCodes = {
-				-- the -only- place these codes are documented:
-				-- https://github.com/typescript-language-server/typescript-language-server/blob/master/src/utils/errorCodes.ts
-				-- note: these warnings should probably be enabled for real (production) work
-				6133, -- declared but never used
-				6196,
+
+		-- ts_ls generally does not need to be at root, but better to be consistent
+		-- with biome
+		root_dir = root_directory(),
+
+		settings = {
+			javascript = { inlayHints = js_ts_hints },
+			typescript = { inlayHints = js_ts_hints },
+
+			-- note: js projects will require jsconfig.json
+			diagnostics = {
+				-- remove unused variable diagnostic messages from tsserver
+				ignoredCodes = {
+					-- the -only- place these codes are documented:
+					-- https://github.com/typescript-language-server/typescript-language-server/blob/master/src/utils/errorCodes.ts
+					-- note: these warnings should probably be enabled for real (production) work
+					6133, -- declared but never used
+					6196,
+				},
 			},
 		},
 	},
 
 	rust_analyzer = {
-		["rust-analyzer"] = {
-			-- https://rust-analyzer.github.io/manual.html#configuration
-			-- https://hw0lff.github.io/rust-analyzer-docs/2021-11-01/index.html
-			checkOnSave = {
-				enable = true,
-				allFeatures = true, -- https://rust-analyzer.github.io/manual.html#features
-				command = "clippy", -- https://rust-lang.github.io/rust-clippy/master/index.html
-			},
-			completion = {
-				addCallParenthesis = true,
-				-- postfix = { enable = false },
-				-- addCallArgumentSnippets = false,
+		settings = {
+			["rust-analyzer"] = {
+				-- https://rust-analyzer.github.io/manual.html#configuration
+				-- https://hw0lff.github.io/rust-analyzer-docs/2021-11-01/index.html
+				checkOnSave = {
+					enable = true,
+					allFeatures = true, -- https://rust-analyzer.github.io/manual.html#features
+					command = "clippy", -- https://rust-lang.github.io/rust-clippy/master/index.html
+				},
+				completion = {
+					addCallParenthesis = true,
+					-- postfix = { enable = false },
+					-- addCallArgumentSnippets = false,
+				},
 			},
 		},
 	},
 
 	lua_ls = {
-		Lua = {
-			diagnostics = {
-				globals = { "vim", "mp" },
-				disable = { "missing-fields" },
+		settings = {
+			Lua = {
+				diagnostics = {
+					globals = { "vim", "mp" },
+					disable = { "missing-fields" },
+				},
+				telemetry = { enable = false },
+				workspace = { checkThirdParty = false },
 			},
-			telemetry = { enable = false },
-			workspace = { checkThirdParty = false },
 		},
 	},
 
@@ -707,100 +750,44 @@ local servers = {
 }
 
 local mason_lspconfig = require("mason-lspconfig")
-local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities())
+local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()) -- wrap default capabilities with cmp
 
-mason_lspconfig.setup({
-	-- Ensure the servers above are installed
-	ensure_installed = vim.tbl_keys(servers), -- lsps
-})
+mason_lspconfig.setup({ ensure_installed = vim.tbl_keys(servers) })
 
 mason_lspconfig.setup_handlers({
 	function(server_name)
-		-- print(servers[server_name])
-		require("lspconfig")[server_name].setup({
-			-- get additional completion capabilities from nvim-cmp
+		require("lspconfig")[server_name].setup(vim.tbl_extend("force", {
 			capabilities = capabilities,
 			on_attach = on_attach,
 			settings = servers[server_name],
 			filetypes = (servers[server_name] or {}).filetypes,
-		})
+		}, servers[server_name] or {}))
 	end,
 })
-
-local function root_directory()
-	local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
-	local toplevel = vim.fn.system(cmd)
-	if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
-		return vim.fn.getcwd()
-	end
-	return toplevel:sub(0, -2)
-end
-
-require("lspconfig").ts_ls.setup({ root_dir = root_directory() }) -- ts_ls not at root is generally fine
-require("lspconfig").biome.setup({ root_dir = root_directory() }) -- important: use root biome.json
-
--- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
-require("lspconfig").docker_compose_language_service.setup({
-	root_dir = require("lspconfig").util.root_pattern("docker-compose.yml"), -- add more patterns if needed
-	filetypes = { "yaml.docker-compose" },
-	-- single_file_support = true,
-})
-
-require("lspconfig").gleam.setup({
-	capabilities = capabilities,
-	on_attach = on_attach,
-})
-
-require("lspconfig.configs").elvish_lsp = {
-	default_config = {
-		cmd = { "elvish", "-lsp" },
-		filetypes = { "elvish" },
-		root_dir = require("lspconfig/util").root_pattern("foo.elv"),
-		settings = {},
-	},
-}
-
-require("lspconfig").elvish_lsp.setup({
-	on_attach = on_attach,
-	capabilities = capabilities,
-})
-
--- because ruby paths are a mess, tools should not be installed by mason
-require("lspconfig")["sorbet"].setup({
-	-- https://sorbet.org/docs/adopting
-	--
-	-- despite being billed as a 'type checker', sorbet actually provides a lot
-	-- of useful LSP functionality, such as function autocomplete and hover; the
-	-- ruby-lsp equivalents are very limited in comparison.
-	capabilities = capabilities,
-	on_attach = on_attach,
-	-- requires '# typed: true'
-	cmd = { "srb", "tc", "--lsp", "--disable-watchman", "." },
-})
-
--- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L90
-local function get_python_path(workspace) -- {{{
-	local util = require("lspconfig/util")
-
-	-- Use activated virtualenv.
-	if vim.env.VIRTUAL_ENV then
-		return util.path.join(vim.env.VIRTUAL_ENV, "bin", "python")
-	end
-
-	if vim.fn.glob(util.path.join(workspace, "poetry.lock")) ~= "" then
-		local poetry = vim.fn.trim(vim.fn.system("poetry --directory " .. workspace .. " env info -p"))
-		return util.path.join(poetry, "bin", "python")
-	end
-
-	-- Fallback to system Python.
-	return vim.fn.exepath("python3") or vim.fn.exepath("python") or "python"
-end -- }}}
 
 -- note: after python update, pyright must be reinstalled
 require("lspconfig").pyright.setup({
 	on_attach = on_attach,
 	capabilities = capabilities,
-	before_init = function(_, config)
+	before_init = function(_, config) -- functions cannot be merged
+		-- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L90
+		local function get_python_path(workspace) -- {{{
+			local util = require("lspconfig/util")
+
+			-- Use activated virtualenv.
+			if vim.env.VIRTUAL_ENV then
+				return util.path.join(vim.env.VIRTUAL_ENV, "bin", "python")
+			end
+
+			if vim.fn.glob(util.path.join(workspace, "poetry.lock")) ~= "" then
+				local poetry = vim.fn.trim(vim.fn.system("poetry --directory " .. workspace .. " env info -p"))
+				return util.path.join(poetry, "bin", "python")
+			end
+
+			-- Fallback to system Python.
+			return vim.fn.exepath("python3") or vim.fn.exepath("python") or "python"
+		end -- }}}
+
 		config.settings.python.pythonPath = get_python_path(config.root_dir)
 	end,
 })
@@ -1023,7 +1010,7 @@ require("conform").setup({
 
 			"gofumpt", -- https://github.com/mvdan/gofumpt?tab=readme-ov-file#added-rules
 			"golines", -- https://github.com/segmentio/golines#motivation
-			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party); note: may break on ubuntu? idk
+			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party); TODO: investigate why this breaks in some dirs (e.g. linkedin)
 			-- "goimports", -- required for autoimport, but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 		},
 
@@ -1048,7 +1035,7 @@ require("conform").setup({
 		json = { "prettier" },
 		jsonc = { "prettier" },
 		lua = { "stylua" },
-		python = { "black" },
+		python = { "black", "isort" },
 		ruby = { "rubocop" },
 		rust = { "rustfmt" },
 		sh = { "shfmt" },
@@ -1291,6 +1278,7 @@ require("cmp-gitcommit").setup({})
 
 -- }}}
 
+-- vim.cmd.colorscheme("citruszest")
 require("util"):random_colorscheme()
 vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
 

@@ -69,6 +69,9 @@
 [pull]
 	rebase = false		; always decide how to handle merges
 
+[push]
+	autoSetupRemote = true
+
 [rebase]
 	autosquash = true	; useful with git commit --fixup OLD_COMMIT_ID
 

@@ -66,8 +66,8 @@ primary_email=hejops1@gmail.com
 #		in the mail store.
 #
 [new]
-tags=unread;inbox;
-ignore=
+tags=new
+ignore=/.*[.](json|lock|bak)$/
 
 #	exclude_tags
 #		A ;-separated list of tags that will be excluded from

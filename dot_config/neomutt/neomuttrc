@@ -5,7 +5,8 @@
 # https://man.freebsd.org/cgi/man.cgi?query=mailcap&sektion=4&manpath=FreeBSD+8.0-RELEASE+and+Ports#end
 set mailcap_path = "~/.config/neomutt/mailcap"
 
-source "~/.config/neomutt/color"
+# TODO: this should really be conditional, or at least create empty file
+# source "~/.config/neomutt/color"
 
 # https://neomutt.org/guide/reference.html
 # https://neomutt.org/guide/advancedusage.html#new-mail

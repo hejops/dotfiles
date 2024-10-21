@@ -180,6 +180,12 @@ else
 	config.font_size = 10.0 -- 4k -> dpi 192
 end
 
+-- config.freetype_load_flags = "NO_HINTING" -- squashes fonts (makes them shorter)
+
+-- -- yikes
+-- config.freetype_load_flags = "MONOCHROME"
+-- config.freetype_load_target = "Mono"
+
 -- config.font, config.font_size = wezterm.font_with_fallback({ "B612 Mono" }), 9.0
 -- config.font, config.font_size = wezterm.font_with_fallback({ "Source Code Pro" }), 10.0
 config.cell_width = 0.9

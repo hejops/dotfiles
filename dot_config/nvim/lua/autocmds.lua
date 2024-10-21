@@ -65,9 +65,10 @@ local function md_to_pdf()
 		out
 	)
 	vim.fn.jobstart(compile)
-	if #io.popen("lsof " .. out):read("*a") == 0 then
-		vim.fn.jobstart(string.format("zathura %s >/dev/null 2>/dev/null", out))
-	end
+	-- TODO: if lsof err, return
+	-- if #io.popen("lsof " .. out):read("*a") == 0 then
+	-- 	vim.fn.jobstart(string.format("zathura %s >/dev/null 2>/dev/null", out))
+	-- end
 end
 
 -- compile md -> pdf
