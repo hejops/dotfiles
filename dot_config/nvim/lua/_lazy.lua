@@ -71,7 +71,37 @@ require("lazy").setup(
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
 		{ "rhysd/vim-go-impl", ft = { "go" } }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
 		{ "vague2k/huez.nvim", opts = {} },
-		{ "wansmer/treesj", opts = {} }, -- :TS[Join|Split|Toggle], very useful for go
+		{ "wansmer/treesj", opts = {} }, -- :TS[Join|Split|Toggle]
+
+		{
+			"FabijanZulj/blame.nvim",
+			lazy = false,
+			config = function()
+				require("blame").setup({
+					date_format = "%Y-%m-%d",
+					virtual_style = "right_align",
+					-- views = {
+					-- 	window = window_view,
+					-- 	virtual = virtual_view,
+					-- 	default = window_view,
+					-- },
+					focus_blame = true,
+					merge_consecutive = true,
+					max_summary_width = 30,
+					colors = nil,
+					blame_options = nil,
+					commit_detail_view = "vsplit",
+					-- format_fn = formats.commit_date_author_fn,
+					mappings = {
+						commit_info = "i",
+						stack_push = "h", -- back in history
+						stack_pop = "l", -- forward
+						show_commit = "I",
+						close = { "<esc>", "q" },
+					},
+				})
+			end,
+		},
 
 		{
 			-- cd to repo root (else autochdir), most useful for go
@@ -199,23 +229,54 @@ require("lazy").setup(
 					-- https://github.com/nvim-lualine/lualine.nvim#available-components
 					-- https://github.com/nvim-lualine/lualine.nvim#component-specific-options
 
-					lualine_a = { "mode" },
-					lualine_b = { "branch", "filename" }, -- TODO: suppress if main?
-					lualine_c = {
-						"diff",
+					lualine_a = {
+						"branch",
+						{
+							"diff",
+							-- https://github.com/nvim-lualine/lualine.nvim/wiki/Component-snippets#using-external-source-for-diff
+							colored = false, -- colors are usually unsightly against bg
+							source = function()
+								local gitsigns = vim.b.gitsigns_status_dict
+								if gitsigns then
+									return {
+										added = gitsigns.added,
+										modified = gitsigns.changed,
+										removed = gitsigns.removed,
+									}
+								end
+							end,
+						},
+					},
+
+					lualine_b = {
 						{ "diagnostics", sources = { "nvim_workspace_diagnostic" } },
 					},
 
+					lualine_c = {
+
+						{
+							-- https://github.com/nvim-lualine/lualine.nvim?tab=readme-ov-file#filename-component-options
+							"filename",
+							path = vim.o.columns > 170 and 2 -- absolute path, as in :echo expand('%:p')
+								or 0,
+						},
+					},
+
 					lualine_x = { "encoding", "fileformat", "filetype" },
+
 					lualine_y = {
 						-- "progress",
+						-- "location",
 						function()
 							local current_line = vim.fn.line(".")
 							local total_line = vim.fn.line("$")
 							return string.format("%.2f", current_line / total_line)
 						end,
 					},
-					lualine_z = { "location" },
+
+					lualine_z = {
+						"mode",
+					},
 				}
 
 				opts.winbar = {
@@ -226,6 +287,51 @@ require("lazy").setup(
 							end,
 							cond = function()
 								return navic.is_available()
+							end,
+						},
+					},
+				}
+
+				opts.tabline = {
+					lualine_a = {
+
+						-- {
+						-- 	"buffers",
+						-- 	-- show_filename_only = false, -- truncated dirs usually not useful
+						-- 	mode = 2,
+						-- },
+
+						-- replaces native tab bar
+						{
+							"tabs", -- more configurable than buffers
+
+							-- tab_max_length = 40,
+							max_length = vim.o.columns,
+							mode = 2, -- tab_nr + tab_name
+
+							-- 0: just shows the filename
+							-- 1: shows the relative path and shorten $HOME to ~
+							-- 2: shows the full path
+							-- 3: shows the full path and shorten $HOME to ~
+							path = 0,
+
+							use_mode_colors = false,
+
+							show_modified_status = false,
+
+							-- symbols = {
+							-- 	modified = "[+]", -- Text to show (left of fname) when the file is modified.
+							-- },
+
+							-- TODO: determine (sub)repo
+
+							fmt = function(name, context)
+								-- Show + if buffer is modified in tab
+								local buflist = vim.fn.tabpagebuflist(context.tabnr)
+								local winnr = vim.fn.tabpagewinnr(context.tabnr)
+								local bufnr = buflist[winnr]
+								local mod = vim.fn.getbufvar(bufnr, "&mod")
+								return name .. (mod == 1 and " +" or "")
 							end,
 						},
 					},
@@ -542,8 +648,8 @@ require("lazy").setup(
 			},
 		},
 
-		"nvimdev/oceanic-material",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
+		"nvimdev/oceanic-material",
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "gosukiwi/vim-atom-dark", -- bad diff
