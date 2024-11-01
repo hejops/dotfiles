@@ -542,8 +542,12 @@ require("lazy").setup(
 			},
 		},
 
-		"nvimdev/oceanic-material",
+		"challenger-deep-theme/vim",
+		"danilo-augusto/vim-afterglow",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
+		"kyoz/purify",
+		"nvimdev/oceanic-material",
+		"w0ng/vim-hybrid",
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "gosukiwi/vim-atom-dark", -- bad diff
@@ -626,9 +630,6 @@ require("nvim-lightbulb").setup({
 		win_opts = { focusable = false },
 	},
 })
-
--- require("lsp_signature").setup()
--- print(vim.inspect(require("chezmoi.commands").list()))
 
 require("nvim-ts-autotag").setup({
 	opts = {
