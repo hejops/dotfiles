@@ -2,6 +2,8 @@
 -- https://gist.github.com/alexpls/83d7af23426c8928402d6d79e72f9401
 -- https://github.com/pynappo/dotfiles/blob/ec6476a4cb78176be10293812c02dda7a4ac999a/.config/wezterm/wezterm.lua#L182
 
+-- os.execute("notify-send hi")
+
 -- TODO: investigate high memory usage (up to 1.3 GB RSS)
 -- pmap -x $(\pgrep wezterm-gui) | sort -k3 -n | tail -n20
 --
@@ -47,6 +49,10 @@ local log = wezterm.log_info
 
 local act = wezterm.action
 local config = {}
+
+if wezterm.config_builder then
+	config = wezterm.config_builder()
+end
 
 -- TODO: tab title?
 -- TODO: projects (see old kitty example)
@@ -221,6 +227,7 @@ local function keys()
 		-- initial_value = "My Tab Name", -- nightly only
 		description = "Rename tab",
 		action = wezterm.action_callback(function(window, pane, line)
+			_ = pane
 			if line then
 				window:active_tab():set_title(line)
 			end
@@ -238,13 +245,17 @@ local function keys()
 			},
 			action = wezterm.action_callback(function(window, pane)
 				local url = window:get_selection_text_for_pane(pane)
-				wezterm.log_info("opening: " .. url)
+				-- log("opening: " .. url)
+				-- if string.find(url, "youtu") then
+				-- 	wezterm.open_with(url, "mpv")
+				-- 	return
+				-- end
 				wezterm.open_with(url)
 			end),
 		},
 	}
 
-	local SpawnTabNext = function()
+	local function SpawnTabNext()
 		-- https://old.reddit.com/r/wezterm/comments/1d71ei3/how_to_make_spawntab_spawn_a_new_tab_next_to/l759axf/
 		local function active_tab_index(window)
 			for _, item in ipairs(window:mux_window():tabs_with_info()) do
@@ -300,7 +311,7 @@ local function keys()
 
 	local function get_active_index(panes)
 		for i, p in ipairs(panes) do
-			-- wezterm.log_info(i, p)
+			-- log(i, p)
 			if p.is_active then
 				return i
 			end
@@ -383,22 +394,6 @@ local function keys()
 			end),
 		},
 
-		-- for possible bug report
-		-- {
-		-- 	mods = "SHIFT|CTRL",
-		-- 	key = "t",
-		-- 	action = wezterm.action_callback(function(win, pane)
-		-- 		local tab = pane:tab()
-		-- 		local panes = tab:panes_with_info()
-		-- 		panes[#panes].pane:activate()
-		-- 		panes[#panes].pane:split({ direction = "Bottom" })
-		-- 		for _, p in ipairs(panes) do
-		-- 			win:perform_action({ AdjustPaneSize = { "Up", 3 } }, p.pane)
-		-- 		end
-		-- 		panes[1].pane:activate()
-		-- 	end),
-		-- },
-
 		-- 'fullscreen' = pane:set_zoomed(true)
 
 		-- TODO: on closing left pane (pane 1), activate pane 2 and move it left
@@ -416,6 +411,43 @@ local function keys()
 end
 
 config.keys = keys()
+
+-- with Up 3
+-- 1:22 -> 1:19
+-- 2:9 -> 2:6
+-- 3:3 -> 3:1
+-- 4:1
+
+-- without
+-- 1:22
+-- 2:11
+-- 3:5
+-- 4:2
+
+-- expected:
+-- 1:46 -> 2:23 -> 3:15 -> 4:11
+
+-- local wezterm = require("wezterm")
+-- config = wezterm.config_builder()
+-- config.keys = {
+-- 	{
+-- 		mods = "SHIFT|CTRL",
+-- 		key = "t",
+-- 		action = wezterm.action_callback(function(win, pane)
+-- 			local panes = pane:tab():panes_with_info()
+-- 			log("new pane:", #panes + 1)
+-- 			panes[1].pane:send_text(string.format("%d:%d ", 1, panes[1].height))
+-- 			panes[#panes].pane:activate()
+-- 			panes[#panes].pane:split({ direction = "Bottom" })
+-- 			for i = 1, #panes + 1 do
+-- 				local p = pane:tab():panes_with_info()[i]
+-- 				win:perform_action({ AdjustPaneSize = { "Up", 3 } }, p.pane)
+-- 				p.pane:send_text(string.format("%d:%d ", i, p.height))
+-- 			end
+-- 			panes[1].pane:activate()
+-- 		end),
+-- 	},
+-- }
 
 -- }}}
 
