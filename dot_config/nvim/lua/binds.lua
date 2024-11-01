@@ -101,6 +101,7 @@ vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
 vim.keymap.set("n", "<f10>", ":colo<cr>")
 vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 vim.keymap.set("n", "<leader>D", [[:g/\v/d<Left><Left>]])
+vim.keymap.set("n", "<leader>T", ":tabe ")
 vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- remove all undos -- https://stackoverflow.com/a/47524696
 vim.keymap.set("n", "<leader>X", ":call Build()<cr>")
 vim.keymap.set("n", "<leader>n", [[:%g/\v/norm <Left><Left><Left><Left><Left><Left>]])
@@ -178,7 +179,9 @@ local ft_binds = { -- {{{
 		vim.keymap.set("n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>", { buffer = true })
 	end,
 
-	typescript = function()
+	["typescript,javascript"] = function()
+		-- replace != and ==; probably better via find+sed
+		vim.keymap.set("n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]], { buffer = true })
 		vim.keymap.set("n", "<leader>a", ":!npm install ", { buffer = true })
 	end,
 
@@ -231,6 +234,10 @@ local ft_binds = { -- {{{
 			vim.cmd("LspRestart")
 			vim.cmd("Trouble refresh")
 		end, { buffer = true })
+
+		-- switch to early return to reduce nesting, assumes return block is 1-line
+		-- note: this does -not- invert the condition
+		vim.keymap.set("n", "<leader>N", "$m`%dddj``p:w<cr>", { buffer = true })
 	end,
 
 	markdown = function()
@@ -246,6 +253,18 @@ local ft_binds = { -- {{{
 			require("markdown.nav").prev_heading()
 			vim.cmd.norm("zz")
 		end
+
+		-- could be useful for all filetypes?
+		vim.keymap.set("n", "<leader>d", function()
+			-- only disables inlay hints; popups (and trouble) remain
+			if vim.diagnostic.is_enabled() then
+				vim.diagnostic.enable(false)
+				vim.diagnostic.hide()
+			else
+				vim.diagnostic.enable(true)
+				vim.diagnostic.show()
+			end
+		end)
 
 		-- vim.keymap.set("n", "J", mn, { buffer = true, remap = true })
 		-- vim.keymap.set("n", "K", mp, { buffer = true, remap = true }) -- TS hover
