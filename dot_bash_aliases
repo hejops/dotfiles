@@ -620,6 +620,16 @@ gd() {
 	fi
 }
 
+grescon() {
+	: merge all resolved conflicts
+	if rg '^[<=>]{7}'; then
+		echo "Unresolved conflicts remaining"
+		return
+	fi
+	git status --porcelain | grep UU | cut -d' ' -f2 | xargs git add
+	git commit -v
+}
+
 # }}}
 # pre-commit {{{
 alias pcu="pre-commit autoupdate"
