@@ -214,13 +214,21 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
 -- }}}
 -- plugin binds {{{
 
+-- vim.keymap.set("n", "<leader>gB", ":GitBlameToggle<cr>") -- must be explicitly enabled on mac (due to lacking horizontal space)
 vim.keymap.set("n", "<leader>J", ":TSJToggle<cr>")
-vim.keymap.set("n", "<leader>T", ":tabe ")
-vim.keymap.set("n", "<leader>gB", ":GitBlameToggle<cr>") -- must be explicitly enabled on mac (due to lacking horizontal space)
+vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
 vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>")
 vim.keymap.set("n", "<leader>gh", ":Gitsigns stage_hunk<cr>") -- more ergonomic than gs, but my muscle memory goes to gs
-vim.keymap.set("n", "<leader>go", ":GitBlameOpenCommitURL<cr>") -- more useful than GitBlameOpenFileURL
 vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>")
+
+vim.keymap.set("n", "<leader>gb", function()
+	-- vim.cmd("GitBlameOpenCommitURL") -- GitBlameOpenFileURL may produce bogus URLs (usually when files are moved), and going to the commit provides better context anyway
+	-- https://github.com/f-person/git-blame.nvim/issues/103
+	-- ubuntu xdg-open doesn't work
+	vim.cmd("GitBlameCopyCommitURL")
+	vim.fn.jobstart('sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"')
+end)
+
 vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
 -- https://github.com/ThePrimeagen/refactoring.nvim#configuration-for-refactoring-operations
@@ -469,8 +477,8 @@ vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tab
 
 -- vim.keymap.set("n", "<leader>gC", telescope_b.git_bcommits, { desc = "git commits" })
 -- vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" }) -- like git ls-files with diff
+-- vim.keymap.set("n", "<leader>gb", telescope_b.git_branches, { desc = "git branches" }) -- generally better to switch branches in shell, due to annoying checkout hooks
 vim.keymap.set("n", "<leader>gC", telescope_b.git_commits, { desc = "git commits" }) -- like :Gclog but better
-vim.keymap.set("n", "<leader>gb", telescope_b.git_branches, { desc = "git branches" })
 
 -- vim.keymap.set("n", "<leader>?", telescope_b.help_tags, { desc = "search help" }) -- let's face it; i never use this
 -- vim.keymap.set("n", "<leader>u", telescope.extensions.undo.undo)
@@ -647,6 +655,7 @@ local servers = {
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
 
 	bashls = {},
+	clangd = {}, -- TODO: suppress (?) "Call to undeclared function"
 	dockerls = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
 	pyright = {},
@@ -1009,9 +1018,9 @@ require("conform").setup({
 			-- https://github.com/SingularisArt/Singularis/blob/856a938fc8554fcf47aa2a4068200bc49cad2182/aspects/nvim/files/.config/nvim/lua/modules/lsp/lsp_config.lua#L50
 
 			"gofumpt", -- https://github.com/mvdan/gofumpt?tab=readme-ov-file#added-rules
-			"golines", -- https://github.com/segmentio/golines#motivation
+			"golines", -- https://github.com/segmentio/golines#motivation https://github.com/segmentio/golines?tab=readme-ov-file#struct-tag-reformatting
 			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party); TODO: investigate why this breaks in some dirs (e.g. linkedin)
-			-- "goimports", -- required for autoimport, but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
+			-- "goimports", -- required for autoimport (null_ls), but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 		},
 
 		markdown = {
@@ -1025,8 +1034,8 @@ require("conform").setup({
 		-- markdown = { "mdslw" }, -- i like the idea, but not really on cargo yet
 		["_"] = { "trim_whitespace" },
 		bash = { "shfmt" },
-		c = { "astyle" }, -- clang-format requires config ootb
-		cpp = { "astyle" }, -- clang-format requires config ootb
+		c = { "clang-format" }, -- clang-format requires config (presumably a .clang-format file) ootb
+		-- cpp = { "astyle" },
 		css = { "prettier" },
 		dhall = { "dhall" },
 		gleam = { "gleam" }, -- apparently this works?
