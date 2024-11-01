@@ -5,20 +5,20 @@
 /* @import "addons_manager_alternative_appearance_tb78.css"; */
 
 #tridactyl-reader > main {
-  background-color: #282828;
-  color: #ebdbb2;
+  background-color: #121212;
+  color: #bfbfbf;
   font-family: serif;
   font-size: xx-large;
   width: 80vw !important;
 }
 
 :root {
-  --bg: #282828;
+  --bg: #121212;
 }
 
 /* https://moderncss.dev/12-modern-css-one-line-upgrades */
 :root {
-  accent-color: #ebdbb2;
+  accent-color: #bfbfbf;
   color-scheme: dark light;
   filter: contrast(125%);
   font-variant-ligatures: none;
