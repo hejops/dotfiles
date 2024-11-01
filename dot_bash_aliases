@@ -66,7 +66,7 @@ alias dt="discogs_collection top"
 alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
 alias h="htop -u \$USER"
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
-alias lock="xset dpms force off ; dm-tool lock || slock" # ubuntu suspend does not lock
+alias lock="xset dpms force off & sleep 20 && slock"
 alias md="\$EDITOR -c 'set ft=markdown'"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
 alias n="NO_COLOR=1 node --import=tsx"
@@ -89,7 +89,7 @@ gls() {
 	# else
 	# 	git ls-files
 	# fi
-	git ls-files "${1:-}"
+	git ls-files "${1:-.}"
 }
 
 gb() {
@@ -104,28 +104,45 @@ gb() {
 		if [[ $default_local_branch == "$current_local_branch" ]]; then
 			echo "Already on $default_local_branch"
 		else
-			git checkout "$default_local_branch"
+			git checkout "$default_local_branch" || echo "need commit"
 			git pull
 		fi
 	else
 
-		# always base new branches on master
-		git checkout master
+		# generally, new branches are based on master. however, this
+		# may not always be the case, so an optional 2nd arg is needed
+		if ! git checkout "${2:-master}"; then
+			echo "need commit"
+			return
+		fi
+
 		git pull || return
-		# assume create; then fallback to existing
-		if git switch --create "$1" 2> /dev/null; then
+		# existing remote branch > create local branch > existing local branch
+		if
+			git branch -r | grep "origin/$1"
+		then
+			# TODO: should probably ask for confirmation
+			git switch "$1" 2> /dev/null
+		elif git switch --create "$1" 2> /dev/null; then
 			# git switch --create does not produce output, for some
 			# reason (but git switch does)
 			echo "Switched to new branch $1"
 		else
-			git switch "$1"
+			git switch "$1" || echo "need commit"
 		fi
 	fi
 
 }
 
 gB() {
-	branch=$(git branch | fzf | sed -r 's/^[ *]+//')
+	# https://stackoverflow.com/a/1441062
+	# --pretty=format:'%h%x09%an%x09%ad%x09%s' # no color
+	# TODO: include date/author, but preserve color
+	# TODO: handle master..master
+	prv_cmd="echo {} | sed -r 's/^[ *]+//; s/^/master../' | xargs git log --oneline --color=always"
+	branch=$(git branch |
+		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi |
+		sed -r 's/^[ *]+//')
 	[[ -z $branch ]] && return
 	gb "$branch"
 }
@@ -228,6 +245,8 @@ gA() {
 }
 
 gc() {
+
+	# TODO: if work repo, master branch, return
 
 	pcrc
 
@@ -484,9 +503,10 @@ gh() {
 	[[ $URL != http* ]] && URL=$(tr <<< "$URL" : / | sed -r 's|git@|https://|')
 
 	echo "$URL"
-	# if [[ -n $DISPLAY ]]; then
-	xdg-open "$URL"
-	# fi
+	# ubuntu is a pita:
+	# gio: ...: Failed to find default application for content type ‘text/html’
+	xdg-open "$URL" ||
+		firefox "$URL"
 }
 
 gnew() {
@@ -1058,11 +1078,15 @@ docl() {
 	sudo docker volume rm $(sudo docker volume ls -f dangling=true -q)
 }
 
-dokill() {
-	docker stop $(docker ps -a -q)
-	docker rm $(docker ps -a -q)
-	# docker ps -a -q | xargs docker stop
-	# docker ps -a -q | xargs docker rm
+dostop() {
+	containers=$(docker ps --all --quiet)
+	docker stop $containers
+}
+
+dorm() {
+	containers=$(docker ps --all --quiet)
+	docker stop $containers
+	docker rm $containers
 }
 
 # }}}
@@ -1314,6 +1338,7 @@ blog() { $EDITOR "$(date -I)-${1//-/_}.md"; }
 bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
 rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
 yt() { mpv --force-window "ytdl://ytsearch10:\'$*\'"; }
+ytn() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
 zd() { zip -jr "$1" "$1"; }                                 # zip directory (flat)
 zin() { < /dev/stdin zip --junk-paths --names-stdin "$1"; } # pipe files from stdin to zip
 
@@ -1485,6 +1510,21 @@ epk() {
 	done | sort >> failed
 }
 
+# inject() {
+# 	python -c "import fcntl; import termios; import sys
+# with open('/dev/stdout', 'w') as fd:
+#   for c in ' '.join(sys.argv[1:]): fcntl.ioctl(fd, termios.TIOCSTI, c)" "$@"
+# }
+
+# inject() {
+# 	perl -le 'require "sys/ioctl.ph";
+#             $delay = 0.05;
+#             unless(fork) {
+#               select undef, undef, undef, $delay;
+#               ioctl(STDIN, &TIOCSTI, $_) for split "", join " ", @ARGV;
+#             }' -- "$@"
+# }
+
 rgo() {
 	: useful when you know what to look for but dont want to open vim
 	# https://blog.burntsushi.net/ripgrep
@@ -1495,18 +1535,48 @@ rgo() {
 	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' . |
 		fzf -e -q "${1:-}")
 	[[ -z $match ]] && return
+
 	# file:line:col:match
 	IFS=':' read -ra array <<< "$match"
+
+	# TODO: --glob '!libs/*' (! must be single quoted)
+
+	{
+		# force insert into history
+		echo "vim $(realpath "${array[0]}")"
+		echo "#$(date +%s)"
+	} >> ~/.bash_history
+
+	# note: this won't go into history (only rgo will)
 	$EDITOR +"${array[1]}" "${array[0]}"
+
+}
+
+j() {
+	: jump to frequently used file, should be used in conjunction with rgo
+	sel=$(< ~/.bash_history grep -P '^n?vim' |
+		awk '!seen[$0]++' |
+		while read -r cmd; do
+			f=$(<<< "$cmd" cut -d' ' -f2)
+			f=$(realpath "$f" 2> /dev/null) || continue
+			[[ ! -f $f ]] && continue
+			echo "$f"
+		done |
+		awk '!seen[$0]++' |
+		fzf --tac)
+	[[ -z $sel ]] && return
+	$EDITOR "$sel"
 }
 
 mw() {
 	cd ~/.mail/account.gmail || return
 	while true; do
+		# note: deleting empty dirs will almost certainly break sync
 		gmi pull
 		new=$(notmuch count tag:inbox and tag:unread and date:today)
 		if [[ $new -gt 0 ]]; then
 			notify-send -u critical "$new new mail"
+			# TODO: neomutt -F? use symlink? (neomuttrc -> neomuttrc_work)
 			neomutt
 		fi
 		sleep 15m
@@ -1521,9 +1591,10 @@ watchmem() {
 	done
 }
 
+# xdotool key super+8
 # while read -r line; do
 # 	echo "$line" | xclip -sel c
-# 	xdotool key super+8 F6 ctrl+v enter
+# 	xdotool key F6 ctrl+v enter
 # done < "$1"
 
 gev() {
@@ -1535,3 +1606,5 @@ gev() {
 		sed -r 's/:/	/' |
 		column -s '	' -t
 }
+
+,pgrep() { \pgrep "$1" | xargs ps; }

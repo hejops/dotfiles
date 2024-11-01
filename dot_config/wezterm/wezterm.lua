@@ -54,6 +54,14 @@ if wezterm.config_builder then
 	config = wezterm.config_builder()
 end
 
+local function get_output(command)
+	local handle = io.popen(command)
+	_ = handle:read("*a")
+	return handle:close()
+end
+
+local is_ubuntu = get_output("grep Ubuntu /etc/lsb-release")
+
 -- TODO: tab title?
 -- TODO: projects (see old kitty example)
 
@@ -125,6 +133,7 @@ wezterm.on(
 )
 
 config.pane_focus_follows_mouse = true
+config.switch_to_last_active_tab_when_closing_tab = true
 
 -- font {{{
 
@@ -162,28 +171,12 @@ local font = wezterm.font_with_fallback({
 	"Source Code Pro",
 })
 
-local function get_output(command)
-	local handle = io.popen(command)
-	_ = handle:read("*a")
-	return handle:close()
-end
-
--- dpi is declared (in Xresources) conditionally, based on monitor resolution
-if
-	get_output(
-		-- "grep Ubuntu /etc/lsb-release"
-		"xrdb -query | grep dpi | grep 96"
-	)
-then
-	config.font_size = 12.0 -- 3840x1200 -> dpi 96
-
+if is_ubuntu then
 	-- https://github.com/wez/wezterm/issues/284#issuecomment-1177628870
-	wezterm.on("gui-startup", function()
+	wezterm.on("gui-startup", function() -- note: not reliable
 		local _, _, window = wezterm.mux.spawn_window({})
 		window:gui_window():maximize()
 	end)
-else
-	config.font_size = 10.0 -- 4k -> dpi 192
 end
 
 -- config.freetype_load_flags = "NO_HINTING" -- squashes fonts (makes them shorter)
@@ -192,13 +185,26 @@ end
 -- config.freetype_load_flags = "MONOCHROME"
 -- config.freetype_load_target = "Mono"
 
+local cell_width = 0.9
+
+-- relying on xrdb dpi is unreliable, as ubuntu seems to ignore it
+local font_size
+if is_ubuntu then
+	-- note: xrandr is unacceptably slow
+	font_size = get_output("xdpyinfo | grep -F '3840x1200'") and 12.0 or 18.0
+else
+	font_size = 10.0
+end
+
 -- config.font, config.font_size = wezterm.font_with_fallback({ "B612 Mono" }), 9.0
 -- config.font, config.font_size = wezterm.font_with_fallback({ "Source Code Pro" }), 10.0
-config.cell_width = 0.9
+config.cell_width = cell_width > 0 and cell_width or 0.9 -- negative values will kill wezterm
+config.command_palette_font_size = font_size
 config.font = font
+config.font_size = font_size
 config.harfbuzz_features = { "calt=0", "clig=0", "liga=0" }
 config.warn_about_missing_glyphs = false
-config.window_frame = { font = font, font_size = 10 }
+config.window_frame = { font = font, font_size = font_size }
 
 -- }}}
 -- appearance {{{
@@ -286,11 +292,12 @@ local function keys()
 		-- https://github.com/wez/wezterm/blob/main/docs/config/launch.md#the-launcher-menu
 
 		-- both SpawnWindow and SpawnTab default to cwd
-		{ key = "e", mods = "CTRL", action = act.SpawnWindow },
 		-- { key = "t", mods = "CTRL", action = act.SpawnTab("CurrentPaneDomain") },
+		{ key = "e", mods = "CTRL", action = act.SpawnWindow },
 		{ key = "t", mods = "CTRL", action = SpawnTabNext() },
-
 		{ key = "t", mods = leader, action = act.SpawnCommandInNewTab({ cwd = wezterm.home_dir }) },
+
+		{ key = "o", mods = leader, action = act.ShowTabNavigator },
 
 		{ key = "h", mods = leader, action = act.ActivateTabRelative(-1) },
 		{ key = "j", mods = leader, action = act.ScrollByPage(1) },
@@ -298,10 +305,12 @@ local function keys()
 		{ key = "l", mods = leader, action = act.ActivateTabRelative(1) },
 
 		{ key = "g", mods = "CTRL", action = act(hint_url) },
-		{ key = "r", mods = leader, action = act.PromptInputLine(rename_tab) },
+		{ key = "r", mods = "CTRL", action = act.PromptInputLine(rename_tab) },
 		{ key = "w", mods = leader, action = act.EmitEvent("watch") },
 		{ key = "x", mods = leader, action = act.EmitEvent("view-history-in-pager") },
 		{ key = "z", mods = "CTRL", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
+
+		{ key = "p", mods = leader, action = act.ActivateCommandPalette },
 	}
 
 	-- TODO: use weruio (?) instead of numbers (when the need arises)
@@ -309,7 +318,7 @@ local function keys()
 		table.insert(_keys, { key = tostring(i), mods = leader, action = act.ActivateTab(i) })
 	end
 
-	local function get_active_index(panes)
+	local function get_active_pane(panes)
 		for i, p in ipairs(panes) do
 			-- log(i, p)
 			if p.is_active then
@@ -370,27 +379,46 @@ local function keys()
 		-- https://github.com/uolot/dotfiles/blob/aa07dd01fddab8c7ffaa2230f298946671979e1a/wezterm/balance.lua#L108
 
 		{
-			mods = leader,
+			mods = "SUPER",
+			key = "r",
+			action = wezterm.action_callback(function(win, pane)
+				resize(win, pane)
+			end),
+		},
+
+		{
+			mods = "SUPER",
 			key = "t",
 			action = wezterm.action_callback(function(win, pane)
 				local tab = pane:tab()
 				local panes = tab:panes_with_info() -- https://wezfurlong.org/wezterm/config/lua/MuxTab/panes_with_info.html
-				local active_pane = panes[get_active_index(panes)].pane
+
+				if #panes == 3 then -- need to get resize working first
+					return
+				end
+
+				local active_pane = panes[get_active_pane(panes)].pane
+				-- local active_pane = tab.active_pane
+				local cwd = active_pane:get_current_working_dir().file_path
 
 				if #panes == 1 then
 					log("first pane, splitting horiz (2)")
-					win:perform_action(act.SplitHorizontal, panes[1].pane)
-					active_pane:activate()
-					return
-				elseif #panes == 3 then
+					panes[1].pane:split({
+						direction = "Right",
+						size = 0.45,
+						cwd = cwd,
+					})
+					-- active_pane:activate()
 					return
 				end
 
 				log("opening new split:", #panes + 1)
-				panes[#panes].pane:activate()
-				panes[#panes].pane:split({ direction = "Bottom" })
-				resize(win, pane)
-				active_pane:activate()
+				panes[#panes].pane:split({
+					direction = "Bottom",
+					cwd = cwd,
+				})
+				-- resize(win, pane)
+				-- active_pane:activate()
 			end),
 		},
 
@@ -398,15 +426,53 @@ local function keys()
 
 		-- TODO: on closing left pane (pane 1), activate pane 2 and move it left
 		-- TODO: on closing any pane, resize all right panes
-		-- TODO: RotatePanes
+
+		-- https://github.com/wez/wezterm/discussions/3331#discussioncomment-9477701 (swap)
+		-- https://github.com/wez/wezterm/issues/1975#issuecomment-1134817741 (tmux style select)
+
+		-- https://wezfurlong.org/wezterm/config/lua/keyassignment/RotatePanes.html
+		-- https://wezfurlong.org/wezterm/config/lua/keyassignment/PaneSelect.html
 
 		-- { key = "k", mods = leader, action = wezterm.action.AdjustPaneSize({ "Up", 12 }) },
 
-		-- { key = "j", mods = leader, action = act.ActivatePaneDirection("Right") },
-		-- { key = "k", mods = leader, action = act.ActivatePaneDirection("Left") },
+		{
+			key = "i",
+			mods = "SUPER",
+			-- action = act.RotatePanes("Clockwise"),
+			action = wezterm.action_callback(function(win, pane)
+				-- os.execute("notify-send hi")
+				-- local active = get_active_pane()
+				win:perform_action(act.RotatePanes("Clockwise"), pane)
+			end),
+		},
+
+		-- TODO: should only be reloaded when screen dimensions change
+		-- https://wezfurlong.org/wezterm/config/lua/wezterm/on.html
+		{
+			key = ",",
+			mods = "SUPER",
+			action = wezterm.action_callback(function()
+				wezterm.reload_configuration()
+			end),
+		},
+
+		-- note: disable ubuntu default keybinds first (< ~/.config/dconf/dconf.ini dconf load /)
+		{ key = "h", mods = "SUPER", action = act.ActivateTabRelative(-1) },
+		{ key = "j", mods = "SUPER", action = act.ActivatePaneDirection("Next") },
+		{ key = "k", mods = "SUPER", action = act.ActivatePaneDirection("Prev") },
+		{ key = "l", mods = "SUPER", action = act.ActivateTabRelative(1) },
 	}
 
-	-- return test_keys
+	local function extend(t1, t2)
+		for _, v in ipairs(t2) do
+			table.insert(t1, v)
+		end
+	end
+
+	if is_ubuntu then
+		extend(_keys, test_keys)
+	end
+
 	return _keys
 end
 
