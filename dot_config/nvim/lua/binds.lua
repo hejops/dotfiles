@@ -21,6 +21,7 @@ vim.keymap.set("n", "-", "~h") -- +/- are just j/k
 vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
 vim.keymap.set("n", "<c-c>", "<nop>")
 vim.keymap.set("n", "<c-z>", "<nop>")
+vim.keymap.set("n", "<tab>", "<nop>") -- tab may be equivalent to c-i
 vim.keymap.set("n", "G", "G$zz") -- because of the InsertEnter zz autocmd
 vim.keymap.set("n", "H", "^")
 vim.keymap.set("n", "J", "mzJ`z") -- join without moving cursor
@@ -65,14 +66,14 @@ vim.keymap.set("n", "}", ":keepjumps normal! }<cr>zz", { silent = true })
 -- default r behaviour is useless (cl)
 -- nmap ZF zfaft{blDkp$%bli<cR><esc>ld0<cR>zl|	" add folds around a func, like a real man, in any language
 -- tabs and folds; splits are only used for exec
+-- vim.keymap.set("n", "rH", ":silent! tabm -1<cr>", { silent = true }) -- do i need this?
+-- vim.keymap.set("n", "rL", ":silent! tabm +1<cr>", { silent = true })
 -- vim.keymap.set("n", "re", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
 vim.keymap.set("n", "<c-h>", "gT")
 vim.keymap.set("n", "<c-l>", "gt")
 vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
 vim.keymap.set("n", "<c-t>", "<c-6>", { silent = true })
 vim.keymap.set("n", "r", "<nop>")
-vim.keymap.set("n", "rH", ":silent! tabm -1<cr>", { silent = true }) -- do i need this?
-vim.keymap.set("n", "rL", ":silent! tabm +1<cr>", { silent = true })
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- delete all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rh", "gT")
 vim.keymap.set("n", "ri", "<c-W>_") -- maximise current split height
@@ -101,6 +102,7 @@ vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
 vim.keymap.set("n", "<f10>", ":colo<cr>")
 vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 vim.keymap.set("n", "<leader>D", [[:g/\v/d<Left><Left>]])
+vim.keymap.set("n", "<leader>T", ":tabe ")
 vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- remove all undos -- https://stackoverflow.com/a/47524696
 vim.keymap.set("n", "<leader>X", ":call Build()<cr>")
 vim.keymap.set("n", "<leader>n", [[:%g/\v/norm <Left><Left><Left><Left><Left><Left>]])
@@ -275,7 +277,8 @@ local function exec()
 	end
 	-- TODO: async (Dispatch)
 	local front
-	if vim.o.columns > 100 then -- vsplit if wide enough
+	local wide = vim.o.columns > 100
+	if wide then -- vsplit if wide enough
 		local w = math.floor(vim.o.columns * 0.33)
 		front = w .. " vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
 	else
@@ -315,6 +318,17 @@ local function exec()
 
 	-- attempt to run .ts file
 	local function get_ts_runner(file)
+		-- -- https://old.reddit.com/r/neovim/comments/mq4pxn/best_way_to_get_current_buffer_content_as_a_lua/gufgtv8/
+		-- if require("util"):buf_contains("@observablehq/plot") then
+		-- 	local tmpfile = "/tmp/foo.html"
+		-- 	-- vim.cmd(front .. runner .. " | tee " .. tmpfile)
+		-- 	vim.cmd(string.format("%s %s | tee %s", front, runner, tmpfile))
+		-- 	os.execute("firefox " .. tmpfile)
+		-- 	vim.cmd.wincmd("k")
+		-- 	vim.cmd.wincmd("h")
+		-- 	return
+		-- end
+
 		local js = string.gsub(file, ".ts", ".js")
 
 		-- cd first, so that child's node_modules/tsx can be found
@@ -412,21 +426,9 @@ local function exec()
 		end
 	end
 
-	-- https://old.reddit.com/r/neovim/comments/mq4pxn/best_way_to_get_current_buffer_content_as_a_lua/gufgtv8/
-	if require("util"):buf_contains("@observablehq/plot") then
-		local tmpfile = "/tmp/foo.html"
-		-- vim.cmd(front .. runner .. " | tee " .. tmpfile)
-		vim.cmd(string.format("%s %s | tee %s", front, runner, tmpfile))
-		os.execute("firefox " .. tmpfile)
-		vim.cmd.wincmd("k")
-		vim.cmd.wincmd("h")
-		return
-	end
-
 	-- print(front .. runner)
 	vim.cmd(front .. runner)
-	vim.cmd.wincmd("k") -- return focus to main split
-	vim.cmd.wincmd("h")
+	vim.cmd.wincmd(wide and "h" or "k") -- return focus to main split
 end -- }}}
 vim.keymap.set("n", "<leader>x", exec, { silent = true })
 
@@ -448,12 +450,8 @@ local function init()
 	end
 
 	local ft = vim.bo.filetype
-	if
-		ft == "" -- yes, default is empty string...
-		or ft == "conf"
-	then
-		ft = "sh"
-	end
+	-- yes, default ft is empty string...
+	ft = (ft == "" or ft == "conf") and "sh" or ft
 
 	-- TODO: double newlines get removed due to splitting
 	local templates = {
@@ -511,6 +509,7 @@ EOF
 
 	-- https://stackoverflow.com/a/32847589
 	local lines = {}
+	-- note: this strips empty lines
 	for l in template:gmatch("[^\r\n]+") do
 		table.insert(lines, l)
 	end
