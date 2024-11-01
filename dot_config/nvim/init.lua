@@ -106,13 +106,20 @@ local function tectonic_build()
 		end
 	end
 
-	local h = vim.o.lines * 0.2
-	local cmd = h .. " new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! tectonic -X build"
-	vim.cmd(cmd)
-	os.execute([[
+	-- tectonic build is slow, and should always be started in background
+	vim.fn.jobstart([[
+tectonic -X build 2>&1 > ./src/tectonic.log ;
 lsof ./build/default/default.pdf > /dev/null 2> /dev/null || zathura ./build/default/default.pdf 2> /dev/null &
 ]])
-	vim.cmd.wincmd("k")
+
+	-- open actual split for log
+	-- TODO: ensure log file reloaded after every build (which autocmd?)
+	if not require("util"):buf_loaded("tectonic.log") then
+		local h = vim.o.lines * 0.2
+		local cmd = h .. " new ./src/tectonic.log"
+		vim.cmd(cmd)
+		vim.cmd.wincmd("k")
+	end
 end
 
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
@@ -202,7 +209,8 @@ vim.api.nvim_create_autocmd("TabLeave", {
 
 -- https://github.com/xvzc/chezmoi.nvim?tab=readme-ov-file#treat-all-files-in-chezmoi-source-directory-as-chezmoi-files
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-	pattern = { os.getenv("HOME") .. "/.local/share/chezmoi/*" },
+	-- dot* excludes .git/*
+	pattern = { os.getenv("HOME") .. "/.local/share/chezmoi/dot*" },
 	callback = function(ev)
 		vim.schedule(function()
 			require("chezmoi.commands.__edit").watch(ev.buf)
@@ -215,7 +223,6 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
 -- plugin binds {{{
 
 vim.keymap.set("n", "<leader>J", ":TSJToggle<cr>")
-vim.keymap.set("n", "<leader>T", ":tabe ")
 vim.keymap.set("n", "<leader>gB", ":GitBlameToggle<cr>") -- must be explicitly enabled on mac (due to lacking horizontal space)
 vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>")
 vim.keymap.set("n", "<leader>gh", ":Gitsigns stage_hunk<cr>") -- more ergonomic than gs, but my muscle memory goes to gs
