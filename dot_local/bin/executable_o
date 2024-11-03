@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+. ~/.bashrc # required for WORK_DIRS
+
+usage() {
+	cat << EOF
+Usage: $(basename "$0")
+	Select and open commonly edited files
+EOF
+	exit
+}
+
+if
+	command -v chezmoi > /dev/null
+then
+	# if file was rm'd (but not git rm'd), just allow
+	# realpath to fail
+	# dotfiles=$(chezmoi managed --include=files |
+	# 	xargs -d '\n' realpath || :)
+
+	dotfiles=$(chezmoi managed --include=files --path-style=source-relative)
+
+fi
+
+sel=$(
+	{
+
+		# multiple dirs can be specified, but are sorted separately
+		# TODO: WORK_DIRS -> sort mtime
+		echo "${WORK_DIRS[@]}" | tr ' ' '\n'
+		echo "$dotfiles"
+
+	} |
+		# sort -u |
+		# sed "s|$HOME|~|g" | # tilde will not expand
+		rofi -dmenu -i
+)
+
+if [ -d "$sel" ]; then
+	cd "$sel"
+	sel=$(git ls-files |
+		xargs ls -1t |
+		rofi -dmenu -i |
+		# if file was rm'd (but not git rm'd), realpath will fail
+		xargs realpath || :)
+	[ -z "$sel" ] && exit
+fi
+
+cd "$(dirname "$(realpath "$sel")")"
+
+if grep <<< "$dotfiles" -F "$sel"; then
+
+	# note: the 2nd time `chezmoi edit --watch` is called, changes are not
+	# applied to the 2nd file on save, regardless of whether chezmoi.nvim
+	# is installed. when the 1st file is closed, the 2nd file can then be
+	# watched as expected. this suggests that chezmoi is incapable of
+	# watching more than one file at a time
+
+	# # `chezmoi edit` performs appropriate redirect
+	# exec $TERMINAL chezmoi edit --watch "$sel"
+
+	# requires chezmoi.nvim
+	# https://github.com/xvzc/chezmoi.nvim?tab=readme-ov-file#treat-all-files-in-chezmoi-source-directory-as-chezmoi-files
+	exec $TERMINAL $EDITOR "$HOME/.local/share/chezmoi/$sel"
+
+else
+
+	# could be done by project.nvim; i removed project.nvim, but i forgot
+	# the reason for doing so
+	if top=$(git rev-parse --show-toplevel); then
+		cd "$top"
+	fi
+
+	exec $TERMINAL "$EDITOR" "$sel"
+fi
