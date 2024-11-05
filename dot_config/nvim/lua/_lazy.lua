@@ -649,7 +649,9 @@ require("lazy").setup(
 		},
 
 		"challenger-deep-theme/vim",
+		"chriskempson/vim-tomorrow-theme",
 		"danilo-augusto/vim-afterglow",
+		"dasupradyumna/midnight.nvim",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
 		"kyoz/purify",
 		"nvimdev/oceanic-material",
