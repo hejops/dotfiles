@@ -754,14 +754,6 @@ require("lazy").setup(
 		}, -- }}}
 		-- colorschemes {{{
 
-		-- almost every colorscheme i've tried is really bad at diffs, specifically
-		-- contrast between added and deleted lines
-
-		-- ack -i diffadd ~/.local/share/nvim/lazy/
-		-- find ~/.local/share/nvim/lazy/ -name '*lua' | \xargs ack 'text.diff.add'
-		-- find ~/.local/share/nvim/lazy/ | grep -P '/colors/.+(vim|lua)' | sort
-		-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3701#issuecomment-1288166768
-
 		{
 			"zootedb0t/citruszest.nvim",
 			config = function()
@@ -788,16 +780,17 @@ require("lazy").setup(
 
 		"challenger-deep-theme/vim",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
+		"morhetz/gruvbox",
+		"tomasr/molokai",
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "danilo-augusto/vim-afterglow", -- mono tabline
 		-- "dasupradyumna/midnight.nvim", -- mono tabline
-		-- "gosukiwi/vim-atom-dark", -- bad diff
+		-- "gosukiwi/vim-atom-dark", -- bad lualine
 		-- "hachy/eva01.vim", -- don't like the low contrast one
-		-- "jaredgorski/spacecamp", -- almost great, except for the awful grey-on-white lualine
+		-- "jaredgorski/spacecamp", -- bad lualine
 		-- "mhartington/oceanic-next", -- has light
 		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
-		-- "morhetz/gruvbox", -- bad diff
 		-- "nvimdev/oceanic-material", -- mono tabline
 		-- "paulo-granthon/hyper.nvim", -- blue against black
 		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
@@ -805,9 +798,8 @@ require("lazy").setup(
 		-- "rockyzhang24/arctic.nvim", -- requires lush
 		-- "srijs/vim-colors-rusty", -- not matched by regex
 		-- "tomasiser/vim-code-dark", -- mid contrast
-		-- "tomasr/molokai", -- mid diff
 		-- "vague2k/vague.nvim", -- bad contrast
-		-- "volbot/voltrix.vim",
+		-- "volbot/voltrix.vim", -- mono tabline
 		-- "w0ng/vim-hybrid", -- mono tabline
 		-- "xero/miasma.nvim", -- nauseating
 		-- "yorickpeterse/autumn.vim", -- mono tabline
