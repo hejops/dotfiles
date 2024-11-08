@@ -7,7 +7,7 @@ require("autocmds")
 require("binds")
 require("sets")
 
-require("_lazy") -- TODO: rename to plugins
+require("plugins")
 
 -- plugin autocmds {{{
 
@@ -447,10 +447,10 @@ telescope.setup({
 
 -- extensions must be loaded after `telescope.setup`
 -- pcall(telescope.load_extension, "fzf") -- enable telescope fzf native, if installed
+-- telescope.load_extension("ui-select")
 -- telescope.load_extension("undo")
 telescope.load_extension("file_browser")
 telescope.load_extension("heading")
--- telescope.load_extension("ui-select")
 
 -- }}}
 -- telescope binds {{{
