@@ -787,19 +787,18 @@ require("lazy").setup(
 		},
 
 		"challenger-deep-theme/vim",
-		"danilo-augusto/vim-afterglow",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
-		"kyoz/purify",
-		"nvimdev/oceanic-material",
-		"w0ng/vim-hybrid",
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
+		-- "danilo-augusto/vim-afterglow", -- mono tabline
+		-- "dasupradyumna/midnight.nvim", -- mono tabline
 		-- "gosukiwi/vim-atom-dark", -- bad diff
 		-- "hachy/eva01.vim", -- don't like the low contrast one
 		-- "jaredgorski/spacecamp", -- almost great, except for the awful grey-on-white lualine
 		-- "mhartington/oceanic-next", -- has light
 		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
 		-- "morhetz/gruvbox", -- bad diff
+		-- "nvimdev/oceanic-material", -- mono tabline
 		-- "paulo-granthon/hyper.nvim", -- blue against black
 		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
 		-- "ray-x/aurora", -- mid contrast
@@ -809,6 +808,7 @@ require("lazy").setup(
 		-- "tomasr/molokai", -- mid diff
 		-- "vague2k/vague.nvim", -- bad contrast
 		-- "volbot/voltrix.vim",
+		-- "w0ng/vim-hybrid", -- mono tabline
 		-- "xero/miasma.nvim", -- nauseating
 		-- "yorickpeterse/autumn.vim", -- mono tabline
 		-- "yorickpeterse/happy_hacking.vim", -- mono tabline

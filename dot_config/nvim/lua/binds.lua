@@ -295,7 +295,7 @@ local function exec()
 	end
 	-- TODO: async (Dispatch)
 	local front
-	local wide = vim.o.columns > 100
+	local wide = vim.o.columns > 150
 	if wide then -- vsplit if wide enough
 		local w = math.floor(vim.o.columns * 0.33)
 		front = w .. " vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
