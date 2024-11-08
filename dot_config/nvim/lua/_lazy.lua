@@ -604,13 +604,153 @@ require("lazy").setup(
 		-- }, -- }}}
 		{ -- treesitter {{{
 			"nvim-treesitter/nvim-treesitter",
+			-- https://github.com/nvim-treesitter/nvim-treesitter/issues/7338
+			commit = "c91122d2012682301df68307cfc049a57c3fd286",
 			dependencies = {
 				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
 				-- "JoosepAlviste/nvim-ts-context-commentstring", -- context-aware comment char, e.g. markdown embed?
 				{ "danymat/neogen", config = true }, -- docs generator
 			},
-			build = ":TSUpdate",
+			build = ":TSUpdate", -- update parsers when updating plugin
 			lazy = false,
+			config = function()
+				require("nvim-treesitter.configs").setup({
+
+					modules = {},
+					ignore_install = {},
+
+					-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3579#issuecomment-1278662119
+					sync_install = #vim.api.nvim_list_uis() == 0,
+
+					ensure_installed = {
+						-- https://github.com/nvim-treesitter/nvim-treesitter#supported-languages
+
+						"bash",
+						"css",
+						"csv",
+						"diff",
+						"gitcommit",
+						"gitignore",
+						"go",
+						"gomod",
+						"gosum",
+						"html",
+						"htmldjango",
+						"javascript",
+						"jsdoc",
+						"json",
+						"jsonc",
+						"lua",
+						"markdown",
+						"markdown_inline",
+						"muttrc",
+						"python",
+						"rasi",
+						"rust",
+						"sql",
+						"toml",
+						"typescript",
+						"vim",
+						"vimdoc",
+						"yaml",
+						"zig",
+						-- "latex", -- requires tree-sitter-cli
+						-- "scheme",
+					},
+
+					auto_install = false, -- if true, parsers will be force-installed every time
+					highlight = { enable = true }, -- https://github.com/nvim-treesitter/nvim-treesitter#highlight
+					indent = { enable = true },
+
+					textobjects = {
+						select = {
+							enable = true,
+							lookahead = true, -- Automatically jump forward to textobj, similar to targets.vim probably need autocmd
+							keymaps = {
+								-- You can use the capture groups defined in textobjects.scm
+								-- Define your own text objects mappings, similar to `ip` (inner paragraph)
+								["aa"] = "@parameter.outer",
+								["ac"] = "@class.outer",
+								["af"] = "@function.outer", -- game-changer
+								["ia"] = "@parameter.inner",
+								["ic"] = "@class.inner",
+								["if"] = "@function.inner",
+							},
+						},
+
+						move = { -- more like jump
+							enable = true,
+							set_jumps = false, -- whether to set jumps in the jumplist
+							goto_next_start = {
+								-- note: for md sections, use tadmccorkle
+								-- TODO: zz after? probably need autocmd
+								["gj"] = "@function.outer", -- default gj behavior is now in j
+								["gJ"] = "@class.outer", -- default gJ (join with spaces) is never desired
+							},
+							goto_previous_start = {
+								["gk"] = "@function.outer",
+								["gK"] = "@class.outer",
+							},
+							goto_next_end = {
+								["gl"] = "@function.outer",
+								["gL"] = "@class.outer",
+							},
+							goto_previous_end = {
+								["gh"] = "@function.outer",
+								["gH"] = "@class.outer",
+							},
+						},
+						-- swap = {
+						-- 	-- only works in params, not data structures (e.g. arrays)
+						-- 	--
+						-- 	-- in python, swapping args is never necessary, as params should always
+						-- 	-- be specified as keywords (not positionally)
+						-- 	enable = true,
+						-- 	swap_next = {
+						-- 		["[]"] = "@parameter.inner",
+						-- 		["gsj"] = "@function.outer",
+						-- 	},
+						-- 	swap_previous = {
+						-- 		["]["] = "@parameter.inner",
+						-- 		["gsk"] = "@function.outer",
+						-- 	},
+						-- },
+					},
+
+					incremental_selection = { -- need to see a demo
+						enable = true,
+						keymaps = {
+							-- - init_selection: in normal mode, start incremental selection.
+							-- - node_decremental: in visual mode, decrement to the previous named node.
+							-- - node_incremental: in visual mode, increment to the upper named parent.
+							-- - scope_incremental: in visual mode, increment to the upper scope
+							init_selection = "<c-space>", -- viw
+							node_decremental = "grm",
+							node_incremental = "grn",
+							scope_incremental = "grc", -- ??
+						},
+					},
+				})
+
+				vim.cmd.set("foldexpr=nvim_treesitter#foldexpr()") -- https://www.jmaguire.tech/img/code_folding.png
+
+				-- local ts_repeat_move = require("nvim-treesitter.textobjects.repeatable_move")
+				--
+				-- -- -- Repeat TS movements with ; and ,
+				-- -- -- ensure ; goes forward and , goes backward regardless of the last direction
+				-- -- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move_next)
+				-- -- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_previous)
+				--
+				-- -- vim way: ; goes to the direction you were moving.
+				-- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
+				-- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
+				--
+				-- -- the above keymaps make fFtT non-repeatable; correct that
+				-- vim.keymap.set({ "n", "x", "o" }, "F", ts_repeat_move.builtin_F)
+				-- vim.keymap.set({ "n", "x", "o" }, "T", ts_repeat_move.builtin_T)
+				-- vim.keymap.set({ "n", "x", "o" }, "f", ts_repeat_move.builtin_f)
+				-- vim.keymap.set({ "n", "x", "o" }, "t", ts_repeat_move.builtin_t)
+			end,
 		}, -- }}}
 		-- colorschemes {{{
 
@@ -652,8 +792,6 @@ require("lazy").setup(
 		"kyoz/purify",
 		"nvimdev/oceanic-material",
 		"w0ng/vim-hybrid",
-		"yorickpeterse/autumn.vim",
-		"yorickpeterse/happy_hacking.vim",
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "gosukiwi/vim-atom-dark", -- bad diff
@@ -672,6 +810,8 @@ require("lazy").setup(
 		-- "vague2k/vague.nvim", -- bad contrast
 		-- "volbot/voltrix.vim",
 		-- "xero/miasma.nvim", -- nauseating
+		-- "yorickpeterse/autumn.vim", -- mono tabline
+		-- "yorickpeterse/happy_hacking.vim", -- mono tabline
 		-- "yorumicolors/yorumi.nvim", -- low contrast
 		-- https://github.com/paulopatto/dotfiles/blob/67848a890db8c4578614f2de448cf323c450ad2f/nvim/lua/core/plugins.lua#L39 (mid)
 
