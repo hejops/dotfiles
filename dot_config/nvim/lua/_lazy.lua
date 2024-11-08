@@ -231,6 +231,20 @@ require("lazy").setup(
 
 					lualine_a = {
 						"branch",
+					},
+
+					lualine_b = {
+						{ "diagnostics", sources = { "nvim_workspace_diagnostic" } },
+					},
+
+					lualine_c = {
+						{
+							-- not dynamic on resize: https://github.com/nvim-lualine/lualine.nvim?tab=readme-ov-file#filename-component-options
+							function()
+								return vim.o.columns > 170 and vim.fn.expand("%:p:h") or vim.fn.expand("%")
+							end,
+						},
+
 						{
 							"diff",
 							-- https://github.com/nvim-lualine/lualine.nvim/wiki/Component-snippets#using-external-source-for-diff
@@ -248,34 +262,18 @@ require("lazy").setup(
 						},
 					},
 
-					lualine_b = {
-						{ "diagnostics", sources = { "nvim_workspace_diagnostic" } },
-					},
+					lualine_x = {},
 
-					lualine_c = {
+					lualine_y = { "encoding", "fileformat", "filetype" },
 
-						{
-							-- https://github.com/nvim-lualine/lualine.nvim?tab=readme-ov-file#filename-component-options
-							"filename",
-							path = vim.o.columns > 170 and 2 -- absolute path, as in :echo expand('%:p')
-								or 0,
-						},
-					},
-
-					lualine_x = { "encoding", "fileformat", "filetype" },
-
-					lualine_y = {
+					lualine_z = {
 						-- "progress",
 						-- "location",
 						function()
 							local current_line = vim.fn.line(".")
 							local total_line = vim.fn.line("$")
-							return string.format("%.2f", current_line / total_line)
+							return string.format("%.2f %s", current_line / total_line, vim.fn.mode())
 						end,
-					},
-
-					lualine_z = {
-						"mode",
 					},
 				}
 
@@ -654,6 +652,8 @@ require("lazy").setup(
 		"kyoz/purify",
 		"nvimdev/oceanic-material",
 		"w0ng/vim-hybrid",
+		"yorickpeterse/autumn.vim",
+		"yorickpeterse/happy_hacking.vim",
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "gosukiwi/vim-atom-dark", -- bad diff
