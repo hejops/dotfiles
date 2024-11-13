@@ -781,6 +781,8 @@ require("lazy").setup(
 		"challenger-deep-theme/vim",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
 		"morhetz/gruvbox",
+		"pauchiner/pastelnight.nvim",
+		"shawilly/ponokai",
 		"tomasr/molokai",
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
