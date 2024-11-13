@@ -176,7 +176,7 @@ local ft_binds = { -- {{{
 		vim.keymap.set("n", "<esc>", "ZZ", { buffer = true })
 	end,
 
-	sh = function()
+	["sh,bash"] = function()
 		vim.keymap.set("n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>", { buffer = true })
 	end,
 
