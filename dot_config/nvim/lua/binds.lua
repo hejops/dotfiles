@@ -158,6 +158,18 @@ vim.keymap.set("n", "z/", "ZZ") -- lazy exit
 vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
 -- TODO: set mark and return to it (mz...z"ap)
 
+local function toggle_diagnostics()
+	-- only disables inlay hints; popups (and trouble) remain
+	-- TODO: for python, only ruff should be toggled
+	if vim.diagnostic.is_enabled() then
+		vim.diagnostic.enable(false)
+		vim.diagnostic.hide()
+	else
+		vim.diagnostic.enable(true)
+		vim.diagnostic.show()
+	end
+end
+
 local ft_binds = { -- {{{
 
 	gitcommit = function()
@@ -241,6 +253,18 @@ local ft_binds = { -- {{{
 		vim.keymap.set("n", "<leader>N", "$m`%dddj``p:w<cr>", { buffer = true })
 	end,
 
+	python = function()
+		-- TODO: try_lint may stop working after a file is written?
+		-- https://github.com/mfussenegger/nvim-lint/issues/553#issuecomment-2041042145
+		vim.keymap.set("n", "<leader>d", function()
+			vim.diagnostic.reset(nil, 0)
+			require("lint").linters_by_ft = {
+				python = #require("lint").linters_by_ft.python > 0 and {} or { "ruff" },
+			}
+			require("lint").try_lint()
+		end)
+	end,
+
 	markdown = function()
 		-- TODO: if checkbox item (`- [ ]`), toggle check
 		-- https://github.com/tadmccorkle/markdown.nvim#lists
@@ -255,17 +279,7 @@ local ft_binds = { -- {{{
 			vim.cmd.norm("zz")
 		end
 
-		-- could be useful for all filetypes?
-		vim.keymap.set("n", "<leader>d", function()
-			-- only disables inlay hints; popups (and trouble) remain
-			if vim.diagnostic.is_enabled() then
-				vim.diagnostic.enable(false)
-				vim.diagnostic.hide()
-			else
-				vim.diagnostic.enable(true)
-				vim.diagnostic.show()
-			end
-		end)
+		vim.keymap.set("n", "<leader>d", toggle_diagnostics)
 
 		-- vim.keymap.set("n", "J", mn, { buffer = true, remap = true })
 		-- vim.keymap.set("n", "K", mp, { buffer = true, remap = true }) -- TS hover
@@ -581,11 +595,12 @@ local function debug_print()
 	-- {{{
 	local filetypes = {
 
+		-- python = 'print(f"{@=}")',
 		-- zig = 'std.debug.print("{}\n",.{});',
 		go = "fmt.Println(@)",
 		javascript = "console.log(@);",
 		lua = "print(@)",
-		python = 'print(f"{@=}")',
+		python = "print(@)",
 		rust = 'println!("{:#?}", @);',
 		typescript = "console.log(@);",
 	}
