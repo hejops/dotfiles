@@ -153,37 +153,15 @@ unbind gd
 " https://github.com/glacambre/.dotfiles/blob/c7dc7029d508e5b10dc9a89c39c1c824809877a6/default/.config/tridactyl/tridactylrc#L1
 alias tabsortalpha jsb browser.tabs.query({}).then(tabs => tabs.sort((t1, t2) => t1.url.localeCompare(t2.url)).forEach((tab, index) => browser.tabs.move(tab.id, {index})))
 
-" bind ( jsb tri.excmds.tabprev() //
-" bind ) jsb tri.excmds.tabnext() //
-" bind ;c hint -c [class*="expand"],[class="togg"]
-" bind <Backspace> source
-" bind D composite tabclose | tab #
-" bind D hint -W download
-" bind E followpage next
-" bind F hint -y
-" bind T translate
-" bind W followpage prev
-" bind b tab
-" bind q reader
-" bind x jsb tri.excmds.tabclose() //
-" bind z. !s killall firefox
-" set nmaps.< followpage prev
-" set nmaps.<A-r> source
-" set nmaps.<C-,> tabmove -1
-" set nmaps.<C-S-u> viewsource
-" set nmaps.<F6> current_url tabopen
-" set nmaps.> followpage next
-" unbind a
+" bind B tab #
+" bind w fullscreen
 bind , jsb tri.excmds.tabnext() //
+bind . tabmove +1
 bind / fillcmdline tab
-bind ;C composite hint_focus; !s xdotool key Menu
-bind <a-j> tabmove +1
-bind <a-k> tabmove -1
 bind <c-g> tab #
-bind <c-t> tab #
-bind B tab #
 bind J scrollpage 1
 bind K scrollpage -1
+bind M composite hint_focus; !s xdotool key Menu
 bind P clipboard open
 bind T !s xdotool key alt+v e t t Return
 bind U urlparent
@@ -193,21 +171,18 @@ bind c jsb tri.excmds.tabprev() //
 bind d jsb tri.excmds.tabclose() //
 bind e current_url open
 bind gD composite tabduplicate | tabdetach
-bind gou composite exclaim_quiet ublock | open
+bind gou composite exclaim_quiet ublock | tabopen
 bind j scrollline 3
 bind k scrollline -3
 bind p clipboard tabopen
 bind q source
 bind s composite tabsortalpha ; tabsort --containers
-bind w fullscreen
-bind x jsb tri.excmds.tabnext() //
+bind x tabmove -1
 bind y clipboard yank
-bind z jsb tri.excmds.tabprev() //
+bind z tab #
 bind { followpage prev
 bind } followpage next
 command hint_focus hint -;
-jsb tri.config.set("nmaps", "<C-,>", "tabmove -1")
-jsb tri.config.set("nmaps", "<C-.>", "tabmove +1")
 set nmaps.<C-u> urlroot
 
 bind f hint -c input:not([type=hidden]):not([disabled]), a, area, iframe, textarea, button, select, summary, [onclick], [onmouseover], [onmousedown], [onmouseup], [oncommand], [role='link'], [role='button'], [role='checkbox'], [role='combobox'], [role='listbox'], [role='listitem'], [role='menuitem'], [role='menuitemcheckbox'], [role='menuitemradio'], [role='option'], [role='radio'], [role='scrollbar'], [role='slider'], [role='spinbutton'], [role='tab'], [role='textbox'], [role='treeitem'], [class*='button'], [tabindex]
