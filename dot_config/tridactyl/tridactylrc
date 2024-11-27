@@ -212,15 +212,12 @@ bind --mode=insert <C-w> text.backward_kill_word
 bind --mode=ex <C-b> text.beginning_of_line
 bind --mode=ex <C-e> text.end_of_line
 bind --mode=ex <C-u> text.backward_kill_line
-bind --mode=ex <C-x> text.kill_line
 bind --mode=input <C-b> text.beginning_of_line
 bind --mode=input <C-e> text.end_of_line
 bind --mode=input <C-u> text.backward_kill_line
-bind --mode=input <C-x> text.kill_line
 bind --mode=insert <C-b> text.beginning_of_line
 bind --mode=insert <C-e> text.end_of_line
 bind --mode=insert <C-u> text.backward_kill_line
-bind --mode=insert <C-x> text.kill_line
 
 " bind --mode=ex <C-e> ex.deselect_completion
 " bind --mode=ex <C-g> composite text.beginning_of_line ; text.forward_word ; text.kill_word
