@@ -566,6 +566,12 @@ require("lazy").setup(
 				"cassin01/cmp-gitcommit",
 			},
 		}, -- }}}
+		{ -- nvim-dap {{{
+			"mfussenegger/nvim-dap",
+			dependencies = {
+				"mfussenegger/nvim-dap-python",
+			},
+		}, -- }}}
 
 		{ -- gitsigns {{{
 			"lewis6991/gitsigns.nvim",
