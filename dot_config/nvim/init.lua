@@ -1205,14 +1205,6 @@ require("nvim-dap-virtual-text").setup({
 require("util"):random_colorscheme()
 vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
 
-require("nvim-ts-autotag").setup({
-	opts = {
-		enable_close = true, -- Auto close tags
-		enable_rename = true, -- Auto rename pairs of tags
-		enable_close_on_slash = false, -- Auto close on trailing </
-	},
-})
-
 -- }}}
 
 -- is there a better place to put this?
