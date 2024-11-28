@@ -570,6 +570,7 @@ require("lazy").setup(
 			"mfussenegger/nvim-dap",
 			dependencies = {
 				"mfussenegger/nvim-dap-python",
+				"thehamsta/nvim-dap-virtual-text",
 			},
 		}, -- }}}
 

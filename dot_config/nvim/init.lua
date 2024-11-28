@@ -1160,6 +1160,51 @@ require("cmp-gitcommit").setup({})
 require("util"):random_colorscheme()
 vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
 
+local dap = require("dap")
+
+vim.keymap.set("n", "<leader>dt", dap.toggle_breakpoint)
+vim.keymap.set({ "n", "v" }, "<leader>dp", require("dap.ui.widgets").preview)
+vim.keymap.set("n", "<leader>dj", dap.continue())
+
+-- -- race condition: when calling continue and preview sequentially, continue
+-- -- will advance to next breakpoint, but because preview is 'faster', it will
+-- -- display whichever the line the cursor was at when `continue` was called
+-- -- (usually not useful). as a result, preview must be called separately, which
+-- -- is annoying.
+-- vim.keymap.set("n", "<leader>dj", function()
+-- 	dap.continue()
+-- 	require("dap.ui.widgets").preview() -- more useful than hover since it doesn't grab focus, and the split is always reused
+-- end)
+
+vim.keymap.set("n", "<leader>dr", dap.repl.open) -- not terribly useful?
+
+vim.keymap.set("n", "<leader>di", dap.step_into) -- https://stackoverflow.com/a/3580851
+vim.keymap.set("n", "<leader>do", dap.step_out)
+vim.keymap.set("n", "<leader>dv", dap.step_over)
+
+-- https://github.com/mfussenegger/nvim-dap/wiki/Debug-Adapter-installation#python
+-- https://github.com/mfussenegger/nvim-dap-python?tab=readme-ov-file#usage
+
+require("dap-python").setup("/usr/bin/python3") -- `python3 -m debugpy --version` must work in the shell
+dap.configurations.python = {
+	{
+		type = "python",
+		request = "launch",
+		name = "Launch file",
+		program = "${file}",
+		pythonPath = "/usr/bin/python",
+	},
+}
+
+require("nvim-dap-virtual-text").setup({
+	virt_text_pos = "eol", -- inline is very hard to read
+	-- note: current value will always be placed at the initial declaration
+})
+
+-- vim.cmd.colorscheme("citruszest")
+require("util"):random_colorscheme()
+vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
+
 require("nvim-ts-autotag").setup({
 	opts = {
 		enable_close = true, -- Auto close tags
