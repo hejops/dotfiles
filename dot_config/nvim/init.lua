@@ -1028,18 +1028,16 @@ require("conform").setup({
 			-- stop_after_first = true,
 		},
 
+		-- cpp = { "astyle" },
 		-- markdown = { "mdslw" }, -- i like the idea, but not really on cargo yet
 		["_"] = { "trim_whitespace" },
 		bash = { "shfmt" },
 		c = { "clang-format" }, -- clang-format requires config (presumably a .clang-format file) ootb
-		-- cpp = { "astyle" },
 		css = { "prettier" },
 		dhall = { "dhall" },
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" }, -- need --parser html?
 		htmldjango = { "djlint" },
-		json = { "prettier" },
-		jsonc = { "prettier" },
 		lua = { "stylua" },
 		python = { "black", "isort" },
 		ruby = { "rubocop" },
@@ -1052,6 +1050,8 @@ require("conform").setup({
 
 		javascript = { "biome", "prettier", stop_after_first = true },
 		javascriptreact = { "biome", "prettier", stop_after_first = true },
+		json = { "biome", "prettier", stop_after_first = true },
+		jsonc = { "biome", "prettier", stop_after_first = true },
 		typescript = { "biome", "prettier", stop_after_first = true },
 		typescriptreact = { "biome", "prettier", stop_after_first = true },
 
