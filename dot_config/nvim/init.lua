@@ -1156,15 +1156,14 @@ require("cmp-gitcommit").setup({})
 
 -- }}}
 
--- vim.cmd.colorscheme("citruszest")
-require("util"):random_colorscheme()
-vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
+-- https://github.com/mfussenegger/dotfiles/blob/da93d1f7f52ea50b00199696a6977dd70a84736e/vim/dot-config/nvim/lua/me/dap.lua
 
 local dap = require("dap")
 
+-- vim.keymap.set({ "n", "v" }, "<leader>dh", require("dap.ui.widgets").hover)
+vim.keymap.set("n", "<leader>dj", dap.continue)
 vim.keymap.set("n", "<leader>dt", dap.toggle_breakpoint)
 vim.keymap.set({ "n", "v" }, "<leader>dp", require("dap.ui.widgets").preview)
-vim.keymap.set("n", "<leader>dj", dap.continue())
 
 -- -- race condition: when calling continue and preview sequentially, continue
 -- -- will advance to next breakpoint, but because preview is 'faster', it will
@@ -1186,13 +1185,14 @@ vim.keymap.set("n", "<leader>dv", dap.step_over)
 -- https://github.com/mfussenegger/nvim-dap-python?tab=readme-ov-file#usage
 
 require("dap-python").setup("/usr/bin/python3") -- `python3 -m debugpy --version` must work in the shell
+
 dap.configurations.python = {
 	{
 		type = "python",
 		request = "launch",
 		name = "Launch file",
 		program = "${file}",
-		pythonPath = "/usr/bin/python",
+		-- pythonPath = "/usr/bin/python",
 	},
 }
 
