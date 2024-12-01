@@ -944,6 +944,11 @@ require("conform").setup({
 
 		prettier = {
 			prepend_args = { "--print-width", "80" },
+			cwd = function()
+				-- for some reason, prettier will not modify file if cwd == ~ (file
+				-- location is irrelevant)
+				return "/tmp"
+			end,
 		},
 
 		biome = { cwd = root_directory }, -- important: work biome.json is at top-level
@@ -1020,14 +1025,6 @@ require("conform").setup({
 			-- "goimports", -- required for autoimport (null_ls), but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 		},
 
-		markdown = {
-			-- i like that prettier clobbers italics * into _ (markdownlint doesn't)
-			-- TODO: will not run from ~
-			"prettier",
-			"markdownlint",
-			-- stop_after_first = true,
-		},
-
 		-- cpp = { "astyle" },
 		-- markdown = { "mdslw" }, -- i like the idea, but not really on cargo yet
 		["_"] = { "trim_whitespace" },
@@ -1039,6 +1036,7 @@ require("conform").setup({
 		html = { "prettier" }, -- need --parser html?
 		htmldjango = { "djlint" },
 		lua = { "stylua" },
+		markdown = { "prettier" },
 		python = { "black", "isort" },
 		ruby = { "rubocop" },
 		rust = { "rustfmt" },
