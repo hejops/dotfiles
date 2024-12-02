@@ -26,6 +26,23 @@
 [interactive]
 	singleKey = true	; requires readkey
 
+	; delta's default mode is side-by-side, which cannot be used with git add --patch
+	; color-only mode always overrides side-by-side
+	; https://github.com/dandavison/delta/blob/1a8d3bc994d2c8c6bfcb1965aad4303e97c022f0/src/options/set.rs#L90
+
+	; any diffFilter command will be run only once per `git` invocation
+	; (not per file, or per hunk (which is what i ideally want)). this
+	; means that arcane PAGER hackery may be required
+	; https://github.com/dandavison/delta/issues/1875
+	; https://old.reddit.com/r/git/comments/6mll23/
+	; https://github.com/search?q=diffFilter+clear+language%3A%22Git+Config%22&type=code
+	; not sure what --features=interactive does; not documented
+	diffFilter = delta --color-only || less
+	; diffFilter = "echo XXXXXXXXXXXXXXXXXXXXXXXX >&2 ; delta --color-only"
+	; diffFilter = "bash -c 'echo -n $(clear); cat /dev/stdin'"
+	; diffFilter = "clear; delta --color-only --features=interactive"
+	; diffFilter = "PAGER='clear; less' delta --color-only --features=interactive"
+
 [rerere]
 	enable = true		; https://git-scm.com/book/en/v2/Git-Tools-Rerere
 
@@ -63,7 +80,10 @@
 [log]
 	date = iso
 
+; vscode inherits this file, but stupidly does not know how to reload it
+
 [merge]
+	; TODO: doesn't work in vscode
 	conflictstyle = zdiff3	; smarter diff3 https://ductile.systems/zdiff3/
 
 [pull]
