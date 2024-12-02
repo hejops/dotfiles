@@ -714,12 +714,13 @@ local servers = {
 	yamlls = {},
 	zls = {},
 
-	-- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
-	docker_compose_language_service = {
-		root_dir = require("lspconfig").util.root_pattern("docker-compose.yml"), -- add more patterns if needed
-		filetypes = { "yaml.docker-compose" },
-		-- single_file_support = true,
-	},
+	-- -- broken?
+	-- -- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
+	-- docker_compose_language_service = {
+	-- 	root_dir = require("lspconfig").util.root_pattern("docker-compose.yml"), -- add more patterns if needed
+	-- 	filetypes = { "yaml.docker-compose" },
+	-- 	-- single_file_support = true,
+	-- },
 
 	-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md
 	gopls = {
@@ -881,6 +882,8 @@ vim.diagnostic.config({
 -- linter: nvim-lint {{{
 -- to ensure all tools (linters etc) are up-to-date, it is better to keep them
 -- in /nvim/mason (rather than decentralised user-installed ones)
+
+-- lua print(require("lint").get_running()[1])
 
 local linters = {
 
@@ -1133,7 +1136,7 @@ require("conform").setup({
 		tex = { "latexindent" },
 		toml = { "taplo" },
 		xml = { "xmlformat" },
-		yaml = { "prettier" },
+		-- yaml = { "prettier" },
 
 		javascript = { "biome", "prettier", stop_after_first = true },
 		javascriptreact = { "biome", "prettier", stop_after_first = true },
@@ -1265,7 +1268,9 @@ vim.filetype.add({
 
 	-- https://github.com/kennethnym/dotfiles/blob/41f03b9091181dc62ce872288685b27f001286f3/nvim/init.lua#L474
 	filename = {
+
 		["Dockerfile"] = "dockerfile",
 		["docker-compose.yml"] = "yaml.docker-compose",
+		["yarn.lock"] = "text", -- default is yaml for some reason
 	},
 })
