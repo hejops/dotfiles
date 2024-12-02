@@ -198,6 +198,7 @@ toolbar .toolbarbutton-1,
   padding: -2em;
 }
 
+/* https://github.com/piroor/treestyletab/wiki/Code-snippets-for-custom-style-rules#full-auto-showhide-theme */
 #sidebar {
   max-width: none !important;
   min-width: 0px !important;
@@ -206,25 +207,25 @@ toolbar .toolbarbutton-1,
 #sidebar-box:not(
     [sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"]
   ) {
-  min-width: var(--thin-tab-width) !important;
+  min-width: var(--wide-tab-width) !important;
   max-width: none !important;
 }
 #sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] {
   position: relative !important;
-  transition: all 150ms !important; /* used to be 300; 0 is just too jarring */
+  transition: all 150ms !important;
   min-width: var(--thin-tab-width) !important;
   max-width: var(--thin-tab-width) !important;
-  z-index: 1 !important;
+  /* large z-index required as of ff 133 */
+  /* https://github.com/piroor/treestyletab/issues/3635#issuecomment-2386360361 */
+  z-index: calc(var(--browser-area-z-index-tabbox, 10000) + 1) !important;
 }
 #sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"]:hover {
   transition: all 150ms !important;
   min-width: var(--wide-tab-width) !important;
   max-width: var(--wide-tab-width) !important;
-  margin-right: -165px !important; /*var(--wide-tab-width) - var(--thin-tab-width) = 160px * -1 = -160px*/
   margin-right: calc(
-    var(--thin-tab-width) - var(--wide-tab-width)
-  ) !important; /* 160px * -1 = -160px*/
-  z-index: 1 !important;
+    (var(--wide-tab-width) - var(--thin-tab-width)) * -1
+  ) !important;
 }
 
 /*}}}*/

@@ -43,18 +43,6 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 	end,
 })
 
--- vim.api.nvim_create_autocmd("BufWritePost", {
--- 	pattern = { "*.js", "*.ts", "*.jsx", "*.tsx" },
--- 	callback = function()
--- 		-- vim.cmd([[silent! !./node_modules/.bin/biome format --write %]])
--- 		-- lint fixes must be applied -before- 'regular' lints
--- 		-- may not be desired at work
--- 		vim.cmd(
--- 			[[silent! !biome check --write --formatter-enabled=false --linter-enabled=true --organize-imports-enabled=true %]]
--- 		)
--- 	end,
--- })
-
 vim.api.nvim_create_autocmd({ "BufWritePost", "VimEnter" }, {
 	callback = function()
 		require("lint").try_lint()
@@ -98,13 +86,8 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 -- end
 
 -- hacked together from exec
-local function tectonic_build()
-	-- close all unnamed splits
-	for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_get_name(bufnr) == "" then
-			vim.api.nvim_buf_delete(bufnr, { force = true })
-		end
-	end
+local function tectonic_build() -- {{{
+	require("util"):close_unnamed_splits()
 
 	-- tectonic build is slow, and should always be started in background
 	vim.fn.jobstart([[
@@ -112,15 +95,10 @@ tectonic -X build 2>&1 > ./src/tectonic.log ;
 lsof ./build/default/default.pdf > /dev/null 2> /dev/null || zathura ./build/default/default.pdf 2> /dev/null &
 ]])
 
-	-- open actual split for log
-	-- TODO: ensure log file reloaded after every build (which autocmd?)
-	if not require("util"):buf_loaded("tectonic.log") then
-		local h = vim.o.lines * 0.2
-		local cmd = h .. " new ./src/tectonic.log"
-		vim.cmd(cmd)
-		vim.cmd.wincmd("k")
-	end
-end
+	-- TODO: ensure file reloaded after build finish (currently, loads only log
+	-- of previous build due to async jobstart)
+	require("util"):open_split("./src/tectonic.log")
+end -- }}}
 
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 	pattern = { "*.tex" },
@@ -128,9 +106,9 @@ vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 		-- relies on correct project path
 		if vim.loop.fs_stat("Tectonic.toml") then
 			tectonic_build()
-		elseif in_tex() then
-			vim.cmd("VimtexCompile")
-			vim.cmd("VimtexClean")
+			-- elseif in_tex() then
+			-- 	vim.cmd("VimtexCompile")
+			-- 	vim.cmd("VimtexClean")
 		end
 	end,
 })
@@ -143,11 +121,22 @@ vim.api.nvim_create_autocmd({ "VimEnter" }, {
 	callback = function()
 		if vim.loop.fs_stat("Tectonic.toml") then
 			tectonic_build()
-		-- else
-		elseif in_tex() then
-			vim.cmd("VimtexCompile")
-			vim.cmd("VimtexClean")
+			-- elseif in_tex() then
+			-- 	vim.cmd("VimtexCompile")
+			-- 	vim.cmd("VimtexClean")
 		end
+	end,
+})
+
+vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+	pattern = { "*.ly" },
+	callback = function()
+		require("util"):close_unnamed_splits()
+		vim.cmd(
+			vim.o.lines * 0.2
+				.. " new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
+				.. string.format("lilypond %s 2>&1", vim.fn.expand("%"))
+		)
 	end,
 })
 
@@ -163,9 +152,9 @@ vim.api.nvim_create_autocmd("User", {
 	-- pattern = "LazyVimStarted",
 	desc = "Update lazy.nvim plugins",
 	callback = function(event)
-		local start_time = os.clock()
+		-- local start_time = os.clock()
 		require("lazy").sync({ wait = false, show = false })
-		local end_time = os.clock()
+		-- local end_time = os.clock()
 		-- print("Lazy plugins synced in " .. (end_time - start_time) * 1000 .. "ms")
 		-- print(vim.print(event))
 	end,
@@ -185,10 +174,10 @@ vim.api.nvim_create_autocmd("User", {
 		vim.cmd("norm gg")
 		vim.cmd("GitConflictNextConflict")
 
-		-- https://github.com/wochap/nvim/blob/60920de61ae887f04994a4f253e19c0494d33023/lua/custom/custom-plugins/configs/git-conflict.lua#L4
-		vim.keymap.set("n", "[c", "<cmd>GitConflictPrevConflict<CR>|zz")
-		vim.keymap.set("n", "]c", "<cmd>GitConflictNextConflict<CR>|zz")
-		vim.keymap.set("n", "cq", "<cmd>GitConflictListQf<CR>")
+		-- -- https://github.com/wochap/nvim/blob/60920de61ae887f04994a4f253e19c0494d33023/lua/custom/custom-plugins/configs/git-conflict.lua#L4
+		-- vim.keymap.set("n", "[c", "<cmd>GitConflictPrevConflict<CR>|zz")
+		-- vim.keymap.set("n", "]c", "<cmd>GitConflictNextConflict<CR>|zz")
+		-- vim.keymap.set("n", "cq", "<cmd>GitConflictListQf<CR>")
 	end,
 })
 
@@ -1231,21 +1220,58 @@ cmp.setup({
 	},
 })
 
-require("cmp-gitcommit").setup({})
+require("cmp-gitcommit").setup({}) -- i don't really use this
 
 -- }}}
+
+-- https://github.com/mfussenegger/dotfiles/blob/da93d1f7f52ea50b00199696a6977dd70a84736e/vim/dot-config/nvim/lua/me/dap.lua
+
+local dap = require("dap")
+
+-- vim.keymap.set({ "n", "v" }, "<leader>dh", require("dap.ui.widgets").hover)
+vim.keymap.set("n", "<leader>dj", dap.continue)
+vim.keymap.set("n", "<leader>dt", dap.toggle_breakpoint)
+vim.keymap.set({ "n", "v" }, "<leader>dp", require("dap.ui.widgets").preview)
+
+-- -- race condition: when calling continue and preview sequentially, continue
+-- -- will advance to next breakpoint, but because preview is 'faster', it will
+-- -- display whichever the line the cursor was at when `continue` was called
+-- -- (usually not useful). as a result, preview must be called separately, which
+-- -- is annoying.
+-- vim.keymap.set("n", "<leader>dj", function()
+-- 	dap.continue()
+-- 	require("dap.ui.widgets").preview() -- more useful than hover since it doesn't grab focus, and the split is always reused
+-- end)
+
+vim.keymap.set("n", "<leader>dr", dap.repl.open) -- not terribly useful?
+
+vim.keymap.set("n", "<leader>di", dap.step_into) -- https://stackoverflow.com/a/3580851
+vim.keymap.set("n", "<leader>do", dap.step_out)
+vim.keymap.set("n", "<leader>dv", dap.step_over)
+
+-- https://github.com/mfussenegger/nvim-dap/wiki/Debug-Adapter-installation#python
+-- https://github.com/mfussenegger/nvim-dap-python?tab=readme-ov-file#usage
+
+require("dap-python").setup("/usr/bin/python3") -- `python3 -m debugpy --version` must work in the shell
+
+dap.configurations.python = {
+	{
+		type = "python",
+		request = "launch",
+		name = "Launch file",
+		program = "${file}",
+		-- pythonPath = "/usr/bin/python",
+	},
+}
+
+require("nvim-dap-virtual-text").setup({
+	virt_text_pos = "eol", -- inline is very hard to read
+	-- note: current value will always be placed at the initial declaration
+})
 
 -- vim.cmd.colorscheme("citruszest")
 require("util"):random_colorscheme()
 vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
-
-require("nvim-ts-autotag").setup({
-	opts = {
-		enable_close = true, -- Auto close tags
-		enable_rename = true, -- Auto rename pairs of tags
-		enable_close_on_slash = false, -- Auto close on trailing </
-	},
-})
 
 -- }}}
 

@@ -308,14 +308,14 @@ local function exec()
 		return
 	end
 	-- TODO: async (Dispatch)
-	local front
+	local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
 	local wide = vim.o.columns > 150
 	if wide then -- vsplit if wide enough
 		local w = math.floor(vim.o.columns * 0.33)
-		front = w .. " vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
+		front = w .. " v" .. front
 	else
 		local h = vim.o.lines * 0.2
-		front = h .. " new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
+		front = h .. front
 	end
 
 	local curr_file = vim.fn.shellescape(vim.fn.expand("%")) -- relative to cwd

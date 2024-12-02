@@ -167,6 +167,20 @@ require("lazy").setup(
 			end,
 		},
 
+		{
+			"windwp/nvim-ts-autotag",
+			ft = { "html", "javascriptreact" },
+			config = function()
+				require("nvim-ts-autotag").setup({
+					opts = {
+						enable_close = true, -- Auto close tags
+						enable_rename = true, -- Auto rename pairs of tags
+						enable_close_on_slash = false, -- Auto close on trailing </
+					},
+				})
+			end,
+		},
+
 		-- }}}
 
 		{ -- mason-null-ls {{{
@@ -565,6 +579,13 @@ require("lazy").setup(
 				-- "norcalli/snippets.nvim",
 				"rafamadriz/friendly-snippets", -- user-friendly snippets
 				"cassin01/cmp-gitcommit",
+			},
+		}, -- }}}
+		{ -- nvim-dap {{{
+			"mfussenegger/nvim-dap",
+			dependencies = {
+				"mfussenegger/nvim-dap-python",
+				"thehamsta/nvim-dap-virtual-text",
 			},
 		}, -- }}}
 
