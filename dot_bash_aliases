@@ -93,16 +93,27 @@ gmaster() {
 	git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4
 }
 
+gunb() {
+	gun .
+	gB
+}
+
 gb() {
 	# no remote branches
 	default_local_branch=$(gmaster) || :
 	current_local_branch=$(git branch --show-current)
 
+	err() {
+		# echo "need commit/undo"
+		# gun .
+		return 1
+	}
+
 	if [[ $# -eq 0 ]]; then
 		if [[ $default_local_branch == "$current_local_branch" ]]; then
 			echo "Already on $default_local_branch"
 		else
-			git checkout "$default_local_branch" || echo "need commit"
+			git checkout "$default_local_branch" || err
 			git pull
 		fi
 	else
@@ -110,7 +121,7 @@ gb() {
 		# generally, new branches are based on master. however, this
 		# may not always be the case, so an optional 2nd arg is needed
 		if ! git checkout "${2:-$default_local_branch}"; then
-			echo "need commit"
+			err
 			return
 		fi
 
@@ -119,14 +130,15 @@ gb() {
 		if
 			git branch -r | grep "origin/$1"
 		then
-			# TODO: should probably ask for confirmation
-			git switch "$1" 2> /dev/null
-		elif git switch --create "$1" 2> /dev/null; then
+			# note: git hook stdout cannot be suppressed
+			git switch "$1" || err
+
+		elif git switch --create "$1"; then
 			# git switch --create does not produce output, for some
 			# reason (but git switch does)
 			echo "Switched to new branch $1"
 		else
-			git switch "$1" || echo "need commit"
+			git switch "$1" || err
 		fi
 	fi
 
@@ -657,7 +669,7 @@ gapat() {
 	# 	git apply --cached --unidiff-zero
 
 	# https://stackoverflow.com/a/52394658
-	git diff --unified=1 --pickaxe-regex -G "$1" |
+	git diff --unified=1 --pickaxe-regex -S "$1" |
 		grepdiff --output-matching=hunk --extended-regexp "$1" |
 		git apply --cached
 
@@ -673,7 +685,17 @@ gapat() {
 
 ggiturl() {
 	: replace http url with git
-	echo "$url" | sed 's#http://#git@#; s#/#:#; s/$/.git/'
+	<<< "$1" sed 's|http://|git@|; s|/|:|; s/$/.git/'
+}
+
+gclone() {
+	ggiturl "$1" | xargs git clone
+}
+
+gUN() {
+	: undo and discard last commit, useful on master
+	# https://stackoverflow.com/a/6866485
+	git reset --hard HEAD~1
 }
 
 # }}}
@@ -1128,6 +1150,17 @@ gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run
 # }}}
 
 # docker {{{
+
+doslow() {
+	: list slowest steps in a docker log
+	steps=$(< "$1" grep -P 'DONE \d{3}' | sort -Vu | awk '!a[$1]++')
+	paste <(echo "$steps") <(
+		<<< "$steps" cut -d' ' -f1 |
+			while read -r n; do
+				< "$1" grep -Fm1 "$n" | cut -d' ' -f2-
+			done
+	)
+}
 
 docl() {
 	sudo docker system prune
