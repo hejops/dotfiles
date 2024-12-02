@@ -56,6 +56,7 @@ require("lazy").setup(
 		"romainl/vim-cool", -- clear highlight after search
 		"rrethy/vim-illuminate", -- highlight symbol under cursor
 		"tpope/vim-dispatch",
+		"tpope/vim-dotenv",
 		"tpope/vim-fugitive",
 		"tpope/vim-repeat",
 		"tpope/vim-sleuth", -- detect tabstop and shiftwidth automatically
@@ -604,8 +605,7 @@ require("lazy").setup(
 		-- }, -- }}}
 		{ -- treesitter {{{
 			"nvim-treesitter/nvim-treesitter",
-			-- https://github.com/nvim-treesitter/nvim-treesitter/issues/7338
-			commit = "c91122d2012682301df68307cfc049a57c3fd286",
+			-- in case of breakage on ubuntu, remove and reinstall snap package
 			dependencies = {
 				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
 				-- "JoosepAlviste/nvim-ts-context-commentstring", -- context-aware comment char, e.g. markdown embed?
@@ -788,6 +788,7 @@ require("lazy").setup(
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "danilo-augusto/vim-afterglow", -- mono tabline
 		-- "dasupradyumna/midnight.nvim", -- mono tabline
+		-- "fenetikm/falcon", -- mono tabline
 		-- "gosukiwi/vim-atom-dark", -- bad lualine
 		-- "hachy/eva01.vim", -- don't like the low contrast one
 		-- "jaredgorski/spacecamp", -- bad lualine
@@ -798,6 +799,7 @@ require("lazy").setup(
 		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
 		-- "ray-x/aurora", -- mid contrast
 		-- "rockyzhang24/arctic.nvim", -- requires lush
+		-- "sjl/badwolf", -- mono tabline
 		-- "srijs/vim-colors-rusty", -- not matched by regex
 		-- "tomasiser/vim-code-dark", -- mid contrast
 		-- "vague2k/vague.nvim", -- bad contrast
