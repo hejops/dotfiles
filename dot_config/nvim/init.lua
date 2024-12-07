@@ -1112,15 +1112,6 @@ cmp.setup({
 				fallback()
 			end
 		end, { "i", "s" }),
-		-- ["<s-tab>"] = cmp.mapping(function(fallback)
-		-- 	if cmp.visible() then
-		-- 		cmp.select_prev_item()
-		-- 	elseif luasnip.locally_jumpable(-1) then
-		-- 		luasnip.jump(-1)
-		-- 	else
-		-- 		fallback()
-		-- 	end
-		-- end, { "i", "s" }),
 	}),
 	sources = {
 		{
@@ -1137,6 +1128,15 @@ cmp.setup({
 		{ name = "path" },
 		-- { name = "gitcommit" }, -- dunno how this is supposed to work -- https://github.com/Cassin01/cmp-gitcommit#usage
 	},
+})
+
+cmp.setup.filetype("rust", {
+	-- TODO: Replace is extremely buggy in rust
+	-- e.g. 'x'.to_owned -> .partial_cmp
+	-- https://github.com/hrsh7th/nvim-cmp/issues/2106
+	mapping = cmp.mapping.preset.insert({
+		["<cr>"] = function() end,
+	}),
 })
 
 require("cmp-gitcommit").setup({}) -- i don't really use this
