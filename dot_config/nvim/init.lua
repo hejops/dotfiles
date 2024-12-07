@@ -1130,15 +1130,6 @@ cmp.setup({
 	},
 })
 
-cmp.setup.filetype("rust", {
-	-- TODO: Replace is extremely buggy in rust
-	-- e.g. 'x'.to_owned -> .partial_cmp
-	-- https://github.com/hrsh7th/nvim-cmp/issues/2106
-	mapping = cmp.mapping.preset.insert({
-		["<cr>"] = function() end,
-	}),
-})
-
 require("cmp-gitcommit").setup({}) -- i don't really use this
 
 -- }}}
