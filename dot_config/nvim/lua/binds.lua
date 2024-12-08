@@ -586,7 +586,8 @@ local function debug_print()
 		javascript = "console.log(@);",
 		lua = "print(@)",
 		python = 'print(f"{@=}")',
-		rust = 'println!("{:#?}", @);',
+		rust = 'println!("{:?}", @);',
+		-- rust = 'println!("{:#?}", @);', -- TODO: bind to <leader>P (need new func param)
 		typescript = "console.log(@);",
 	}
 
