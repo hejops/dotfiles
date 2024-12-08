@@ -51,8 +51,6 @@ alias rad="exec yazi \"\$SLSK/complete\"" # TODO: investigate `ya pub`
 alias rag="exec yazi \"\$HDD/guitar\""
 alias rat="exec yazi \"\$HDD/torrent\" \"\$HDD/movies\""
 
-# alias drag="dragon-drop --all --and-exit"
-# alias pq="cd ~/plaque/ ; go build ; ./plaque"
 alias ..="cd .."
 alias au="audacious -H"
 alias bh="vb -b"
@@ -71,7 +69,7 @@ alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
 alias md="\$EDITOR -c 'set ft=markdown'"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
 alias n="NO_COLOR=1 node --import=tsx"
-alias or="cd ~/gripts/oar && time ./oar && mpv --profile=bcx ./out && rm -rI ./out"
+alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && mpv --profile=bcx ./out && rm -rI ./out"
 alias pq="~/plaque/plaque"
 alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
@@ -1706,4 +1704,24 @@ perfnode() {
 			stackvis perf > flamegraph.htm
 		chromium flamegraph.htm 2> /dev/null &
 	fi
+}
+
+scan() {
+	cd ~/scores || return
+	f=$1
+	n=1
+	echo 'type x to exit'
+	res=600
+	while true; do
+		echo -n "$n: "
+		read -r ans < /dev/tty
+		[[ $ans == x ]] && break
+		# 600: 30 sec, 4.4 MB
+		# 2400: 8 min, 48 MB
+		scanimage --format=pdf --progress --resolution=$res \
+			--output-file "$f-$n-$res.pdf"
+		((n++))
+	done
+	pdfunite $(\ls "$f"-* | sort -V) "$f.pdf"
+	rm -I "$f"-*
 }
