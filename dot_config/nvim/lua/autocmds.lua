@@ -189,6 +189,12 @@ vim.api.nvim_create_autocmd({ "VimResized" }, {
 
 		local master = 0.8
 		local height = vim.o.lines
-		vim.cmd("horizontal resize -" .. math.floor(height * (1 - master)))
+		local width = vim.o.columns
+
+		if vim.api.nvim_win_get_position(vim.api.nvim_tabpage_list_wins(0)[2])[1] == 0 then
+			vim.cmd("resize -" .. math.floor(width * (1 - master)))
+		elseif vim.api.nvim_win_get_position(vim.api.nvim_tabpage_list_wins(0)[2])[1] == 1 then
+			vim.cmd("horizontal resize -" .. math.floor(height * (1 - master)))
+		end
 	end,
 })
