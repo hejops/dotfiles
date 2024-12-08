@@ -788,23 +788,13 @@ require("lazy").setup(
 			end,
 		},
 
-		{
-			"oxfist/night-owl.nvim", -- no name
-			opts = {
-				bold = false,
-				italics = false,
-				underline = false,
-				undercurl = false,
-				transparent_background = false,
-			},
-		},
-
+		"bluz71/vim-moonfly-colors",
 		"challenger-deep-theme/vim",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
 		"morhetz/gruvbox",
-		"pauchiner/pastelnight.nvim",
 		"shawilly/ponokai",
 		"tomasr/molokai",
+		-- "ajmwagar/vim-deus", -- mono tabline
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "danilo-augusto/vim-afterglow", -- mono tabline
@@ -812,14 +802,18 @@ require("lazy").setup(
 		-- "gosukiwi/vim-atom-dark", -- bad lualine
 		-- "hachy/eva01.vim", -- don't like the low contrast one
 		-- "jaredgorski/spacecamp", -- bad lualine
+		-- "kvrohit/rasmus.nvim", -- mono tabline
 		-- "mhartington/oceanic-next", -- has light
 		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
 		-- "nvimdev/oceanic-material", -- mono tabline
+		-- "oxfist/night-owl.nvim", -- mono tabline
+		-- "pauchiner/pastelnight.nvim", -- inlay hints too dark
 		-- "paulo-granthon/hyper.nvim", -- blue against black
 		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
 		-- "ray-x/aurora", -- mid contrast
 		-- "rockyzhang24/arctic.nvim", -- requires lush
 		-- "srijs/vim-colors-rusty", -- not matched by regex
+		-- "tiagovla/tokyodark.nvim", -- comment too dim
 		-- "tomasiser/vim-code-dark", -- mid contrast
 		-- "vague2k/vague.nvim", -- bad contrast
 		-- "volbot/voltrix.vim", -- mono tabline
