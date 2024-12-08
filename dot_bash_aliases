@@ -640,11 +640,17 @@ gd() {
 }
 
 grescon() {
-	: merge all resolved conflicts
-	if rg '^[<=>]{7}'; then
-		echo "Unresolved conflicts remaining"
-		return
+	: resolved conflicts, if any, and merge
+
+	if ! git status --porcelain | grep UU; then
+		echo "No conflicts detected"
 	fi
+
+	while rg '^[<=>]{7}'; do
+		echo "Unresolved conflicts remaining!"
+		git status --porcelain | grep UU | cut -d' ' -f2- | xargs nvim -p
+	done
+
 	git status --porcelain | grep UU | cut -d' ' -f2 | xargs git add
 	git commit -v
 }
