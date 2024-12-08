@@ -387,10 +387,12 @@ local function exec()
 
 		-- the normal langs
 		dhall = "dhall-to-json --file " .. curr_file,
+		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 		elvish = "elvish " .. curr_file,
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
 		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
+		ocaml = "ocaml " .. curr_file,
 		python = "python3 " .. curr_file,
 		ruby = "ruby " .. curr_file,
 		sh = "env bash " .. curr_file,
