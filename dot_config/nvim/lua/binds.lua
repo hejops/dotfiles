@@ -74,6 +74,8 @@ vim.keymap.set("n", "<c-l>", "gt")
 vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
 vim.keymap.set("n", "<c-t>", "<c-6>", { silent = true })
 vim.keymap.set("n", "r", "<nop>")
+vim.keymap.set("n", "rH", "<c-w><c-h>")
+vim.keymap.set("n", "rL", "<c-w><c-l>")
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- delete all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rh", "gT")
 vim.keymap.set("n", "ri", "<c-W>_") -- maximise current split height
