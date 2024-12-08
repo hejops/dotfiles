@@ -66,7 +66,34 @@ function M:get_bufs_loaded()
 	return bufs_loaded
 end
 
--- get_bufs_loaded()
+function M:buf_loaded(fname)
+	for _, buf_num in ipairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_is_loaded(buf_num) then
+			local buf_name = vim.api.nvim_buf_get_name(buf_num)
+			if buf_name:find(fname) ~= nil then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function M:close_unnamed_splits()
+	for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_get_name(bufnr) == "" then
+			vim.api.nvim_buf_delete(bufnr, { force = true })
+		end
+	end
+end
+
+function M:open_split(file)
+	if not require("util"):buf_loaded(vim.fs.basename(file)) then
+		local h = vim.o.lines * 0.2
+		local cmd = h .. " new " .. file
+		vim.cmd(cmd)
+		vim.cmd.wincmd("k")
+	end
+end
 
 function M:random_colorscheme()
 	-- {{{
@@ -142,6 +169,22 @@ function M:md_to_pdf()
 	os.execute(compile)
 	if #io.popen("lsof " .. out):read("*a") == 0 then
 		os.execute(string.format("zathura %s >/dev/null 2>/dev/null &", out))
+	end
+end
+
+function M:resize_2_splits()
+	-- maximise required, else 50/50 split
+	vim.cmd("resize " .. vim.o.lines) -- max height (no default)
+	vim.cmd("vertical resize " .. vim.o.columns) -- max width
+
+	local height = vim.o.lines
+	local width = vim.o.columns
+
+	local wide = vim.o.columns > 150
+	if wide then
+		vim.cmd("vertical resize -" .. math.floor(width * 0.33))
+	else
+		vim.cmd("resize -" .. math.floor(height * 0.2))
 	end
 end
 

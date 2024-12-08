@@ -296,6 +296,9 @@ local function exec()
 	-- TODO: async (Dispatch)
 	local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
 	local wide = vim.o.columns > 150
+
+	-- split dimensions -must- be declared in the [v]new command. attempting to
+	-- shrink a main split will not enlarge the secondary split!
 	if wide then -- vsplit if wide enough
 		local w = math.floor(vim.o.columns * 0.33)
 		front = w .. " v" .. front
@@ -437,16 +440,11 @@ local function exec()
 		-- 	runner = "tsfmt testfile"
 	end
 
-	-- close all unnamed splits
-	for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_get_name(bufnr) == "" then
-			vim.api.nvim_buf_delete(bufnr, { force = true })
-		end
-	end
-
+	require("util"):close_unnamed_splits()
 	-- print(front .. runner)
 	vim.cmd(front .. runner)
 	vim.cmd.wincmd(wide and "h" or "k") -- return focus to main split
+	require("util"):resize_2_splits()
 end -- }}}
 vim.keymap.set("n", "<leader>x", exec, { silent = true })
 

@@ -168,33 +168,29 @@ vim.api.nvim_create_autocmd("TermOpen", {
 	end,
 })
 
--- ensure 80/20 horizontal split
-vim.api.nvim_create_autocmd({ "VimResized" }, {
-	callback = function()
-		vim.cmd("horizontal resize +999") -- maximise current window height
-		local windows = vim.api.nvim_tabpage_list_wins(0)
-		if #windows == 1 then
-			return
-		end
-
-		-- fidget init is counted as a win when active, leading to unwanted resizes when starting up rust and go workspaces
-		-- https://github.com/j-hui/fidget.nvim/blob/60404ba67044c6ab01894dd5bf77bd64ea5e09aa/lua/fidget/notification/window.lua#L306
-		-- TODO: other transient buffers may need to be caught
-		for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
-			-- if vim.api.nvim_buf_get_option(bufnr, "filetype") == "fidget" then
-			if vim.api.nvim_get_option_value("filetype", { buf = bufnr }) == "fidget" then
-				return
-			end
-		end
-
-		local master = 0.8
-		local height = vim.o.lines
-		local width = vim.o.columns
-
-		if vim.api.nvim_win_get_position(vim.api.nvim_tabpage_list_wins(0)[2])[1] == 0 then
-			vim.cmd("resize -" .. math.floor(width * (1 - master)))
-		elseif vim.api.nvim_win_get_position(vim.api.nvim_tabpage_list_wins(0)[2])[1] == 1 then
-			vim.cmd("horizontal resize -" .. math.floor(height * (1 - master)))
-		end
-	end,
-})
+-- -- disabled, because trying to override the default behaviour is usually incorrect
+-- -- ensure 80/20 horizontal split
+-- vim.api.nvim_create_autocmd({ "VimResized" }, {
+-- 	callback = function()
+-- 		local windows = vim.api.nvim_tabpage_list_wins(0)
+-- 		if #windows == 1 then
+-- 			return
+-- 		end
+--
+-- 		-- fidget init is counted as a win when active, leading to unwanted resizes
+-- 		-- when starting up rust and go workspaces
+-- 		-- https://github.com/j-hui/fidget.nvim/blob/60404ba67044c6ab01894dd5bf77bd64ea5e09aa/lua/fidget/notification/window.lua#L306
+-- 		-- TODO: other transient buffers may need to be caught
+-- 		for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
+-- 			-- if vim.api.nvim_buf_get_option(bufnr, "filetype") == "fidget" then
+-- 			if vim.api.nvim_get_option_value("filetype", { buf = bufnr }) == "fidget" then
+-- 				return
+-- 			end
+-- 		end
+--
+-- 		-- require("util"):resize_2_splits()
+-- 		-- vim.cmd.redraw()
+-- 		-- vim.cmd.norm("h")
+-- 		-- vim.cmd.norm("l")
+-- 	end,
+-- })
