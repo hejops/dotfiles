@@ -39,10 +39,13 @@
 
 sanitise tridactyllocal tridactylsync
 
+exclaim notify-send hi
+
 bindurl booking.com y composite js document.location.href.replace(/label=[^&]+&/,"").replace(/sid=[^&]+&/,"").replace(/aid=[^&]+&/,"").replace(/ac_meta=[^&]+&/,"") | clipboard yank
 
 " set newtabfocus page
-colourscheme base16-onedark
+" " TODO: # Theme base16-onedark couldn't be found. (dwm)
+" colourscheme base16-onedark
 set allowautofocus false
 set hintdelay 0
 set hintfiltermode vimperator-reflow
@@ -617,6 +620,7 @@ autocmd DocStart wikipedia.org darklarge
 " these should be placed later in the config, not earlier
 seturl docs.google.com superignore true
 seturl localhost:[^3] superignore true
+seturl localhost:[1-9]?8086 superignore true
 seturl monkeytype.com superignore true
 
 "exclaim echo $(date +%s) css,end | tee -a /tmp/tridactyl

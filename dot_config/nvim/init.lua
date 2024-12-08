@@ -208,6 +208,14 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
 	end,
 })
 
+vim.api.nvim_create_autocmd({ "VimResized" }, {
+	-- git blame should always be displayed inline, never in lualine
+	-- git blame should be disabled in narrow windows as it is not useful
+	callback = function()
+		vim.cmd(vim.o.columns > 170 and "GitBlameEnable" or "GitBlameDisable")
+	end,
+})
+
 -- }}}
 -- plugin binds {{{
 
@@ -585,6 +593,55 @@ local function on_attach(_, bufnr)
 	-- end, "list workspace folders")
 end
 
+local function gotodef_tabdrop()
+	vim.lsp.buf.definition({
+		on_list = function(options)
+			-- note: this doesn't get triggered, apparently
+			if #options.items > 1 then
+				os.execute("notify-send hi")
+				vim.notify("Multiple items found, opening first one", vim.log.levels.WARN)
+				return
+			end
+
+			-- tab drop
+			-- https://github.com/Swoogan/dotfiles/blob/ecfdf4f/nvim/.config/nvim/lua/config/lang.lua#L81
+			local item = options.items[1]
+			vim.cmd("tab drop " .. item.filename)
+			-- vim.api.nvim_win_set_cursor(win or 0, { item.start.line + 1, item.start.character })
+			vim.api.nvim_win_set_cursor(0, { item.lnum, item.col - 1 })
+			vim.cmd("norm zt")
+		end,
+	})
+end
+
+-- https://github.com/BrunoKrugel/dotfiles/blob/0b2bdc4b3909620727b3975c482eea3cbebd7f9f/lua/mappings.lua#L5
+local function golang_goto_def()
+	local old = vim.lsp.buf.definition
+	local opts = {
+		on_list = function(options)
+			if options == nil or options.items == nil or #options.items == 0 then
+				return
+			end
+			local targetFile = options.items[1].filename
+			local prefix = string.match(targetFile, "(.-)_templ%.go$")
+			if prefix then
+				local function_name = vim.fn.expand("<cword>")
+				options.items[1].filename = prefix .. ".templ"
+				vim.fn.setqflist({}, " ", options)
+				vim.api.nvim_command("cfirst")
+				vim.api.nvim_command("silent! /templ " .. function_name)
+			else
+				old()
+			end
+		end,
+	}
+	vim.lsp.buf.definition = function(o)
+		o = o or {}
+		o = vim.tbl_extend("keep", o, opts)
+		old(o)
+	end
+end
+
 -- https://github.com/fatih/dotfiles/blob/52e459c991e1fa8125fb28d4930f13244afecd17/init.lua#L748
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("UserLspConfig", {}),
@@ -594,26 +651,11 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		-- vim.keymap.set("n", "<leader>cl", vim.lsp.codelens.run, opts)
 
 		-- https://github.com/neovim/neovim/pull/19213
-		-- https://github.com/raphapr/dotfiles/blob/ecdf9771d27bfb7b2dd4574b4d7ba092fddb2c82/home/dot_config/nvim/lua/raphapr/utils.lua#L25
-		-- https://github.com/Swoogan/dotfiles/blob/ecfdf4fe539682dc710c68915fd40f6c0ca033fc/nvim/.config/nvim/lua/config/lang.lua#L63
+		-- https://github.com/raphapr/dotfiles/blob/ecdf9771d/home/dot_config/nvim/lua/raphapr/utils.lua#L25
+		-- https://github.com/Swoogan/dotfiles/blob/ecfdf4fe5/nvim/.config/nvim/lua/config/lang.lua#L63
 
-		vim.keymap.set("n", "gd", function()
-			vim.lsp.buf.definition({
-				on_list = function(options)
-					-- if #options.items > 1 then
-					-- 	vim.notify("Multiple items found, opening first one", vim.log.levels.WARN)
-					-- end
-
-					-- tab drop
-					-- https://github.com/Swoogan/dotfiles/blob/ecfdf4fe539682dc710c68915fd40f6c0ca033fc/nvim/.config/nvim/lua/config/lang.lua#L81
-					local item = options.items[1]
-					vim.cmd("tab drop " .. item.filename)
-					-- vim.api.nvim_win_set_cursor(win or 0, { item.start.line + 1, item.start.character })
-					vim.api.nvim_win_set_cursor(0, { item.lnum, item.col - 1 })
-					vim.cmd("norm zt")
-				end,
-			})
-		end, opts)
+		vim.keymap.set("n", "gd", gotodef_tabdrop, opts)
+		-- vim.keymap.set("n", "gd", golang_goto_def, opts)
 	end,
 })
 
@@ -664,12 +706,13 @@ local servers = {
 	yamlls = {},
 	zls = {},
 
-	-- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
-	docker_compose_language_service = {
-		root_dir = require("lspconfig").util.root_pattern("docker-compose.yml"), -- add more patterns if needed
-		filetypes = { "yaml.docker-compose" },
-		-- single_file_support = true,
-	},
+	-- -- broken?
+	-- -- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
+	-- docker_compose_language_service = {
+	-- 	root_dir = require("lspconfig").util.root_pattern("docker-compose.yml"), -- add more patterns if needed
+	-- 	filetypes = { "yaml.docker-compose" },
+	-- 	-- single_file_support = true,
+	-- },
 
 	-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md
 	gopls = {
@@ -832,6 +875,8 @@ vim.diagnostic.config({
 -- to ensure all tools (linters etc) are up-to-date, it is better to keep them
 -- in /nvim/mason (rather than decentralised user-installed ones)
 
+-- lua print(require("lint").get_running()[1])
+
 local linters = {
 
 	-- elixir = { "credo" }, -- where da binary at
@@ -892,13 +937,23 @@ require("lint").linters.ruff.args = {
 	"-",
 }
 
+local custom_gcl = vim.fn.globpath(
+	-- note: on startup, starts in cwd. path is only adjusted to project root
+	-- later
+	-- ".",
+	root_directory(),
+	"custom-gcl"
+)
+if custom_gcl ~= "" then
+	require("lint").linters.golangcilint.cmd = custom_gcl
+end
+
 -- https://gist.github.com/Norbiox/652befc91ca0f90014aec34eccee27b2
 -- Set pylint to work in virtualenv
--- TODO: should be project root, not '.'
-if vim.fn["globpath"](".", "pyproject.toml") ~= "" then
+if vim.fn.globpath(root_directory(), "pyproject.toml") ~= "" then
 	require("lint").linters.pylint.cmd = "poetry"
 	require("lint").linters.pylint.args = { "run", "pylint", "-f", "json" }
-elseif vim.fn["globpath"](".", "manage.py") ~= "" then
+elseif vim.fn.globpath(root_directory(), "manage.py") ~= "" then
 	require("lint").linters.pylint.cmd = "python3"
 	require("lint").linters.pylint.args = {
 		"-m",
@@ -945,6 +1000,12 @@ require("conform").setup({
 
 		isort = {
 			prepend_args = { "--force-single-line-imports", "--profile", "black" },
+			condition = function()
+				-- don't use isort at work
+				local handle = io.popen("grep Ubuntu /etc/issue")
+				_ = handle:read("*a")
+				return not handle:close()
+			end,
 		},
 
 		prettier = {
@@ -1015,6 +1076,22 @@ require("conform").setup({
 				return string.find(curr_file, "dwm.c") == nil
 			end,
 		},
+
+		-- -- https://github.com/stevearc/conform.nvim/issues/197#issuecomment-1808807141
+		-- -- "If the command accepts stdin and prints the formatted results to
+		-- -- stdout, then you're done."
+		-- -- it could be that sol's reading of stdin is misconfigured
+		-- -- Formatter 'sol' error: time="2024-11-14T09:24:34+01:00" level=fatal msg="could not read file: open /dev/stdin: no such device or address"
+		-- --
+		-- -- https://github.com/noperator/sol/issues/2
+		-- -- removes comments, so this is a non-starter anyway
+		-- sol = {
+		-- 	inherit = false,
+		-- 	-- stdin = true,
+		-- 	command = "sol",
+		-- 	args = { "-w", "80" },
+		-- 	-- args = "cat $FILENAME | sol",
+		-- },
 	},
 
 	formatters_by_ft = {
@@ -1052,7 +1129,7 @@ require("conform").setup({
 		tex = { "latexindent" },
 		toml = { "taplo" },
 		xml = { "xmlformat" },
-		yaml = { "prettier" },
+		-- yaml = { "prettier" },
 
 		javascript = { "biome", "prettier", stop_after_first = true },
 		javascriptreact = { "biome", "prettier", stop_after_first = true },
@@ -1212,7 +1289,9 @@ vim.filetype.add({
 
 	-- https://github.com/kennethnym/dotfiles/blob/41f03b9091181dc62ce872288685b27f001286f3/nvim/init.lua#L474
 	filename = {
+
 		["Dockerfile"] = "dockerfile",
 		["docker-compose.yml"] = "yaml.docker-compose",
+		["yarn.lock"] = "text", -- default is yaml for some reason
 	},
 })
