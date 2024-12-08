@@ -1038,11 +1038,11 @@ require("conform").setup({
 				"--config",
 				table.concat({
 					"fn_params_layout=Vertical", -- default: Tall
-					"fn_single_line=true", -- default: false
 					"format_code_in_doc_comments=true", -- default: false
 					"group_imports=StdExternalCrate", -- default: Preserve
 					"imports_granularity=Item", -- default: Preserve
 					"wrap_comments=true", -- default: false
+					-- "fn_single_line=false", -- default: false
 				}, ","),
 			},
 		},
