@@ -70,38 +70,38 @@ setpref browser.autofocus false
 " https://github.com/tridactyl/tridactyl/issues/4897
 " we cannot control other sidebars, too bad
 
-" quite neat, though it doesn't un-collapse the tree
-command ttscrollup js browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", { type:   'scroll', window: 0,  delta:  -30 })
-
-" euro must be some js arg thing
-command ttcollapse js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'collapse-tree', tab: JS_ARGS[1]})€
-command ttcollapse_current_or_parent js browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'get-tree-structure', tab: 'current'}).then(struct => browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'collapse-tree', tab: struct[0].collapsed ? 'parent' : 'current'}))
-command ttcollapse_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'collapse-tree', tab: JS_ARGS[1], recursively: true})€
-command ttexpand js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'expand-tree', tab: JS_ARGS[1]})€
-command ttexpand_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'expand-tree', tab: JS_ARGS[1], recursively: true})€
-command ttfocus js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'focus', tab: JS_ARGS[1]})€
-command ttindent js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'indent', tab: JS_ARGS[1]})€
-command ttindent_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'indent', tab: JS_ARGS[1], followChildren: true})€
-command ttoutdent js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'outdent', tab: JS_ARGS[1]})€
-command ttoutdent_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'outdent', tab: JS_ARGS[1], followChildren: true})€
-
-" Collapse/expand current tree
-bind ZC ttcollapse_recursively root
-bind ZO ttexpand_recursively current
-bind Zc ttcollapse_current_or_parent
-bind Zo ttexpand current
-
-" Collapse/expand all
-bind Zm ttcollapse *
-bind Zr ttexpand *
-
-" Focus parent/root of a tree
-bind ZP ttfocus root
-bind Zp ttfocus parent
-
-" Focus next/previous, skipping over subtrees. May also try nextSiblingCyclic/prevSiblingCyclic:
-bind Zj ttfocus nextSibling
-bind Zk ttfocus prevSibling
+" " quite neat, though it doesn't un-collapse the tree
+" command ttscrollup js browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", { type:   'scroll', window: 0,  delta:  -30 })
+"
+" " euro must be some js arg thing
+" command ttcollapse js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'collapse-tree', tab: JS_ARGS[1]})€
+" command ttcollapse_current_or_parent js browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'get-tree-structure', tab: 'current'}).then(struct => browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'collapse-tree', tab: struct[0].collapsed ? 'parent' : 'current'}))
+" command ttcollapse_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'collapse-tree', tab: JS_ARGS[1], recursively: true})€
+" command ttexpand js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'expand-tree', tab: JS_ARGS[1]})€
+" command ttexpand_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'expand-tree', tab: JS_ARGS[1], recursively: true})€
+" command ttfocus js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'focus', tab: JS_ARGS[1]})€
+" command ttindent js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'indent', tab: JS_ARGS[1]})€
+" command ttindent_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'indent', tab: JS_ARGS[1], followChildren: true})€
+" command ttoutdent js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'outdent', tab: JS_ARGS[1]})€
+" command ttoutdent_recursively js -d€ browser.runtime.sendMessage("treestyletab@piro.sakura.ne.jp", {type: 'outdent', tab: JS_ARGS[1], followChildren: true})€
+"
+" " Collapse/expand current tree
+" bind ZC ttcollapse_recursively root
+" bind ZO ttexpand_recursively current
+" bind Zc ttcollapse_current_or_parent
+" bind Zo ttexpand current
+"
+" " Collapse/expand all
+" bind Zm ttcollapse *
+" bind Zr ttexpand *
+"
+" " Focus parent/root of a tree
+" bind ZP ttfocus root
+" bind Zp ttfocus parent
+"
+" " Focus next/previous, skipping over subtrees. May also try nextSiblingCyclic/prevSiblingCyclic:
+" bind Zj ttfocus nextSibling
+" bind Zk ttfocus prevSibling
 
 " " Indent/outindent current tab
 " bind << ttoutdent_recursively current
@@ -162,6 +162,13 @@ bind , jsb tri.excmds.tabnext() //
 bind . tabmove +1
 bind / fillcmdline tab
 bind <c-g> tab #
+bind c jsb tri.excmds.tabprev() //
+bind d jsb tri.excmds.tabclose() //
+bind gD composite tabduplicate | tabdetach
+bind s composite tabsortalpha ; tabsort --containers
+bind x tabmove -1
+bind z tab #
+
 bind J scrollpage 1
 bind K scrollpage -1
 bind M composite hint_focus; !s xdotool key Menu
@@ -170,19 +177,13 @@ bind T !s xdotool key alt+v e t t Return
 bind U urlparent
 bind Y hint -y
 bind ZZ !s killall firefox
-bind c jsb tri.excmds.tabprev() //
-bind d jsb tri.excmds.tabclose() //
 bind e current_url open
-bind gD composite tabduplicate | tabdetach
 bind gou composite exclaim_quiet ublock | tabopen
 bind j scrollline 3
 bind k scrollline -3
 bind p clipboard tabopen
 bind q source
-bind s composite tabsortalpha ; tabsort --containers
-bind x tabmove -1
 bind y clipboard yank
-bind z tab #
 bind { followpage prev
 bind } followpage next
 command hint_focus hint -;
@@ -263,12 +264,14 @@ jsb browser.webRequest.onHeadersReceived.addListener(tri.request.clobberCSP,{url
 " }}}
 "exclaim echo $(date +%s) binds | tee -a /tmp/tridactyl
 " search engines {{{
-" suggestions don't work yet: https://github.com/tridactyl/tridactyl/issues/140#issuecomment-469264339
 
 " moved to ~/.config/search_engines due to large speed hit
 
-set searchengine dd
-set searchurls.dd	https://duckduckgo.com/?ia=web&q=
+" set searchengine dd
+" set searchurls.dd	https://duckduckgo.com/?ia=web&q=
+
+set searchengine dr
+set searchurls.dr	https://search.disroot.org/search?q=
 
 " }}}
 "exclaim echo $(date +%s) engine | tee -a /tmp/tridactyl
@@ -328,19 +331,23 @@ command tabcloseallbykeyword jsb -p browser.tabs.query({}).then(tabs => tabs.for
 " https://github.com/tridactyl/tridactyl/blob/85ebbd871fe9553c32a2a172d5a2c6a3a26b46e1/doc/hinting.md
 " https://github.com/tridactyl/tridactyl/blob/85ebbd871fe9553c32a2a172d5a2c6a3a26b46e1/doc/newsletters/tips-and-tricks/1-hint-css-selectors.md
 
-" TODO: bandcamp f triggers download, but also the normal behaviour; this is very annoying
 " TODO: sometimes, when yt music switches to a small window, play-pause-button disappears, even when size is restored
 " bindurl 4chan(nel)?.org/\w+/thread f composite hint -Jcpipe .youtube.linkify href | mpvyt
+bindurl 1337x.to f hint -Jcpipe [href^="/torrent"]
 bindurl 1fichier.com f hint -Jc .btn-orange.btn-general.ok
 bindurl 1lib.eu f hint -Jc .addDownloadedBook.dlButton.btn-primary.btn
 bindurl bandcamp.com/download f hint -c [href^="https://p4.bcbits.com/download"] -F i => tri.excmds.shellescape(i).then(url => tri.excmds.exclaim_quiet('$TERMINAL dl ' + url))
+bindurl commons.wikimedia.org f hint -Jc .internal
 bindurl duckduckgo.com f hint .EKtkFWMYpwzMKOYr0GYm, .Bl3t3iYRHX9BeMH_V52u.JhFQAeU7IMxZaS7jCOQm
 bindurl github Y composite js "git clone " + document.location.href.replace(/https?:\/\//,"git@").replace("/",":").replace(/$/,".git") | clipboard yank
 bindurl github.+ov-file y composite js document.location.href.replace("?tab=readme-ov-file","") | clipboard yank
 bindurl github.com/.*/blob/ f hint -c .blob-num,a
 bindurl letterboxd.com f hint -Jc a.tooltip.text-slug, .prettify, .all-link, .has-menu.frame, .js-reveal.reveal, .next, .add-this-film, .rateit-range, .-director.-contributor.search-result > .content > p.film-metadata > a.text-slug
+bindurl letterboxd.com/(director|studio)/.+release-earliest i download
 bindurl libgen.is f hint -Jc [href^="http://library.lol"]
-bindurl movieparadise.org f hint -Jc [href^="https://1fichier.com"], .wpf-field-wrap > input
+bindurl movieparadise.org F hint -Jcb .clicklogin2
+bindurl movieparadise.org f hint -Jc [href^="https://1fichier.com"], .wpf-field-wrap > input, .clicklogin2, .submit
+bindurl movieparadise.org/sign-in f hint
 bindurl music.youtube.com <space> hint -Jc #play-pause-button
 bindurl music.youtube.com f hint -Jc a.yt-formatted-string.style-scope.yt-simple-endpoint, .ytmusic-menu-renderer.style-scope.watch-button
 bindurl music.youtube.com h hint -Jc .ytmusic-player-bar.style-scope.previous-button
@@ -354,24 +361,23 @@ bindurl rutracker.org/forum/login.php f hint -Jc .long.bold
 bindurl rutracker.org/forum/tracker.php f hint -Jc .bold.hl-tags.ts-text.tLink.med
 bindurl rutracker.org/forum/viewtopic.php f hint .magnet-link.med
 bindurl sci-hub f composite hint -Jcpipe li>[href] href | download
+bindurl shop.rewe.de f hint -Jc .hls-qa-login-link, .qa-login-confirmation-login, .btn-checkout--cta
 
 " TODO: discogs.com/artist -> credits -> mpvweb
 " https://github.com/tridactyl/tridactyl/issues/3259#issuecomment-765682631
 " note: stderr is always captured
 bindurl 4chan(nel)?.org/\w+/thread gu urlparent 2
 bindurl reddit.com gu urlparent 3
-" bindurl wikiwand.com y composite js document.location.href.replace("www.wikiwand.com/en","en.wikipedia.org/wiki") | clipboard yank
 
 " >we don't have any concept of the tab a command was executed in; commands work out what the active tab is for themselves
 " TODO: separate binding
 " bind <A-j> composite get_current_url | shellescape | exclaim_quiet rikai | open
 " bindurl boards.4chan(nel)?.org/\w+?/thread f composite hint -Jcpipe .fileThumb href | download
-" bindurl wikiwand.com v composite get_current_url | shellescape | wikibib
 " don't tabclose for processes that are not immediate!
 " how to noop?
 " https://github.com/tridactyl/tridactyl/issues/2055#issuecomment-568247683
 " spaces are not allowed in pipe construction
-bindurl 1fichier.com A composite get_current_url | js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('echo ' + url + ' >> $HOME/to_watch'))
+bindurl 1fichier.com a composite get_current_url | js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('echo ' + url + ' >> $HOME/to_watch'))
 bindurl boards.4chan.org/wg/thread R composite get_current_url | shellescape | wallchan
 bindurl discogs.com/(artist|label) i composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
 bindurl discogs.com/(release|master) i composite get_current_url | shellescape | exclaim_quiet discogs_release | open
@@ -379,6 +385,7 @@ bindurl discogs.com/release R composite get_current_url | shellescape | exclaim_
 bindurl leetcode i composite get_current_url | shellescape | exclaim_quiet chromium --incognito
 bindurl library.lol a composite get_current_url | js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('echo ' + url + ' >> $HOME/to_dl'))
 bindurl localhost:85 i composite get_current_url | shellescape | exclaim_quiet chromium --incognito
+bindurl wikipedia.org D composite get_current_url | shellescape | exclaim_quiet $TERMINAL wkbk
 
 " default binding is ;M
 bindurl \.(webp|jpe?g|png) i composite hint -pipe img src | jsb -p tri.excmds.tabopen('images.google.com/searchbyimage?image_url=' + JS_ARG)
@@ -416,8 +423,9 @@ bindurl vid.puffyan.us R urlmodify -t vid.puffyan.us music.youtube.com
 " only one key allowed, so use these wisely!
 " open in new tab: gn<mark>
 
-" quickmark a	https://www.aufladen.de/de/checkout/add-product/eplus-de-direct-15
 " quickmark t	https://github.com/tridactyl/tridactyl/issues?utf8=%E2%9C%93&q=sort%3Aupdated-desc+
+quickmark L	https://letterboxd.com/hejops
+quickmark a	https://www.aufladen.de/de/checkout/add-product/eplus-de-direct-15
 quickmark d	https://www.discogs.com/user/hejops/collection
 quickmark l	http://www.last.fm/user/hejops
 quickmark m	https://monkeytype.com/
@@ -459,11 +467,14 @@ set searchurls.y	https://vid.puffyan.us/search?q=
 " autocmd DocStart www.reddit.com js tri.excmds.urlmodify("-t", "www.reddit.com", "teddit.hostux.net")
 " autocmd DocStart www.reddit.com js tri.excmds.urlmodify("-t", "www.reddit.com", "teddit.net")
 autocmd DocStart fandom.com js tri.excmds.urlmodify("-t", "fandom.com", "bw.artemislena.eu")
+autocmd DocStart imgur.com js tri.excmds.urlmodify("-t", "imgur.com", "rimgo.bcow.xyz")
 autocmd DocStart medium.com js tri.excmds.urlmodify("-t", "medium.com", "scribe.rip")
-" autocmd DocStart wikipedia js tri.excmds.urlmodify("-t", "en.wikipedia.org/wiki", "www.wikiwand.com/en")
 autocmd DocStart www.imdb.com js tri.excmds.urlmodify("-t", "www.imdb.com", "libremdb.iket.me")
-autocmd DocStart www.reddit.com js tri.excmds.urlmodify("-t", "imgur.com", "rimgo.bcow.xyz")
 autocmd DocStart www.reddit.com js tri.excmds.urlmodify("-t", "www.reddit.com", "old.reddit.com")
+
+" https://regex101.com/r/EODknn/1
+" https://stackoverflow.com/a/406408
+autocmd DocStart www.google.com((?!udm).)*$ js tri.excmds.urlmodify("-s", "udm", "14")
 
 autocmd DocEnd zoom.us/j/\d+#success tabclose
 autocmd DocStart \w{2}.m.wikipedia.org js tri.excmds.urlmodify("-t", ".m.", ".")
@@ -509,11 +520,16 @@ autocontain -s rust-lang.org tech
 autocontain -s stackexchange.com tech
 autocontain -s stackoverflow.com tech
 
+autocontain -s nesdev.org nes
+autocontain -s problemkaputt.de nes
+
+autocontain -s 1fichier.com tv
 autocontain -s concerti.de event
 autocontain -s dailymotion.com video
 autocontain -s hoertnagel.de event
 autocontain -s karagarga.in tv
 autocontain -s letterboxd.com tv
+autocontain -s movieparadise.org tv
 autocontain -s nyaa.si tv
 autocontain -s reservix.de event
 autocontain -s songkick.com event
@@ -539,8 +555,8 @@ autocontain -s vimeo.com video
 " discogs
 
 " elements (?) in ublock have '##' prefix (no '.')
-command dark open javascript:(function() { document.querySelectorAll('p, li, div, tr').forEach(function(n) { n.style.background = '#282828'; n.style.color = '#ebdbb2'; }); })();
-command darklarge open javascript:(function() { document.querySelectorAll('p, li, div').forEach(function(n) { n.style.background = '#282828'; n.style.color = '#ebdbb2'; n.style.font = '500 24px/1.7em serif'; }); })();
+command dark open javascript:(function() { document.querySelectorAll('p, li, div, tr').forEach(function(n) { n.style.background = '#121212'; n.style.color = '#bfbfbf'; }); })();
+command darklarge open javascript:(function() { document.querySelectorAll('p, li, div, tr').forEach(function(n) { n.style.background = '#121212'; n.style.color = '#bfbfbf'; n.style.font = '500 24px/1.7em serif'; }); })();
 
 command nonav open javascript:(function() { document.querySelectorAll('*').forEach(function(n) { var p = getComputedStyle(n).getPropertyValue('position'); if (p === 'fixed' || p === 'sticky') { n.style.cssText += ' ; position: absolute !important;'; } }); })();
 
@@ -557,48 +573,52 @@ bind i darklarge
 " autocmd DocStart google.com/search dark
 autocmd DocLoad 4chan.org darklarge
 autocmd DocLoad \.amazon\. dark
+autocmd DocLoad adventofcode.com darklarge
 autocmd DocLoad biblegateway.com darklarge
-autocmd DocLoad book.leptos.dev darklarge
+autocmd DocLoad dhl.de dark
 autocmd DocLoad discogs.com dark
 autocmd DocLoad djangoproject.com darklarge
+autocmd DocLoad docs.influxdata.com darklarge
 autocmd DocLoad docs.python.org darklarge
 autocmd DocLoad docs.rs darklarge
 autocmd DocLoad duckdb.org darklarge
 autocmd DocLoad georust.org darklarge
 autocmd DocLoad htmx.org darklarge
 autocmd DocLoad internetingishard.netlify.app darklarge
-autocmd DocLoad joyofelixir.com darklarge
 autocmd DocLoad last.fm dark
-autocmd DocLoad learn-haskell.blog darklarge
-autocmd DocLoad letterboxd.com/.+/reviews/ darklarge
+autocmd DocLoad letterboxd.com/.+/reviews darklarge
 autocmd DocLoad libgen.is dark
 autocmd DocLoad magnetdl.com dark
 autocmd DocLoad musicbrainz.org darklarge
-autocmd DocLoad ocado.com dark
+autocmd DocLoad nesdev.org darklarge
+autocmd DocLoad nyaa.si dark
+autocmd DocLoad padolsey.github.io darklarge
 autocmd DocLoad reddit.com darklarge
 autocmd DocLoad rikai.com dark
-autocmd DocLoad ruby-doc.org darklarge
-autocmd DocLoad ruby-lang.org darklarge
-autocmd DocLoad rubydoc.info darklarge
 autocmd DocLoad serde.rs dark
-autocmd DocLoad skyscanner.net dark
+autocmd DocLoad shop.rewe.de dark
+autocmd DocLoad skyscanner.(net|de) dark
 autocmd DocLoad sorbet.org/docs darklarge
+autocmd DocLoad sourceforge.net dark
+autocmd DocLoad sqlite.org dark
 autocmd DocLoad stackexchange.com dark
 autocmd DocLoad stackoverflow.com dark
 autocmd DocLoad tour.gleam.run darklarge
 autocmd DocLoad transistor.fm dark
-autocmd DocLoad zig.guide dark
+autocmd DocLoad vimcolorschemes.com dark
+autocmd DocLoad wiki.archlinux.org dark
 autocmd DocLoad yr.no dark
+autocmd DocLoad zig.guide dark
+autocmd DocStart omdb.org dark
 autocmd DocStart overview.novum-engineering.com darklarge
-autocmd DocLoad docs.influxdata.com darklarge
-
-" gitlab unloads code blocks when out of view, so dark always has to be applied manually
+autocmd DocStart wikipedia.org darklarge
 
 " https://github.com/tridactyl/tridactyl/pulls?q=is%3Apr+is%3Aopen+-author%3Aapp%2Fdependabot+
 
 " }}}
 
 " these should be placed later in the config, not earlier
+seturl docs.google.com superignore true
 seturl localhost:[^3] superignore true
 seturl localhost:[1-9]?8086 superignore true
 seturl monkeytype.com superignore true

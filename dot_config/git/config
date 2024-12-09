@@ -123,9 +123,10 @@
 	; https://dandavison.github.io/delta/color-moved-support.html
 	map-styles = bold purple => syntax brown, bold cyan => syntax green
 
+	max-line-length = 0
+
 ; https://www.benji.dog/articles/git-config/
 ; note: i don't use hasconfig:remote.*.url because i don't like having my org
 ; url lying around in dotfiles
 [includeIf "gitdir:~/work/**"]
 	path = ~/.config/git/work	; override [user]
-

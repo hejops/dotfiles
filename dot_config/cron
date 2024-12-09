@@ -53,6 +53,7 @@
 0 */8 * * *	~/.cache/pypoetry/virtualenvs/dita-*/bin/discogs_marketplace
 1 */3 * * *	/usr/bin/nvim --headless +TSUpdate +qa
 2 */3 * * *	/usr/bin/nvim --headless "+Lazy! sync" +qa
+30 */3 * * *	/usr/bin/nvim --headless "+Lazy! clean" +qa
 
 # 0 16 * * *	/bin/python3 ~/scripts/cargo_clean.py
 # 0 20 * * *	/bin/rm -rf "~/.config/teams-for-linux/Partitions/teams-4-linux/Service Worker/Cache"

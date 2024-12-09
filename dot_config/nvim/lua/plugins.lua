@@ -55,19 +55,18 @@ require("lazy").setup(
 		"mbbill/undotree",
 		"romainl/vim-cool", -- clear highlight after search
 		"rrethy/vim-illuminate", -- highlight symbol under cursor
-		"tpope/vim-dispatch",
+		"tpope/vim-dispatch", -- run async processes
 		"tpope/vim-dotenv",
 		"tpope/vim-fugitive",
 		"tpope/vim-repeat",
 		"tpope/vim-sleuth", -- detect tabstop and shiftwidth automatically
 		"tpope/vim-surround",
 		"tridactyl/vim-tridactyl", -- syntax highlighting
-		"windwp/nvim-ts-autotag", -- for html, jsx (?)
 		-- "Zeioth/garbage-day.nvim", -- kill lsps that hog memory (tsserver?)
 		-- "lewis6991/satellite.nvim", -- i hate scrollbars
 		-- "nvim-tree/nvim-tree.lua", -- :NvimTree (rarely used; just fuzzy find)
 		-- "simrat39/symbols-outline.nvim", -- like github's (almost never used; workspace symbols is more intuitive)
-		{ "akinsho/git-conflict.nvim", version = "*", config = true },
+		{ "akinsho/git-conflict.nvim", version = "*", config = true }, -- TODO: what does config = true mean?
 		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} }, -- https://github.com/folke/todo-comments.nvim?tab=readme-ov-file#-trouble-todo
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
 		{ "rhysd/vim-go-impl", ft = { "go" } }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
@@ -635,13 +634,31 @@ require("lazy").setup(
 			build = ":TSUpdate", -- update parsers when updating plugin
 			lazy = false,
 			config = function()
+				-- -- https://github.com/nvim-treesitter/nvim-treesitter?tab=readme-ov-file#adding-parsers
+				-- -- https://github.com/niveK77pur/nvim/commit/00dddbe2cf9525ad53f5bd3570765a329a439a4e
+				-- local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+				-- parser_config.lilypond = {
+				-- 	install_info = {
+				-- 		-- url = "https://github.com/tristanperalta/tree-sitter-lilypond", -- parser doesn't work: https://github.com/tristanperalta/tree-sitter-lilypond/issues/1
+				-- 		url = "https://github.com/nwhetsell/tree-sitter-lilypond", -- parser works (verify with :InspectTree), but highlighter only works in helix? -- https://github.com/nwhetsell/tree-sitter-lilypond/issues/1
+				-- 		files = { "src/parser.c" },
+				-- 		branch = "main", -- default: 'master'
+				-- 		-- optional entries:
+				-- 		-- generate_requires_npm = false, -- if stand-alone parser without npm dependencies
+				-- 		-- requires_generate_from_grammar = false, -- if folder contains pre-generated src/parser.c
+				-- 	},
+				-- }
+
 				require("nvim-treesitter.configs").setup({
 
+					-- https://github.com/nvim-treesitter/nvim-treesitter/wiki/Extra-modules-and-plugins#extra-modules
 					modules = {},
 					ignore_install = {},
 
 					-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3579#issuecomment-1278662119
 					sync_install = #vim.api.nvim_list_uis() == 0,
+
+					-- TODO: https://github.com/nwhetsell/tree-sitter-lilypond
 
 					ensure_installed = {
 						-- https://github.com/nvim-treesitter/nvim-treesitter#supported-languages
@@ -788,23 +805,13 @@ require("lazy").setup(
 			end,
 		},
 
-		{
-			"oxfist/night-owl.nvim", -- no name
-			opts = {
-				bold = false,
-				italics = false,
-				underline = false,
-				undercurl = false,
-				transparent_background = false,
-			},
-		},
-
+		"bluz71/vim-moonfly-colors",
 		"challenger-deep-theme/vim",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
 		"morhetz/gruvbox",
-		"pauchiner/pastelnight.nvim",
 		"shawilly/ponokai",
 		"tomasr/molokai",
+		-- "ajmwagar/vim-deus", -- mono tabline
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "danilo-augusto/vim-afterglow", -- mono tabline
@@ -813,15 +820,19 @@ require("lazy").setup(
 		-- "gosukiwi/vim-atom-dark", -- bad lualine
 		-- "hachy/eva01.vim", -- don't like the low contrast one
 		-- "jaredgorski/spacecamp", -- bad lualine
+		-- "kvrohit/rasmus.nvim", -- mono tabline
 		-- "mhartington/oceanic-next", -- has light
 		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
 		-- "nvimdev/oceanic-material", -- mono tabline
+		-- "oxfist/night-owl.nvim", -- mono tabline
+		-- "pauchiner/pastelnight.nvim", -- inlay hints too dark
 		-- "paulo-granthon/hyper.nvim", -- blue against black
 		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
 		-- "ray-x/aurora", -- mid contrast
 		-- "rockyzhang24/arctic.nvim", -- requires lush
 		-- "sjl/badwolf", -- mono tabline
 		-- "srijs/vim-colors-rusty", -- not matched by regex
+		-- "tiagovla/tokyodark.nvim", -- comment too dim
 		-- "tomasiser/vim-code-dark", -- mid contrast
 		-- "vague2k/vague.nvim", -- bad contrast
 		-- "volbot/voltrix.vim", -- mono tabline
@@ -891,13 +902,5 @@ require("nvim-lightbulb").setup({
 		text = "ⓘ",
 		hl = "LightBulbFloatWin", -- Highlight group to highlight the floating window.
 		win_opts = { focusable = false },
-	},
-})
-
-require("nvim-ts-autotag").setup({
-	opts = {
-		enable_close = true, -- Auto close tags
-		enable_rename = true, -- Auto rename pairs of tags
-		enable_close_on_slash = false, -- Auto close on trailing </
 	},
 })

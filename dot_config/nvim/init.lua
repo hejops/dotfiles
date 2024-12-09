@@ -664,6 +664,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 -- print(vim.fn.stdpath("data"))
 
+-- get git repo root, ignoring all possible child directories
 local function root_directory()
 	local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
 	local toplevel = vim.fn.system(cmd)
@@ -696,7 +697,9 @@ local servers = {
 	bashls = {},
 	clangd = {}, -- TODO: suppress (?) "Call to undeclared function"
 	dockerls = {},
+	lexical = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
+	ocamllsp = {},
 	pyright = {},
 	taplo = {},
 	texlab = {},
@@ -768,13 +771,13 @@ local servers = {
 				-- https://hw0lff.github.io/rust-analyzer-docs/2021-11-01/index.html
 				checkOnSave = {
 					enable = true,
-					allFeatures = true, -- https://rust-analyzer.github.io/manual.html#features
+					-- allFeatures = true, -- https://rust-analyzer.github.io/manual.html#features
 					command = "clippy", -- https://rust-lang.github.io/rust-clippy/master/index.html
 				},
 				completion = {
-					addCallParenthesis = true,
+					addCallParenthesis = true, -- a.foo()
 					-- postfix = { enable = false },
-					-- addCallArgumentSnippets = false,
+					addCallArgumentSnippets = false, -- a.foo(arg1)
 				},
 			},
 		},
@@ -876,6 +879,7 @@ vim.diagnostic.config({
 
 local linters = {
 
+	-- elixir = { "credo" }, -- where da binary at
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 	-- note: the standard rust linter is clippy, which is part of the lsp
 	bash = { "shellcheck" },
@@ -1006,42 +1010,45 @@ require("conform").setup({
 
 		prettier = {
 			prepend_args = { "--print-width", "80" },
+			cwd = function()
+				-- for some reason, prettier will not modify file if cwd == ~ (file
+				-- location is irrelevant)
+				return "/tmp"
+			end,
 		},
 
-		biome = { cwd = root_directory }, -- important: work biome.json is at top-level
+		biome = {
+			-- important: at work, use top-level biome.json
+			-- note: cwd must be a func, not a string
+			cwd = root_directory,
+		},
 
 		shfmt = {
 			prepend_args = {
-				"-i", -- always use tabs
-				"0",
-				"-s", -- simplify
-				"-sr", -- spaces before < etc
+				-- "--indent", -- always use tabs (default)
+				-- "0",
+				"--simplify",
+				"--space-redirects",
 			},
 		},
 
 		rustfmt = {
 			prepend_args = {
-				-- defaults:
-				-- rustfmt.toml
-				-- imports_granularity = Preserve
-				-- fn_params_layout = Tall
-				-- fn_single_line = false
-				-- format_code_in_doc_comments = false
-				-- group_imports = Preserve
-				-- wrap_comments = false
-
 				-- https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#configuration-options
 				"--config",
-				"imports_granularity=Item,"
-					.. "fn_params_layout=Vertical,"
-					.. "fn_single_line=true,"
-					.. "format_code_in_doc_comments=true,"
-					.. "group_imports=StdExternalCrate,"
-					.. "wrap_comments=true",
+				table.concat({
+					"fn_params_layout=Vertical", -- default: Tall
+					"fn_single_line=true", -- default: false
+					"format_code_in_doc_comments=true", -- default: false
+					"group_imports=StdExternalCrate", -- default: Preserve
+					"imports_granularity=Item", -- default: Preserve
+					"wrap_comments=true", -- default: false
+				}, ","),
 			},
 		},
 
 		dhall = { command = "dhall", args = { "format" } },
+
 		latexindent = {
 			-- extra/perl-yaml-tiny
 			-- extra/perl-file-homedir
@@ -1053,8 +1060,9 @@ require("conform").setup({
 		astyle = {
 			inherit = false,
 			command = "astyle",
-			-- https://github.com/mellowcandle/astyle_precommit_hook/blob/master/pre-commit#L28
 			prepend_args = {
+				-- linux kernel style
+				-- https://github.com/mellowcandle/astyle_precommit_hook/blob/master/pre-commit#L28
 				"--style=1tbs",
 				"--indent=tab",
 				"--align-pointer=name",
@@ -1085,6 +1093,7 @@ require("conform").setup({
 		-- 	-- args = "cat $FILENAME | sol",
 		-- },
 	},
+
 	formatters_by_ft = {
 		-- https://github.com/stevearc/conform.nvim#formatters
 		-- not all are provided by Mason! (e.g. astyle)
@@ -1099,14 +1108,6 @@ require("conform").setup({
 			-- "goimports", -- required for autoimport (null_ls), but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 		},
 
-		markdown = {
-			-- i like that prettier clobbers italics * into _ (markdownlint doesn't)
-			-- TODO: will not run from ~
-			"prettier",
-			"markdownlint",
-			-- stop_after_first = true,
-		},
-
 		-- cpp = { "astyle" },
 		-- markdown = { "mdslw" }, -- i like the idea, but not really on cargo yet
 		["_"] = { "trim_whitespace" },
@@ -1114,10 +1115,13 @@ require("conform").setup({
 		c = { "clang-format" }, -- clang-format requires config (presumably a .clang-format file) ootb
 		css = { "prettier" },
 		dhall = { "dhall" },
+		elixir = { "mix" }, -- slow (just like elixir)
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" }, -- need --parser html?
 		htmldjango = { "djlint" },
 		lua = { "stylua" },
+		markdown = { "prettier" },
+		ocaml = { "ocamlformat" },
 		python = { "black", "isort" },
 		ruby = { "rubocop" },
 		rust = { "rustfmt" },
@@ -1176,8 +1180,8 @@ cmp.setup({
 		["<c-,>"] = cmp.mapping.scroll_docs(4),
 		["<c-m>"] = cmp.mapping.scroll_docs(-4),
 
-		["<c-j>"] = cmp.mapping.select_next_item(),
-		["<c-k>"] = cmp.mapping.select_prev_item(),
+		["<c-j>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }),
+		["<c-k>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }),
 
 		["<cr>"] = cmp.mapping.confirm({
 			behavior = cmp.ConfirmBehavior.Replace,
@@ -1193,15 +1197,6 @@ cmp.setup({
 				fallback()
 			end
 		end, { "i", "s" }),
-		-- ["<s-tab>"] = cmp.mapping(function(fallback)
-		-- 	if cmp.visible() then
-		-- 		cmp.select_prev_item()
-		-- 	elseif luasnip.locally_jumpable(-1) then
-		-- 		luasnip.jump(-1)
-		-- 	else
-		-- 		fallback()
-		-- 	end
-		-- end, { "i", "s" }),
 	}),
 	sources = {
 		{

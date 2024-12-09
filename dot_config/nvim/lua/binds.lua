@@ -74,6 +74,8 @@ vim.keymap.set("n", "<c-l>", "gt")
 vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
 vim.keymap.set("n", "<c-t>", "<c-6>", { silent = true })
 vim.keymap.set("n", "r", "<nop>")
+vim.keymap.set("n", "rH", "<c-w><c-h>")
+vim.keymap.set("n", "rL", "<c-w><c-l>")
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- delete all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rh", "gT")
 vim.keymap.set("n", "ri", "<c-W>_") -- maximise current split height
@@ -310,6 +312,9 @@ local function exec()
 	-- TODO: async (Dispatch)
 	local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
 	local wide = vim.o.columns > 150
+
+	-- split dimensions -must- be declared in the [v]new command. attempting to
+	-- shrink a main split will not enlarge the secondary split!
 	if wide then -- vsplit if wide enough
 		local w = math.floor(vim.o.columns * 0.33)
 		front = w .. " v" .. front
@@ -397,10 +402,12 @@ local function exec()
 
 		-- the normal langs
 		dhall = "dhall-to-json --file " .. curr_file,
+		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 		elvish = "elvish " .. curr_file,
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
 		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
+		ocaml = "ocaml " .. curr_file,
 		python = "python3 " .. curr_file,
 		ruby = "ruby " .. curr_file,
 		sh = "env bash " .. curr_file,
@@ -452,16 +459,11 @@ local function exec()
 		-- 	runner = "tsfmt testfile"
 	end
 
-	-- close all unnamed splits
-	for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_get_name(bufnr) == "" then
-			vim.api.nvim_buf_delete(bufnr, { force = true })
-		end
-	end
-
+	require("util"):close_unnamed_splits()
 	-- print(front .. runner)
 	vim.cmd(front .. runner)
 	vim.cmd.wincmd(wide and "h" or "k") -- return focus to main split
+	require("util"):resize_2_splits()
 end -- }}}
 vim.keymap.set("n", "<leader>x", exec, { silent = true })
 
@@ -597,12 +599,13 @@ local function debug_print()
 	local filetypes = {
 
 		-- python = 'print(f"{@=}")',
+		-- rust = 'println!("{:#?}", @);', -- TODO: bind to <leader>P (need new func param)
 		-- zig = 'std.debug.print("{}\n",.{});',
 		go = "fmt.Println(@)",
 		javascript = "console.log(@);",
 		lua = "print(@)",
 		python = "print(@)",
-		rust = 'println!("{:#?}", @);',
+		rust = 'println!("{:?}", @);',
 		typescript = "console.log(@);",
 	}
 
