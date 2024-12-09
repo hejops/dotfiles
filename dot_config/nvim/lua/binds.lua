@@ -192,7 +192,7 @@ local ft_binds = { -- {{{
 		vim.keymap.set("n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>", { buffer = true })
 	end,
 
-	["typescript,javascript"] = function()
+	["typescript,javascript,typescriptreact,javascriptreact"] = function()
 		-- replace != and ==; probably better via find+sed
 		vim.keymap.set("n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]], { buffer = true })
 		vim.keymap.set("n", "<leader>a", ":!npm install ", { buffer = true })
@@ -364,19 +364,20 @@ local function exec()
 		local js = string.gsub(file, ".ts", ".js")
 
 		-- cd first, so that child's node_modules/tsx can be found
+		-- this assumes that node_modules and file.ts are at the same level
 		vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
+		file = vim.fn.expand("%:.") -- relative to child dir
 
-		if vim.loop.fs_stat(js) and ts_is_compiled(js, file) then
+		if vim.loop.fs_stat(".env") and vim.loop.fs_stat("~/.local/bin/node23") then
+			return "node23 --no-warnings --import=tsx --env-file=.env " .. file
+		elseif vim.loop.fs_stat(js) and ts_is_compiled(js, file) then
 			-- fastest, but requires already compiled js (which is slow)
 			return "node " .. js -- 0.035 s
 		elseif vim.loop.fs_stat("./node_modules/tsx") then
 			-- run with node directly (without transpilation); requires tsx
 			-- npm install --save-dev tsx
 			-- https://nodejs.org/api/typescript.html#full-typescript-support
-			file = vim.fn.expand("%:.")
 			-- --enable-source-maps doesn't seem to report source line number correctly
-			-- node:internal/process/esm_loader:40
-			--       internalBinding('errors').triggerUncaughtException(
 			return "node --no-warnings --import=tsx " .. file
 		elseif vim.loop.fs_stat("./node_modules/@types/node") then
 			-- https://stackoverflow.com/a/78148646
