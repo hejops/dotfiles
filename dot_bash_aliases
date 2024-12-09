@@ -177,6 +177,18 @@ gba() {
 		column -t -s '	'
 }
 
+gbcp() {
+	: cherry pick commit from other branch
+
+	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
+	sha=$(git log --branches --remotes --tags --oneline --decorate |
+		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
+		awk '{print $1}')
+
+	# https://stackoverflow.com/a/29788254
+	[[ -n $sha ]] && git show "$sha" | git apply -
+}
+
 _() {
 
 	# https://nitaym.github.io/ourstheirs/
@@ -694,10 +706,12 @@ gclone() {
 }
 
 gUN() {
-	: undo and discard last commit, useful on master
+	: undo and discard last committed commit, useful on master
 	# https://stackoverflow.com/a/6866485
 	git reset --hard HEAD~1
 }
+
+# $repo/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
 
 # }}}
 # pre-commit {{{
@@ -1154,13 +1168,20 @@ gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run
 
 doslow() {
 	: list slowest steps in a docker log
-	steps=$(< "$1" grep -P 'DONE \d{3}' | sort -Vu | awk '!a[$1]++')
-	paste <(echo "$steps") <(
-		<<< "$steps" cut -d' ' -f1 |
-			while read -r n; do
-				< "$1" grep -Fm1 "$n" | cut -d' ' -f2-
-			done
-	)
+	# set -eu
+	if
+		steps=$(< "$1" grep -P 'DONE \d{3}' | sort -Vu | awk '!a[$1]++') &&
+			[[ -n $steps ]]
+	then
+		paste <(echo "$steps") <(
+			<<< "$steps" cut -d' ' -f1 |
+				while read -r n; do
+					< "$1" grep -Fm1 "$n" | cut -d' ' -f2-
+				done
+		)
+	else
+		echo all ok
+	fi
 }
 
 docl() {
