@@ -44,8 +44,9 @@ function M:get_layout_strategy()
 	end
 end
 
+-- return list of (open) buffer paths
 function M:get_bufs_loaded()
-	-- return list of (open) buffer paths that are git tracked
+	-- TODO: ...that are git tracked
 	-- Git commit <paths>
 	local bufs_loaded = {}
 
@@ -152,7 +153,6 @@ function M:random_colorscheme()
 end
 
 -- M:random_colorscheme() -- don't assume colorschemes are loaded yet
-
 
 function M:md_to_pdf()
 	local _in = vim.fn.shellescape(vim.fn.expand("%")) -- basename!
