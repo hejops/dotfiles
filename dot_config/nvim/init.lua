@@ -694,12 +694,12 @@ local servers = {
 	-- https://github.com/blackbhc/nvim/blob/4ae2692403a463053a713e488cf2f3a762c583a2/lua/plugins/lspconfig.lua#L399
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
 
+	-- ocamllsp = {}, -- requires global opam installation
 	bashls = {},
 	clangd = {}, -- TODO: suppress (?) "Call to undeclared function"
 	dockerls = {},
 	lexical = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
-	ocamllsp = {},
 	pyright = {},
 	taplo = {},
 	texlab = {},
@@ -999,13 +999,8 @@ require("conform").setup({
 		},
 
 		isort = {
-			prepend_args = { "--force-single-line-imports", "--profile", "black" },
-			condition = function()
-				-- don't use isort at work
-				local handle = io.popen("grep Ubuntu /etc/issue")
-				_ = handle:read("*a")
-				return not handle:close()
-			end,
+			prepend_args = require("util"):is_ubuntu() and { "--profile", "black" } -- don't use single-line style at work
+				or { "--force-single-line-imports", "--profile", "black" },
 		},
 
 		prettier = {
