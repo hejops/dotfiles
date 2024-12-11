@@ -694,6 +694,7 @@ local servers = {
 	-- https://github.com/blackbhc/nvim/blob/4ae2692403a463053a713e488cf2f3a762c583a2/lua/plugins/lspconfig.lua#L399
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
 
+	-- hls = {}, -- 1.7 GB!
 	bashls = {},
 	clangd = {}, -- TODO: suppress (?) "Call to undeclared function"
 	dockerls = {},
@@ -816,6 +817,8 @@ mason_lspconfig.setup_handlers({
 		}, servers[server_name] or {}))
 	end,
 })
+
+require("lspconfig").gleam.setup({}) -- not on mason, must be installed globally
 
 -- note: after python update, pyright must be reinstalled
 require("lspconfig").pyright.setup({
