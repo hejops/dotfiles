@@ -145,13 +145,21 @@ vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push 
 vim.keymap.set("n", "<leader>C", function()
 	-- TODO: if no changes, do nothing
 	vim.cmd("silent !pre-commit run --files %")
-	vim.cmd("Git commit -q -v %") -- commit entire file
+	vim.cmd("Git commit --quiet -v %") -- commit entire file
 end, { desc = "commit current buffer" })
 
 vim.keymap.set("n", "<leader>gc", function()
 	vim.cmd("silent !pre-commit run") -- limit to staged files
-	vim.cmd("Git commit -q -v") -- commit currently staged chunk(s)
+	vim.cmd("Git commit --quiet -v") -- commit currently staged chunk(s)
 end, { desc = "commit currently staged hunks" })
+
+vim.keymap.set("n", "<leader>gC", function()
+	vim.cmd("Git commit --quiet --amend -v")
+end, { desc = "append currently staged hunks to previous commit" })
+
+vim.keymap.set("n", "<leader>gd", function()
+	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
+end, { desc = "diff current HEAD against master" })
 
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking

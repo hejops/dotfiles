@@ -20,7 +20,9 @@ vim.api.nvim_create_autocmd({
 	"BufReadPost",
 }, {
 	callback = function()
-		require("conform").format()
+		if vim.bo.modifiable then
+			require("conform").format()
+		end
 	end,
 })
 
@@ -221,10 +223,12 @@ vim.api.nvim_create_autocmd({ "VimResized" }, {
 
 -- vim.keymap.set("n", "<leader>gB", ":GitBlameToggle<cr>") -- must be explicitly enabled on mac (due to lacking horizontal space)
 vim.keymap.set("n", "<leader>J", ":TSJToggle<cr>")
+
 vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
-vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>")
+vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>", { desc = "stage all hunks in current buffer" }) -- same as :Gwrite?
 vim.keymap.set("n", "<leader>gh", ":Gitsigns stage_hunk<cr>") -- more ergonomic than gs, but my muscle memory goes to gs
 vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>")
+vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
 vim.keymap.set("n", "<leader>gb", function()
 	-- vim.cmd("GitBlameOpenCommitURL") -- GitBlameOpenFileURL may produce bogus URLs (usually when files are moved), and going to the commit provides better context anyway
@@ -232,9 +236,7 @@ vim.keymap.set("n", "<leader>gb", function()
 	-- ubuntu xdg-open doesn't work
 	vim.cmd("GitBlameCopyCommitURL")
 	vim.fn.jobstart('sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"')
-end)
-
-vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
+end, { desc = "view commit of current line (in browser)" })
 
 -- https://github.com/ThePrimeagen/refactoring.nvim#configuration-for-refactoring-operations
 -- https://github.com/kentchiu/nvim-config/blob/d60768f59bfee285a26f24a3879f6b155a1c630c/lua/custom/plugins/refactory.lua#L11
@@ -480,10 +482,9 @@ vim.keymap.set("n", "<leader>e", telescope_b.git_files, { desc = "git ls-files" 
 vim.keymap.set("n", "<leader>f", telescope_b.find_files, { desc = "find" })
 vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tabs)
 
--- vim.keymap.set("n", "<leader>gC", telescope_b.git_bcommits, { desc = "git commits" })
 -- vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" }) -- like git ls-files with diff
 -- vim.keymap.set("n", "<leader>gb", telescope_b.git_branches, { desc = "git branches" }) -- generally better to switch branches in shell, due to annoying checkout hooks
-vim.keymap.set("n", "<leader>gC", telescope_b.git_commits, { desc = "git commits" }) -- like :Gclog but better
+vim.keymap.set("n", "<leader>gl", telescope_b.git_commits, { desc = "git log with commit diffs" }) -- basically gld
 
 -- vim.keymap.set("n", "<leader>?", telescope_b.help_tags, { desc = "search help" }) -- let's face it; i never use this
 -- vim.keymap.set("n", "<leader>u", telescope.extensions.undo.undo)
@@ -685,16 +686,19 @@ local js_ts_hints = {
 	includeInlayVariableTypeHints = false,
 }
 
--- :Mason
+-- :h lspconfig-setup
+-- :h vim.lsp.ClientConfig
 -- https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers
 -- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
--- warning: commenting out an lsp does not uninstall it!
+
+-- WARN: commenting out an lsp does not uninstall it!
 local servers = {
 
 	-- https://github.com/blackbhc/nvim/blob/4ae2692403a463053a713e488cf2f3a762c583a2/lua/plugins/lspconfig.lua#L399
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
 
 	-- ocamllsp = {}, -- requires global opam installation
+	-- ruff = {}, -- i don't know if this actually does anything
 	bashls = {},
 	clangd = {}, -- TODO: suppress (?) "Call to undeclared function"
 	dockerls = {},
@@ -946,27 +950,6 @@ local custom_gcl = vim.fn.globpath(
 )
 if custom_gcl ~= "" then
 	require("lint").linters.golangcilint.cmd = custom_gcl
-end
-
--- https://gist.github.com/Norbiox/652befc91ca0f90014aec34eccee27b2
--- Set pylint to work in virtualenv
-if vim.fn.globpath(root_directory(), "pyproject.toml") ~= "" then
-	require("lint").linters.pylint.cmd = "poetry"
-	require("lint").linters.pylint.args = { "run", "pylint", "-f", "json" }
-elseif vim.fn.globpath(root_directory(), "manage.py") ~= "" then
-	require("lint").linters.pylint.cmd = "python3"
-	require("lint").linters.pylint.args = {
-		"-m",
-		"pylint",
-		"-f",
-		"json",
-		-- https://github.com/pylint-dev/pylint-django?tab=readme-ov-file#usage
-		"--load-plugins=pylint_django", -- global install
-		"--django-settings-module=tutorial.settings", -- will depend on project, obviously
-	}
-else
-	require("lint").linters.pylint.cmd = "python3"
-	require("lint").linters.pylint.args = { "-m", "pylint", "-f", "json" }
 end
 
 require("lint").linters.sqlfluff.args = {
