@@ -10,6 +10,12 @@ M = {}
 -- function M:bar -> require('foo'):bar(baz) = bar(self, baz) = self:bar(baz)
 -- function M:bar -> require('foo').bar(baz) = bar(baz) = baz:bar()
 
+function M:is_ubuntu()
+	local handle = io.popen("grep Ubuntu /etc/issue")
+	_ = handle:read("*a")
+	return handle:close()
+end
+
 function M:buf_contains(target)
 	for _, l in pairs(vim.api.nvim_buf_get_lines(0, 0, 10, false)) do
 		if string.find(l, target) ~= nil then
