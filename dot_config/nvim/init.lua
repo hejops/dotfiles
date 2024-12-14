@@ -708,6 +708,22 @@ require("conform").setup({
 			end,
 		},
 
+		-- https://taplo.tamasfe.dev/configuration/formatter-options.html
+		taplo = {
+			args = {
+				"format",
+				"--option",
+				"array_auto_expand=false",
+				"--option",
+				"compact_arrays=false",
+				"--option",
+				"align_entries=true", -- does not align array elements (like gofmt and struct fields)
+				"--option",
+				"allowed_blank_lines=1",
+				"-",
+			},
+		},
+
 		biome = {
 			-- important: at work, use top-level biome.json
 			-- note: cwd must be a func, not a string
