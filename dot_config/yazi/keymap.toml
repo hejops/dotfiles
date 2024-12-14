@@ -15,78 +15,24 @@ prepend_keymap = [
   { on = "J", run = "arrow 50%" },
   { on = "K", run = "arrow -50%" },
   { on = "L", run = "tab_switch 1 --relative" },
-  { on = "T", run = "tab_create --current" },                  # C-t conflicts with wezterm
+  { on = "T", run = "tab_create --current" },                   # C-t conflicts with wezterm
   { on = "h", run = "leave" },
   { on = "j", run = "arrow 1" },
-  { on = "k", run = "arrow -1" },                              # TODO: wrap
+  { on = "k", run = "arrow -1" },                               # TODO: wrap
   { on = "l", run = "plugin --sync smart-enter" },
   { on = "q", run = "close" },
-
-  { on = [
-    "g",
-    "g",
-  ], run = "arrow -99999999", desc = "Move cursor to the top" },
-
-  { on = [
-    "d",
-    "d",
-  ], run = "yank --cut", desc = "Cut the selected files" },
-
-  { on = [
-    "y",
-    "y",
-  ], run = "yank --cut", desc = "Copy the selected files" },
-
-  { on = [
-    "p",
-    "p",
-  ], run = "paste", desc = "Paste the files" },
-
-  { on = [
-    "p",
-    "l",
-  ], run = "link", desc = "Symlink the files" },
-
-  { on = [
-    "p",
-    "L",
-  ], run = "hardlink", desc = "Hardlink the files" },
-
-  { on = [
-    "y",
-    "n",
-  ], run = "copy filename", desc = "Copy the filename" },
-  { on = [
-    "y",
-    "p",
-  ], run = "copy path", desc = "Copy the file path" },
-
-  { on = [
-    "o",
-    "C",
-  ], run = [
-    "sort created --reverse=no",
-    "linemode ctime",
-  ], desc = "Sort by created time" },
-  { on = [
-    "o",
-    "c",
-  ], run = [
-    "sort created --reverse",
-    "linemode ctime",
-  ], desc = "Sort by created time (reverse)" },
-
-  { on = [
-    "z",
-    "h",
-  ], run = "hidden toggle", desc = "Toggle the visibility of hidden files" },
-
-  # this is not the ux i want, but i'll accept it for now
-  { on = [
-    "d",
-    "c",
-  ], run = "plugin what-size", desc = "Calc size of selection or cwd" },
-
   { on = "w", run = "tasks_show", desc = "Show task manager" },
 
+  { on = [ "d", "c" ], run = "plugin what-size", desc = "Calc size of selection or cwd" },                              # this is not the ux i want, but i'll accept it for now
+  { on = [ "d", "d" ], run = "yank --cut", desc = "Cut the selected files" },
+  { on = [ "g", "g" ], run = "arrow -99999999", desc = "Move cursor to the top" },
+  { on = [ "o", "C" ], run = [ "sort created --reverse=no", "linemode ctime" ], desc = "Sort by created time" },
+  { on = [ "o", "c" ], run = [ "sort created --reverse", "linemode ctime" ], desc = "Sort by created time (reverse)" },
+  { on = [ "p", "L" ], run = "hardlink", desc = "Hardlink the files" },
+  { on = [ "p", "l" ], run = "link", desc = "Symlink the files" },
+  { on = [ "p", "p" ], run = "paste", desc = "Paste the files" },
+  { on = [ "y", "n" ], run = "copy filename", desc = "Copy the filename" },
+  { on = [ "y", "p" ], run = "copy path", desc = "Copy the file path" },
+  { on = [ "y", "y" ], run = "yank --cut", desc = "Copy the selected files" },
+  { on = [ "z", "h" ], run = "hidden toggle", desc = "Toggle the visibility of hidden files" },
 ]
