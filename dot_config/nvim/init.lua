@@ -1,6 +1,3 @@
--- TODO: root_pattern for lua; set root to .config/nvim?
--- structuring: see https://github.com/arnvald/viml-to-lua
-
 require("util")
 
 require("autocmds")
