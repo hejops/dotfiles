@@ -13,6 +13,7 @@ M = {}
 -- https://stackoverflow.com/a/23827063
 M.is_ubuntu = os.execute("grep Ubuntu /etc/lsb-release") / 256 == 0
 
+-- only first 10 lines of buffer are checked
 function M:buf_contains(target)
 	for _, l in pairs(vim.api.nvim_buf_get_lines(0, 0, 10, false)) do
 		if string.find(l, target) ~= nil then
@@ -109,8 +110,7 @@ function M:open_split(file)
 	end
 end
 
-function M:random_colorscheme()
-	-- {{{
+function M:random_colorscheme() -- {{{
 	-- sliced and diced from tssm/nvim-random-colors
 
 	-- ~/.local/share/nvim/lazy/*/colors/*.(lua|vim)
@@ -163,9 +163,7 @@ function M:random_colorscheme()
 	local scheme = all_schemes[math.random(#all_schemes)]
 
 	vim.cmd.colorscheme(scheme)
-end
-
--- M:random_colorscheme() -- don't assume colorschemes are loaded yet
+end -- }}}
 
 function M:md_to_pdf()
 	local _in = vim.fn.shellescape(vim.fn.expand("%")) -- basename!
