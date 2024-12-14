@@ -985,7 +985,7 @@ require("conform").setup({
 		},
 
 		isort = {
-			prepend_args = require("util"):is_ubuntu() and { "--profile", "black" } -- don't use single-line style at work
+			prepend_args = require("util").is_ubuntu and { "--profile", "black" } -- don't use single-line style at work
 				or { "--force-single-line-imports", "--profile", "black" },
 		},
 
