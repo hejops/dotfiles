@@ -10,9 +10,8 @@ M = {}
 -- function M:bar -> require('foo'):bar(baz) = bar(self, baz) = self:bar(baz)
 -- function M:bar -> require('foo').bar(baz) = bar(baz) = baz:bar()
 
-local handle = io.popen("grep Ubuntu /etc/issue")
-_ = handle:read("*a")
-M.is_ubuntu = handle:close()
+-- https://stackoverflow.com/a/23827063
+M.is_ubuntu = os.execute("grep Ubuntu /etc/lsb-release") / 256 == 0
 
 function M:buf_contains(target)
 	for _, l in pairs(vim.api.nvim_buf_get_lines(0, 0, 10, false)) do
@@ -92,7 +91,7 @@ function M:close_unnamed_splits()
 end
 
 function M:open_split(file)
-	if not require("util"):buf_loaded(vim.fs.basename(file)) then
+	if not M:buf_loaded(vim.fs.basename(file)) then
 		local h = vim.o.lines * 0.2
 		local cmd = h .. " new " .. file
 		vim.cmd(cmd)
