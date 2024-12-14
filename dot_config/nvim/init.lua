@@ -817,6 +817,8 @@ require("conform").setup({
 
 		-- cpp = { "astyle" },
 		-- markdown = { "mdslw" }, -- i like the idea, but not really on cargo yet
+		-- ruby = { "rubocop" },
+		-- yaml = { "prettier" },
 		["_"] = { "trim_whitespace" },
 		bash = { "shfmt" },
 		c = { "clang-format" }, -- clang-format requires config (presumably a .clang-format file) ootb
@@ -829,14 +831,16 @@ require("conform").setup({
 		lua = { "stylua" },
 		markdown = { "prettier" },
 		ocaml = { "ocamlformat" },
-		python = { "ruff_fix", "black", "isort" },
-		ruby = { "rubocop" },
+		python = {
+			"black",
+			"ruff_fix", -- running ruff_fix before black would remove trailing commas, which black then collapses!
+			"isort",
+		},
 		rust = { "rustfmt" },
 		sh = { "shfmt" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
 		xml = { "xmlformat" },
-		-- yaml = { "prettier" },
 
 		javascript = { "biome", "prettier", stop_after_first = true },
 		javascriptreact = { "biome", "prettier", stop_after_first = true },
