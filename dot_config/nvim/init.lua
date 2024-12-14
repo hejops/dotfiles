@@ -989,6 +989,31 @@ require("conform").setup({
 				or { "--force-single-line-imports", "--profile", "black" },
 		},
 
+		ruff_fix = {
+			-- https://github.com/stevearc/conform.nvim/blob/master/lua/conform/formatters/ruff_fix.lua
+			args = {
+				"check",
+
+				-- opt-out for now
+				"--select=ALL",
+				"--ignore=" .. table.concat({
+					-- https://docs.astral.sh/ruff/rules/
+					-- only rules with wrench symbol are supported
+
+					"I001", -- sort imports (does not support one-per-line, unlike isort)
+				}, ","),
+
+				"--fix",
+				"--unsafe-fixes",
+				"--force-exclude",
+				"--exit-zero",
+				"--no-cache",
+				"--stdin-filename",
+				"$FILENAME",
+				"-",
+			},
+		},
+
 		prettier = {
 			prepend_args = { "--print-width", "80" },
 			cwd = function()
@@ -1103,7 +1128,7 @@ require("conform").setup({
 		lua = { "stylua" },
 		markdown = { "prettier" },
 		ocaml = { "ocamlformat" },
-		python = { "black", "isort" },
+		python = { "ruff_fix", "black", "isort" },
 		ruby = { "rubocop" },
 		rust = { "rustfmt" },
 		sh = { "shfmt" },
