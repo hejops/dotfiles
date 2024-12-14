@@ -9,6 +9,107 @@ local js_ts_hints = {
 	includeInlayVariableTypeHints = false,
 }
 
+-- buffer-specific LSP keymaps
+local function on_attach(_, bufnr)
+	local function nmap(keys, func, desc)
+		if desc then
+			desc = "LSP: " .. desc
+		end
+
+		vim.keymap.set("n", keys, func, { buffer = bufnr, desc = desc })
+	end
+
+	local telescope_b = require("telescope.builtin")
+
+	require("tiny-code-action").setup()
+	nmap("<leader>A", require("tiny-code-action").code_action)
+	nmap("<leader>s", telescope_b.lsp_dynamic_workspace_symbols, "document symbols") -- all project files; slow in python?
+	nmap("K", vim.lsp.buf.hover, "hover documentation")
+	nmap("R", vim.lsp.buf.rename, "rename")
+
+	nmap("<leader>i", function()
+		-- vim.lsp.buf.references() -- tui.go|43 col 15| func (p Post) saveImage(subj string) error {
+		-- vim.lsp.buf.incoming_calls() -- tui.go|385 col 19| Update
+
+		local function get_bufnr(fname)
+			for _, bn in pairs(vim.api.nvim_list_bufs()) do
+				if vim.api.nvim_buf_get_name(bn) == fname then
+					return bn
+				end
+			end
+		end
+
+		-- https://github.com/nvim-telescope/telescope.nvim/blob/master/developers.md#entry-maker
+		-- https://github.com/yuepaang/dotfiles/blob/5272e1aef2b0255535d7f575d9a5e32cd75e2cd8/nvim/lua/doodleVim/extend/lsp.lua#L3
+		local function entry_maker(entry)
+			local function make_display()
+				return require("telescope.pickers.entry_display").create({
+					separator = " ",
+					items = {
+						{ width = 0.1 },
+						{ width = 6 },
+						{ width = 0.1 },
+						{ remaining = true },
+					},
+				})({
+					require("telescope.utils").transform_path({}, entry.filename),
+					{ entry.lnum, "TelescopeResultsLineNr" },
+					entry.text,
+					-- file at line; only correct if buffer loaded, otherwise reads from current buf
+					vim.api.nvim_buf_get_lines(get_bufnr(entry.filename) or nil, entry.lnum - 1, entry.lnum, false),
+				})
+			end
+
+			return {
+
+				-- ordinal = (not opts.ignore_filename and filename or "") .. " " .. entry.text,
+				-- ordinal = string.format("%s %s", entry.file, entry.preview),
+				display = make_display,
+				filename = entry.filename, -- or vim.api.nvim_buf_get_name(entry.bufnr),
+				ordinal = entry.text,
+				value = entry,
+
+				-- these are for the preview
+				bufnr = entry.bufnr,
+				col = entry.col,
+				finish = entry.finish,
+				lnum = entry.lnum,
+				start = entry.start,
+				text = entry.text,
+				valid = true,
+			}
+		end
+
+		telescope_b.lsp_incoming_calls({ -- tui.go:385:19:Update
+			-- contrary to the name, show_line only shows the name of the parent func
+			-- (...:parent), but not the actual line itself. Trouble doesn't show the
+			-- line either (and i don't like using trouble anyway)
+			show_line = true,
+			entry_maker = entry_maker,
+		})
+	end, "incoming calls")
+
+	nmap("<leader>S", function()
+		-- TS has no project-wide scope, too bad
+		require("telescope.builtin").treesitter({ symbols = { "method", "function", "type" } })
+	end, "treesitter functions")
+
+	-- nmap("<c-k>", vim.lsp.buf.signature_help, "signature documentation") -- != buf.hover! see: https://github.com/neovim/neovim/discussions/25711#discussioncomment-7323330
+	-- nmap("<leader>S", telescope_b.lsp_document_symbols, "document symbols") -- pre-loaded, curr buf only (almost never used)
+	-- nmap("<leader>d", vim.lsp.buf.type_definition, "type definition")
+	-- nmap("<leader>o", telescope_b.lsp_outgoing_calls, "outgoing calls") -- what does this call? less useful; think of this like goto def, but preview
+	-- nmap("<leader>wa", vim.lsp.buf.add_workspace_folder, "workspace add folder")
+	-- nmap("<leader>wr", vim.lsp.buf.remove_workspace_folder, "workspace remove folder")
+	-- nmap("gI", vim.lsp.buf.implementation, "go to implementation") -- only useful for langs where def and impl can be separate (e.g. TS)
+	-- nmap("gd", vim.lsp.buf.declaration, "goto declaration") -- != definition
+	-- nmap("gr", require("telescope.builtin").lsp_references, "goto references") -- goto def, but more chaotic
+	-- vim.keymap.set({ "i" }, "<c-a>", vim.lsp.buf.code_action)
+
+	-- nmap("<leader>lw", function()
+	-- 	print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+	-- end, "list workspace folders")
+end
+
 -- :h lspconfig-setup
 -- :h vim.lsp.ClientConfig
 -- https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers
