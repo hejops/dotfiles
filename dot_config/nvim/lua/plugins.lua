@@ -855,6 +855,7 @@ require("lazy").setup(
 		"challenger-deep-theme/vim",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
 		"morhetz/gruvbox",
+		"nanotech/jellybeans.vim",
 		"shawilly/ponokai",
 		"tomasr/molokai",
 		-- "ajmwagar/vim-deus", -- mono tabline
