@@ -685,11 +685,6 @@ require("conform").setup({
 					-- https://docs.astral.sh/ruff/rules/
 					-- only rules with wrench symbol are supported
 
-					-- running ruff_fix first (then black) would remove trailing commas,
-					-- which black then collapses. but running black first introduces
-					-- preview-style condensed brackets, which ruff then expands!
-					"COM812",
-
 					"F841", -- allow unused var
 					"I001", -- sort imports (does not support one-per-line, unlike isort)
 				}, ","),
@@ -838,9 +833,9 @@ require("conform").setup({
 		markdown = { "prettier" },
 		ocaml = { "ocamlformat" },
 		python = {
-			"ruff_fix",
 			"isort",
-			"black", -- must be run last to preserve unstable-style parens
+			"black",
+			"ruff_fix", -- run ruff_fix last to preserve black's unstable-style parens
 		},
 		rust = { "rustfmt" },
 		sh = { "shfmt" },
