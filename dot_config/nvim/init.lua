@@ -602,6 +602,7 @@ require("lint").linters_by_ft = linters
 -- https://github.com/rrunner/dotfiles/blob/d55d90ed5d481fc1138483f76f0970d93784bf0a/nvim/.config/nvim/lua/plugins/linting.lua#L17
 require("lint").linters.ruff.args = {
 	"check",
+	"--preview",
 	"--select=ALL",
 	"--target-version=py310", -- type hints = 39, Optional (etc) = 310
 	"--ignore=" .. table.concat({
