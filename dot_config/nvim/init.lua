@@ -567,6 +567,7 @@ local linters = {
 	-- elixir = { "credo" }, -- where da binary at
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 	-- note: the standard rust linter is clippy, which is part of the lsp
+	-- ruby = { "rubocop" },
 	bash = { "shellcheck" },
 	dockerfile = { "hadolint" }, -- can be quite noisy
 	gitcommit = { "gitlint" },
@@ -578,7 +579,6 @@ local linters = {
 	make = { "checkmake" },
 	markdown = { "markdownlint", "proselint" },
 	python = { "ruff" }, -- pylint is too slow and unreliable
-	ruby = { "rubocop" },
 	sql = { "sqlfluff" },
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
