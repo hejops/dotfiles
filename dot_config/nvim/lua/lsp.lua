@@ -1,3 +1,8 @@
+-- :h lspconfig-setup
+-- :h vim.lsp.ClientConfig
+-- https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers
+-- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
+
 -- https://github.com/jellydn/ts-inlay-hints?tab=readme-ov-file#neovim-settings
 local js_ts_hints = {
 	includeInlayEnumMemberValueHints = true,
@@ -9,8 +14,9 @@ local js_ts_hints = {
 	includeInlayVariableTypeHints = false,
 }
 
--- buffer-specific LSP keymaps
 local function on_attach(_, bufnr)
+	-- {{{
+	-- buffer-specific LSP keymaps
 	local function nmap(keys, func, desc)
 		if desc then
 			desc = "LSP: " .. desc
@@ -108,15 +114,11 @@ local function on_attach(_, bufnr)
 	-- nmap("<leader>lw", function()
 	-- 	print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
 	-- end, "list workspace folders")
-end
+end -- }}}
 
--- :h lspconfig-setup
--- :h vim.lsp.ClientConfig
--- https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers
--- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
+local servers = { -- {{{
 
--- WARN: commenting out an lsp does not uninstall it!
-local servers = {
+	-- WARN: commenting out an lsp does not uninstall it!
 
 	-- https://github.com/blackbhc/nvim/blob/4ae2692403a463053a713e488cf2f3a762c583a2/lua/plugins/lspconfig.lua#L399
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
@@ -129,7 +131,7 @@ local servers = {
 	dockerls = {},
 	lexical = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
-	pyright = {},
+	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L90
 	taplo = {},
 	texlab = {},
 	yamlls = {},
@@ -224,11 +226,7 @@ local servers = {
 			},
 		},
 	},
-
-	-- -- until further notice, i have given up trying to get ruby_lsp to work
-	-- -- https://github.com/Shopify/ruby-lsp/blob/main/EDITORS.md#Neovim
-	-- ruby_lsp = {},
-}
+} -- }}}
 
 local mason_lspconfig = require("mason-lspconfig")
 local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()) -- wrap default capabilities with cmp
@@ -236,6 +234,7 @@ local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protoc
 mason_lspconfig.setup({ ensure_installed = vim.tbl_keys(servers) })
 
 mason_lspconfig.setup_handlers({
+	-- the func passed to setup_handlers is called once for -each- installed server on startup
 	function(server_name)
 		require("lspconfig")[server_name].setup(vim.tbl_extend("force", {
 			capabilities = capabilities,
@@ -247,33 +246,6 @@ mason_lspconfig.setup_handlers({
 })
 
 require("lspconfig").gleam.setup({}) -- not on mason, must be installed globally
-
--- note: after python update, pyright must be reinstalled
-require("lspconfig").pyright.setup({
-	on_attach = on_attach,
-	capabilities = capabilities,
-	before_init = function(_, config) -- functions cannot be merged
-		-- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L90
-		local function get_python_path(workspace) -- {{{
-			local util = require("lspconfig/util")
-
-			-- Use activated virtualenv.
-			if vim.env.VIRTUAL_ENV then
-				return util.path.join(vim.env.VIRTUAL_ENV, "bin", "python")
-			end
-
-			if vim.fn.glob(util.path.join(workspace, "poetry.lock")) ~= "" then
-				local poetry = vim.fn.trim(vim.fn.system("poetry --directory " .. workspace .. " env info -p"))
-				return util.path.join(poetry, "bin", "python")
-			end
-
-			-- Fallback to system Python.
-			return vim.fn.exepath("python3") or vim.fn.exepath("python") or "python"
-		end -- }}}
-
-		config.settings.python.pythonPath = get_python_path(config.root_dir)
-	end,
-})
 
 local diagnostics_signs = { Error = "💀", Warn = "🤔", Hint = "🤓", Info = "ⓘ" }
 for type, icon in pairs(diagnostics_signs) do
