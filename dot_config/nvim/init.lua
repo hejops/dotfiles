@@ -606,8 +606,9 @@ require("lint").linters.ruff.args = {
 	"--select=ALL",
 	"--target-version=py310", -- type hints = 39, Optional (etc) = 310
 	"--ignore=" .. table.concat({
-
 		-- https://docs.astral.sh/ruff/rules/
+
+		"DOC201", -- allow docstrings to not document return type
 		"ERA", -- allow comments
 		"I001", -- ignore import sort order (handled by isort hook)
 		"PD901", -- allow var name df
