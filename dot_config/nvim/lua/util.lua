@@ -10,12 +10,10 @@ M = {}
 -- function M:bar -> require('foo'):bar(baz) = bar(self, baz) = self:bar(baz)
 -- function M:bar -> require('foo').bar(baz) = bar(baz) = baz:bar()
 
-function M:is_ubuntu()
-	local handle = io.popen("grep Ubuntu /etc/issue")
-	_ = handle:read("*a")
-	return handle:close()
-end
+-- https://stackoverflow.com/a/23827063
+M.is_ubuntu = os.execute("grep Ubuntu /etc/lsb-release") / 256 == 0
 
+-- only first 10 lines of buffer are checked
 function M:buf_contains(target)
 	for _, l in pairs(vim.api.nvim_buf_get_lines(0, 0, 10, false)) do
 		if string.find(l, target) ~= nil then
@@ -31,6 +29,16 @@ function M:in_git_repo()
 	-- maybe use this cond to lazy-start gitsigns
 	vim.fn.system("git rev-parse --is-inside-work-tree")
 	return vim.v.shell_error == 0
+end
+
+-- get git repo root, ignoring all possible child directories
+function M:root_directory()
+	local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
+	local toplevel = vim.fn.system(cmd)
+	if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
+		return vim.fn.getcwd()
+	end
+	return toplevel:sub(0, -2)
 end
 
 function M:get_layout_strategy()
@@ -50,8 +58,9 @@ function M:get_layout_strategy()
 	end
 end
 
+-- return list of (open) buffer paths
 function M:get_bufs_loaded()
-	-- return list of (open) buffer paths that are git tracked
+	-- TODO: ...that are git tracked
 	-- Git commit <paths>
 	local bufs_loaded = {}
 
@@ -93,7 +102,7 @@ function M:close_unnamed_splits()
 end
 
 function M:open_split(file)
-	if not require("util"):buf_loaded(vim.fs.basename(file)) then
+	if not M:buf_loaded(vim.fs.basename(file)) then
 		local h = vim.o.lines * 0.2
 		local cmd = h .. " new " .. file
 		vim.cmd(cmd)
@@ -101,8 +110,7 @@ function M:open_split(file)
 	end
 end
 
-function M:random_colorscheme()
-	-- {{{
+function M:random_colorscheme() -- {{{
 	-- sliced and diced from tssm/nvim-random-colors
 
 	-- ~/.local/share/nvim/lazy/*/colors/*.(lua|vim)
@@ -155,9 +163,7 @@ function M:random_colorscheme()
 	local scheme = all_schemes[math.random(#all_schemes)]
 
 	vim.cmd.colorscheme(scheme)
-end
-
--- M:random_colorscheme() -- don't assume colorschemes are loaded yet
+end -- }}}
 
 function M:md_to_pdf()
 	local _in = vim.fn.shellescape(vim.fn.expand("%")) -- basename!

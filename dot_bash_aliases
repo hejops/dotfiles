@@ -1438,7 +1438,7 @@ bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
 rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
 yt() { mpv --force-window "ytdl://ytsearch10:\'$*\'"; }
 ytn() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
-zd() { zip -jr "$1" "$1"; }                                 # zip directory (flat)
+zd() { zip -jr "${1%/}" "${1%/}"; }                         # zip directory (flat); stripping trailing slash is important
 zin() { < /dev/stdin zip --junk-paths --names-stdin "$1"; } # pipe files from stdin to zip
 
 ys() { # read youtube subs in less

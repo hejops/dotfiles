@@ -468,6 +468,13 @@ local function exec()
 		-- TODO: it is not clear which cmd should be used
 		go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
 
+		c = string.format(
+			[[ gcc %s -o %s ; ./%s ]],
+			curr_file,
+			string.gsub(curr_file, ".c", ""),
+			string.gsub(curr_file, ".c", "")
+		),
+
 		-- -- the... kotlin
 		-- -- https://kotlinlang.org/docs/command-line.html#create-and-run-an-application
 		-- kotlin = string.format(
@@ -640,13 +647,16 @@ local function debug_print()
 
 		-- python = 'print(f"{@=}")',
 		-- rust = 'println!("{:#?}", @);', -- TODO: bind to <leader>P (need new func param)
-		-- zig = 'std.debug.print("{}\n",.{});',
+		c = "printf(@);",
+		elixir = "IO.puts(@)",
+		gleam = "io.debug(@)",
 		go = "fmt.Println(@)",
 		javascript = "console.log(@);",
 		lua = "print(@)",
 		python = "print(@)",
 		rust = 'println!("{:?}", @);',
 		typescript = "console.log(@);",
+		zig = [[std.debug.print("{any}\n", .{@});]],
 	}
 
 	local ft = vim.bo.filetype

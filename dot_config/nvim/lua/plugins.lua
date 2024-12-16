@@ -586,6 +586,52 @@ require("lazy").setup(
 				"mfussenegger/nvim-dap-python",
 				"thehamsta/nvim-dap-virtual-text",
 			},
+			config = function()
+				-- https://github.com/mfussenegger/dotfiles/blob/da93d1f7f52ea50b00199696a6977dd70a84736e/vim/dot-config/nvim/lua/me/dap.lua
+
+				local dap = require("dap")
+
+				-- vim.keymap.set({ "n", "v" }, "<leader>dh", require("dap.ui.widgets").hover)
+				vim.keymap.set("n", "<leader>dj", dap.continue)
+				vim.keymap.set("n", "<leader>dt", dap.toggle_breakpoint)
+				-- vim.keymap.set({ "n", "v" }, "<leader>dp", require("dap.ui.widgets").preview)
+
+				-- -- race condition: when calling continue and preview sequentially, continue
+				-- -- will advance to next breakpoint, but because preview is 'faster', it will
+				-- -- display whichever the line the cursor was at when `continue` was called
+				-- -- (usually not useful). as a result, preview must be called separately, which
+				-- -- is annoying.
+				-- vim.keymap.set("n", "<leader>dj", function()
+				-- 	dap.continue()
+				-- 	require("dap.ui.widgets").preview() -- more useful than hover since it doesn't grab focus, and the split is always reused
+				-- end)
+
+				vim.keymap.set("n", "<leader>dr", dap.repl.open) -- not terribly useful?
+
+				vim.keymap.set("n", "<leader>di", dap.step_into) -- https://stackoverflow.com/a/3580851
+				vim.keymap.set("n", "<leader>do", dap.step_out)
+				vim.keymap.set("n", "<leader>dv", dap.step_over)
+
+				-- https://github.com/mfussenegger/nvim-dap/wiki/Debug-Adapter-installation#python
+				-- https://github.com/mfussenegger/nvim-dap-python?tab=readme-ov-file#usage
+
+				require("dap-python").setup("/usr/bin/python3") -- `python3 -m debugpy --version` must work in the shell
+
+				dap.configurations.python = {
+					{
+						type = "python",
+						request = "launch",
+						name = "Launch file",
+						program = "${file}",
+						-- pythonPath = "/usr/bin/python",
+					},
+				}
+
+				require("nvim-dap-virtual-text").setup({
+					virt_text_pos = "eol", -- inline is very hard to read
+					-- note: current value will always be placed at the initial declaration
+				})
+			end,
 		}, -- }}}
 
 		{ -- gitsigns {{{
@@ -809,6 +855,7 @@ require("lazy").setup(
 		"challenger-deep-theme/vim",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
 		"morhetz/gruvbox",
+		"nanotech/jellybeans.vim",
 		"shawilly/ponokai",
 		"tomasr/molokai",
 		-- "ajmwagar/vim-deus", -- mono tabline

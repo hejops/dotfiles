@@ -1,5 +1,3 @@
--- lua/ structuring: see https://github.com/arnvald/viml-to-lua
-
 -- re-sourcing this file (and its dependents) is easy (with :source or
 -- :luafile), but clearing all existing state (e.g. keybinds) is not
 -- https://neovim.discourse.group/t/reload-init-lua-and-all-require-d-scripts/971/19
@@ -8,9 +6,12 @@ require("util")
 
 require("autocmds")
 require("binds")
+require("filetypes")
 require("sets")
 
 require("plugins")
+
+-- TODO: start moving sections with >200 lines out into separate files
 
 -- plugin autocmds {{{
 
@@ -323,7 +324,7 @@ local telescope_actions = require("telescope.actions")
 vim.api.nvim_create_autocmd("VimEnter", {
 	callback = function()
 		-- mostly to avoid find from mac home
-		if vim.fn.argv(0) == "" and require("util").in_git_repo() and vim.bo.filetype ~= "man" then
+		if vim.fn.argv(0) == "" and require("util"):in_git_repo() and vim.bo.filetype ~= "man" then
 			telescope_b.find_files()
 		end
 	end,
@@ -339,7 +340,7 @@ telescope.setup({
 		border = true, -- if false, all text is disabled!
 		dynamic_preview_title = true, -- useful, since you don't have to look away from the right pane
 		layout_config = { preview_cutoff = 0 },
-		layout_strategy = require("util").get_layout_strategy(),
+		layout_strategy = require("util"):get_layout_strategy(),
 		prompt_title = false, -- this is almost always overridden anyway
 		results_title = false,
 		sorting_strategy = "descending", -- closest match on bottom (near prompt)
@@ -433,7 +434,7 @@ telescope.setup({
 			treesitter = true,
 			picker_opts = {
 				-- layout_config = { width = 0.8, preview_width = 0.5 },
-				layout_strategy = require("util").get_layout_strategy(),
+				layout_strategy = require("util"):get_layout_strategy(),
 				sorting_strategy = "ascending",
 			},
 		},
@@ -457,17 +458,10 @@ telescope.load_extension("heading")
 -- }}}
 -- telescope binds {{{
 
--- local function merge_tables(self, other)
--- 	for k, v in pairs(other) do
--- 		self[k] = v
--- 	end
--- 	return self
--- end
-
 vim.api.nvim_create_autocmd({ "VimEnter", "VimResized" }, {
 	callback = function()
 		require("telescope").setup({
-			defaults = { layout_strategy = require("util").get_layout_strategy() },
+			defaults = { layout_strategy = require("util"):get_layout_strategy() },
 		})
 	end,
 })
@@ -498,105 +492,6 @@ vim.keymap.set("n", "<leader>h", function()
 	vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
 end, { desc = "toggle inlay hints" })
 
--- buffer-specific LSP keymaps
-local function on_attach(_, bufnr)
-	local function nmap(keys, func, desc)
-		if desc then
-			desc = "LSP: " .. desc
-		end
-
-		vim.keymap.set("n", keys, func, { buffer = bufnr, desc = desc })
-	end
-
-	require("tiny-code-action").setup()
-	nmap("<leader>A", require("tiny-code-action").code_action)
-	nmap("<leader>s", telescope_b.lsp_dynamic_workspace_symbols, "document symbols") -- all project files; slow in python?
-	nmap("K", vim.lsp.buf.hover, "hover documentation")
-	nmap("R", vim.lsp.buf.rename, "rename")
-
-	nmap("<leader>i", function()
-		-- vim.lsp.buf.references() -- tui.go|43 col 15| func (p Post) saveImage(subj string) error {
-		-- vim.lsp.buf.incoming_calls() -- tui.go|385 col 19| Update
-
-		local function get_bufnr(fname)
-			for _, bn in pairs(vim.api.nvim_list_bufs()) do
-				if vim.api.nvim_buf_get_name(bn) == fname then
-					return bn
-				end
-			end
-		end
-
-		-- https://github.com/nvim-telescope/telescope.nvim/blob/master/developers.md#entry-maker
-		-- https://github.com/yuepaang/dotfiles/blob/5272e1aef2b0255535d7f575d9a5e32cd75e2cd8/nvim/lua/doodleVim/extend/lsp.lua#L3
-		local function entry_maker(entry)
-			local function make_display()
-				return require("telescope.pickers.entry_display").create({
-					separator = " ",
-					items = {
-						{ width = 0.1 },
-						{ width = 6 },
-						{ width = 0.1 },
-						{ remaining = true },
-					},
-				})({
-					require("telescope.utils").transform_path({}, entry.filename),
-					{ entry.lnum, "TelescopeResultsLineNr" },
-					entry.text,
-					-- file at line; only correct if buffer loaded, otherwise reads from current buf
-					vim.api.nvim_buf_get_lines(get_bufnr(entry.filename) or nil, entry.lnum - 1, entry.lnum, false),
-				})
-			end
-
-			return {
-
-				-- ordinal = (not opts.ignore_filename and filename or "") .. " " .. entry.text,
-				-- ordinal = string.format("%s %s", entry.file, entry.preview),
-				display = make_display,
-				filename = entry.filename, -- or vim.api.nvim_buf_get_name(entry.bufnr),
-				ordinal = entry.text,
-				value = entry,
-
-				-- these are for the preview
-				bufnr = entry.bufnr,
-				col = entry.col,
-				finish = entry.finish,
-				lnum = entry.lnum,
-				start = entry.start,
-				text = entry.text,
-				valid = true,
-			}
-		end
-
-		telescope_b.lsp_incoming_calls({ -- tui.go:385:19:Update
-			-- contrary to the name, show_line only shows the name of the parent func
-			-- (...:parent), but not the actual line itself. Trouble doesn't show the
-			-- line either (and i don't like using trouble anyway)
-			show_line = true,
-			entry_maker = entry_maker,
-		})
-	end, "incoming calls")
-
-	nmap("<leader>S", function()
-		-- TS has no project-wide scope, too bad
-		require("telescope.builtin").treesitter({ symbols = { "method", "function", "type" } })
-	end, "treesitter functions")
-
-	-- nmap("<c-k>", vim.lsp.buf.signature_help, "signature documentation") -- != buf.hover! see: https://github.com/neovim/neovim/discussions/25711#discussioncomment-7323330
-	-- nmap("<leader>S", telescope_b.lsp_document_symbols, "document symbols") -- pre-loaded, curr buf only (almost never used)
-	-- nmap("<leader>d", vim.lsp.buf.type_definition, "type definition")
-	-- nmap("<leader>o", telescope_b.lsp_outgoing_calls, "outgoing calls") -- what does this call? less useful; think of this like goto def, but preview
-	-- nmap("<leader>wa", vim.lsp.buf.add_workspace_folder, "workspace add folder")
-	-- nmap("<leader>wr", vim.lsp.buf.remove_workspace_folder, "workspace remove folder")
-	-- nmap("gI", vim.lsp.buf.implementation, "go to implementation") -- only useful for langs where def and impl can be separate (e.g. TS)
-	-- nmap("gd", vim.lsp.buf.declaration, "goto declaration") -- != definition
-	-- nmap("gr", require("telescope.builtin").lsp_references, "goto references") -- goto def, but more chaotic
-	-- vim.keymap.set({ "i" }, "<c-a>", vim.lsp.buf.code_action)
-
-	-- nmap("<leader>lw", function()
-	-- 	print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
-	-- end, "list workspace folders")
-end
-
 local function gotodef_tabdrop()
 	vim.lsp.buf.definition({
 		on_list = function(options)
@@ -619,32 +514,32 @@ local function gotodef_tabdrop()
 end
 
 -- https://github.com/BrunoKrugel/dotfiles/blob/0b2bdc4b3909620727b3975c482eea3cbebd7f9f/lua/mappings.lua#L5
-local function golang_goto_def()
-	local old = vim.lsp.buf.definition
-	local opts = {
-		on_list = function(options)
-			if options == nil or options.items == nil or #options.items == 0 then
-				return
-			end
-			local targetFile = options.items[1].filename
-			local prefix = string.match(targetFile, "(.-)_templ%.go$")
-			if prefix then
-				local function_name = vim.fn.expand("<cword>")
-				options.items[1].filename = prefix .. ".templ"
-				vim.fn.setqflist({}, " ", options)
-				vim.api.nvim_command("cfirst")
-				vim.api.nvim_command("silent! /templ " .. function_name)
-			else
-				old()
-			end
-		end,
-	}
-	vim.lsp.buf.definition = function(o)
-		o = o or {}
-		o = vim.tbl_extend("keep", o, opts)
-		old(o)
-	end
-end
+-- local function golang_goto_def()
+-- 	local old = vim.lsp.buf.definition
+-- 	local opts = {
+-- 		on_list = function(options)
+-- 			if options == nil or options.items == nil or #options.items == 0 then
+-- 				return
+-- 			end
+-- 			local targetFile = options.items[1].filename
+-- 			local prefix = string.match(targetFile, "(.-)_templ%.go$")
+-- 			if prefix then
+-- 				local function_name = vim.fn.expand("<cword>")
+-- 				options.items[1].filename = prefix .. ".templ"
+-- 				vim.fn.setqflist({}, " ", options)
+-- 				vim.api.nvim_command("cfirst")
+-- 				vim.api.nvim_command("silent! /templ " .. function_name)
+-- 			else
+-- 				old()
+-- 			end
+-- 		end,
+-- 	}
+-- 	vim.lsp.buf.definition = function(o)
+-- 		o = o or {}
+-- 		o = vim.tbl_extend("keep", o, opts)
+-- 		old(o)
+-- 	end
+-- end
 
 -- https://github.com/fatih/dotfiles/blob/52e459c991e1fa8125fb28d4930f13244afecd17/init.lua#L748
 vim.api.nvim_create_autocmd("LspAttach", {
@@ -664,220 +559,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 })
 
 -- }}}
--- lsp handler: mason {{{
-
--- print(vim.fn.stdpath("data"))
-
--- get git repo root, ignoring all possible child directories
-local function root_directory()
-	local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
-	local toplevel = vim.fn.system(cmd)
-	if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
-		return vim.fn.getcwd()
-	end
-	return toplevel:sub(0, -2)
-end
-
--- https://github.com/jellydn/ts-inlay-hints?tab=readme-ov-file#neovim-settings
-local js_ts_hints = {
-	includeInlayEnumMemberValueHints = true,
-	includeInlayFunctionLikeReturnTypeHints = true,
-	includeInlayFunctionParameterTypeHints = true,
-	includeInlayParameterNameHints = "all", -- 'none' | 'literals' | 'all';
-	includeInlayParameterNameHintsWhenArgumentMatchesName = true,
-	includeInlayPropertyDeclarationTypeHints = true,
-	includeInlayVariableTypeHints = false,
-}
-
--- :h lspconfig-setup
--- :h vim.lsp.ClientConfig
--- https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers
--- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
-
--- WARN: commenting out an lsp does not uninstall it!
-local servers = {
-
-	-- https://github.com/blackbhc/nvim/blob/4ae2692403a463053a713e488cf2f3a762c583a2/lua/plugins/lspconfig.lua#L399
-	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
-
-	-- marksman = {}, -- doesn't work, high cpu usage
-	-- ocamllsp = {}, -- requires global opam installation
-	-- ruff = {}, -- i don't know if this actually does anything
-	bashls = {},
-	clangd = {}, -- TODO: suppress (?) "Call to undeclared function"
-	dockerls = {},
-	lexical = {},
-	pyright = {},
-	taplo = {},
-	texlab = {},
-	yamlls = {},
-	zls = {},
-
-	-- -- broken?
-	-- -- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
-	-- docker_compose_language_service = {
-	-- 	root_dir = require("lspconfig").util.root_pattern("docker-compose.yml"), -- add more patterns if needed
-	-- 	filetypes = { "yaml.docker-compose" },
-	-- 	-- single_file_support = true,
-	-- },
-
-	-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md
-	gopls = {
-		settings = {
-			gopls = { -- i have absolutely no idea why gopls needs to stutter
-
-				staticcheck = true, -- https://staticcheck.io/docs/checks/
-				symbolScope = "workspace", -- don't show ~/go, /usr/lib
-				usePlaceholders = false,
-
-				hints = { -- https://github.com/golang/tools/blob/master/gopls/doc/inlayHints.md
-					assignVariableTypes = true,
-					compositeLiteralFields = true,
-					compositeLiteralTypes = true,
-					constantValues = true,
-					functionTypeParameters = true,
-					parameterNames = true,
-					rangeVariableTypes = true,
-				},
-			},
-		},
-	},
-
-	biome = {
-		root_dir = root_directory(), -- important: use root biome.json
-	},
-
-	ts_ls = {
-
-		-- ts_ls generally does not need to be at root, but better to be consistent
-		-- with biome
-		root_dir = root_directory(),
-
-		settings = {
-			javascript = { inlayHints = js_ts_hints },
-			typescript = { inlayHints = js_ts_hints },
-
-			-- note: js projects will require jsconfig.json
-			diagnostics = {
-				-- remove unused variable diagnostic messages from tsserver
-				ignoredCodes = {
-					-- the -only- place these codes are documented:
-					-- https://github.com/typescript-language-server/typescript-language-server/blob/master/src/utils/errorCodes.ts
-					-- note: these warnings should probably be enabled for real (production) work
-					6133, -- declared but never used
-					6196,
-				},
-			},
-		},
-	},
-
-	rust_analyzer = {
-		settings = {
-			["rust-analyzer"] = {
-				-- https://rust-analyzer.github.io/manual.html#configuration
-				-- https://hw0lff.github.io/rust-analyzer-docs/2021-11-01/index.html
-				checkOnSave = {
-					enable = true,
-					-- allFeatures = true, -- https://rust-analyzer.github.io/manual.html#features
-					command = "clippy", -- https://rust-lang.github.io/rust-clippy/master/index.html
-				},
-				completion = {
-					addCallParenthesis = true, -- a.foo()
-					-- postfix = { enable = false },
-					addCallArgumentSnippets = false, -- a.foo(arg1)
-				},
-			},
-		},
-	},
-
-	lua_ls = {
-		settings = {
-			Lua = {
-				diagnostics = {
-					globals = { "vim", "mp" },
-					disable = { "missing-fields" },
-				},
-				telemetry = { enable = false },
-				workspace = { checkThirdParty = false },
-			},
-		},
-	},
-
-	-- -- until further notice, i have given up trying to get ruby_lsp to work
-	-- -- https://github.com/Shopify/ruby-lsp/blob/main/EDITORS.md#Neovim
-	-- ruby_lsp = {},
-}
-
-local mason_lspconfig = require("mason-lspconfig")
-local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()) -- wrap default capabilities with cmp
-
-mason_lspconfig.setup({ ensure_installed = vim.tbl_keys(servers) })
-
-mason_lspconfig.setup_handlers({
-	function(server_name)
-		require("lspconfig")[server_name].setup(vim.tbl_extend("force", {
-			capabilities = capabilities,
-			on_attach = on_attach,
-			settings = servers[server_name],
-			filetypes = (servers[server_name] or {}).filetypes,
-		}, servers[server_name] or {}))
-	end,
-})
-
--- note: after python update, pyright must be reinstalled
-require("lspconfig").pyright.setup({
-	on_attach = on_attach,
-	capabilities = capabilities,
-	before_init = function(_, config) -- functions cannot be merged
-		-- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L90
-		local function get_python_path(workspace) -- {{{
-			local util = require("lspconfig/util")
-
-			-- Use activated virtualenv.
-			if vim.env.VIRTUAL_ENV then
-				return util.path.join(vim.env.VIRTUAL_ENV, "bin", "python")
-			end
-
-			if vim.fn.glob(util.path.join(workspace, "poetry.lock")) ~= "" then
-				local poetry = vim.fn.trim(vim.fn.system("poetry --directory " .. workspace .. " env info -p"))
-				return util.path.join(poetry, "bin", "python")
-			end
-
-			-- Fallback to system Python.
-			return vim.fn.exepath("python3") or vim.fn.exepath("python") or "python"
-		end -- }}}
-
-		config.settings.python.pythonPath = get_python_path(config.root_dir)
-	end,
-})
-
-local diagnostics_signs = { Error = "💀", Warn = "🤔", Hint = "🤓", Info = "ⓘ" }
-for type, icon in pairs(diagnostics_signs) do
-	-- https://github.com/folke/trouble.nvim/issues/52#issuecomment-950044538
-	-- https://github.com/folke/trouble.nvim/issues/52#issuecomment-988874117
-	local hl = "DiagnosticSign" .. type
-	vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
-end
-
--- ensure all popups have borders for better readability
--- https://vi.stackexchange.com/a/39075
-local _border = "single"
-vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
-	border = _border,
-})
-
-vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.signature_help, {
-	border = _border,
-})
-
-vim.diagnostic.config({
-	float = {
-		border = _border,
-		focusable = false,
-	},
-})
-
--- }}}
+require("lsp")
 -- linter: nvim-lint {{{
 -- to ensure all tools (linters etc) are up-to-date, it is better to keep them
 -- in /nvim/mason (rather than decentralised user-installed ones)
@@ -889,6 +571,7 @@ local linters = {
 	-- elixir = { "credo" }, -- where da binary at
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 	-- note: the standard rust linter is clippy, which is part of the lsp
+	-- ruby = { "rubocop" },
 	bash = { "shellcheck" },
 	dockerfile = { "hadolint" }, -- can be quite noisy
 	gitcommit = { "gitlint" },
@@ -900,7 +583,6 @@ local linters = {
 	make = { "checkmake" },
 	markdown = { "markdownlint", "proselint" },
 	python = { "ruff" }, -- pylint is too slow and unreliable
-	ruby = { "rubocop" },
 	sql = { "sqlfluff" },
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
@@ -915,13 +597,22 @@ end
 -- https://github.com/orumin/dotfiles/blob/62d7afe8a9bf531d1b5c8b13bbb54a55592b34b3/nvim/lua/configs/plugin/lsp/linter_config.lua#L7
 require("lint").linters_by_ft = linters
 
+-- TODO: configure linters https://golangci-lint.run/usage/linters/#asasalint
+-- decorder, dogsled, errchkjson, errorlint, funlen, goconst, grouper?, iface,
+-- importas, lll, nestif, nilnil, nlreturn, nolintlint, nonamedreturns,
+-- tagalign, usestdlibvars, unconvert, unparam, unused, varnamelen, whitespace
+-- require("lint").linters.golangci.args = {}
+
 -- https://github.com/rrunner/dotfiles/blob/d55d90ed5d481fc1138483f76f0970d93784bf0a/nvim/.config/nvim/lua/plugins/linting.lua#L17
 require("lint").linters.ruff.args = {
 	"check",
+	"--preview",
 	"--select=ALL",
 	"--target-version=py310", -- type hints = 39, Optional (etc) = 310
 	"--ignore=" .. table.concat({
+		-- https://docs.astral.sh/ruff/rules/
 
+		"DOC201", -- allow docstrings to not document return type
 		"ERA", -- allow comments
 		"I001", -- ignore import sort order (handled by isort hook)
 		"PD901", -- allow var name df
@@ -939,7 +630,7 @@ require("lint").linters.ruff.args = {
 	"--quiet",
 	"--stdin-filename",
 	vim.api.nvim_buf_get_name(0),
-	"--no-fix", -- --fix should never be used, because it destroys undos
+	"--no-fix", -- --fix should never be used for linting, because it destroys undos; fix via conform instead
 	"--output-format=json", -- important
 	"-",
 }
@@ -948,7 +639,7 @@ local custom_gcl = vim.fn.globpath(
 	-- note: on startup, starts in cwd. path is only adjusted to project root
 	-- later
 	-- ".",
-	root_directory(),
+	require("util"):root_directory(),
 	"custom-gcl"
 )
 if custom_gcl ~= "" then
@@ -981,12 +672,38 @@ require("conform").setup({
 	formatters = {
 		black = {
 			-- https://black.readthedocs.io/en/stable/the_black_code_style/future_style.html#preview-style
-			prepend_args = { "--preview" },
+			prepend_args = { "--unstable" },
 		},
 
 		isort = {
-			prepend_args = require("util"):is_ubuntu() and { "--profile", "black" } -- don't use single-line style at work
+			prepend_args = require("util").is_ubuntu and { "--profile", "black" } -- don't use single-line style at work
 				or { "--force-single-line-imports", "--profile", "black" },
+		},
+
+		ruff_fix = {
+			-- https://github.com/stevearc/conform.nvim/blob/master/lua/conform/formatters/ruff_fix.lua
+			args = {
+				"check",
+
+				-- opt-out for now
+				"--select=ALL",
+				"--ignore=" .. table.concat({
+					-- https://docs.astral.sh/ruff/rules/
+					-- only rules with wrench symbol are supported
+
+					"F841", -- allow unused var
+					"I001", -- sort imports (does not support one-per-line, unlike isort)
+				}, ","),
+
+				"--fix",
+				"--unsafe-fixes",
+				"--force-exclude",
+				"--exit-zero",
+				"--no-cache",
+				"--stdin-filename",
+				"$FILENAME",
+				"-",
+			},
 		},
 
 		prettier = {
@@ -998,10 +715,26 @@ require("conform").setup({
 			end,
 		},
 
+		-- https://taplo.tamasfe.dev/configuration/formatter-options.html
+		taplo = {
+			args = {
+				"format",
+				"--option",
+				"array_auto_expand=false",
+				"--option",
+				"compact_arrays=false",
+				"--option",
+				"align_entries=true", -- does not align array elements (like gofmt and struct fields)
+				"--option",
+				"allowed_blank_lines=1",
+				"-",
+			},
+		},
+
 		biome = {
 			-- important: at work, use top-level biome.json
 			-- note: cwd must be a func, not a string
-			cwd = root_directory,
+			cwd = require("util").root_directory,
 		},
 
 		shfmt = {
@@ -1019,11 +752,11 @@ require("conform").setup({
 				"--config",
 				table.concat({
 					"fn_params_layout=Vertical", -- default: Tall
-					"fn_single_line=true", -- default: false
 					"format_code_in_doc_comments=true", -- default: false
 					"group_imports=StdExternalCrate", -- default: Preserve
 					"imports_granularity=Item", -- default: Preserve
 					"wrap_comments=true", -- default: false
+					-- "fn_single_line=false", -- default: false
 				}, ","),
 			},
 		},
@@ -1091,6 +824,8 @@ require("conform").setup({
 
 		-- cpp = { "astyle" },
 		-- markdown = { "mdslw" }, -- i like the idea, but not really on cargo yet
+		-- ruby = { "rubocop" },
+		-- yaml = { "prettier" },
 		["_"] = { "trim_whitespace" },
 		bash = { "shfmt" },
 		c = { "clang-format" }, -- clang-format requires config (presumably a .clang-format file) ootb
@@ -1103,8 +838,11 @@ require("conform").setup({
 		lua = { "stylua" },
 		markdown = { "prettier" },
 		ocaml = { "ocamlformat" },
-		python = { "black", "isort" },
-		ruby = { "rubocop" },
+		python = {
+			"isort",
+			"black",
+			"ruff_fix", -- run ruff_fix last to preserve black's unstable-style parens
+		},
 		rust = { "rustfmt" },
 		sh = { "shfmt" },
 		tex = { "latexindent" },
@@ -1200,79 +938,5 @@ require("cmp-gitcommit").setup({}) -- i don't really use this
 
 -- }}}
 
--- https://github.com/mfussenegger/dotfiles/blob/da93d1f7f52ea50b00199696a6977dd70a84736e/vim/dot-config/nvim/lua/me/dap.lua
-
-local dap = require("dap")
-
--- vim.keymap.set({ "n", "v" }, "<leader>dh", require("dap.ui.widgets").hover)
-vim.keymap.set("n", "<leader>dj", dap.continue)
-vim.keymap.set("n", "<leader>dt", dap.toggle_breakpoint)
-vim.keymap.set({ "n", "v" }, "<leader>dp", require("dap.ui.widgets").preview)
-
--- -- race condition: when calling continue and preview sequentially, continue
--- -- will advance to next breakpoint, but because preview is 'faster', it will
--- -- display whichever the line the cursor was at when `continue` was called
--- -- (usually not useful). as a result, preview must be called separately, which
--- -- is annoying.
--- vim.keymap.set("n", "<leader>dj", function()
--- 	dap.continue()
--- 	require("dap.ui.widgets").preview() -- more useful than hover since it doesn't grab focus, and the split is always reused
--- end)
-
-vim.keymap.set("n", "<leader>dr", dap.repl.open) -- not terribly useful?
-
-vim.keymap.set("n", "<leader>di", dap.step_into) -- https://stackoverflow.com/a/3580851
-vim.keymap.set("n", "<leader>do", dap.step_out)
-vim.keymap.set("n", "<leader>dv", dap.step_over)
-
--- https://github.com/mfussenegger/nvim-dap/wiki/Debug-Adapter-installation#python
--- https://github.com/mfussenegger/nvim-dap-python?tab=readme-ov-file#usage
-
-require("dap-python").setup("/usr/bin/python3") -- `python3 -m debugpy --version` must work in the shell
-
-dap.configurations.python = {
-	{
-		type = "python",
-		request = "launch",
-		name = "Launch file",
-		program = "${file}",
-		-- pythonPath = "/usr/bin/python",
-	},
-}
-
-require("nvim-dap-virtual-text").setup({
-	virt_text_pos = "eol", -- inline is very hard to read
-	-- note: current value will always be placed at the initial declaration
-})
-
--- vim.cmd.colorscheme("citruszest")
 require("util"):random_colorscheme()
 vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
-
--- }}}
-
--- is there a better place to put this?
-vim.filetype.add({
-	pattern = {
-		-- https://github.com/emilioziniades/dotfiles/blob/db7b414c150d3a3ab863a0109786f7f48465dd23/nvim/init.lua#L708
-		[".*/templates/.*.html"] = function(_, bufnr)
-			local content = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-			for _, line in ipairs(content) do
-				if line:match("{%%") or line:match("%%}") then
-					return "htmldjango"
-				end
-			end
-		end,
-		["Dockerfile.*"] = "dockerfile",
-		[".+%.flux"] = "flux",
-		["docker%-compose.*.yml"] = "yaml.docker-compose", -- '-' has special meaning (smh)
-	},
-
-	-- https://github.com/kennethnym/dotfiles/blob/41f03b9091181dc62ce872288685b27f001286f3/nvim/init.lua#L474
-	filename = {
-
-		["Dockerfile"] = "dockerfile",
-		["docker-compose.yml"] = "yaml.docker-compose",
-		["yarn.lock"] = "text", -- default is yaml for some reason
-	},
-})
