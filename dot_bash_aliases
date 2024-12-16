@@ -89,6 +89,9 @@ gls() {
 }
 
 gmaster() {
+	: get default branch, e.g. 'master'
+	# https://stackoverflow.com/a/44750379
+	# default_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's|^refs/remotes/origin/||')
 	git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4
 }
 
@@ -210,20 +213,21 @@ _() {
 	:
 }
 
-gld() {
-	: browse git log, showing each commit\'s diff in fzf preview
+_gld() {
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
 	{
 		if [[ -f $1 ]] || [[ -d $1 ]]; then
-			git log --oneline "$1"
+			git log --oneline "$@"
 		else
 			git log --oneline
 		fi
 	} |
-		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
-		awk '{print $1}' |
-		xargs git show
-	# TODO: open in browser?
+		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+}
+
+gld() {
+	: browse git log, showing each commit\'s diff in fzf preview
+	_gld "$@" | awk '{print $1}' | xargs git show
 }
 
 gS() {
@@ -255,17 +259,24 @@ gL() {
 	# TODO: allow file/dir $1
 	d=$(date --date="1 week ago")
 	git logline --since="$d" --no-merges | tac
-	# gl --since="$d" --no-merges | tac
 }
 
 gcf() {
-	# https://stackoverflow.com/a/44750379
+	: make a new commit to be squashed with an earlier one
+
 	# https://jordanelver.co.uk/blog/2020/06/04/fixing-commits-with-git-commit-fixup-and-git-rebase-autosquash/
-	# default_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's|^refs/remotes/origin/||')
-	default_branch=$(gmaster)
-	sha=$(git log --oneline | fzf | cut -d' ' -f1)
-	git commit --fixup "$sha"
-	git rebase -i --autosquash "$default_branch"
+	sha=$(_gld . | cut -d' ' -f1)
+	[[ -z $sha ]] && return
+
+	# --fixup associates a new commit with an existing commit so that when
+	# you do an interactive rebase, you don't have to re-order any commits
+	# in order to squash them. And you don't have to change any commit
+	# messages
+	git commit --fixup "$sha" "$@"
+
+	# TODO: not sure what to do when unstaged changes are present
+
+	git rebase -i --autosquash "$(gmaster)" || gC
 }
 
 gA() {
@@ -483,17 +494,6 @@ gpl() {
 
 }
 
-gplm() {
-	: pull latest master
-	git checkout master
-	git fetch
-	if ! git merge; then
-		# discard all local changes
-		git merge 2>&1 | grep '^\s' | xargs git checkout --
-		git merge
-	fi
-}
-
 gmm() {
 	: merge master into dev branch
 	# https://stackoverflow.com/a/20103414
@@ -543,10 +543,6 @@ gh() {
 gnew() {
 	: push to newly created remote
 
-	# TODO: when starting a new work repo (local or remote), do:
-	# git config --local user.name ...
-	# git config --local user.email ...
-
 	if [[ -f files_to_add ]]; then
 		if [[ -d .git ]] && [[ -d .git_old ]]; then
 			echo 'new and old git histories found, remove new one first: rm -rf ./.git'
@@ -561,59 +557,33 @@ gnew() {
 	# https://kbroman.org/github_tutorial/pages/init.html
 	# set -euo pipefail
 
+	# no repo yet
 	if [[ ! -d .git ]]; then
-		echo "Creating local tree..."
-		if
-			[[ ! -f .gitignore ]] && find . | grep -Pq '\.py$'
-		then
-			echo "__pycache__" > .gitignore
-		fi
-		git init # idempotent
-
-		if [[ -f files_to_add ]]; then
-			# private repo goes public
-			< files_to_add xargs git add
-			less files_to_add
-		else
-			# git add .
-			find . -maxdepth 1 -type f |
-				grep -v pdf | # TODO: better to remove binary (how?)
-				largs git add
-		fi
-
-		# git add tests/* 2> /dev/null
-
+		git init
+		return
 	fi
 
-	if ! git log > /dev/null 2> /dev/null; then
+	if
+		! git log > /dev/null 2> /dev/null &&
+			! git status --porcelain | grep -Fv '??'
+	then
+		echo 'no commits made yet'
+		return
+	else
+		# WARN: this may not be desired
 		git commit -m "initial commit"
 	fi
 
-	if ! remote=$(git config --get remote.origin.url); then
-
+	# no remote yet
+	if ! git config --get remote.origin.url; then
 		git branch -M master
 		xdg-open https://github.com/new &
 		read -rp 'Repo name (not URL!): ' repo
 		git remote add origin "https://github.com/hejops/$repo"
 		git push -u origin master
 		git status
-
-	elif [[ $remote != *"hejops"* ]]; then
-
-		# make a private clone of a repo, preserving history
-		# don't remember the use case for this tbh
-
-		xdg-open https://github.com/new &
-		read -rp 'Repo name: ' repo
-		git remote set-url origin "https://github.com/hejops/$repo"
-		git push -u origin master
-		git status
-
-	else
-
-		# own remote already present
-		return
 	fi
+
 }
 
 gssh() {
@@ -651,8 +621,15 @@ gd() {
 	fi
 }
 
+gdm() {
+	: diff against master, like in a PR
+	git diff "$(gmaster)...HEAD"
+}
+
 grescon() {
 	: resolved conflicts, if any, and merge
+
+	# git diff --name-only --diff-filter=U --relative
 
 	if ! git status --porcelain | grep UU; then
 		echo "No conflicts detected"
@@ -716,6 +693,13 @@ gUN() {
 }
 
 # $repo/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
+
+guns() {
+	: revert file to its state in a previous commit
+	f=$1
+	sha=$(_gld "$1" | awk '{print $1}')
+	git checkout "$sha" -- "$f"
+}
 
 # }}}
 # pre-commit {{{
@@ -1785,3 +1769,16 @@ scan() {
 	pdfunite $(\ls "$f"-* | sort -V) "$f.pdf"
 	rm -I "$f"-*
 }
+
+# force delete plugins where contents were unintentionally changed (typically
+# via a stray `black` format)
+# note: Lazy (still) doesn't have a log file, so the output must be copied from
+# Lazy itself
+# https://github.com/folke/lazy.nvim/blob/014d1d6d78df4e58f962158e6e00261d8632612c/TODO.md?plain=1#L47
+# < lazy.log grep 'local changes in' |
+# 	cut -d'`' -f2 |
+# 	sort -u |
+# 	xargs rm -rf
+
+# note: sendmail unresponsive
+# echo "$msg" | mail -s "$subj" $addr
