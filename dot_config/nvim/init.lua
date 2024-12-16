@@ -1,5 +1,8 @@
--- TODO: root_pattern for lua; set root to .config/nvim?
--- structuring: see https://github.com/arnvald/viml-to-lua
+-- lua/ structuring: see https://github.com/arnvald/viml-to-lua
+
+-- re-sourcing this file (and its dependents) is easy (with :source or
+-- :luafile), but clearing all existing state (e.g. keybinds) is not
+-- https://neovim.discourse.group/t/reload-init-lua-and-all-require-d-scripts/971/19
 
 require("util")
 
@@ -697,13 +700,13 @@ local servers = {
 	-- https://github.com/blackbhc/nvim/blob/4ae2692403a463053a713e488cf2f3a762c583a2/lua/plugins/lspconfig.lua#L399
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
 
+	-- marksman = {}, -- doesn't work, high cpu usage
 	-- ocamllsp = {}, -- requires global opam installation
 	-- ruff = {}, -- i don't know if this actually does anything
 	bashls = {},
 	clangd = {}, -- TODO: suppress (?) "Call to undeclared function"
 	dockerls = {},
 	lexical = {},
-	marksman = {}, -- why should md ever have any concept of root_dir?
 	pyright = {},
 	taplo = {},
 	texlab = {},
@@ -1107,7 +1110,7 @@ require("conform").setup({
 		tex = { "latexindent" },
 		toml = { "taplo" },
 		xml = { "xmlformat" },
-		-- yaml = { "prettier" },
+		yaml = { "prettier" },
 
 		javascript = { "biome", "prettier", stop_after_first = true },
 		javascriptreact = { "biome", "prettier", stop_after_first = true },
