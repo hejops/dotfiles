@@ -1,4 +1,3 @@
--- vim: ts=2 sts=2 sw=2 et
 -- https://vim.fandom.com/wiki/Unused_keys
 -- https://stackoverflow.com/a/3806664 -- mostly visual mode
 -- https://vi.stackexchange.com/a/28080
@@ -146,16 +145,19 @@ vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push 
 
 -- TODO: git add % + git commit --amend --no-edit
 
+local function commit_staged()
+	vim.cmd("silent !pre-commit run") -- limit to staged files
+	vim.cmd("Git commit --quiet -v") -- commit currently staged chunk(s)
+end
+
+vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit currently staged hunks" })
+vim.keymap.set("n", "<leader>gc", commit_staged, { desc = "commit currently staged hunks" })
+
 vim.keymap.set("n", "<leader>C", function()
 	-- TODO: if no changes, do nothing
 	vim.cmd("silent !pre-commit run --files %")
 	vim.cmd("Git commit --quiet -v %") -- commit entire file
 end, { desc = "commit current buffer" })
-
-vim.keymap.set("n", "<leader>gc", function()
-	vim.cmd("silent !pre-commit run") -- limit to staged files
-	vim.cmd("Git commit --quiet -v") -- commit currently staged chunk(s)
-end, { desc = "commit currently staged hunks" })
 
 vim.keymap.set("n", "<leader>gC", function()
 	vim.cmd("Git commit --quiet --amend -v")
@@ -190,7 +192,7 @@ local ft_binds = { -- {{{
 
 	git = {
 		{ "n", "<cr>", ":q<cr>" },
-		{ "n", "j", 1, { remap = true } }, -- https://github.com/tpope/vim-fugitive/blob/320b18fba2a4f2fe3c8225c778c687e0d2620384/autoload/fugitive.vim#L8019
+		{ "n", "j", "J", { remap = true } }, -- https://github.com/tpope/vim-fugitive/blob/320b18fba2a4f2fe3c8225c778c687e0d2620384/autoload/fugitive.vim#L8019
 		{ "n", "k", "K", { remap = true } },
 	},
 
