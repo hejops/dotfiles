@@ -235,6 +235,16 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 		# may get unset after update? not sure what causes it
 		setxkbmap -layout us -option -option compose:rctrl,caps:menu
 
+	elif
+		# if pacman hasn't been run in a long time, keys in keyring
+		# will expire. updating archlinux-keyring should fix this
+		command -v expac > /dev/null &&
+			last_update=$(expac --timefmt '%s' "%l" | sort -n | tail -n1) &&
+			# https://stackoverflow.com/a/6948865
+			[[ $(((last_update - $(date +%s)) / (60 * 60 * 24))) -gt 14 ]]
+	then
+		sudo pacman -Sy archlinux-keyring
+
 	fi
 fi
 
