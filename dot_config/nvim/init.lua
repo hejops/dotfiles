@@ -818,13 +818,17 @@ require("conform").setup({
 			-- "goimports", -- required for autoimport (null_ls), but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 		},
 
-		-- cpp = { "astyle" },
-		-- markdown = { "mdslw" }, -- i like the idea, but not really on cargo yet
+		python = {
+			"isort",
+			"black",
+			"ruff_fix", -- run ruff_fix last to preserve black's unstable-style parens
+		},
+
 		-- ruby = { "rubocop" },
-		-- yaml = { "prettier" },
 		["_"] = { "trim_whitespace" },
 		bash = { "shfmt" },
 		c = { "clang-format" }, -- clang-format requires config (presumably a .clang-format file) ootb
+		cpp = { "clang-format" },
 		css = { "prettier" },
 		dhall = { "dhall" },
 		elixir = { "mix" }, -- slow (just like elixir)
@@ -832,15 +836,12 @@ require("conform").setup({
 		html = { "prettier" }, -- need --parser html?
 		htmldjango = { "djlint" },
 		lua = { "stylua" },
-		markdown = { "prettier" },
+		markdown = { "mdslw", "prettier" },
 		ocaml = { "ocamlformat" },
-		python = {
-			"isort",
-			"black",
-			"ruff_fix", -- run ruff_fix last to preserve black's unstable-style parens
-		},
 		rust = { "rustfmt" },
+		scss = { "prettier" },
 		sh = { "shfmt" },
+		sql = { "sqlfluff" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
 		xml = { "xmlformat" },
@@ -852,8 +853,6 @@ require("conform").setup({
 		jsonc = { "biome", "prettier", stop_after_first = true },
 		typescript = { "biome", "prettier", stop_after_first = true },
 		typescriptreact = { "biome", "prettier", stop_after_first = true },
-
-		sql = { "sqlfluff" },
 	},
 })
 
