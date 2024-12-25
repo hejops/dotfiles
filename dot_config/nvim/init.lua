@@ -30,16 +30,6 @@ vim.api.nvim_create_autocmd({
 	end,
 })
 
-vim.api.nvim_create_autocmd("BufWritePost", {
-	pattern = { "*.sql" },
-	callback = function()
-		-- quite slow
-		vim.cmd("silent! !sqlfluff fix --dialect sqlite \z
-		--exclude-rules L028 %")
-		-- vim.fn.jobstart("sqlfluff fix --dialect sqlite %")
-	end,
-})
-
 -- trying to make vil files pretend to be json causes problems with both
 -- prettier and biome
 vim.api.nvim_create_autocmd("BufWritePost", {
@@ -583,7 +573,7 @@ local linters = {
 	make = { "checkmake" },
 	markdown = { "markdownlint", "proselint" },
 	python = { "ruff" }, -- pylint is too slow and unreliable
-	sql = { "sqlfluff" },
+	sql = { "sqlfluff" }, -- generally works ootb (unlike in conform)
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
 }
@@ -761,6 +751,13 @@ require("conform").setup({
 			},
 		},
 
+		sqlfluff = {
+			-- `fix` leads to timeout, so use `format` instead
+			-- no `dialect` = timeout
+			args = { "format", "--dialect=sqlite", "-" },
+			require_cwd = false, -- else requires .sqlfluff or something similar
+		},
+
 		dhall = { command = "dhall", args = { "format" } },
 
 		latexindent = {
@@ -857,9 +854,7 @@ require("conform").setup({
 		typescript = { "biome", "prettier", stop_after_first = true },
 		typescriptreact = { "biome", "prettier", stop_after_first = true },
 
-		-- note: none of the sql formatters seem to work; sqlfluff fix is supposed
-		-- to work, but 'Root directory not found'
-		-- sql = { "sqlfluff" },
+		sql = { "sqlfluff" },
 	},
 })
 
