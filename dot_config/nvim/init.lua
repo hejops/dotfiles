@@ -686,7 +686,6 @@ require("conform").setup({
 				}, ","),
 
 				"--fix",
-				"--unsafe-fixes",
 				"--force-exclude",
 				"--exit-zero",
 				"--no-cache",
