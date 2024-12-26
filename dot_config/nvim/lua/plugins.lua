@@ -68,6 +68,7 @@ require("lazy").setup(
 		-- "simrat39/symbols-outline.nvim", -- like github's (almost never used; workspace symbols is more intuitive)
 		{ "akinsho/git-conflict.nvim", version = "*", config = true }, -- TODO: what does config = true mean?
 		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} }, -- https://github.com/folke/todo-comments.nvim?tab=readme-ov-file#-trouble-todo
+		{ "nanotee/sqls.nvim", ft = { "sql" } },
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
 		{ "rhysd/vim-go-impl", ft = { "go" } }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
 		{ "vague2k/huez.nvim", opts = {} },
