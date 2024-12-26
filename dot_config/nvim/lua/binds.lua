@@ -442,6 +442,7 @@ local function exec()
 		dhall = "dhall-to-json --file " .. curr_file,
 		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 		elvish = "elvish " .. curr_file,
+		haskell = "runghc " .. curr_file,
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
 		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
@@ -468,11 +469,18 @@ local function exec()
 		-- TODO: it is not clear which cmd should be used
 		go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
 
-		c = string.format(
+		c = string.format( -- fast (seems incremental by default)
 			[[ gcc %s -o %s ; ./%s ]],
 			curr_file,
 			string.gsub(curr_file, ".c", ""),
 			string.gsub(curr_file, ".c", "")
+		),
+
+		cpp = string.format( -- slow (0.5 s), should use make
+			[[ g++ %s -o %s ; ./%s ]],
+			curr_file,
+			string.gsub(curr_file, ".cpp", ""),
+			string.gsub(curr_file, ".cpp", "")
 		),
 
 		-- -- the... kotlin
@@ -652,10 +660,12 @@ local function debug_print()
 		gleam = "io.debug(@)",
 		go = "fmt.Println(@)",
 		javascript = "console.log(@);",
+		javascriptreact = "console.log(@);",
 		lua = "print(@)",
 		python = "print(@)",
 		rust = 'println!("{:?}", @);',
 		typescript = "console.log(@);",
+		typescriptreact = "console.log(@);",
 		zig = [[std.debug.print("{any}\n", .{@});]],
 	}
 
