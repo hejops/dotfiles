@@ -392,7 +392,7 @@ GIT_PROMPT() {
 
 	# must be in a git repo
 	{
-		[[ ! -d ./.git ]] ||
+		[[ ! -d ./.git ]] &&
 			# https://stackoverflow.com/a/16925062
 			! git rev-parse --is-inside-work-tree > /dev/null 2>&1
 	} && return
