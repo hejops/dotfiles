@@ -611,13 +611,14 @@ gssh() {
 gd() {
 	if [[ $# -eq 0 ]]; then
 		git diff
-		return
-	fi
-	# no local changes, check against last commit
-	if git diff --exit-code "$1" > /dev/null; then
+	elif
+		# no local changes, check against last commit
+		[[ $# -eq 1 ]] &&
+			git diff --exit-code "$1" > /dev/null
+	then
 		git diff HEAD^^ "$1"
 	else
-		git diff "$1"
+		git diff "$@"
 	fi
 }
 
@@ -1469,8 +1470,12 @@ sq() {
 	# PRAGMA mmap_size = 134217728; -- 128 megabytes
 	# PRAGMA synchronous = NORMAL;
 
-	if [[ ! -f $1 ]]; then echo "Not a file: $1"; fi
-	echo "$2" | sqlite3 "$1"
+	if [[ -f $1 ]]; then
+		< "$2" sqlite3 "$1"
+	else
+		echo "$2" | sqlite3 "$1"
+	fi
+	# echo "Not a file: $1"
 }
 
 nps() {
