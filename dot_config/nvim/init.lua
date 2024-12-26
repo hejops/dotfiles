@@ -571,7 +571,10 @@ local linters = {
 	javascript = { "biomejs" },
 	javascriptreact = { "biomejs" },
 	make = { "checkmake" },
-	markdown = { "markdownlint", "proselint" },
+	markdown = {
+		"markdownlint", -- https://github.com/DavidAnson/markdownlint?tab=readme-ov-file#rules--aliases
+		"proselint", -- https://github.com/amperser/proselint?tab=readme-ov-file#checks
+	},
 	python = { "ruff" }, -- pylint is too slow and unreliable
 	sql = { "sqlfluff" }, -- generally works ootb (unlike in conform)
 	typescript = { "biomejs" },
