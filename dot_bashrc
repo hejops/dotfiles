@@ -402,7 +402,8 @@ GIT_PROMPT() {
 	prompt=''
 
 	if [[ $(git branch | wc -l) -ne 1 ]]; then
-		prompt+="<$CURRENT_LOCAL_BRANCH:$(git rev-parse --short HEAD)> "
+		# rev-parse fails if no remote yet
+		prompt+="<$CURRENT_LOCAL_BRANCH:$(git rev-parse --short HEAD)> " 2> /dev/null || return
 	fi
 
 	# set -x
