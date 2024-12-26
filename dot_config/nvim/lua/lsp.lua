@@ -123,9 +123,11 @@ local servers = { -- {{{
 	-- https://github.com/blackbhc/nvim/blob/4ae2692403a463053a713e488cf2f3a762c583a2/lua/plugins/lspconfig.lua#L399
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
 
+	-- digestif = {}, -- not valid in ensure_installed?
 	-- hls = {}, -- 1.7 GB!
 	-- ocamllsp = {}, -- requires global opam installation
 	-- ruff = {}, -- i don't know if this actually does anything
+	-- texlab = {},
 	bashls = {},
 	clangd = {}, -- TODO: suppress (?) "Call to undeclared function"
 	dockerls = {},
@@ -133,7 +135,6 @@ local servers = { -- {{{
 	marksman = {}, -- why should md ever have any concept of root_dir?
 	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L90
 	taplo = {},
-	texlab = {},
 	yamlls = {},
 	zls = {},
 
@@ -279,6 +280,7 @@ mason_lspconfig.setup_handlers({
 })
 
 require("lspconfig").gleam.setup({}) -- not on mason, must be installed globally
+require("lspconfig").digestif.setup({}) -- autocomplete is wonky
 
 local diagnostics_signs = { Error = "💀", Warn = "🤔", Hint = "🤓", Info = "ⓘ" }
 for type, icon in pairs(diagnostics_signs) do
