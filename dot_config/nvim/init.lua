@@ -758,10 +758,14 @@ require("conform").setup({
 		},
 
 		sqlfluff = {
-			-- `fix` leads to timeout, so use `format` instead
-			-- no `dialect` = timeout
+			-- format: more reliable; will format if no violations found
+			-- fix: does nothing if 'Unfixable violations detected'
+			-- in either case, no `dialect` usually leads to timeout
 			args = { "format", "--dialect=sqlite", "-" },
-			require_cwd = false, -- else requires .sqlfluff or something similar
+			stdin = true,
+			-- args = { "format", "--dialect=sqlite" },
+			-- stdin = false,
+			require_cwd = false, -- else requires local .sqlfluff
 		},
 
 		dhall = { command = "dhall", args = { "format" } },
