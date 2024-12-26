@@ -607,7 +607,7 @@ require("lint").linters.ruff.args = {
 
 		"DOC201", -- allow docstrings to not document return type
 		"ERA", -- allow comments
-		"I001", -- ignore import sort order (handled by isort hook)
+		"I001", -- ignore import sort order (handled by isort)
 		"PD901", -- allow var name df
 		"PLR0913", -- allow >5 func args
 		"PLR2004", -- allow magic constant values
@@ -697,6 +697,8 @@ require("conform").setup({
 			},
 		},
 
+		-- note: for <script> to be formatted properly, type= is required
+		-- https://github.com/prettier/prettier/blob/main/tests/format/html/js/js.html
 		prettier = {
 			prepend_args = { "--print-width", "80" },
 			cwd = function()
