@@ -857,6 +857,7 @@ require("conform").setup({
 		scss = { "prettier" },
 		sh = { "shfmt" },
 		sql = { "sqlfluff" },
+		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
 		xml = { "xmlformat" },
