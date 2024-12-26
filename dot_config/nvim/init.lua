@@ -639,11 +639,10 @@ end
 require("lint").linters.sqlfluff.args = {
 	"lint",
 	-- TODO: infer dialect (either via heuristics, or some modeline equivalent)
-	"--dialect",
-	"sqlite",
+	"--dialect=sqlite",
 	"--format=json",
 	"--exclude-rules",
-	"layout.long_lines",
+	"layout.long_lines,references.qualification,references.consistent",
 
 	-- note: fine-grained 'rule options' can only be declared via cfg file (e.g.
 	-- ~/.config/sqlfluff), which my sqlfluff install doesn't seem to recognise
