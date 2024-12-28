@@ -123,25 +123,6 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 -- vim.api.nvim_create_autocmd({ "FileType" }, {
--- 	pattern = { "ruby" },
--- 	-- https://github.com/semanticart/ruby-code-actions.nvim/blob/a6f4c95063e2034f85913821475f8761bb4aff0c/lua/ruby-code-actions/init.lua#L74
--- 	callback = function()
--- 		local frozen_string_literal_comment = "# frozen_string_literal: true"
--- 		-- local first_line = context.content[1]
--- 		local first_line = vim.api.nvim_buf_get_lines(0, 0, 0, false)[0] -- TODO: doesn't work
--- 		if first_line == frozen_string_literal_comment then
--- 			return
--- 		end
--- 		local newlines = {
--- 			frozen_string_literal_comment,
--- 			"",
--- 			first_line,
--- 		}
--- 		vim.api.nvim_buf_set_lines(0, 0, 0, false, newlines)
--- 	end,
--- })
-
--- vim.api.nvim_create_autocmd({ "FileType" }, {
 -- 	pattern = "mail",
 -- 	callback = function()
 -- 		local name = os.getenv("USER")
