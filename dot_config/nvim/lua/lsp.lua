@@ -3,6 +3,74 @@
 -- https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers
 -- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
 
+local function gotodef_tabdrop()
+	vim.lsp.buf.definition({
+		on_list = function(options)
+			-- note: this doesn't get triggered, apparently
+			if #options.items > 1 then
+				os.execute("notify-send hi")
+				vim.notify("Multiple items found, opening first one", vim.log.levels.WARN)
+				return
+			end
+
+			-- tab drop
+			-- https://github.com/Swoogan/dotfiles/blob/ecfdf4f/nvim/.config/nvim/lua/config/lang.lua#L81
+			local item = options.items[1]
+			vim.cmd("tab drop " .. item.filename)
+			-- vim.api.nvim_win_set_cursor(win or 0, { item.start.line + 1, item.start.character })
+			vim.api.nvim_win_set_cursor(0, { item.lnum, item.col - 1 })
+			vim.cmd("norm zt")
+		end,
+	})
+end
+
+-- https://github.com/BrunoKrugel/dotfiles/blob/0b2bdc4b3909620727b3975c482eea3cbebd7f9f/lua/mappings.lua#L5
+-- local function golang_goto_def()
+-- 	local old = vim.lsp.buf.definition
+-- 	local opts = {
+-- 		on_list = function(options)
+-- 			if options == nil or options.items == nil or #options.items == 0 then
+-- 				return
+-- 			end
+-- 			local targetFile = options.items[1].filename
+-- 			local prefix = string.match(targetFile, "(.-)_templ%.go$")
+-- 			if prefix then
+-- 				local function_name = vim.fn.expand("<cword>")
+-- 				options.items[1].filename = prefix .. ".templ"
+-- 				vim.fn.setqflist({}, " ", options)
+-- 				vim.api.nvim_command("cfirst")
+-- 				vim.api.nvim_command("silent! /templ " .. function_name)
+-- 			else
+-- 				old()
+-- 			end
+-- 		end,
+-- 	}
+-- 	vim.lsp.buf.definition = function(o)
+-- 		o = o or {}
+-- 		o = vim.tbl_extend("keep", o, opts)
+-- 		old(o)
+-- 	end
+-- end
+
+-- https://github.com/fatih/dotfiles/blob/52e459c991e1fa8125fb28d4930f13244afecd17/init.lua#L748
+vim.api.nvim_create_autocmd("LspAttach", {
+	group = vim.api.nvim_create_augroup("UserLspConfig", {}),
+	callback = function(ev) -- goto def + tabdrop
+		local opts = { buffer = ev.buf }
+
+		-- vim.keymap.set("n", "<leader>cl", vim.lsp.codelens.run, opts)
+
+		-- https://github.com/neovim/neovim/pull/19213
+		-- https://github.com/raphapr/dotfiles/blob/ecdf9771d/home/dot_config/nvim/lua/raphapr/utils.lua#L25
+		-- https://github.com/Swoogan/dotfiles/blob/ecfdf4fe5/nvim/.config/nvim/lua/config/lang.lua#L63
+
+		vim.keymap.set("n", "gd", gotodef_tabdrop, opts)
+		-- vim.keymap.set("n", "gd", golang_goto_def, opts)
+
+		require("lsp_signature").on_attach({}, ev.buf)
+	end,
+})
+
 -- https://github.com/jellydn/ts-inlay-hints?tab=readme-ov-file#neovim-settings
 local js_ts_hints = {
 	includeInlayEnumMemberValueHints = true,
@@ -222,6 +290,17 @@ local servers = { -- {{{
 					-- note: these warnings should probably be enabled for real (production) work
 					6133, -- declared but never used
 					6196,
+
+					-- error 2307 is problematic. generally, it should not be ignored,
+					-- because ts_ls can always detect incorrect tsx imports, regardless
+					-- of where ts_ls is started.
+					--
+					-- if started at root, 2307 is -always- produced for any css import,
+					-- regardless of whether the css file exists.
+					--
+					-- if started at src, 2307 is -never- produced, regardless of whether
+					-- the css file exists.
+					-- 2307,
 				},
 			},
 		},
