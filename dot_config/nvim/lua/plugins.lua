@@ -42,13 +42,24 @@ require("lazy").setup(
 		{ "jbyuki/quickmath.nvim", cmd = { "Quickmath" } },
 		{ "johnelliott/vim-kinesis-kb900", ft = "kb900" }, -- KA FP (and 360?), layout*.txt
 		{ "mbbill/undotree", cmd = { "UndoTreeToggle" } },
-		{ "nanotee/sqls.nvim", ft = "sql" },
 		{ "rhysd/vim-go-impl", ft = "go" }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
 		{ "tadmccorkle/markdown.nvim", ft = "markdown", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
 		{ "tpope/vim-dispatch", cmd = { "Dispatch" } }, -- run async processes
 		{ "tpope/vim-dotenv", cmd = { "Dotenv" } },
 		{ "tridactyl/vim-tridactyl", ft = "tridactyl" }, -- syntax highlighting
 		{ "wansmer/treesj", opts = {}, cmd = { "TSJToggle", "TSJSplit", "TSJJoin" } }, -- very slow
+
+		{
+			"nanotee/sqls.nvim",
+			ft = "sql",
+			config = function()
+				require("lspconfig").sqls.setup({
+					on_attach = function(client, bufnr)
+						require("sqls").on_attach(client, bufnr)
+					end,
+				})
+			end,
+		},
 
 		{
 			"ray-x/lsp_signature.nvim",
