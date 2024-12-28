@@ -310,19 +310,23 @@ gc() {
 		git commit -v "${arr[@]}"
 
 	elif
-		# file(s) have been renamed
-		git status --porcelain | grep -Pq '^R  \S+? -> \S+$'
+		# 2. file(s) have been renamed/deleted
+		git status --porcelain | grep -Pq '^(R | D)'
 	then
-		git commit -v "${arr[@]}"
+		git status --porcelain |
+			grep -P '^(R | D)' |
+			awk '{print $2}' | # iffy
+			xargs git commit -v
 
 	elif
+		# 3. all staged changes
 		staged=$(git diff --name-only --cached --diff-filter=AMD) &&
 			[[ -n $staged ]]
 	then
-		# commit all staged changes
 		git commit -v
+
 	else
-		# commit all files that have changed
+		# 4. commit all files that have changed
 		git diff --name-only | xargs git commit -v
 
 	fi
