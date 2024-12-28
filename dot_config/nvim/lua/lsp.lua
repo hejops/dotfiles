@@ -197,13 +197,46 @@ local servers = { -- {{{
 	-- ruff = {}, -- i don't know if this actually does anything
 	-- texlab = {},
 	bashls = {},
-	clangd = {}, -- TODO: suppress (?) "Call to undeclared function"
 	dockerls = {},
 	lexical = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
 	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L90
 	taplo = {},
 	zls = {},
+
+	clangd = {
+		cmd = {
+			"clangd",
+
+			"--all-scopes-completion", -- include index symbols that are potentially out of scope
+			"--background-index", -- index project code in the background and persist index on disk (where?)
+			"--clang-tidy", -- linter (redundant?)
+			"--completion-style=detailed", -- don't combine overloads
+			"--function-arg-placeholders", -- complete function and method calls
+			"--header-insertion-decorators",
+			"--header-insertion=iwyu",
+			"--malloc-trim", -- Release memory periodically (lol)
+			"--pch-storage=memory", -- increase performance (at the expense of memory)
+			-- "--cross-file-rename", -- removed?
+			-- "--enable-config", -- read .clangd
+			-- "--inlay-hints", -- removed/no effect?
+			-- "--log=error",
+			-- "-j=6", -- workers
+		},
+
+		init_options = {
+
+			clangdFileStatus = true,
+			completeUnimported = true,
+			semanticHighlighting = true,
+			usePlaceholders = true,
+		},
+
+		-- TODO: https://clangd.llvm.org/config#unusedincludes
+		settings = {
+			diagnostics = { "UnusedIncludes=Strict" },
+		},
+	},
 
 	-- -- broken?
 	-- -- https://github.com/EmilianoEmanuelSosa/nvim/blob/c0a47abd789f02eb44b7df6fefa698489f995ef4/init.lua#L129
