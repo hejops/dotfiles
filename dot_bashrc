@@ -475,24 +475,19 @@ GIT_PROMPT() {
 # https://stackoverflow.com/a/23879264
 # PS1='[\A] \W/ $(GIT_PROMPT)> '
 PS1=''
-PS1+='\n'    # newline
-PS1+='[\A] ' # time
+PS1+='\n'                                 # newline
+ps --pid $PPID | grep -q yazi && PS1+="📁" # current shell was spawned from within file manager
+PS1+='[\A] '                              # time
 PS1+='$(GIT_PROMPT)'
 PS1+='\n'  # newline
 PS1+='\W/' # cwd with trailing slash -- TODO: relativise to project root
 PS1+=' '
 PS1+='> ' # prompt symbol
 
-if [[ -n $CONDA_PREFIX ]]; then
-	PS1="($(basename "$CONDA_PREFIX")) $PS1"
-fi
-
-if
-	# current shell was spawned from within file manager
-	ps --pid $PPID | grep -q yazi
-then
-	PS1="📁 $PS1"
-fi
+# # from now on, only poetry should be used
+# if [[ -n $CONDA_PREFIX ]]; then
+# 	PS1="($(basename "$CONDA_PREFIX")) $PS1"
+# fi
 
 # }}}
 
