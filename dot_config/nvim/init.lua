@@ -642,6 +642,13 @@ require("conform").setup({
 			end,
 		},
 
+		["clang-format"] = {
+			-- https://clang.llvm.org/docs/ClangFormatStyleOptions.html#basedonstyle
+			-- https://github.com/motine/cppstylelineup
+			-- if clangd is installed, clang-format doesn't need to be, apparently
+			prepend_args = { "--style", "google" },
+		},
+
 		-- https://taplo.tamasfe.dev/configuration/formatter-options.html
 		taplo = {
 			args = {
