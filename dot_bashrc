@@ -489,7 +489,7 @@ fi
 
 if
 	# current shell was spawned from within file manager
-	! ps --pid $PPID | grep -q wezterm
+	ps --pid $PPID | grep -q yazi
 then
 	PS1="📁 $PS1"
 fi
