@@ -203,7 +203,6 @@ local servers = { -- {{{
 	marksman = {}, -- why should md ever have any concept of root_dir?
 	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L90
 	taplo = {},
-	yamlls = {},
 	zls = {},
 
 	-- -- broken?
@@ -213,6 +212,13 @@ local servers = { -- {{{
 	-- 	filetypes = { "yaml.docker-compose" },
 	-- 	-- single_file_support = true,
 	-- },
+
+	yamlls = {
+		-- https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#yamlls
+		settings = {
+			yaml = { schemas = { ["https://json.schemastore.org/github-workflow.json"] = "/.github/workflows/*" } },
+		},
+	},
 
 	sqls = {
 		-- https://github.com/sqls-server/sqls?tab=readme-ov-file#db-configuration
