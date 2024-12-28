@@ -470,18 +470,22 @@ local function exec()
 		go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
 
 		c = string.format( -- fast (seems incremental by default)
-			[[ gcc %s -o %s ; ./%s ]],
+			[[ time gcc %s -o %s && ./%s ]],
 			curr_file,
 			string.gsub(curr_file, ".c", ""),
 			string.gsub(curr_file, ".c", "")
 		),
 
-		cpp = string.format( -- slow (0.5 s), should use make
-			[[ g++ %s -o %s ; ./%s ]],
-			curr_file,
-			string.gsub(curr_file, ".cpp", ""),
-			string.gsub(curr_file, ".cpp", "")
-		),
+		-- both g++ and clang++ are slow (0.5 s), should use make:
+		-- hello: hello.cpp
+		-- 	g++ hello.cpp -o hello
+		cpp = vim.loop.fs_stat("Makefile") and string.format([[ make && ./%s ]], string.gsub(curr_file, ".cpp", ""))
+			or string.format(
+				[[ time g++ %s -O0 -o %s && ./%s ]],
+				curr_file,
+				string.gsub(curr_file, ".cpp", ""),
+				string.gsub(curr_file, ".cpp", "")
+			),
 
 		-- -- the... kotlin
 		-- -- https://kotlinlang.org/docs/command-line.html#create-and-run-an-application
