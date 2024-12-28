@@ -1,27 +1,7 @@
--- vim: ts=2 sts=2 sw=2 et
--- ~/.local/share/nvim/lazy
-
 -- Lazy Startuptime should remain under 200 ms
+-- (need a few good benchmark files, e.g. md, py, sh)
 
--- :Lazy profile, filter > 1 ms
--- LuaSnip 3.27ms
--- LuaSnip/plugin/luasnip.lua 3.07ms
--- comment.nvim 1.03ms
--- git-blame.nvim 1.3ms
--- indent-blankline.nvim 3.14ms
--- lualine.nvim 7.81ms
--- mason-null-ls.nvim 6.41ms
--- mason.nvim 1.07ms
--- nvim-cmp 4.53ms
--- nvim-lspconfig 2.83ms
--- nvim-treesitter 4ms
--- nvim-treesitter-textobjects 3.41ms
--- nvim-treesitter-textobjects/plugin/nvim-treesitter-textobjects.vim 3.14ms
--- refactoring.nvim 6.91ms
--- telescope.nvim 1.15ms
--- vim-illuminate 1.13ms
--- vim-matchup 2.39ms
--- vim-matchup/plugin/matchup.vim 2.31ms
+-- :Lazy profile, filter > 10 ms
 
 -- https://github.com/folke/lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -37,42 +17,69 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
--- local function in_tex()
--- 	return vim.bo.filetype == "tex" and not vim.loop.fs_stat("Tectonic.toml")
--- end
-
 require("lazy").setup(
 	{
+
 		-- essentials {{{
 
 		"aymericbeaumet/vim-symlink", -- TODO: can this just be an autocmd?
-		"ecridge/vim-kinesis",
-		"jbyuki/quickmath.nvim", -- :Quickmath
 		"jinh0/eyeliner.nvim", -- replaces quick-scope
-		"johnelliott/vim-kinesis-kb900", -- syntax
-		"joosepalviste/nvim-ts-context-commentstring", -- TS-aware commentstring
-		"kosayoda/nvim-lightbulb", -- alert for possible code actions (rarely used)
-		"mbbill/undotree",
+		"kosayoda/nvim-lightbulb", -- alert for possible code actions (should be in LspAttach)
+		"mfussenegger/nvim-lint",
 		"romainl/vim-cool", -- clear highlight after search
-		"rrethy/vim-illuminate", -- highlight symbol under cursor
-		"tpope/vim-dispatch", -- run async processes
-		"tpope/vim-dotenv",
+		"stevearc/conform.nvim",
 		"tpope/vim-fugitive",
 		"tpope/vim-repeat",
 		"tpope/vim-sleuth", -- detect tabstop and shiftwidth automatically
 		"tpope/vim-surround",
-		"tridactyl/vim-tridactyl", -- syntax highlighting
-		-- "Zeioth/garbage-day.nvim", -- kill lsps that hog memory (tsserver?)
-		-- "lewis6991/satellite.nvim", -- i hate scrollbars
-		-- "nvim-tree/nvim-tree.lua", -- :NvimTree (rarely used; just fuzzy find)
-		-- "simrat39/symbols-outline.nvim", -- like github's (almost never used; workspace symbols is more intuitive)
-		{ "akinsho/git-conflict.nvim", version = "*", config = true }, -- TODO: what does config = true mean?
-		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} }, -- https://github.com/folke/todo-comments.nvim?tab=readme-ov-file#-trouble-todo
-		{ "nanotee/sqls.nvim", ft = { "sql" } },
+		{ "akinsho/git-conflict.nvim", version = "*", opts = {} },
+		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} },
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
-		{ "rhysd/vim-go-impl", ft = { "go" } }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
-		{ "vague2k/huez.nvim", opts = {} },
-		{ "wansmer/treesj", opts = {} }, -- :TS[Join|Split|Toggle]
+
+		-- }}}
+
+		{ "ecridge/vim-kinesis", ft = "kinesis" }, -- KA2, *_qwerty.txt
+		{ "jbyuki/quickmath.nvim", cmd = { "Quickmath" } },
+		{ "johnelliott/vim-kinesis-kb900", ft = "kb900" }, -- KA FP (and 360?), layout*.txt
+		{ "mbbill/undotree", cmd = { "UndoTreeToggle" } },
+		{ "nanotee/sqls.nvim", ft = "sql" },
+		{ "oxy2dev/markview.nvim", ft = "md", opts = { initial_state = false } },
+		{ "ray-x/lsp_signature.nvim", lazy = true }, -- highlight current param in signature; triggered in LspAttach
+		{ "rhysd/vim-go-impl", ft = "go" }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
+		{ "tadmccorkle/markdown.nvim", ft = "md", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
+		{ "tpope/vim-dispatch", cmd = { "Dispatch" } }, -- run async processes
+		{ "tpope/vim-dotenv", cmd = { "Dotenv" } },
+		{ "tridactyl/vim-tridactyl", ft = "tridactyl" }, -- syntax highlighting
+		{ "wansmer/treesj", opts = {}, cmd = { "TSJToggle", "TSJSplit", "TSJJoin" } }, -- very slow
+
+		{
+			-- cd to repo root (else autochdir), most useful for go
+			-- note: opts={} is not always equivalent to config=function()require'foo'.setup({})end, apparently
+			"ahmedkhalf/project.nvim",
+			config = function()
+				require("project_nvim").setup({})
+			end,
+		},
+
+		{
+			"lervag/vimtex",
+			ft = { "tex", "bib" },
+			enabled = vim.bo.filetype == "tex" and not vim.loop.fs_stat("Tectonic.toml"),
+		},
+
+		{
+			"windwp/nvim-ts-autotag",
+			ft = { "html", "javascriptreact", "typescriptreact" },
+			config = function()
+				require("nvim-ts-autotag").setup({
+					opts = {
+						enable_close = true, -- Auto close tags
+						enable_rename = true, -- Auto rename pairs of tags
+						enable_close_on_slash = false, -- Auto close on trailing </
+					},
+				})
+			end,
+		},
 
 		{
 			"FabijanZulj/blame.nvim",
@@ -105,51 +112,6 @@ require("lazy").setup(
 		},
 
 		{
-			-- cd to repo root (else autochdir), most useful for go
-			"ahmedkhalf/project.nvim",
-			config = function()
-				require("project_nvim").setup({})
-			end,
-		},
-
-		{
-			-- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
-			"tadmccorkle/markdown.nvim",
-			ft = "markdown",
-			opts = {
-				-- i don't need any mappings tyvm
-				mappings = false,
-			},
-		},
-
-		{
-			"lervag/vimtex",
-			ft = { "tex", "bib" },
-			-- enabled = in_tex(),
-			enabled = vim.bo.filetype == "tex" and not vim.loop.fs_stat("Tectonic.toml"),
-		},
-
-		{
-			"quarto-dev/quarto-nvim",
-			ft = { "qmd" },
-			-- https://github.com/quarto-dev/quarto-nvim?tab=readme-ov-file#configure
-			dependencies = {
-				-- "jmbuhr/otter.nvim", -- enable appropriate lsp(s) within qmd
-				"nvim-treesitter/nvim-treesitter",
-			},
-		},
-
-		{
-			-- https://github.com/ray-x/lsp_signature.nvim/issues/311
-			"ray-x/lsp_signature.nvim", -- highlight current param in signature
-			-- event = "VeryLazy",
-			opts = {},
-			config = function(_, opts)
-				require("lsp_signature").setup(opts)
-			end,
-		},
-
-		{
 			"xvzc/chezmoi.nvim",
 			dependencies = { "nvim-lua/plenary.nvim" },
 			config = function()
@@ -167,22 +129,6 @@ require("lazy").setup(
 			end,
 		},
 
-		{
-			"windwp/nvim-ts-autotag",
-			ft = { "html", "javascriptreact" },
-			config = function()
-				require("nvim-ts-autotag").setup({
-					opts = {
-						enable_close = true, -- Auto close tags
-						enable_rename = true, -- Auto rename pairs of tags
-						enable_close_on_slash = false, -- Auto close on trailing </
-					},
-				})
-			end,
-		},
-
-		-- }}}
-
 		{ -- mason-null-ls {{{
 			-- https://roobert.github.io/2022/12/03/Extending-Neovim/#neovim-plugins-which-solve-problems
 			--
@@ -195,11 +141,7 @@ require("lazy").setup(
 			-- https://github.com/jjangsangy/Dotfiles/blob/a96a66b1b3db191a848daed2f3f2ff498a1e96ad/astro_nvim/plugins/mason.lua#L15
 			"jay-babu/mason-null-ls.nvim",
 			-- overrides `require("mason-null-ls").setup(...)`
-			dependencies = {
-				"jose-elias-alvarez/null-ls.nvim",
-				"mfussenegger/nvim-lint",
-				"stevearc/conform.nvim",
-			},
+			dependencies = { "jose-elias-alvarez/null-ls.nvim" },
 			opts = {
 				ensure_installed = {
 
@@ -368,12 +310,11 @@ require("lazy").setup(
 				"nvim-lua/plenary.nvim", -- backend
 				"nvim-telescope/telescope-file-browser.nvim", -- netrw-like
 				"rachartier/tiny-code-action.nvim", -- https://github.com/rachartier/tiny-code-action.nvim/issues/11
-				-- "debugloop/telescope-undo.nvim", -- i don't really use this
 				-- "fcying/telescope-ctags-outline.nvim",
 				-- "nvim-telescope/telescope-ui-select.nvim", -- https://github.com/nvim-telescope/telescope-ui-select.nvim/issues/44
 				-- "tsakirist/telescope-lazy.nvim",
 				{ "AckslD/nvim-neoclip.lua", opts = {} }, -- yank history; do i use this?
-				{ "crispgm/telescope-heading.nvim", ft = { "markdown" } }, -- headings in markdown
+				{ "crispgm/telescope-heading.nvim", ft = "markdown" }, -- headings in markdown
 			},
 		},
 
@@ -436,32 +377,33 @@ require("lazy").setup(
 				icons = {
 
 					Function = "(f)",
+					Method = "m ",
 
 					Constant = "c ",
 					Field = "f ",
 					Variable = "v ",
 
+					-- types
 					Array = "[]",
-					Null = "_",
-					Number = "#",
-
 					Boolean = "b ",
-					Class = "c ",
-					Constructor = "c ",
 					Enum = "E ",
 					EnumMember = "e ",
+					Null = "_",
+					Number = "#",
+					Object = "{} ",
+					String = "s ",
+
+					Class = "C ",
+					Constructor = "con ",
 					Event = "ev ",
 					File = "F ",
 					Interface = "I ", -- trait
 					Key = "k ",
-					Method = "m ",
 					Module = "M ",
-					Namespace = "n ",
-					Object = "O ", -- {}?
+					Namespace = "N ",
 					Operator = "o ",
 					Package = "P ",
 					Property = "p ",
-					String = "s ",
 					Struct = "S ",
 					TypeParameter = "t ",
 				},
@@ -500,34 +442,6 @@ require("lazy").setup(
 				display_virtual_text = 1,
 			},
 		}, -- }}}
-		{ -- refactoring {{{
-			"ThePrimeagen/refactoring.nvim",
-			dependencies = {
-				"nvim-lua/plenary.nvim",
-				"nvim-treesitter/nvim-treesitter",
-			},
-			config = function()
-				require("refactoring").setup({
-
-					-- https://github.com/ThePrimeagen/refactoring.nvim/tree/master/lua/refactoring/tests/debug/print_var/py/multiple-statements
-					printf_statements = {
-						python = {
-							-- https://github.com/kentchiu/nvim-config/blob/d60768f59bfee285a26f24a3879f6b155a1c630c/lua/custom/plugins/refactory.lua#L69
-							'print(f"🟥 %s")',
-						},
-					},
-					print_var_statements = {
-						python = {
-							-- 'print(f"custom print_var %s {str(%s)}")',
-							'print(f"🟥 %s {str(%s)}")',
-						},
-					},
-					prompt_func_param_type = { python = true },
-					prompt_func_return_type = { python = true },
-					show_success_message = true,
-				})
-			end,
-		}, -- }}}
 		{ -- lspconfig {{{
 			"neovim/nvim-lspconfig",
 			dependencies = {
@@ -537,23 +451,13 @@ require("lazy").setup(
 				{ "j-hui/fidget.nvim", tag = "legacy", opts = {} }, -- status updates for LSP
 				{
 					"williamboman/mason.nvim",
-					-- config = true,
 					-- cmd = "Mason",
 					opts = function(_, o)
-						-- local icons = require("lib.icons")
 						o.ui = {
 							-- border = "rounded",
 							width = 0.7,
 							height = 0.7,
-							-- icons = {
-							-- 	package_installed = icons.package_manager.done_sym,
-							-- 	package_pending = icons.package_manager.working_sym,
-							-- 	package_uninstalled = icons.package_manager.removed_sym,
-							-- },
-							keymaps = {
-								uninstall_package = "x",
-								toggle_help = "?",
-							},
+							keymaps = { uninstall_package = "x", toggle_help = "?" },
 						}
 					end,
 				},
@@ -648,54 +552,44 @@ require("lazy").setup(
 				},
 			},
 		}, -- }}}
-		{
+		{ -- indentmini {{{
 			"nvimdev/indentmini.nvim",
 			opts = {
 				char = "▎",
 				only_current = true, -- otherwise show all indents
 			},
-		},
-		-- { -- indent-blankline {{{
-		-- 	-- dims the current indent when you are inside a block, otherwise
-		-- 	-- highlights all indents at the "same level" (e.g. when you are on an
-		-- 	-- `if`); this is quite weird/unintuitive, now that i think about it
-		-- 	"lukas-reineke/indent-blankline.nvim",
-		-- 	-- https://github.com/lukas-reineke/indent-blankline.nvim/wiki/Migrate-to-version-3
-		-- 	main = "ibl",
-		-- 	-- See `:help indent_blankline.txt`
-		-- 	opts = {
-		-- 		-- char = "┊",
-		-- 		-- show_trailing_blankline_indent = false,
-		-- 		-- show_current_context = true,
-		-- 		-- show_current_context_start = true,
-		-- 	},
-		-- }, -- }}}
+		}, -- }}}
 		{ -- treesitter {{{
-			"nvim-treesitter/nvim-treesitter",
 			-- in case of breakage on ubuntu, remove and reinstall snap package
-			dependencies = {
-				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
-				-- "JoosepAlviste/nvim-ts-context-commentstring", -- context-aware comment char, e.g. markdown embed?
-				{ "danymat/neogen", config = true }, -- docs generator
-			},
+
+			"nvim-treesitter/nvim-treesitter",
 			build = ":TSUpdate", -- update parsers when updating plugin
 			lazy = false,
-			config = function()
-				-- -- https://github.com/nvim-treesitter/nvim-treesitter?tab=readme-ov-file#adding-parsers
-				-- -- https://github.com/niveK77pur/nvim/commit/00dddbe2cf9525ad53f5bd3570765a329a439a4e
-				-- local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
-				-- parser_config.lilypond = {
-				-- 	install_info = {
-				-- 		-- url = "https://github.com/tristanperalta/tree-sitter-lilypond", -- parser doesn't work: https://github.com/tristanperalta/tree-sitter-lilypond/issues/1
-				-- 		url = "https://github.com/nwhetsell/tree-sitter-lilypond", -- parser works (verify with :InspectTree), but highlighter only works in helix? -- https://github.com/nwhetsell/tree-sitter-lilypond/issues/1
-				-- 		files = { "src/parser.c" },
-				-- 		branch = "main", -- default: 'master'
-				-- 		-- optional entries:
-				-- 		-- generate_requires_npm = false, -- if stand-alone parser without npm dependencies
-				-- 		-- requires_generate_from_grammar = false, -- if folder contains pre-generated src/parser.c
-				-- 	},
-				-- }
 
+			dependencies = {
+				-- { "quarto-dev/quarto-nvim", ft = "qmd", lazy = true }, -- always loaded for md, despite ft='qmd'
+
+				{
+					-- highlight symbol under cursor
+					"rrethy/vim-illuminate",
+					config = function()
+						require("illuminate").configure({
+							providers = {
+								-- can be slow if only lsp; lsp+treesitter is faster than just lsp, for some reason
+								"lsp", -- 11.1 s (md)
+								"treesitter", -- 7.4 s
+							},
+							under_cursor = true,
+						})
+					end,
+				},
+
+				"joosepalviste/nvim-ts-context-commentstring", -- TS-aware commentstring (slow)
+				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
+				{ "danymat/neogen", opts = {} }, -- docs generator
+			},
+
+			config = function()
 				require("nvim-treesitter.configs").setup({
 
 					-- https://github.com/nvim-treesitter/nvim-treesitter/wiki/Extra-modules-and-plugins#extra-modules
@@ -841,6 +735,7 @@ require("lazy").setup(
 
 		{
 			"zootedb0t/citruszest.nvim",
+			lazy = true,
 			config = function()
 				require("citruszest").setup({
 					option = {
@@ -852,13 +747,14 @@ require("lazy").setup(
 			end,
 		},
 
-		"bluz71/vim-moonfly-colors",
-		"challenger-deep-theme/vim",
-		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
-		"morhetz/gruvbox",
-		"nanotech/jellybeans.vim",
-		"shawilly/ponokai",
-		"tomasr/molokai",
+		{ "bluz71/vim-moonfly-colors", lazy = true },
+		{ "challenger-deep-theme/vim", lazy = true },
+		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets, lol)
+		{ "morhetz/gruvbox", lazy = true },
+		{ "nanotech/jellybeans.vim", lazy = true },
+		{ "shawilly/ponokai", lazy = true },
+		{ "tomasr/molokai", lazy = true },
+
 		-- "ajmwagar/vim-deus", -- mono tabline
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
@@ -933,8 +829,6 @@ vim.g.loaded_netrwPlugin = 1
 
 -- optionally enable 24-bit colour
 vim.opt.termguicolors = true
-
-require("illuminate").configure({ providers = { "lsp", "treesitter" }, under_cursor = true })
 
 require("nvim-lightbulb").setup({
 	autocmd = { enabled = true },
