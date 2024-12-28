@@ -510,7 +510,7 @@ local linters = {
 		"proselint", -- https://github.com/amperser/proselint?tab=readme-ov-file#checks
 	},
 	python = { "ruff" }, -- pylint is too slow and unreliable
-	sql = { "sqlfluff" },
+	sql = { "sqlfluff" }, -- slow lint is fine, since async
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
 }
@@ -572,6 +572,14 @@ local custom_gcl = vim.fn.globpath(
 if custom_gcl ~= "" then
 	require("lint").linters.golangcilint.cmd = custom_gcl
 end
+
+-- whatever
+-- require("lint").linters.sqruff = {
+-- 	cmd = "sqruff",
+-- 	args = { "lint", "-f", "json", "-" },
+-- 	stdin = true,
+-- 	-- ignore_exitcode = true,
+-- }
 
 require("lint").linters.sqlfluff.args = {
 	"lint",
@@ -796,7 +804,7 @@ require("conform").setup({
 		},
 
 		-- ruby = { "rubocop" },
-		["_"] = { "trim_whitespace" },
+		["_"] = { "trim_whitespace", "trim_newlines" },
 		bash = { "shfmt" },
 		c = { "clang-format" }, -- provided by clangd, apparently
 		cpp = { "clang-format" },
@@ -812,7 +820,14 @@ require("conform").setup({
 		rust = { "rustfmt" },
 		scss = { "prettier" },
 		sh = { "shfmt" },
-		sql = { "sqruff", "sqlfluff", stop_after_first = true },
+		sql = {
+			"sqruff",
+			-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
+			-- do people rewrite in rust without feature parity?
+			"trim_newlines",
+			-- "sqlfluff",
+			-- stop_after_first = true,
+		},
 		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
