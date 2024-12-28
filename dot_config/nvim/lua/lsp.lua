@@ -207,13 +207,7 @@ local servers = { -- {{{
 
 	ts_ls = {
 
-		root_dir = function()
-			-- for small projects with a well-defined `<root>/src` dir, use `src`.
-			-- otherwise, assume we are in a monorepo and just remain at root
-			local root = require("util"):root_directory()
-			local src = root .. "/src"
-			return vim.loop.fs_stat(src) ~= nil and src or root
-		end,
+		root_dir = require("util"):root_directory(), -- .. "/src",
 
 		settings = {
 			javascript = { inlayHints = js_ts_hints },
