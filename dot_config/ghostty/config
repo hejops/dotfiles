@@ -1,0 +1,12 @@
+# https://ghostty.org/docs/config/reference
+
+# won't bother until rounded corners can be disabled
+
+# gtk-adwaita = false
+font-family = Source Code Pro
+font-feature = -calt
+font-feature = -dlig
+font-feature = -liga
+font-size = 12
+font-thicken = true
+window-decoration = false
