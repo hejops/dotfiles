@@ -1,6 +1,14 @@
 -- https://luabyexample.netlify.app/docs/nvim-autocmd/
 -- https://github.com/rafi/vim-config/blob/801e4456b6c135e92f1bccecd740421a3738f339/lua/rafi/config/autocmds.lua#L38
 
+-- autocmds can be AND'd https://vi.stackexchange.com/a/3971
+-- see also https://github.com/BigAirJosh/nvim/blob/2e8dc08668d8cdb5c4d239796c9a1ca6987b3749/lua/config/vim-dispatch.lua#L4
+vim.cmd([[
+autocmd FileType c,cpp
+    \ autocmd BufWritePost 
+		\ <buffer> :Dispatch! test -f Makefile && make
+]])
+
 vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "set nocursorline" })
 vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 
@@ -26,7 +34,7 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 vim.api.nvim_create_autocmd("CursorHold", {
 	callback = function()
 		vim.diagnostic.open_float(nil, {
-			focusable = false, -- still doesn't prevent K from entering float
+			focusable = false,
 			source = "always",
 			severity_sort = true,
 			-- scope = "cursor",
