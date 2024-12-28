@@ -43,14 +43,25 @@ require("lazy").setup(
 		{ "johnelliott/vim-kinesis-kb900", ft = "kb900" }, -- KA FP (and 360?), layout*.txt
 		{ "mbbill/undotree", cmd = { "UndoTreeToggle" } },
 		{ "nanotee/sqls.nvim", ft = "sql" },
-		{ "oxy2dev/markview.nvim", ft = "md", opts = { initial_state = false } },
-		{ "ray-x/lsp_signature.nvim", lazy = true }, -- highlight current param in signature; triggered in LspAttach
 		{ "rhysd/vim-go-impl", ft = "go" }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
-		{ "tadmccorkle/markdown.nvim", ft = "md", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
+		{ "tadmccorkle/markdown.nvim", ft = "markdown", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
 		{ "tpope/vim-dispatch", cmd = { "Dispatch" } }, -- run async processes
 		{ "tpope/vim-dotenv", cmd = { "Dotenv" } },
 		{ "tridactyl/vim-tridactyl", ft = "tridactyl" }, -- syntax highlighting
 		{ "wansmer/treesj", opts = {}, cmd = { "TSJToggle", "TSJSplit", "TSJJoin" } }, -- very slow
+
+		{
+			"ray-x/lsp_signature.nvim",
+			lazy = true,
+			-- event = "LspAttach", -- the config func will NOT be run (properly), so using an event is pointless
+			-- config = function()
+			-- 	require("lsp_signature").setup({
+			-- 		on_attach = function(_, bufnr)
+			-- 			require("lsp_signature").on_attach({}, bufnr)
+			-- 		end,
+			-- 	})
+			-- end,
+		},
 
 		{
 			-- cd to repo root (else autochdir), most useful for go
@@ -128,6 +139,16 @@ require("lazy").setup(
 				})
 			end,
 		},
+
+		-- {
+		-- 	"oxy2dev/markview.nvim",
+		-- 	cmd = { "Markview" },
+		-- 	config = function()
+		-- 		require("markview").setup({ initial_state = true })
+		-- 		vim.cmd("Markview")
+		-- 		-- vim.cmd("Markview disableAll")
+		-- 	end,
+		-- },
 
 		{ -- mason-null-ls {{{
 			-- https://roobert.github.io/2022/12/03/Extending-Neovim/#neovim-plugins-which-solve-problems
@@ -447,8 +468,8 @@ require("lazy").setup(
 			dependencies = {
 
 				"williamboman/mason-lspconfig.nvim",
-				{ "folke/neodev.nvim", opts = {} }, -- for init.lua and plugin development only
-				{ "j-hui/fidget.nvim", tag = "legacy", opts = {} }, -- status updates for LSP
+				{ "folke/neodev.nvim", opts = {} }, -- for init.lua only
+				{ "j-hui/fidget.nvim", opts = {}, event = "LspAttach" }, -- status updates for LSP
 				{
 					"williamboman/mason.nvim",
 					-- cmd = "Mason",
@@ -567,7 +588,6 @@ require("lazy").setup(
 			lazy = false,
 
 			dependencies = {
-				-- { "quarto-dev/quarto-nvim", ft = "qmd", lazy = true }, -- always loaded for md, despite ft='qmd'
 
 				{
 					-- highlight symbol under cursor
