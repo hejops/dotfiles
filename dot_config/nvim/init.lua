@@ -510,7 +510,7 @@ local linters = {
 		"proselint", -- https://github.com/amperser/proselint?tab=readme-ov-file#checks
 	},
 	python = { "ruff" }, -- pylint is too slow and unreliable
-	sql = { "sqlfluff" }, -- generally works ootb (unlike in conform)
+	sql = { "sqlfluff" },
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
 }
@@ -647,7 +647,6 @@ require("conform").setup({
 		},
 
 		["clang-format"] = {
-			-- provided by clangd, apparently
 			-- https://clang.llvm.org/docs/ClangFormatStyleOptions.html#basedonstyle
 			-- https://github.com/motine/cppstylelineup
 			prepend_args = { "--style", "google" },
@@ -712,6 +711,7 @@ require("conform").setup({
 			-- in either case, no `dialect` usually leads to timeout
 			args = {
 				"format",
+				"--processes=32", -- lol
 				"--dialect=sqlite",
 				"--exclude-rules",
 				"layout.long_lines",
@@ -793,7 +793,7 @@ require("conform").setup({
 		-- ruby = { "rubocop" },
 		["_"] = { "trim_whitespace" },
 		bash = { "shfmt" },
-		c = { "clang-format" }, -- clang-format requires config (presumably a .clang-format file) ootb
+		c = { "clang-format" }, -- provided by clangd, apparently
 		cpp = { "clang-format" },
 		css = { "prettier" },
 		dhall = { "dhall" },
