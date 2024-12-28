@@ -705,6 +705,13 @@ require("conform").setup({
 			},
 		},
 
+		sqruff = {
+			command = "sqruff", -- need nightly install https://github.com/quarylabs/sqruff?tab=readme-ov-file#for-other-platforms
+			args = { "fix", "-" },
+			stdin = true,
+			exit_codes = { 0, 1 }, -- lol https://github.com/quarylabs/sqruff/issues/1134
+		},
+
 		sqlfluff = {
 			-- format: more reliable; will format if no violations found
 			-- fix: does nothing if 'Unfixable violations detected'
@@ -718,8 +725,6 @@ require("conform").setup({
 				"-",
 			},
 			stdin = true,
-			-- args = { "format", "--dialect=sqlite" },
-			-- stdin = false,
 			require_cwd = false, -- else requires local .sqlfluff
 		},
 
@@ -807,7 +812,7 @@ require("conform").setup({
 		rust = { "rustfmt" },
 		scss = { "prettier" },
 		sh = { "shfmt" },
-		sql = { "sqlfluff" },
+		sql = { "sqruff", "sqlfluff", stop_after_first = true },
 		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
