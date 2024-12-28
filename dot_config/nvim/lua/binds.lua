@@ -119,7 +119,13 @@ vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
 local function update_or_close()
 	vim.cmd(
 		-- expr must be false, else 'not allowed to change text'
-		(vim.bo.buftype == "nofile" or vim.bo.ft == "sqls_output") and "bd" or "update"
+		(
+			vim.bo.buftype == "nofile" -- ugh
+			or vim.bo.buftype == "help"
+			or vim.bo.ft == "sqls_output"
+		)
+				and "bd"
+			or "update"
 	)
 end
 
