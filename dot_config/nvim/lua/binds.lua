@@ -117,7 +117,10 @@ vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
 
 -- close window if scratch
 local function update_or_close()
-	vim.cmd(vim.bo.buftype == "nofile" and "bd" or "update") -- expr must be false, else 'not allowed to change text'
+	vim.cmd(
+		-- expr must be false, else 'not allowed to change text'
+		(vim.bo.buftype == "nofile" or vim.bo.ft == "sqls_output") and "bd" or "update"
+	)
 end
 
 vim.keymap.set("n", "<c-c>", update_or_close, { silent = true })
@@ -346,7 +349,11 @@ local function exec()
 	-- running tests is better left to the terminal itself (e.g. wezterm)
 	if vim.bo.filetype == "nofile" then
 		return
+	elseif vim.bo.filetype == "sql" then
+		vim.cmd("SqlsExecuteQuery")
+		return
 	end
+
 	-- TODO: async (Dispatch)
 	local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
 	local wide = vim.o.columns > 150
@@ -454,7 +461,7 @@ local function exec()
 
 		-- the iffy langs
 		-- typescript = "NO_COLOR=1 deno run --check=all " .. curr_file,
-		sql = get_sql_cmd, --(curr_file),
+		-- sql = get_sql_cmd, --(curr_file),
 		typescript = get_ts_runner, --(curr_file),
 
 		-- -- note that :new brings us to repo root (verify with :new|pwd), so we need
