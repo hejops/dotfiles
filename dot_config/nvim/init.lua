@@ -575,11 +575,15 @@ end
 
 require("lint").linters.sqlfluff.args = {
 	"lint",
-	-- TODO: infer dialect (either via heuristics, or some modeline equivalent)
+	-- TODO: infer dialect (either via heuristics, some modeline equivalent, or sqls.nvim)
 	"--dialect=sqlite",
 	"--format=json",
 	"--exclude-rules",
-	"layout.long_lines,references.qualification,references.consistent",
+	table.concat({
+		"layout.long_lines",
+		"references.qualification", -- these must be ignored in sqlite
+		"references.consistent",
+	}, ","),
 
 	-- note: fine-grained 'rule options' can only be declared via cfg file (e.g.
 	-- ~/.config/sqlfluff), which my sqlfluff install doesn't seem to recognise
@@ -643,9 +647,9 @@ require("conform").setup({
 		},
 
 		["clang-format"] = {
+			-- provided by clangd, apparently
 			-- https://clang.llvm.org/docs/ClangFormatStyleOptions.html#basedonstyle
 			-- https://github.com/motine/cppstylelineup
-			-- if clangd is installed, clang-format doesn't need to be, apparently
 			prepend_args = { "--style", "google" },
 		},
 
@@ -706,7 +710,13 @@ require("conform").setup({
 			-- format: more reliable; will format if no violations found
 			-- fix: does nothing if 'Unfixable violations detected'
 			-- in either case, no `dialect` usually leads to timeout
-			args = { "format", "--dialect=sqlite", "-" },
+			args = {
+				"format",
+				"--dialect=sqlite",
+				"--exclude-rules",
+				"layout.long_lines",
+				"-",
+			},
 			stdin = true,
 			-- args = { "format", "--dialect=sqlite" },
 			-- stdin = false,
