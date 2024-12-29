@@ -4,9 +4,9 @@
 -- autocmds can be AND'd https://vi.stackexchange.com/a/3971
 -- see also https://github.com/BigAirJosh/nvim/blob/2e8dc08668d8cdb5c4d239796c9a1ca6987b3749/lua/config/vim-dispatch.lua#L4
 vim.cmd([[
-autocmd FileType c,cpp
-    \ autocmd BufWritePost 
-		\ <buffer> :Dispatch! test -f Makefile && make
+autocmd FileType c,cpp 
+	\ autocmd BufWritePost 
+	\ <buffer> :Dispatch! test -f Makefile && make
 ]])
 
 vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "set nocursorline" })
