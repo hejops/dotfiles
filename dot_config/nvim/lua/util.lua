@@ -14,8 +14,8 @@ M = {}
 M.is_ubuntu = os.execute("grep Ubuntu /etc/lsb-release") / 256 == 0
 
 -- only first 10 lines of buffer are checked
-function M:buf_contains(target)
-	for _, l in pairs(vim.api.nvim_buf_get_lines(0, 0, 10, false)) do
+function M:buf_contains(target, lines)
+	for _, l in pairs(vim.api.nvim_buf_get_lines(0, 0, lines or 10, false)) do
 		if string.find(l, target) ~= nil then
 			return true
 		end
