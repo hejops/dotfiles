@@ -138,6 +138,12 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 		if vim.loop.fs_stat("Makefile") then
 			vim.cmd("Dispatch!")
 		end
+
+		-- technically, this should belong in plugin autocmds
+		local t = require("conform").formatters_by_ft.cpp
+		table.insert(t, "clang-tidy")
+		require("conform").format({ async = true })
+		table.remove(t, #require("conform").formatters_by_ft.cpp)
 	end,
 })
 
