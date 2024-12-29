@@ -751,48 +751,40 @@ require("conform").setup({
 			-- texlive-fontsrecommended
 			command = "/usr/bin/latexindent",
 		},
-
-		astyle = {
-			inherit = false,
-			command = "astyle",
-			prepend_args = {
-				-- linux kernel style
-				-- https://github.com/mellowcandle/astyle_precommit_hook/blob/master/pre-commit#L28
-				"--style=1tbs",
-				"--indent=tab",
-				"--align-pointer=name",
-				"--add-brackets",
-				"--max-code-length=80",
-			},
-			condition = function()
-				-- don't format dwm.c; formatting may make it difficult to apply/remove patches
-				-- https://github.com/folke/dot/blob/f5ba84b3a73a4e2aa4648c14707ce6847c29169b/nvim/lua/plugins/lsp.lua#L209
-				local curr_file = vim.fn.expand("%")
-				return string.find(curr_file, "dwm.c") == nil
-			end,
-		},
-
-		-- -- https://github.com/stevearc/conform.nvim/issues/197#issuecomment-1808807141
-		-- -- "If the command accepts stdin and prints the formatted results to
-		-- -- stdout, then you're done."
-		-- -- it could be that sol's reading of stdin is misconfigured
-		-- -- Formatter 'sol' error: time="2024-11-14T09:24:34+01:00" level=fatal msg="could not read file: open /dev/stdin: no such device or address"
-		-- --
-		-- -- https://github.com/noperator/sol/issues/2
-		-- -- removes comments, so this is a non-starter anyway
-		-- sol = {
-		-- 	inherit = false,
-		-- 	-- stdin = true,
-		-- 	command = "sol",
-		-- 	args = { "-w", "80" },
-		-- 	-- args = "cat $FILENAME | sol",
-		-- },
 	},
 
 	formatters_by_ft = {
 		-- https://github.com/stevearc/conform.nvim#formatters
-		-- not all are provided by Mason! (e.g. astyle)
 		-- Conform will run multiple formatters sequentially
+
+		["_"] = { "trim_whitespace", "trim_newlines" },
+		bash = { "shfmt" },
+		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
+		cpp = { "clang-format" }, -- clang-tidy is slow!
+		css = { "prettier" },
+		dhall = { "dhall" },
+		elixir = { "mix" }, -- slow (just like elixir)
+		gleam = { "gleam" }, -- apparently this works?
+		html = { "prettier" },
+		htmldjango = { "djlint" },
+		lua = { "stylua" },
+		markdown = { "mdslw", "prettier" },
+		ocaml = { "ocamlformat" },
+		rust = { "rustfmt" },
+		scss = { "prettier" },
+		sh = { "shfmt" },
+		templ = { "templ" },
+		tex = { "latexindent" },
+		toml = { "taplo" },
+		xml = { "xmlformat" },
+		yaml = { "prettier" },
+
+		javascript = { "biome", "prettier", stop_after_first = true },
+		javascriptreact = { "biome", "prettier", stop_after_first = true },
+		json = { "biome", "prettier", stop_after_first = true },
+		jsonc = { "biome", "prettier", stop_after_first = true },
+		typescript = { "biome", "prettier", stop_after_first = true },
+		typescriptreact = { "biome", "prettier", stop_after_first = true },
 
 		go = {
 			-- https://github.com/SingularisArt/Singularis/blob/856a938fc8554fcf47aa2a4068200bc49cad2182/aspects/nvim/files/.config/nvim/lua/modules/lsp/lsp_config.lua#L50
@@ -809,23 +801,6 @@ require("conform").setup({
 			"ruff_fix", -- run ruff_fix last to preserve black's unstable-style parens
 		},
 
-		-- ruby = { "rubocop" },
-		["_"] = { "trim_whitespace", "trim_newlines" },
-		bash = { "shfmt" },
-		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
-		cpp = { "clang-tidy", "clang-format" },
-		css = { "prettier" },
-		dhall = { "dhall" },
-		elixir = { "mix" }, -- slow (just like elixir)
-		gleam = { "gleam" }, -- apparently this works?
-		html = { "prettier" }, -- need --parser html?
-		htmldjango = { "djlint" },
-		lua = { "stylua" },
-		markdown = { "mdslw", "prettier" },
-		ocaml = { "ocamlformat" },
-		rust = { "rustfmt" },
-		scss = { "prettier" },
-		sh = { "shfmt" },
 		sql = {
 			"sqruff",
 			-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
@@ -834,18 +809,6 @@ require("conform").setup({
 			-- "sqlfluff",
 			-- stop_after_first = true,
 		},
-		templ = { "templ" },
-		tex = { "latexindent" },
-		toml = { "taplo" },
-		xml = { "xmlformat" },
-		yaml = { "prettier" },
-
-		javascript = { "biome", "prettier", stop_after_first = true },
-		javascriptreact = { "biome", "prettier", stop_after_first = true },
-		json = { "biome", "prettier", stop_after_first = true },
-		jsonc = { "biome", "prettier", stop_after_first = true },
-		typescript = { "biome", "prettier", stop_after_first = true },
-		typescriptreact = { "biome", "prettier", stop_after_first = true },
 	},
 })
 
