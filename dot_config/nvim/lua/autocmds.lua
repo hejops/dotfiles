@@ -120,14 +120,33 @@ vim.api.nvim_create_autocmd("FileType", {
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "html" },
 	callback = function()
-		-- cd ~/.local/share/nvim/mason/packages/markuplint
-		-- npm install -D @markuplint/htmx-parser
-		-- .markuplintrc.json
-		-- {
-		--   "extends": ["markuplint:recommended"],
-		--   "parser": { "\\.html$": "@markuplint/htmx-parser" },
-		--   "specs": { "\\.html$": "@markuplint/htmx-parser/spec" }
-		-- }
+		if not require("util"):buf_contains("htmx.org", 20) then
+			return
+		end
+
+		if
+			-- TODO: project node_modules might make more sense?
+			not vim.loop.fs_stat(
+				vim.fn.stdpath("data") .. "/mason/packages/markuplint/node_modules/@markuplint/htmx-parser"
+			)
+		then
+			os.execute([[
+		cd ~/.local/share/nvim/mason/packages/markuplint
+		npm install -D @markuplint/htmx-parser
+		]])
+			print("installed htmx-parser")
+		end
+
+		if not vim.loop.fs_stat(".markuplintrc.json") then
+			os.execute([[	
+		echo '{
+		  "extends": ["markuplint:recommended"],
+		  "parser": {"\\.html$": "@markuplint/htmx-parser"},
+		  "specs": {"\\.html$": "@markuplint/htmx-parser/spec"}
+		}' > .markuplintrc.json
+		]])
+			print("generated .markuplintrc.json")
+		end
 	end,
 })
 
