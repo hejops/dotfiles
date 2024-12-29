@@ -131,20 +131,20 @@ vim.api.nvim_create_autocmd("FileType", {
 			)
 		then
 			os.execute([[
-		cd ~/.local/share/nvim/mason/packages/markuplint
-		npm install -D @markuplint/htmx-parser
-		]])
+				cd ~/.local/share/nvim/mason/packages/markuplint
+				npm install -D @markuplint/htmx-parser
+			]])
 			print("installed htmx-parser")
 		end
 
 		if not vim.loop.fs_stat(".markuplintrc.json") then
 			os.execute([[	
-		echo '{
-		  "extends": ["markuplint:recommended"],
-		  "parser": {"\\.html$": "@markuplint/htmx-parser"},
-		  "specs": {"\\.html$": "@markuplint/htmx-parser/spec"}
-		}' > .markuplintrc.json
-		]])
+				echo '{
+					"extends": ["markuplint:recommended"],
+					"parser": {"\\.html$": "@markuplint/htmx-parser"},
+					"specs": {"\\.html$": "@markuplint/htmx-parser/spec"}
+				}' > .markuplintrc.json
+			]])
 			print("generated .markuplintrc.json")
 		end
 	end,
