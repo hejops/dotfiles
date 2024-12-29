@@ -1,14 +1,6 @@
 vim.filetype.add({
 	pattern = {
-		-- https://github.com/emilioziniades/dotfiles/blob/db7b414c150d3a3ab863a0109786f7f48465dd23/nvim/init.lua#L708
-		[".*/templates/.*.html"] = function(_, bufnr)
-			local content = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-			for _, line in ipairs(content) do
-				if line:match("{%%") or line:match("%%}") then
-					return "htmldjango"
-				end
-			end
-		end,
+		[".*/templates/.*.html"] = require("util"):buf_contains("{%%") and "htmldjango" or "html", -- https://github.com/emilioziniades/dotfiles/blob/db7b414c/nvim/init.lua#L714
 		["Dockerfile.*"] = "dockerfile",
 		[".+%.flux"] = "flux",
 		["docker%-compose.*.yml"] = "yaml.docker-compose", -- '-' has special meaning (smh)
