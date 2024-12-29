@@ -130,6 +130,20 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "html" },
+	callback = function()
+		-- cd ~/.local/share/nvim/mason/packages/markuplint
+		-- npm install -D @markuplint/htmx-parser
+		-- .markuplintrc.json
+		-- {
+		--   "extends": ["markuplint:recommended"],
+		--   "parser": { "\\.html$": "@markuplint/htmx-parser" },
+		--   "specs": { "\\.html$": "@markuplint/htmx-parser/spec" }
+		-- }
+	end,
+})
+
 -- vim.api.nvim_create_autocmd({ "FileType" }, {
 -- 	pattern = "mail",
 -- 	callback = function()
