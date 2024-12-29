@@ -1,20 +1,10 @@
--- autocmds can be AND'd https://vi.stackexchange.com/a/3971
--- see also https://github.com/BigAirJosh/nvim/blob/2e8dc08668d8cdb5c4d239796c9a1ca6987b3749/lua/config/vim-dispatch.lua#L4
-vim.cmd([[
-autocmd FileType c,cpp 
-	\ autocmd BufWritePost 
-	\ <buffer> :Dispatch! test -f Makefile && make
-]])
-
-vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "set nocursorline" })
+vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "set nocursorline | norm zz" })
 vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 
 -- restore last cursor position
 vim.api.nvim_create_autocmd("BufReadPost", {
 	command = [[if line("'\"") > 1 && line("'\"") <= line("$") | execute "normal! g`\"" | endif]],
 })
-
-vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "norm zz" })
 
 -- highlight yanked text
 -- local highlight_group = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
@@ -141,10 +131,14 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
--- https://luabyexample.netlify.app/docs/nvim-autocmd/
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "gitcommit", "gitrebase" },
-	command = "startinsert | 1",
+-- see also https://github.com/BigAirJosh/nvim/blob/2e8dc08/lua/config/vim-dispatch.lua#L4
+vim.api.nvim_create_autocmd("BufWritePost", {
+	pattern = { "*.c", "*.cpp" },
+	callback = function()
+		if vim.loop.fs_stat("Makefile") then
+			vim.cmd("Dispatch!")
+		end
+	end,
 })
 
 -- vim.api.nvim_create_autocmd({ "FileType" }, {
