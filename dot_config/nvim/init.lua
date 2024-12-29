@@ -491,11 +491,11 @@ require("lsp")
 -- lua print(require("lint").get_running()[1])
 
 local linters = {
+	-- https://github.com/mfussenegger/nvim-lint#available-linters
 
 	-- elixir = { "credo" }, -- where da binary at
-	-- https://github.com/mfussenegger/nvim-lint#available-linters
-	-- note: the standard rust linter is clippy, which is part of the lsp
 	-- ruby = { "rubocop" },
+	-- rust = { "clippy" }, -- part of the lsp
 	bash = { "shellcheck" },
 	dockerfile = { "hadolint" }, -- can be quite noisy
 	gitcommit = { "gitlint" },
@@ -505,14 +505,15 @@ local linters = {
 	javascript = { "biomejs" },
 	javascriptreact = { "biomejs" },
 	make = { "checkmake" },
+	python = { "ruff" }, -- may have duplicate with ruff lsp
+	sql = { "sqlfluff" }, -- slow lint is fine, since async
+	typescript = { "biomejs" },
+	typescriptreact = { "biomejs" },
+
 	markdown = {
 		"markdownlint", -- https://github.com/DavidAnson/markdownlint?tab=readme-ov-file#rules--aliases
 		"proselint", -- https://github.com/amperser/proselint?tab=readme-ov-file#checks
 	},
-	python = { "ruff" }, -- pylint is too slow and unreliable
-	sql = { "sqlfluff" }, -- slow lint is fine, since async
-	typescript = { "biomejs" },
-	typescriptreact = { "biomejs" },
 }
 
 if vim.fn["globpath"](".", "commitlint.config.js") ~= "" then
@@ -539,9 +540,10 @@ require("lint").linters.ruff.args = {
 	"--ignore=" .. table.concat({
 		-- https://docs.astral.sh/ruff/rules/
 
+		"CPY001", -- no need copyright notice
 		"DOC201", -- allow docstrings to not document return type
 		"ERA", -- allow comments
-		"I001", -- ignore import sort order (handled by isort)
+		"F841", -- reported by lsp
 		"PD901", -- allow var name df
 		"PLR0913", -- allow >5 func args
 		"PLR2004", -- allow magic constant values
@@ -550,7 +552,7 @@ require("lint").linters.ruff.args = {
 		"SIM108", -- don't suggest ternary
 		"T201", -- allow print()
 		"TD", -- allow TODO
-		--
+		-- "I001", -- ignore import sort order (handled by isort)
 	}, ","),
 
 	"--force-exclude",
@@ -608,41 +610,6 @@ require("lint").linters.sqlfluff.args = {
 require("conform").setup({
 	-- :h conform-formatters
 	formatters = {
-		black = {
-			-- https://black.readthedocs.io/en/stable/the_black_code_style/future_style.html#preview-style
-			prepend_args = { "--unstable" },
-		},
-
-		isort = {
-			prepend_args = require("util").is_ubuntu and { "--profile", "black" } -- don't use single-line style at work
-				or { "--force-single-line-imports", "--profile", "black" },
-		},
-
-		ruff_fix = {
-			-- https://github.com/stevearc/conform.nvim/blob/master/lua/conform/formatters/ruff_fix.lua
-			args = {
-				"check",
-
-				-- opt-out for now
-				"--select=ALL",
-				"--ignore=" .. table.concat({
-					-- https://docs.astral.sh/ruff/rules/
-					-- only rules with wrench symbol are supported
-
-					"F841", -- allow unused var
-					"I001", -- sort imports (does not support one-per-line, unlike isort)
-				}, ","),
-
-				"--fix",
-				"--force-exclude",
-				"--exit-zero",
-				"--no-cache",
-				"--stdin-filename",
-				"$FILENAME",
-				"-",
-			},
-		},
-
 		-- note: for <script> to be formatted properly, type= is required
 		-- https://github.com/prettier/prettier/blob/main/tests/format/html/js/js.html
 		prettier = {
@@ -756,6 +723,7 @@ require("conform").setup({
 	formatters_by_ft = {
 		-- https://github.com/stevearc/conform.nvim#formatters
 		-- Conform will run multiple formatters sequentially
+		-- all formatters will be run non-async
 
 		["_"] = { "trim_whitespace", "trim_newlines" },
 		bash = { "shfmt" },
@@ -770,6 +738,7 @@ require("conform").setup({
 		lua = { "stylua" },
 		markdown = { "mdslw", "prettier" },
 		ocaml = { "ocamlformat" },
+		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },
 		scss = { "prettier" },
 		sh = { "shfmt" },
@@ -793,12 +762,6 @@ require("conform").setup({
 			"golines", -- https://github.com/segmentio/golines#motivation https://github.com/segmentio/golines?tab=readme-ov-file#struct-tag-reformatting
 			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party); TODO: investigate why this breaks in some dirs (e.g. linkedin)
 			-- "goimports", -- required for autoimport (null_ls), but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
-		},
-
-		python = {
-			"isort",
-			"black",
-			"ruff_fix", -- run ruff_fix last to preserve black's unstable-style parens
 		},
 
 		sql = {
