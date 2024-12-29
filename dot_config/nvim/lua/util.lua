@@ -19,8 +19,8 @@ function M:buf_contains(target)
 		if string.find(l, target) ~= nil then
 			return true
 		end
-		return false
 	end
+	return false
 end
 
 function M:in_git_repo()
