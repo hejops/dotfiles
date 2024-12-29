@@ -10,6 +10,7 @@ require("filetypes")
 require("sets")
 
 require("plugins")
+require("util"):random_colorscheme()
 
 -- TODO: start moving sections with >200 lines out into separate files
 
@@ -849,6 +850,3 @@ cmp.setup({
 require("cmp-gitcommit").setup({}) -- i don't really use this
 
 -- }}}
-
-require("util"):random_colorscheme()
-vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
