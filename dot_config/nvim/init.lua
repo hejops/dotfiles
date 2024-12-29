@@ -660,6 +660,12 @@ require("conform").setup({
 			prepend_args = { "--style", "google" },
 		},
 
+		["clang-tidy"] = {
+			command = "clang-tidy",
+			args = { "--fix-errors", "$FILENAME" },
+			stdin = false,
+		},
+
 		-- https://taplo.tamasfe.dev/configuration/formatter-options.html
 		taplo = {
 			args = {
@@ -806,8 +812,8 @@ require("conform").setup({
 		-- ruby = { "rubocop" },
 		["_"] = { "trim_whitespace", "trim_newlines" },
 		bash = { "shfmt" },
-		c = { "clang-format" }, -- provided by clangd, apparently
-		cpp = { "clang-format" },
+		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
+		cpp = { "clang-tidy", "clang-format" },
 		css = { "prettier" },
 		dhall = { "dhall" },
 		elixir = { "mix" }, -- slow (just like elixir)
