@@ -199,4 +199,24 @@ function M:resize_2_splits()
 	end
 end
 
+-- vim.tbl_keys is non-deterministic
+function M:keys(t)
+	local _keys = {}
+	for k, _ in pairs(t) do
+		table.insert(_keys, k)
+	end
+	return _keys
+end
+
+function M:get_bufnr(fname)
+	-- nvim_list_bufs implicitly includes bufs that are not actually loaded!
+	-- (:buffers) how though? seems interesting
+	for _, bn in pairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_is_loaded(bn) and vim.api.nvim_buf_get_name(bn) == fname then
+			return bn
+		end
+	end
+	return nil
+end
+
 return M
