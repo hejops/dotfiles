@@ -67,6 +67,8 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		vim.keymap.set("n", "gd", gotodef_tabdrop, opts)
 		-- vim.keymap.set("n", "gd", golang_goto_def, opts)
 
+		-- require("actions-preview").setup({})
+		-- require("tiny-code-action").setup()
 		require("lsp_signature").on_attach({}, ev.buf)
 	end,
 })
@@ -173,8 +175,9 @@ local function on_attach(_, bufnr)
 
 	local telescope_b = require("telescope.builtin")
 
-	require("tiny-code-action").setup()
-	nmap("<leader>A", require("tiny-code-action").code_action)
+	-- nmap("<leader>A", require("actions-preview").code_actions)
+	-- nmap("<leader>A", require("tiny-code-action").code_action)
+	nmap("<leader>A", vim.lsp.buf.code_action)
 
 	nmap("<leader>i", tele_lsp_incoming_custom, "incoming calls")
 	nmap("<leader>s", telescope_b.lsp_dynamic_workspace_symbols, "document symbols") -- all project files; slow in python?
@@ -194,8 +197,6 @@ local function on_attach(_, bufnr)
 	-- nmap("<leader>wr", vim.lsp.buf.remove_workspace_folder, "workspace remove folder")
 	-- nmap("gI", vim.lsp.buf.implementation, "go to implementation") -- only useful for langs where def and impl can be separate (e.g. TS)
 	-- nmap("gd", vim.lsp.buf.declaration, "goto declaration") -- != definition
-	-- nmap("gr", require("telescope.builtin").lsp_references, "goto references") -- goto def, but more chaotic
-	-- vim.keymap.set({ "i" }, "<c-a>", vim.lsp.buf.code_action)
 
 	-- nmap("<leader>lw", function()
 	-- 	print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
