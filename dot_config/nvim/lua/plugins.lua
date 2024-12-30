@@ -44,7 +44,7 @@ require("lazy").setup(
 		{ "mbbill/undotree", cmd = { "UndoTreeToggle" } },
 		{ "rhysd/vim-go-impl", ft = "go" }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
 		{ "tadmccorkle/markdown.nvim", ft = "markdown", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
-		{ "tpope/vim-dispatch", cmd = { "Dispatch" } }, -- run async processes
+		{ "tpope/vim-dispatch", cmd = { "Dispatch", "Make" } }, -- run async processes
 		{ "tpope/vim-dotenv", cmd = { "Dotenv" } },
 		{ "tridactyl/vim-tridactyl", ft = "tridactyl" }, -- syntax highlighting
 		{ "wansmer/treesj", opts = {}, cmd = { "TSJToggle", "TSJSplit", "TSJJoin" } }, -- very slow
@@ -341,9 +341,10 @@ require("lazy").setup(
 				"MaximilianLloyd/adjacent.nvim",
 				"nvim-lua/plenary.nvim", -- backend
 				"nvim-telescope/telescope-file-browser.nvim", -- netrw-like
-				"rachartier/tiny-code-action.nvim", -- https://github.com/rachartier/tiny-code-action.nvim/issues/11
+				-- "aznhe21/actions-preview.nvim", -- https://github.com/aznhe21/actions-preview.nvim/issues/54
 				-- "fcying/telescope-ctags-outline.nvim",
 				-- "nvim-telescope/telescope-ui-select.nvim", -- https://github.com/nvim-telescope/telescope-ui-select.nvim/issues/44
+				-- "rachartier/tiny-code-action.nvim",
 				-- "tsakirist/telescope-lazy.nvim",
 				{ "AckslD/nvim-neoclip.lua", opts = {} }, -- yank history; do i use this?
 				{ "crispgm/telescope-heading.nvim", ft = "markdown" }, -- headings in markdown
