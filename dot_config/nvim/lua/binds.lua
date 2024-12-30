@@ -243,6 +243,33 @@ local ft_binds = { -- {{{
 		{ "i", "<c-j>", ";<cr>" },
 	},
 
+	c = {
+
+		-- <leader>i reserved for lsp incoming
+		-- { "n", "<leader>I", ":keepjumps normal! gg}o#include <><esc>i" },
+		{ "n", "<leader>I", "gg}o#include <><esc>i" },
+
+		{
+			"n",
+			"<leader>h",
+			function()
+				-- # messes with shell parsing
+				-- --domain 'https://www.mankier.com' probably pointless
+				local url = "https://www.mankier.com/3/" .. vim.fn.expand("<cword>")
+				local cmd =
+					string.format([[curl --silent --location --fail '%s' | html2markdown | sed -n '/Man/,$p']], url)
+				cmd = "vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! " .. cmd
+				vim.cmd(cmd)
+
+				vim.cmd.norm("gg")
+
+				vim.cmd.setlocal("ft=markdown")
+				vim.keymap.set("n", "J", "}zz", { buffer = true })
+				vim.keymap.set("n", "K", "{zz", { buffer = true })
+			end,
+		},
+	},
+
 	-- TODO: also include gomod
 	go = {
 		{ "n", "<leader>E", "oif err!=nil{panic(err)}<esc>:w<cr>o" }, -- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
@@ -484,7 +511,7 @@ local function exec()
 		go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
 
 		c = string.format( -- fast (seems incremental by default)
-			[[ time gcc %s -o %s && ./%s ]],
+			[[ gcc %s -o %s -Wall -Wextra -pedantic -std=c99 && ./%s 2>&1 ]],
 			curr_file,
 			string.gsub(curr_file, ".c", ""),
 			string.gsub(curr_file, ".c", "")
