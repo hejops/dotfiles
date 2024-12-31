@@ -245,19 +245,24 @@ local ft_binds = { -- {{{
 
 	c = {
 
-		-- <leader>i reserved for lsp incoming
-		-- { "n", "<leader>I", ":keepjumps normal! gg}o#include <><esc>i" },
-		{ "n", "<leader>I", "gg}o#include <><esc>i" },
+		{
+			"n",
+			"<leader>I", -- <leader>i reserved for lsp incoming
+			function()
+				local line = vim.fn.input("include: ")
+				vim.api.nvim_buf_set_lines(0, 0, 0, false, { string.format("#include <%s.h>", line) })
+				vim.cmd.w()
+			end,
+		},
 
 		{
 			"n",
 			"<leader>h",
 			function()
-				-- # messes with shell parsing
-				-- --domain 'https://www.mankier.com' probably pointless
 				local url = "https://www.mankier.com/3/" .. vim.fn.expand("<cword>")
-				local cmd =
-					string.format([[curl --silent --location --fail '%s' | html2markdown | sed -n '/Man/,$p']], url)
+				-- html2markdown --domain 'https://www.mankier.com' is probably pointless
+				-- '/^#/' seems to mess with shell parsing, so /Man Page/ is good enough
+				local cmd = string.format([[curl -s '%s' | html2markdown | sed -n '/Man Page/,$p']], url)
 				cmd = "vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! " .. cmd
 				vim.cmd(cmd)
 
