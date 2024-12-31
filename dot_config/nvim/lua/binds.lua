@@ -196,6 +196,19 @@ local function toggle_diagnostics()
 	end
 end
 
+local function get_c_doc()
+	-- requires man-pages (c) and cppman (cpp)
+	local cmd = (vim.bo.filetype == "c" and "man 3" or "cppman") .. " " .. vim.fn.expand("<cword>")
+	cmd = "vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! " .. cmd
+	vim.cmd(cmd)
+
+	vim.cmd.norm("gg")
+
+	vim.cmd.setlocal("ft=man")
+	vim.keymap.set("n", "J", "}zz", { buffer = true })
+	vim.keymap.set("n", "K", "{zz", { buffer = true })
+end
+
 -- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
 ---@type {[string]: { mode: string, lhs: string, rhs: string|function, opts: table? }[]}
 local ft_binds = { -- {{{
@@ -244,6 +257,7 @@ local ft_binds = { -- {{{
 	},
 
 	c = {
+		-- TODO: switch between .c and .h (vim-fswitch, maybe clangd already has this)
 
 		{
 			"n",
@@ -255,24 +269,11 @@ local ft_binds = { -- {{{
 			end,
 		},
 
-		{
-			"n",
-			"<leader>h",
-			function()
-				local url = "https://www.mankier.com/3/" .. vim.fn.expand("<cword>")
-				-- html2markdown --domain 'https://www.mankier.com' is probably pointless
-				-- '/^#/' seems to mess with shell parsing, so /Man Page/ is good enough
-				local cmd = string.format([[curl -s '%s' | html2markdown | sed -n '/Man Page/,$p']], url)
-				cmd = "vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! " .. cmd
-				vim.cmd(cmd)
+		{ "n", "<leader>h", get_c_doc },
+	},
 
-				vim.cmd.norm("gg")
-
-				vim.cmd.setlocal("ft=markdown")
-				vim.keymap.set("n", "J", "}zz", { buffer = true })
-				vim.keymap.set("n", "K", "{zz", { buffer = true })
-			end,
-		},
+	cpp = {
+		{ "n", "<leader>h", get_c_doc },
 	},
 
 	-- TODO: also include gomod
