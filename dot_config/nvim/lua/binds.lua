@@ -269,11 +269,23 @@ local ft_binds = { -- {{{
 			end,
 		},
 
-		{ "n", "<leader>h", get_c_doc },
+		-- TODO: cstdlib -> stdlib.h
+
+		-- {
+		-- 	"n",
+		-- 	"<leader>E",
+		-- 	-- TODO: selecting a declaration is not trivial (e.g. func param)
+		-- 	function()
+		-- 		local decl = vim.api.nvim_get_current_line()
+		-- 		print(string.format([[cdecl <(echo 'explain %s')]], decl))
+		-- 	end,
+		-- },
+
+		{ "n", "<leader>H", get_c_doc },
 	},
 
 	cpp = {
-		{ "n", "<leader>h", get_c_doc },
+		{ "n", "<leader>H", get_c_doc },
 	},
 
 	-- TODO: also include gomod
@@ -381,6 +393,37 @@ for ft, binds in pairs(ft_binds) do
 			end
 		end,
 	})
+end
+
+local function c_compiler_cmd()
+	-- if vim.fn.executable("tcc") then
+	-- 	return "tcc"
+	-- end
+
+	return table.concat({
+		-- allegedly, gcc/g++ prioritises fast runtime (slow compile time),
+		-- clang(++) prioritises fast compile time (slow runtime).
+		-- https://github.com/nordlow/compiler-benchmark
+		--
+		-- however, with my limited testing, this is not true; gcc compile time is
+		-- about 65% that of clang. in doubt, profile compile times on your
+		-- machine.
+
+		-- "clang",
+		"gcc",
+
+		-- https://clang.llvm.org/docs/ClangCommandLineReference.html#target-independent-compilation-options
+		-- https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+
+		"-fno-omit-frame-pointer",
+		"-fsanitize=address,undefined,leak",
+		"-ftrivial-auto-var-init=zero",
+		-- "-O0",
+		-- "-coverage",
+		-- "-fdiagnostics-format=vi", -- clang and gcc have different options
+		-- "-ferror-limit=0", -- clang-only
+		-- "-ggdb",
+	}, " ")
 end
 
 -- run current file and dump stdout to scratch buffer
@@ -516,14 +559,22 @@ local function exec()
 		-- TODO: it is not clear which cmd should be used
 		go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
 
-		c = string.format( -- fast (seems incremental by default)
-			[[ gcc %s -o %s -Wall -Wextra -pedantic -std=c99 && ./%s 2>&1 ]],
+		-- note: -static generates a fully self-contained binary. this roughly
+		-- doubles compile time, and makes the binary about 50x bigger
+
+		-- note: -W flags should be passed to clangd directly
+		-- optional: checksec --file=main --output=json | jq .
+		-- optional: strace ./main
+
+		c = string.format(
+			[[ %s %s -o %s && ./%s 2>&1 ]],
+			c_compiler_cmd(),
 			curr_file,
 			string.gsub(curr_file, ".c", ""),
 			string.gsub(curr_file, ".c", "")
 		),
 
-		-- both g++ and clang++ are slow (0.5 s), should use make:
+		-- should use make/cmake/ccache:
 		-- hello: hello.cpp
 		-- 	g++ hello.cpp -o hello
 		cpp = vim.loop.fs_stat("Makefile") and string.format([[ make && ./%s ]], string.gsub(curr_file, ".cpp", ""))
