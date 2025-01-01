@@ -301,7 +301,7 @@ end)
 -- google_docstrings
 -- https://github.com/danymat/neogen#supported-languages
 require("neogen").setup({ snippet_engine = "luasnip" })
-vim.keymap.set("n", "<leader>nf", require("neogen").generate, { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>ng", require("neogen").generate, { noremap = true, silent = true })
 
 -- }}}
 -- navigator: telescope {{{
@@ -494,6 +494,7 @@ require("lsp")
 local linters = {
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 
+	-- cpp = { "clangtidy" }, -- cpp-only
 	-- elixir = { "credo" }, -- where da binary at
 	-- ruby = { "rubocop" },
 	-- rust = { "clippy" }, -- part of the lsp
@@ -512,6 +513,7 @@ local linters = {
 	typescriptreact = { "biomejs" },
 
 	markdown = {
+		-- TODO: ignore code blocks
 		"markdownlint", -- https://github.com/DavidAnson/markdownlint?tab=readme-ov-file#rules--aliases
 		"proselint", -- https://github.com/amperser/proselint?tab=readme-ov-file#checks
 	},
@@ -605,6 +607,41 @@ require("lint").linters.sqlfluff.args = {
 	-- https://news.ycombinator.com/item?id=28771656
 }
 
+require("lint").linters.clangtidy.args = {
+
+	-- clangtidy:
+	-- performs linting based on file extension (thus does not accept stdin)
+	-- -always- lints header files (with no option whatsoever to skip them), and is very slow:
+	--
+	-- echo '#include <iostream>' > foo.cpp ; time clang-tidy --checks='-*,cppcoreguidelines-*' foo.cpp
+	-- 2895 warnings generated.
+	-- Suppressed 2895 warnings (2895 in non-user code).
+	-- real    0m1.030s
+
+	-- https://discourse.llvm.org/t/how-to-specify-clang-tidy-to-completely-not-check-non-user-files/70381
+	-- https://discourse.llvm.org/t/rfc-exclude-issues-from-system-headers-as-early-as-posible/68483
+
+	"--checks=" -- https://clang.llvm.org/extra/clang-tidy/checks/list.html
+		.. table.concat({
+
+			-- WARN: large number of checks will lead to slowdown
+
+			"cppcoreguidelines-*",
+			"modernize-*",
+			"performance-*",
+			"readability-*",
+
+			-- "bugprone-*",
+			-- "cert-*",
+			-- "clang-analyzer-*",
+			-- "concurrency-*",
+			-- "google-*",
+			-- "hicpp-*",
+			-- "misc-*",
+			-- "portability-*",
+		}, ","),
+}
+
 -- }}}
 -- formatter: conform {{{
 
@@ -625,7 +662,8 @@ require("conform").setup({
 		["clang-format"] = {
 			-- https://clang.llvm.org/docs/ClangFormatStyleOptions.html#basedonstyle
 			-- https://github.com/motine/cppstylelineup
-			prepend_args = { "--style", "google" },
+			-- https://github.com/torvalds/linux/blob/master/.clang-format
+			prepend_args = vim.loop.fs_stat(".clang-format") and {} or { "--style", "google" },
 		},
 
 		["clang-tidy"] = {
