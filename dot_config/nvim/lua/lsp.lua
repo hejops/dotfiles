@@ -232,7 +232,7 @@ local servers = { -- {{{
 			"--completion-style=detailed", -- don't combine overloads
 			"--function-arg-placeholders", -- complete function and method calls
 			"--header-insertion-decorators",
-			"--header-insertion=iwyu",
+			"--header-insertion=iwyu", -- "The C header names <*.h> will still be accepted as providing the symbol, but you’ll have to #include them by hand - this behavior isn’t customizable."
 			"--malloc-trim", -- Release memory periodically (lol)
 			"--pch-storage=memory", -- increase performance (at the expense of memory)
 			-- "--cross-file-rename", -- removed?
@@ -244,9 +244,41 @@ local servers = { -- {{{
 
 		init_options = {
 
-			-- not sure if these do anything
+			-- https://github.com/john801205/dotfiles/blob/e477e87f/neovim/.config/nvim/init.lua#L73
+			fallbackFlags = {
+
+				"-std=" .. vim.bo.filetype == "cpp"
+						-- https://clang.llvm.org/cxx_status.html
+						-- c++17 appears to be the minimum recommended standard, because it
+						-- removed auto_ptr (replacing it with unique_ptr)
+						and "c++23"
+					-- for portability, c99 is the generally accepted standard; POSIX uses
+					-- c99 (citation needed).
+					--
+					-- https://clang.llvm.org/c_status.html
+					-- https://stackoverflow.com/a/64138834
+					-- https://old.reddit.com/r/C_Programming/comments/xq58u7
+					or "c23",
+
+				"-I.", -- https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html#index-I
+
+				"-Wall", -- https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wall
+				"-Wextra", -- https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-W
+				"-Wpedantic", -- https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-pedantic-1
+
+				"-Wshadow",
+				"-Wconversion",
+
+				-- https://clang.llvm.org/docs/ClangCommandLineReference.html#target-independent-compilation-options
+				"-ferror-limit=0",
+				"-ftrivial-auto-var-init=zero",
+			},
+
+			-- https://github.com/kuprTheMan/dotfiles/blob/b340744e0b4964e02ea43f34d4fd8303e6e8c644/.config/nvim/init.lua#L670
+			checkUpdates = false,
 			clangdFileStatus = true,
 			completeUnimported = true,
+			restartAfterCrash = true,
 			semanticHighlighting = true,
 			usePlaceholders = true,
 		},
@@ -254,6 +286,9 @@ local servers = { -- {{{
 		-- TODO: https://clangd.llvm.org/config#unusedincludes
 		settings = {
 			diagnostics = { "UnusedIncludes=Strict" },
+			clangd = {
+				diagnostics = { "UnusedIncludes=Strict" },
+			},
 		},
 	},
 
