@@ -269,7 +269,7 @@ local ft_binds = { -- {{{
 			end,
 		},
 
-		-- TODO: cstdlib -> stdlib.h
+		-- TODO: #include <cFOO> -> #include <FOO.h>
 
 		-- {
 		-- 	"n",
@@ -282,6 +282,24 @@ local ft_binds = { -- {{{
 		-- },
 
 		{ "n", "<leader>H", get_c_doc },
+
+		{
+			"n",
+			"<leader>E",
+			function()
+				-- add error handling to fallible func call
+				local line = vim.api.nvim_get_current_line()
+				if not string.find(line, ";$") then
+					print("cannot wrap multi-line func")
+					return
+				end
+
+				local func = string.match(line, "%S[^(]+")
+				local repl = string.format([[if (%s == -1) { die("%s"); };]], string.gsub(line, ";$", ""), func)
+				vim.api.nvim_set_current_line(repl)
+				vim.cmd.w()
+			end,
+		},
 	},
 
 	cpp = {
@@ -425,6 +443,9 @@ local function c_compiler_cmd()
 		-- "-ggdb",
 	}, " ")
 end
+
+-- https://en.wikipedia.org/wiki/C_POSIX_library
+-- pacman -Ql glibc | grep -Po '/usr/include/.+\.h'
 
 -- run current file and dump stdout to scratch buffer
 local function exec()
