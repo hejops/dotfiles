@@ -473,12 +473,13 @@ require("lsp")
 local linters = {
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 
-	-- cpp = { "clangtidy" }, -- cpp-only
 	-- elixir = { "credo" }, -- where da binary at
 	-- ruby = { "rubocop" },
 	-- rust = { "clippy" }, -- part of the lsp
 	["yaml.github"] = { "zizmor" },
 	bash = { "shellcheck" },
+	c = { "clangtidy" },
+	cpp = { "clangtidy" },
 	dockerfile = { "hadolint" }, -- can be quite noisy
 	gitcommit = { "gitlint" },
 	go = { "golangcilint" },
@@ -649,10 +650,14 @@ require("lint").linters.clangtidy.args = {
 
 			-- WARN: large number of checks will lead to slowdown
 
+			"misc-include-cleaner",
+
 			"cppcoreguidelines-*",
 			"modernize-*",
 			"performance-*",
 			"readability-*",
+
+			"-clang-diagnostic-pragma-once-outside-header",
 
 			-- "bugprone-*",
 			-- "cert-*",
