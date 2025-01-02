@@ -338,7 +338,8 @@ require("lazy").setup(
 				-- https://github.com/nvim-telescope/telescope.nvim/wiki/Extensions#different-plugins-with-telescope-integration
 
 				"LukasPietzschmann/telescope-tabs", -- do i use this?
-				"MaximilianLloyd/adjacent.nvim",
+				-- "MaximilianLloyd/adjacent.nvim",
+				{ "hejops/adjacent.nvim", branch = "ignore-binary" },
 				"nvim-lua/plenary.nvim", -- backend
 				"nvim-telescope/telescope-file-browser.nvim", -- netrw-like
 				-- "aznhe21/actions-preview.nvim", -- https://github.com/aznhe21/actions-preview.nvim/issues/54
@@ -779,8 +780,8 @@ require("lazy").setup(
 			end,
 		},
 
+		-- { "nlcodes/my_nvim_config", lazy = true }, -- mono tabline
 		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets, lol)
-		{ "nlcodes/my_nvim_config", lazy = true },
 		{ "tomasr/molokai", lazy = true }, -- italic types
 
 		-- "ajmwagar/vim-deus", -- mono tabline

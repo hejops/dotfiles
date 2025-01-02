@@ -410,15 +410,7 @@ telescope.setup({
 
 	extensions = {
 
-		-- -- makes code_action unusable
-		-- -- waiting on https://github.com/nvim-telescope/telescope-ui-select.nvim/issues/44
-		-- ["ui-select"] = {
-		-- 	require("telescope.themes").get_dropdown(
-		-- 		--
-		-- 		-- { initial_mode = "normal" }
-		-- 	),
-		-- 	-- layout_config = { width = 0.4, height = 16 },
-		-- },
+		adjacent = { exclude_binary = true },
 
 		heading = {
 			-- TODO: sort normal
@@ -429,21 +421,10 @@ telescope.setup({
 				sorting_strategy = "ascending",
 			},
 		},
-		file_browser = {
-
-			initial_mode = "normal",
-			cwd_to_path = true,
-			-- path = vim.fn.expand("%:p:h"),
-			path = "%:p:h",
-		},
 	},
 })
 
 -- extensions must be loaded after `telescope.setup`
--- pcall(telescope.load_extension, "fzf") -- enable telescope fzf native, if installed
--- telescope.load_extension("ui-select")
--- telescope.load_extension("undo")
-telescope.load_extension("file_browser")
 telescope.load_extension("heading")
 
 -- }}}
@@ -459,10 +440,9 @@ vim.api.nvim_create_autocmd({ "VimEnter", "VimResized" }, {
 
 -- telescope.treesitter is less useful than telescope_b.lsp_*_symbols
 -- vim.keymap.set("n", "<leader>E", telescope.extensions.chezmoi.find_files, { desc = "chezmoi" }) -- i have never used this
--- vim.keymap.set("n", "<leader>F", telescope.extensions.file_browser.file_browser) -- ls-like, usually annoying to use
 -- vim.keymap.set("n", "<leader>F", telescope.oldfiles, { desc = "recently opened files" })
 -- vim.keymap.set("n", "<leader>z", telescope_b.current_buffer_fuzzy_find, { desc = "grep" }) -- current buf, pre-loaded, rarely used
-vim.keymap.set("n", "<leader>.", telescope.extensions.adjacent.adjacent)
+vim.keymap.set("n", "<leader>.", telescope.extensions.adjacent.adjacent) -- TODO: ignore binary
 vim.keymap.set("n", "<leader>/", telescope_b.live_grep, { desc = "ripgrep" }) -- entire project
 vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
 vim.keymap.set("n", "<leader>b", telescope_b.buffers, { desc = "open buffers" })
@@ -475,7 +455,6 @@ vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tab
 vim.keymap.set("n", "<leader>gl", telescope_b.git_commits, { desc = "git log with commit diffs" }) -- basically gld
 
 -- vim.keymap.set("n", "<leader>?", telescope_b.help_tags, { desc = "search help" }) -- let's face it; i never use this
--- vim.keymap.set("n", "<leader>u", telescope.extensions.undo.undo)
 
 vim.keymap.set("n", "<leader>h", function()
 	-- inlay hints lead to -a lot- of clutter (esp in rust), so they should not
