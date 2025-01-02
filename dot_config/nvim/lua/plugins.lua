@@ -779,13 +779,9 @@ require("lazy").setup(
 			end,
 		},
 
-		{ "bluz71/vim-moonfly-colors", lazy = true },
-		{ "challenger-deep-theme/vim", lazy = true },
 		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets, lol)
-		{ "morhetz/gruvbox", lazy = true },
-		{ "nanotech/jellybeans.vim", lazy = true },
-		{ "shawilly/ponokai", lazy = true },
-		{ "tomasr/molokai", lazy = true },
+		{ "nlcodes/my_nvim_config", lazy = true },
+		{ "tomasr/molokai", lazy = true }, -- italic types
 
 		-- "ajmwagar/vim-deus", -- mono tabline
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
@@ -818,6 +814,11 @@ require("lazy").setup(
 		-- "yorickpeterse/happy_hacking.vim", -- mono tabline
 		-- "yorumicolors/yorumi.nvim", -- low contrast
 		-- https://github.com/paulopatto/dotfiles/blob/67848a890db8c4578614f2de448cf323c450ad2f/nvim/lua/core/plugins.lua#L39 (mid)
+		-- { "bluz71/vim-moonfly-colors", lazy = true }, -- italic comments
+		-- { "challenger-deep-theme/vim", lazy = true }, -- mid contrast
+		-- { "morhetz/gruvbox", lazy = true }, -- has bold
+		-- { "nanotech/jellybeans.vim", lazy = true }, -- mid contrast
+		-- { "shawilly/ponokai", lazy = true }, -- mid contrast
 
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
 		-- https://vimcolorschemes.com/i/new/b.dark
