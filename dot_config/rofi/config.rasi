@@ -18,15 +18,17 @@ configuration {
 	// case insensitive config not available
 	// https://github.com/davatorium/rofi/issues/784
 
+	kb-remove-to-eol:	"";
+	kb-row-select:		"";
+	kb-secondary-copy:	"";
+
 	kb-accept-entry:	"Return,KP_Enter,Control+space,Control+d";
 	kb-cancel:		"Escape,Control+c";
 	kb-mode-next:		"Shift+Right,Control+Tab";
 	kb-mode-previous:	"Shift+Left,Control+ISO_Left_Tab,Control+h";
 	kb-remove-char-back:	"BackSpace";
 	kb-remove-char-forward:         "Delete";
-	kb-remove-to-eol:	"";
 	kb-row-down:		"Down,Control+j";
-	kb-row-select:		"";
 	kb-row-up:		"Up,Control+k";
 	me-accept-entry:	"MousePrimary";
 	me-select-entry:	"MouseSecondary";
