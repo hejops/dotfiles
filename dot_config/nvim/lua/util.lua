@@ -83,11 +83,8 @@ end
 
 function M:buf_loaded(fname)
 	for _, buf_num in ipairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_is_loaded(buf_num) then
-			local buf_name = vim.api.nvim_buf_get_name(buf_num)
-			if buf_name:find(fname) ~= nil then
-				return true
-			end
+		if vim.api.nvim_buf_is_loaded(buf_num) and vim.api.nvim_buf_get_name(buf_num):find(fname) ~= nil then
+			return true
 		end
 	end
 	return false
