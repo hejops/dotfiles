@@ -24,7 +24,6 @@ require("lazy").setup(
 
 		"aymericbeaumet/vim-symlink", -- TODO: can this just be an autocmd?
 		"jinh0/eyeliner.nvim", -- replaces quick-scope
-		"kosayoda/nvim-lightbulb", -- alert for possible code actions (should be in LspAttach)
 		"mfussenegger/nvim-lint",
 		"romainl/vim-cool", -- clear highlight after search
 		"stevearc/conform.nvim",
@@ -476,6 +475,8 @@ require("lazy").setup(
 				"williamboman/mason-lspconfig.nvim",
 				{ "folke/neodev.nvim", opts = {} }, -- for init.lua only
 				{ "j-hui/fidget.nvim", opts = {}, event = "LspAttach" }, -- status updates for LSP
+				{ "kosayoda/nvim-lightbulb", event = "LspAttach" }, -- alert for possible code actions
+
 				{
 					"williamboman/mason.nvim",
 					-- cmd = "Mason",
@@ -773,6 +774,7 @@ require("lazy").setup(
 			end,
 		},
 
+		"iagorrr/noctis-high-contrast.nvim",
 		-- { "nlcodes/my_nvim_config", lazy = true }, -- mono tabline
 		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets, lol)
 		{ "tomasr/molokai", lazy = true }, -- italic types
@@ -787,7 +789,6 @@ require("lazy").setup(
 		-- "hachy/eva01.vim", -- don't like the low contrast one
 		-- "jaredgorski/spacecamp", -- bad lualine
 		-- "kvrohit/rasmus.nvim", -- mono tabline
-		-- "mhartington/oceanic-next", -- has light
 		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
 		-- "nvimdev/oceanic-material", -- mono tabline
 		-- "oxfist/night-owl.nvim", -- mono tabline
@@ -807,7 +808,6 @@ require("lazy").setup(
 		-- "yorickpeterse/autumn.vim", -- mono tabline
 		-- "yorickpeterse/happy_hacking.vim", -- mono tabline
 		-- "yorumicolors/yorumi.nvim", -- low contrast
-		-- https://github.com/paulopatto/dotfiles/blob/67848a890db8c4578614f2de448cf323c450ad2f/nvim/lua/core/plugins.lua#L39 (mid)
 		-- { "bluz71/vim-moonfly-colors", lazy = true }, -- italic comments
 		-- { "challenger-deep-theme/vim", lazy = true }, -- mid contrast
 		-- { "morhetz/gruvbox", lazy = true }, -- has bold
