@@ -23,7 +23,6 @@ require("lazy").setup(
 		-- essentials {{{
 
 		"aymericbeaumet/vim-symlink", -- TODO: can this just be an autocmd?
-		"jinh0/eyeliner.nvim", -- replaces quick-scope
 		"mfussenegger/nvim-lint",
 		"romainl/vim-cool", -- clear highlight after search
 		"stevearc/conform.nvim",
@@ -47,6 +46,13 @@ require("lazy").setup(
 		{ "tpope/vim-dotenv", cmd = { "Dotenv" } },
 		{ "tridactyl/vim-tridactyl", ft = "tridactyl" }, -- syntax highlighting
 		{ "wansmer/treesj", opts = {}, cmd = { "TSJToggle", "TSJSplit", "TSJJoin" } }, -- very slow
+
+		{
+			"jinh0/eyeliner.nvim", -- replaces quick-scope
+			config = function()
+				require("eyeliner").setup({ highlight_on_key = false })
+			end,
+		},
 
 		{
 			"nanotee/sqls.nvim",

@@ -46,12 +46,11 @@ vim.api.nvim_create_autocmd({ "BufWritePost", "VimEnter" }, {
 	end,
 })
 
-vim.api.nvim_create_autocmd("ColorScheme", {
+vim.api.nvim_create_autocmd({
+	"ColorScheme",
+	"BufReadPre",
+}, {
 	callback = function()
-		-- must be called after any colorscheme change (i.e. not ColorSchemePre)
-		-- on change, current line will not have marks, but this is not an issue
-		-- if you're really picky, you could do a normal mode hl or whatever
-		require("eyeliner").setup({ highlight_on_key = false }) -- always show highlights, without keypress
 		vim.api.nvim_set_hl(0, "EyelinerPrimary", { underline = true })
 		vim.api.nvim_set_hl(0, "EyelinerSecondary", { underline = true })
 
