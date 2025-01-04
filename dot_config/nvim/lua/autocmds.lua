@@ -1,3 +1,5 @@
+-- vim.cmd("autocmd BufNewFile,BufRead *.h setlocal filetype=c")
+
 vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "set nocursorline | norm zz" })
 vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 
@@ -219,3 +221,30 @@ vim.api.nvim_create_autocmd("TermOpen", {
 -- 		-- vim.cmd.norm("l")
 -- 	end,
 -- })
+
+vim.api.nvim_create_autocmd("BufEnter", {
+	pattern = { "*.h" },
+	callback = function()
+		-- vim.cmd([[badd %<.c]]) -- adds buffer, but clangd cannot access it
+
+		if not require("util"):buf_loaded(vim.fn.expand("%<") .. ".c") then
+			-- vim.cmd([[e %<.c]]) -- no syntax hl, and tends to race with gitsigns
+			vim.cmd("ClangdSwitchSourceHeader") -- like e, but without race
+			vim.cmd.e("#") -- enable syntax hl (somehow)
+		end
+
+		-- we are kind of stuck here now; we want to go back to the prev
+		-- tab (and then call lsp_definitions). vim allows us to run some cmds:
+		-- print(123)
+		-- vim.cmd.norm("ZZ")
+		-- vim.cmd.startinsert()
+
+		-- but other cmds that "rely on a buffer being loaded" (?) are just blocked
+		-- vim.cmd("/clear")
+		-- vim.cmd.norm("g<tab>")
+		-- vim.cmd.norm("gg")
+		-- vim.cmd.tabprevious()
+
+		-- require("telescope.builtin").lsp_definitions()
+	end,
+})
