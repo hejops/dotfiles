@@ -160,6 +160,7 @@ local font = wezterm.font_with_fallback({
 	-- "Geist Mono", -- chonky
 
 	-- narrow
+	"NanumGothicCoding", -- only has underline >= 12
 	-- "Mplus Code 60", -- too tall, otherwise quite good
 	-- "Iosevka",
 
