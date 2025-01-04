@@ -1795,3 +1795,26 @@ scan() {
 
 # note: sendmail unresponsive
 # echo "$msg" | mail -s "$subj" $addr
+
+mch() {
+	# f=$1
+
+	: [re]generate header files
+	for f in *.c; do
+		[[ $f == main.c ]] && continue
+
+		h="${f/.c/.h}"
+		if [[ -f $h ]]; then
+			# for merge to work, fn decls must all be placed at the
+			# bottom of the .h file. includes, macros, structs
+			# should be placed at the top. (is there a recommended
+			# order?)
+			{
+				< "$h" grep -Pv '\);$' # discard existing fn decls
+				cproto "$f" | sed 1d   # cproto only generates fn decls
+			} | sponge "$h"
+		else
+			cproto "$f" > "$h"
+		fi
+	done
+}
