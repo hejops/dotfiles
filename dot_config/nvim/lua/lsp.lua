@@ -3,27 +3,6 @@
 -- https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers
 -- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
 
-local function gotodef_tabdrop()
-	vim.lsp.buf.definition({
-		on_list = function(options)
-			-- note: this doesn't get triggered, apparently
-			if #options.items > 1 then
-				os.execute("notify-send hi")
-				vim.notify("Multiple items found, opening first one", vim.log.levels.WARN)
-				return
-			end
-
-			-- tab drop
-			-- https://github.com/Swoogan/dotfiles/blob/ecfdf4f/nvim/.config/nvim/lua/config/lang.lua#L81
-			local item = options.items[1]
-			vim.cmd("tab drop " .. item.filename)
-			-- vim.api.nvim_win_set_cursor(win or 0, { item.start.line + 1, item.start.character })
-			vim.api.nvim_win_set_cursor(0, { item.lnum, item.col - 1 })
-			vim.cmd("norm zt")
-		end,
-	})
-end
-
 -- https://github.com/BrunoKrugel/dotfiles/blob/0b2bdc4b3909620727b3975c482eea3cbebd7f9f/lua/mappings.lua#L5
 -- local function golang_goto_def()
 -- 	local old = vim.lsp.buf.definition
@@ -64,7 +43,10 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		-- https://github.com/raphapr/dotfiles/blob/ecdf9771d/home/dot_config/nvim/lua/raphapr/utils.lua#L25
 		-- https://github.com/Swoogan/dotfiles/blob/ecfdf4fe5/nvim/.config/nvim/lua/config/lang.lua#L63
 
-		vim.keymap.set("n", "gd", gotodef_tabdrop, opts)
+		vim.keymap.set("n", "gd", function()
+			-- https://github.com/nvim-telescope/telescope.nvim/pull/2751
+			require("telescope.builtin").lsp_definitions({ jump_type = "tab drop" })
+		end, opts)
 		-- vim.keymap.set("n", "gd", golang_goto_def, opts)
 
 		-- require("actions-preview").setup({})
@@ -225,42 +207,42 @@ local servers = { -- {{{
 
 	clangd = {
 		cmd = {
-			"clangd", -- clang-tidy is (always?) enabled, so linter is not necessary
+			"clangd",
 
 			"--all-scopes-completion", -- include index symbols that are potentially out of scope
 			"--background-index", -- index project code in the background and persist index on disk (where?)
 			"--completion-style=detailed", -- don't combine overloads
+			"--enable-config", -- read .clangd
 			"--function-arg-placeholders", -- complete function and method calls
 			"--header-insertion-decorators",
-			"--header-insertion=iwyu", -- "The C header names <*.h> will still be accepted as providing the symbol, but you’ll have to #include them by hand - this behavior isn’t customizable."
+			"--header-insertion=iwyu", -- "The C header names <*.h> will still be accepted as providing the symbol, but you'll have to #include them by hand - this behavior isn’t customizable."
 			"--malloc-trim", -- Release memory periodically (lol)
 			"--pch-storage=memory", -- increase performance (at the expense of memory)
-			-- "--cross-file-rename", -- removed?
-			-- "--enable-config", -- read .clangd
-			-- "--inlay-hints", -- removed/no effect?
 			-- "--log=error",
 			-- "-j=6", -- workers
 		},
 
 		init_options = {
 
-			-- https://github.com/john801205/dotfiles/blob/e477e87f/neovim/.config/nvim/init.lua#L73
+			-- if a .clangd file exists, these flags will be merged, with the .clangd
+			-- file taking precedence.
 			fallbackFlags = {
 
-				"-std=" .. vim.bo.filetype == "cpp"
-						-- https://clang.llvm.org/cxx_status.html
-						-- c++17 appears to be the minimum recommended standard, because it
-						-- removed auto_ptr (replacing it with unique_ptr)
-						and "c++23"
-					-- for portability, c99 is the generally accepted standard; POSIX uses
-					-- c99 (citation needed).
-					--
-					-- https://clang.llvm.org/c_status.html
-					-- https://stackoverflow.com/a/64138834
-					-- https://old.reddit.com/r/C_Programming/comments/xq58u7
-					or "c23",
+				-- c++17 appears to be the minimum recommended standard, because it
+				-- removed auto_ptr (replacing it with unique_ptr)
+				-- https://clang.llvm.org/cxx_status.html
+				--
+				-- for portability, c99 is the generally accepted standard; POSIX uses
+				-- c99 (citation needed).
+				-- https://clang.llvm.org/c_status.html
+				-- https://stackoverflow.com/a/64138834
+				-- https://old.reddit.com/r/C_Programming/comments/xq58u7
 
-				"-I.", -- https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html#index-I
+				-- "-std=" .. (vim.bo.filetype == "cpp" and "c++23" or "c23"),
+				-- "-std=c23",
+
+				"-I",
+				".", -- https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html#index-I
 
 				-- "Since -Weverything enables every diagnostic, we generally don’t recommend using it."
 
@@ -282,12 +264,12 @@ local servers = { -- {{{
 		},
 
 		-- TODO: https://clangd.llvm.org/config#unusedincludes
-		settings = {
-			diagnostics = { "UnusedIncludes=Strict" },
-			clangd = {
-				diagnostics = { "UnusedIncludes=Strict" },
-			},
-		},
+		-- settings = {
+		-- 	diagnostics = { "UnusedIncludes=Strict" },
+		-- 	clangd = {
+		-- 		diagnostics = { "UnusedIncludes=Strict" },
+		-- 	},
+		-- },
 	},
 
 	-- -- broken?
