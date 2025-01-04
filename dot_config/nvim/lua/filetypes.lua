@@ -7,6 +7,7 @@ vim.filetype.add({
 		[".*/%.github/.*%.ya?ml"] = "yaml.github",
 		[".*/templates/.*.html"] = require("util"):buf_contains("{%%") and "htmldjango" or "html", -- https://github.com/emilioziniades/dotfiles/blob/db7b414c/nvim/init.lua#L714
 		["Dockerfile.*"] = "dockerfile",
+		[".*%.h"] = "c",
 	},
 
 	-- https://github.com/kennethnym/dotfiles/blob/41f03b9091181dc62ce872288685b27f001286f3/nvim/init.lua#L474
