@@ -632,6 +632,8 @@ require("lint").linters.sqlfluff.args = {
 
 require("lint").linters.clangtidy.args = {
 
+	"-std=" .. (vim.bo.filetype == "cpp" and "c++3" or "c3"),
+
 	-- clangtidy:
 	-- performs linting based on file extension (thus does not accept stdin)
 	-- -always- lints header files (with no option whatsoever to skip them), and is very slow:
@@ -651,6 +653,11 @@ require("lint").linters.clangtidy.args = {
 
 			"misc-include-cleaner",
 
+			-- modernize-use-designated-initializers is relatively new (Feb 2024).
+			-- arch seem to be conservative with updating clang/llvm
+			-- https://github.com/llvm/llvm-project/pull/80541
+
+			"bugprone-*",
 			"cppcoreguidelines-*",
 			"modernize-*",
 			"performance-*",
@@ -658,7 +665,6 @@ require("lint").linters.clangtidy.args = {
 
 			"-clang-diagnostic-pragma-once-outside-header",
 
-			-- "bugprone-*",
 			-- "cert-*",
 			-- "clang-analyzer-*",
 			-- "concurrency-*",
