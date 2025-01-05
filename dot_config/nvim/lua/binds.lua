@@ -426,17 +426,16 @@ local function exec()
 		sql = get_sql_cmd, --(curr_file),
 		typescript = get_ts_runner, --(curr_file),
 
-		-- -- note that :new brings us to repo root (verify with :new|pwd), so we need
-		-- -- to not only know where we used to be, but also run the basename.go
-		-- -- correctly
-		-- go = string.format("cd %s; ", cwd)
-		-- 	-- https://stackoverflow.com/a/43953582
-		-- 	.. "ls *.go | " -- import functions from same package
-		-- 	.. "grep -v _test | " -- ignore test files (ugh)
-		-- 	.. "xargs go run",
+		-- note that :new brings us to repo root (verify with :new|pwd), so we need
+		-- to not only know where we used to be, but also run the basename.go
+		-- correctly
+		go = string.format([[ cd %s; go run ./*.go ]], cwd),
+		-- .. "ls *.go | " -- import functions from same package; https://stackoverflow.com/a/43953582
+		-- .. "grep -v _test | " -- ignore test files (ugh)
+		-- .. "xargs go run",
 
-		-- TODO: it is not clear which cmd should be used
-		go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
+		-- -- TODO: it is not clear which cmd should be used
+		-- go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
 
 		c = string.format(
 			[[ gcc %s -o %s ; ./%s ]],
