@@ -1705,11 +1705,24 @@ mw() {
 }
 
 watchmem() {
-	pid="$(< /dev/stdin)"
-	while true; do
-		ps -o %cpu,%mem,cmd -p "$pid"
-		sleep 1
-	done
+	stdin="$(< /dev/stdin)"
+
+	if [[ $stdin =~ ^[0-9]+$ ]]; then
+		pid="$stdin"
+		watch -d ps -o %cpu,%mem,cmd -p "$pid"
+
+	# else
+	# 	pid=$(ps aux |
+	# 		grep "$1" |
+	# 		head -n1 |
+	# 		awk '{print $2}')
+	# 	while true; do
+	# 		pmap -x "$pid" | tail -n1
+	# 		sleep 2
+	# 	done
+
+	fi
+
 }
 
 # xdotool key super+8
