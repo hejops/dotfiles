@@ -14,13 +14,13 @@ M = {}
 M.is_ubuntu = os.execute("grep Ubuntu /etc/lsb-release") / 256 == 0
 
 -- only first 10 lines of buffer are checked
-function M:buf_contains(target)
-	for _, l in pairs(vim.api.nvim_buf_get_lines(0, 0, 10, false)) do
+function M:buf_contains(target, lines)
+	for _, l in pairs(vim.api.nvim_buf_get_lines(0, 0, lines or 10, false)) do
 		if string.find(l, target) ~= nil then
 			return true
 		end
-		return false
 	end
+	return false
 end
 
 function M:in_git_repo()
@@ -83,11 +83,8 @@ end
 
 function M:buf_loaded(fname)
 	for _, buf_num in ipairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_is_loaded(buf_num) then
-			local buf_name = vim.api.nvim_buf_get_name(buf_num)
-			if buf_name:find(fname) ~= nil then
-				return true
-			end
+		if vim.api.nvim_buf_is_loaded(buf_num) and vim.api.nvim_buf_get_name(buf_num):find(fname) ~= nil then
+			return true
 		end
 	end
 	return false
@@ -197,6 +194,26 @@ function M:resize_2_splits()
 	else
 		vim.cmd("resize -" .. math.floor(height * 0.2))
 	end
+end
+
+-- vim.tbl_keys is non-deterministic
+function M:keys(t)
+	local _keys = {}
+	for k, _ in pairs(t) do
+		table.insert(_keys, k)
+	end
+	return _keys
+end
+
+function M:get_bufnr(fname)
+	-- nvim_list_bufs implicitly includes bufs that are not actually loaded!
+	-- (:buffers) how though? seems interesting
+	for _, bn in pairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_is_loaded(bn) and vim.api.nvim_buf_get_name(bn) == fname then
+			return bn
+		end
+	end
+	return nil
 end
 
 return M

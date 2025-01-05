@@ -1,3 +1,7 @@
+-- re-sourcing this file (and its dependents) is easy (with :source or
+-- :luafile), but clearing all existing state (e.g. keybinds) is not
+-- https://neovim.discourse.group/t/reload-init-lua-and-all-require-d-scripts/971/19
+
 require("util")
 
 require("autocmds")
@@ -6,6 +10,7 @@ require("filetypes")
 require("sets")
 
 require("plugins")
+require("util"):random_colorscheme()
 
 -- TODO: start moving sections with >200 lines out into separate files
 
@@ -26,16 +31,6 @@ vim.api.nvim_create_autocmd({
 	end,
 })
 
-vim.api.nvim_create_autocmd("BufWritePost", {
-	pattern = { "*.sql" },
-	callback = function()
-		-- quite slow
-		vim.cmd("silent! !sqlfluff fix --dialect sqlite \z
-		--exclude-rules L028 %")
-		-- vim.fn.jobstart("sqlfluff fix --dialect sqlite %")
-	end,
-})
-
 -- trying to make vil files pretend to be json causes problems with both
 -- prettier and biome
 vim.api.nvim_create_autocmd("BufWritePost", {
@@ -51,12 +46,11 @@ vim.api.nvim_create_autocmd({ "BufWritePost", "VimEnter" }, {
 	end,
 })
 
-vim.api.nvim_create_autocmd("ColorScheme", {
+vim.api.nvim_create_autocmd({
+	"ColorScheme",
+	"BufReadPre",
+}, {
 	callback = function()
-		-- must be called after any colorscheme change (i.e. not ColorSchemePre)
-		-- on change, current line will not have marks, but this is not an issue
-		-- if you're really picky, you could do a normal mode hl or whatever
-		require("eyeliner").setup({ highlight_on_key = false }) -- always show highlights, without keypress
 		vim.api.nvim_set_hl(0, "EyelinerPrimary", { underline = true })
 		vim.api.nvim_set_hl(0, "EyelinerSecondary", { underline = true })
 
@@ -306,7 +300,7 @@ end)
 -- google_docstrings
 -- https://github.com/danymat/neogen#supported-languages
 require("neogen").setup({ snippet_engine = "luasnip" })
-vim.keymap.set("n", "<leader>nf", require("neogen").generate, { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>ng", require("neogen").generate, { noremap = true, silent = true })
 
 -- }}}
 -- navigator: telescope {{{
@@ -415,15 +409,7 @@ telescope.setup({
 
 	extensions = {
 
-		-- -- makes code_action unusable
-		-- -- waiting on https://github.com/nvim-telescope/telescope-ui-select.nvim/issues/44
-		-- ["ui-select"] = {
-		-- 	require("telescope.themes").get_dropdown(
-		-- 		--
-		-- 		-- { initial_mode = "normal" }
-		-- 	),
-		-- 	-- layout_config = { width = 0.4, height = 16 },
-		-- },
+		adjacent = { exclude_binary = true },
 
 		heading = {
 			-- TODO: sort normal
@@ -434,21 +420,10 @@ telescope.setup({
 				sorting_strategy = "ascending",
 			},
 		},
-		file_browser = {
-
-			initial_mode = "normal",
-			cwd_to_path = true,
-			-- path = vim.fn.expand("%:p:h"),
-			path = "%:p:h",
-		},
 	},
 })
 
 -- extensions must be loaded after `telescope.setup`
--- pcall(telescope.load_extension, "fzf") -- enable telescope fzf native, if installed
--- telescope.load_extension("ui-select")
--- telescope.load_extension("undo")
-telescope.load_extension("file_browser")
 telescope.load_extension("heading")
 
 -- }}}
@@ -464,10 +439,9 @@ vim.api.nvim_create_autocmd({ "VimEnter", "VimResized" }, {
 
 -- telescope.treesitter is less useful than telescope_b.lsp_*_symbols
 -- vim.keymap.set("n", "<leader>E", telescope.extensions.chezmoi.find_files, { desc = "chezmoi" }) -- i have never used this
--- vim.keymap.set("n", "<leader>F", telescope.extensions.file_browser.file_browser) -- ls-like, usually annoying to use
 -- vim.keymap.set("n", "<leader>F", telescope.oldfiles, { desc = "recently opened files" })
 -- vim.keymap.set("n", "<leader>z", telescope_b.current_buffer_fuzzy_find, { desc = "grep" }) -- current buf, pre-loaded, rarely used
-vim.keymap.set("n", "<leader>.", telescope.extensions.adjacent.adjacent)
+vim.keymap.set("n", "<leader>.", telescope.extensions.adjacent.adjacent) -- TODO: ignore binary
 vim.keymap.set("n", "<leader>/", telescope_b.live_grep, { desc = "ripgrep" }) -- entire project
 vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
 vim.keymap.set("n", "<leader>b", telescope_b.buffers, { desc = "open buffers" })
@@ -480,79 +454,12 @@ vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tab
 vim.keymap.set("n", "<leader>gl", telescope_b.git_commits, { desc = "git log with commit diffs" }) -- basically gld
 
 -- vim.keymap.set("n", "<leader>?", telescope_b.help_tags, { desc = "search help" }) -- let's face it; i never use this
--- vim.keymap.set("n", "<leader>u", telescope.extensions.undo.undo)
 
 vim.keymap.set("n", "<leader>h", function()
 	-- inlay hints lead to -a lot- of clutter (esp in rust), so they should not
 	-- be enabled by default
 	vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
 end, { desc = "toggle inlay hints" })
-
-local function gotodef_tabdrop()
-	vim.lsp.buf.definition({
-		on_list = function(options)
-			-- note: this doesn't get triggered, apparently
-			if #options.items > 1 then
-				os.execute("notify-send hi")
-				vim.notify("Multiple items found, opening first one", vim.log.levels.WARN)
-				return
-			end
-
-			-- tab drop
-			-- https://github.com/Swoogan/dotfiles/blob/ecfdf4f/nvim/.config/nvim/lua/config/lang.lua#L81
-			local item = options.items[1]
-			vim.cmd("tab drop " .. item.filename)
-			-- vim.api.nvim_win_set_cursor(win or 0, { item.start.line + 1, item.start.character })
-			vim.api.nvim_win_set_cursor(0, { item.lnum, item.col - 1 })
-			vim.cmd("norm zt")
-		end,
-	})
-end
-
--- https://github.com/BrunoKrugel/dotfiles/blob/0b2bdc4b3909620727b3975c482eea3cbebd7f9f/lua/mappings.lua#L5
--- local function golang_goto_def()
--- 	local old = vim.lsp.buf.definition
--- 	local opts = {
--- 		on_list = function(options)
--- 			if options == nil or options.items == nil or #options.items == 0 then
--- 				return
--- 			end
--- 			local targetFile = options.items[1].filename
--- 			local prefix = string.match(targetFile, "(.-)_templ%.go$")
--- 			if prefix then
--- 				local function_name = vim.fn.expand("<cword>")
--- 				options.items[1].filename = prefix .. ".templ"
--- 				vim.fn.setqflist({}, " ", options)
--- 				vim.api.nvim_command("cfirst")
--- 				vim.api.nvim_command("silent! /templ " .. function_name)
--- 			else
--- 				old()
--- 			end
--- 		end,
--- 	}
--- 	vim.lsp.buf.definition = function(o)
--- 		o = o or {}
--- 		o = vim.tbl_extend("keep", o, opts)
--- 		old(o)
--- 	end
--- end
-
--- https://github.com/fatih/dotfiles/blob/52e459c991e1fa8125fb28d4930f13244afecd17/init.lua#L748
-vim.api.nvim_create_autocmd("LspAttach", {
-	group = vim.api.nvim_create_augroup("UserLspConfig", {}),
-	callback = function(ev) -- goto def + tabdrop
-		local opts = { buffer = ev.buf }
-
-		-- vim.keymap.set("n", "<leader>cl", vim.lsp.codelens.run, opts)
-
-		-- https://github.com/neovim/neovim/pull/19213
-		-- https://github.com/raphapr/dotfiles/blob/ecdf9771d/home/dot_config/nvim/lua/raphapr/utils.lua#L25
-		-- https://github.com/Swoogan/dotfiles/blob/ecfdf4fe5/nvim/.config/nvim/lua/config/lang.lua#L63
-
-		vim.keymap.set("n", "gd", gotodef_tabdrop, opts)
-		-- vim.keymap.set("n", "gd", golang_goto_def, opts)
-	end,
-})
 
 -- }}}
 require("lsp")
@@ -563,12 +470,15 @@ require("lsp")
 -- lua print(require("lint").get_running()[1])
 
 local linters = {
+	-- https://github.com/mfussenegger/nvim-lint#available-linters
 
 	-- elixir = { "credo" }, -- where da binary at
-	-- https://github.com/mfussenegger/nvim-lint#available-linters
-	-- note: the standard rust linter is clippy, which is part of the lsp
 	-- ruby = { "rubocop" },
+	-- rust = { "clippy" }, -- part of the lsp
+	["yaml.github"] = { "zizmor" },
 	bash = { "shellcheck" },
+	c = { "clangtidy" },
+	cpp = { "clangtidy" },
 	dockerfile = { "hadolint" }, -- can be quite noisy
 	gitcommit = { "gitlint" },
 	go = { "golangcilint" },
@@ -577,11 +487,16 @@ local linters = {
 	javascript = { "biomejs" },
 	javascriptreact = { "biomejs" },
 	make = { "checkmake" },
-	markdown = { "markdownlint", "proselint" },
-	python = { "ruff" }, -- pylint is too slow and unreliable
-	sql = { "sqlfluff" },
+	python = { "ruff" }, -- may have duplicate with ruff lsp
+	sql = { "sqlfluff" }, -- slow lint is fine, since async
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
+
+	markdown = {
+		-- TODO: ignore code blocks
+		"markdownlint", -- https://github.com/DavidAnson/markdownlint?tab=readme-ov-file#rules--aliases
+		"proselint", -- https://github.com/amperser/proselint?tab=readme-ov-file#checks
+	},
 }
 
 if vim.fn["globpath"](".", "commitlint.config.js") ~= "" then
@@ -608,9 +523,10 @@ require("lint").linters.ruff.args = {
 	"--ignore=" .. table.concat({
 		-- https://docs.astral.sh/ruff/rules/
 
+		"CPY001", -- no need copyright notice
 		"DOC201", -- allow docstrings to not document return type
 		"ERA", -- allow comments
-		"I001", -- ignore import sort order (handled by isort hook)
+		"F841", -- reported by lsp
 		"PD901", -- allow var name df
 		"PLR0913", -- allow >5 func args
 		"PLR2004", -- allow magic constant values
@@ -619,7 +535,7 @@ require("lint").linters.ruff.args = {
 		"SIM108", -- don't suggest ternary
 		"T201", -- allow print()
 		"TD", -- allow TODO
-		--
+		-- "I001", -- ignore import sort order (handled by isort)
 	}, ","),
 
 	"--force-exclude",
@@ -642,14 +558,68 @@ if custom_gcl ~= "" then
 	require("lint").linters.golangcilint.cmd = custom_gcl
 end
 
+-- https://github.com/mfussenegger/nvim-lint/pull/710
+require("lint").linters.zizmor = {
+	cmd = "zizmor",
+	args = { "--format", "json" },
+	stdin = false,
+	ignore_exitcode = true, -- 14
+
+	parser = function(output, _)
+		local items = {}
+
+		local severities = {
+			High = vim.diagnostic.severity.ERROR,
+			Medium = vim.diagnostic.severity.WARN,
+		}
+
+		if output == "" then
+			return items
+		end
+
+		local decoded = vim.json.decode(output) or {}
+		local bufpath = vim.fn.expand("%:p")
+
+		for _, diag in ipairs(decoded) do
+			if diag.locations[1].symbolic.key.Local.path == bufpath then
+				table.insert(items, {
+					source = "zizmor",
+					lnum = diag.locations[1].concrete.location.start_point.row,
+					col = diag.locations[1].concrete.location.start_point.column,
+					end_lnum = diag.locations[1].concrete.location.end_point.row - 1,
+					end_col = diag.locations[1].concrete.location.end_point.column,
+					message = diag.desc,
+					severity = assert(
+						severities[diag.determinations.severity],
+						"missing mapping for severity " .. diag.determinations.severity
+					),
+				})
+			end
+		end
+
+		return items
+	end,
+}
+
+-- -- i don't trust sqruff linting for now
+-- require("lint").linters.sqruff = {
+-- 	cmd = "sqruff",
+-- 	args = { "lint", "-f", "json", "-" },
+-- 	stdin = true,
+-- 	-- ignore_exitcode = true,
+-- }
+
 require("lint").linters.sqlfluff.args = {
 	"lint",
-	-- TODO: infer dialect (either via heuristics, or some modeline equivalent)
-	"--dialect",
-	"sqlite",
+	-- TODO: infer dialect (either via heuristics, some modeline equivalent, or sqls.nvim)
+	"--dialect=sqlite",
 	"--format=json",
 	"--exclude-rules",
-	"layout.long_lines",
+	table.concat({
+		"layout.long_lines",
+		"references.qualification", -- these must be ignored in sqlite
+		"references.consistent",
+	}, ","),
 
 	-- note: fine-grained 'rule options' can only be declared via cfg file (e.g.
 	-- ~/.config/sqlfluff), which my sqlfluff install doesn't seem to recognise
@@ -660,48 +630,59 @@ require("lint").linters.sqlfluff.args = {
 	-- https://news.ycombinator.com/item?id=28771656
 }
 
+require("lint").linters.clangtidy.args = {
+
+	"-std=" .. (vim.bo.filetype == "cpp" and "c++3" or "c3"),
+
+	-- clangtidy:
+	-- performs linting based on file extension (thus does not accept stdin)
+	-- -always- lints header files (with no option whatsoever to skip them), and is very slow:
+	--
+	-- echo '#include <iostream>' > foo.cpp ; time clang-tidy --checks='-*,cppcoreguidelines-*' foo.cpp
+	-- 2895 warnings generated.
+	-- Suppressed 2895 warnings (2895 in non-user code).
+	-- real    0m1.030s
+
+	-- https://discourse.llvm.org/t/how-to-specify-clang-tidy-to-completely-not-check-non-user-files/70381
+	-- https://discourse.llvm.org/t/rfc-exclude-issues-from-system-headers-as-early-as-posible/68483
+
+	"--checks=" -- https://clang.llvm.org/extra/clang-tidy/checks/list.html
+		.. table.concat({
+
+			-- WARN: large number of checks will lead to slowdown
+
+			"misc-include-cleaner",
+
+			-- modernize-use-designated-initializers is relatively new (Feb 2024).
+			-- arch seem to be conservative with updating clang/llvm
+			-- https://github.com/llvm/llvm-project/pull/80541
+
+			"bugprone-*",
+			"cppcoreguidelines-*",
+			"modernize-*",
+			"performance-*",
+			"readability-*",
+
+			"-clang-diagnostic-pragma-once-outside-header",
+
+			-- "cert-*",
+			-- "clang-analyzer-*",
+			-- "concurrency-*",
+			-- "google-*",
+			-- "hicpp-*",
+			-- "misc-*",
+			-- "portability-*",
+		}, ","),
+}
+
 -- }}}
 -- formatter: conform {{{
 
 require("conform").setup({
 	-- :h conform-formatters
 	formatters = {
-		black = {
-			-- https://black.readthedocs.io/en/stable/the_black_code_style/future_style.html#preview-style
-			prepend_args = { "--unstable" },
-		},
-
-		isort = {
-			prepend_args = require("util").is_ubuntu and { "--profile", "black" } -- don't use single-line style at work
-				or { "--force-single-line-imports", "--profile", "black" },
-		},
-
-		ruff_fix = {
-			-- https://github.com/stevearc/conform.nvim/blob/master/lua/conform/formatters/ruff_fix.lua
-			args = {
-				"check",
-
-				-- opt-out for now
-				"--select=ALL",
-				"--ignore=" .. table.concat({
-					-- https://docs.astral.sh/ruff/rules/
-					-- only rules with wrench symbol are supported
-
-					"F841", -- allow unused var
-					"I001", -- sort imports (does not support one-per-line, unlike isort)
-				}, ","),
-
-				"--fix",
-				"--unsafe-fixes",
-				"--force-exclude",
-				"--exit-zero",
-				"--no-cache",
-				"--stdin-filename",
-				"$FILENAME",
-				"-",
-			},
-		},
-
+		-- note: for <script> to be formatted properly, type= is required
+		-- https://github.com/prettier/prettier/blob/main/tests/format/html/js/js.html
 		prettier = {
 			prepend_args = { "--print-width", "80" },
 			cwd = function()
@@ -709,6 +690,19 @@ require("conform").setup({
 				-- location is irrelevant)
 				return "/tmp"
 			end,
+		},
+
+		["clang-format"] = {
+			-- https://clang.llvm.org/docs/ClangFormatStyleOptions.html#basedonstyle
+			-- https://github.com/motine/cppstylelineup
+			-- https://github.com/torvalds/linux/blob/master/.clang-format
+			prepend_args = vim.loop.fs_stat(".clang-format") and {} or { "--style", "google" },
+		},
+
+		["clang-tidy"] = {
+			command = "clang-tidy",
+			args = { "--fix-errors", "$FILENAME" },
+			stdin = false,
 		},
 
 		-- https://taplo.tamasfe.dev/configuration/formatter-options.html
@@ -731,6 +725,13 @@ require("conform").setup({
 			-- important: at work, use top-level biome.json
 			-- note: cwd must be a func, not a string
 			cwd = require("util").root_directory,
+			-- TODO: if biome.json exists, leave args unchanged
+			args = {
+				"format",
+				"--indent-style=space",
+				"--stdin-file-path",
+				"$FILENAME",
+			},
 		},
 
 		shfmt = {
@@ -757,6 +758,29 @@ require("conform").setup({
 			},
 		},
 
+		sqruff = {
+			command = "sqruff", -- need nightly install https://github.com/quarylabs/sqruff?tab=readme-ov-file#for-other-platforms
+			args = { "fix", "-" },
+			stdin = true,
+			exit_codes = { 0, 1 }, -- lol https://github.com/quarylabs/sqruff/issues/1134
+		},
+
+		sqlfluff = {
+			-- format: more reliable; will format if no violations found
+			-- fix: does nothing if 'Unfixable violations detected'
+			-- in either case, no `dialect` usually leads to timeout
+			args = {
+				"format",
+				"--processes=32", -- lol
+				"--dialect=sqlite",
+				"--exclude-rules",
+				"layout.long_lines",
+				"-",
+			},
+			stdin = true,
+			require_cwd = false, -- else requires local .sqlfluff
+		},
+
 		dhall = { command = "dhall", args = { "format" } },
 
 		latexindent = {
@@ -766,48 +790,42 @@ require("conform").setup({
 			-- texlive-fontsrecommended
 			command = "/usr/bin/latexindent",
 		},
-
-		astyle = {
-			inherit = false,
-			command = "astyle",
-			prepend_args = {
-				-- linux kernel style
-				-- https://github.com/mellowcandle/astyle_precommit_hook/blob/master/pre-commit#L28
-				"--style=1tbs",
-				"--indent=tab",
-				"--align-pointer=name",
-				"--add-brackets",
-				"--max-code-length=80",
-			},
-			condition = function()
-				-- don't format dwm.c; formatting may make it difficult to apply/remove patches
-				-- https://github.com/folke/dot/blob/f5ba84b3a73a4e2aa4648c14707ce6847c29169b/nvim/lua/plugins/lsp.lua#L209
-				local curr_file = vim.fn.expand("%")
-				return string.find(curr_file, "dwm.c") == nil
-			end,
-		},
-
-		-- -- https://github.com/stevearc/conform.nvim/issues/197#issuecomment-1808807141
-		-- -- "If the command accepts stdin and prints the formatted results to
-		-- -- stdout, then you're done."
-		-- -- it could be that sol's reading of stdin is misconfigured
-		-- -- Formatter 'sol' error: time="2024-11-14T09:24:34+01:00" level=fatal msg="could not read file: open /dev/stdin: no such device or address"
-		-- --
-		-- -- https://github.com/noperator/sol/issues/2
-		-- -- removes comments, so this is a non-starter anyway
-		-- sol = {
-		-- 	inherit = false,
-		-- 	-- stdin = true,
-		-- 	command = "sol",
-		-- 	args = { "-w", "80" },
-		-- 	-- args = "cat $FILENAME | sol",
-		-- },
 	},
 
 	formatters_by_ft = {
 		-- https://github.com/stevearc/conform.nvim#formatters
-		-- not all are provided by Mason! (e.g. astyle)
 		-- Conform will run multiple formatters sequentially
+		-- all formatters will be run non-async
+
+		["_"] = { "trim_whitespace", "trim_newlines" },
+		bash = { "shfmt" },
+		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
+		cpp = { "clang-format" }, -- clang-tidy is slow!
+		css = { "prettier" },
+		dhall = { "dhall" },
+		elixir = { "mix" }, -- slow (just like elixir)
+		gleam = { "gleam" }, -- apparently this works?
+		html = { "prettier" },
+		htmldjango = { "djlint" },
+		lua = { "stylua" },
+		markdown = { "mdslw", "prettier" },
+		ocaml = { "ocamlformat" },
+		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- pyproject.toml: [tool.ruff.isort] force-single-line = true
+		rust = { "rustfmt" },
+		scss = { "prettier" },
+		sh = { "shfmt" },
+		templ = { "templ" },
+		tex = { "latexindent" },
+		toml = { "taplo" },
+		xml = { "xmlformat" },
+		yaml = { "prettier" },
+
+		javascript = { "biome", "prettier", stop_after_first = true },
+		javascriptreact = { "biome", "prettier", stop_after_first = true },
+		json = { "biome", "prettier", stop_after_first = true },
+		jsonc = { "biome", "prettier", stop_after_first = true },
+		typescript = { "biome", "prettier", stop_after_first = true },
+		typescriptreact = { "biome", "prettier", stop_after_first = true },
 
 		go = {
 			-- https://github.com/SingularisArt/Singularis/blob/856a938fc8554fcf47aa2a4068200bc49cad2182/aspects/nvim/files/.config/nvim/lua/modules/lsp/lsp_config.lua#L50
@@ -818,43 +836,14 @@ require("conform").setup({
 			-- "goimports", -- required for autoimport (null_ls), but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 		},
 
-		-- cpp = { "astyle" },
-		-- markdown = { "mdslw" }, -- i like the idea, but not really on cargo yet
-		-- ruby = { "rubocop" },
-		-- yaml = { "prettier" },
-		["_"] = { "trim_whitespace" },
-		bash = { "shfmt" },
-		c = { "clang-format" }, -- clang-format requires config (presumably a .clang-format file) ootb
-		css = { "prettier" },
-		dhall = { "dhall" },
-		elixir = { "mix" }, -- slow (just like elixir)
-		gleam = { "gleam" }, -- apparently this works?
-		html = { "prettier" }, -- need --parser html?
-		htmldjango = { "djlint" },
-		lua = { "stylua" },
-		markdown = { "prettier" },
-		ocaml = { "ocamlformat" },
-		python = {
-			"isort",
-			"black",
-			"ruff_fix", -- run ruff_fix last to preserve black's unstable-style parens
+		sql = {
+			"sqruff",
+			-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
+			-- do people rewrite in rust without feature parity?
+			"trim_newlines",
+			-- "sqlfluff",
+			-- stop_after_first = true,
 		},
-		rust = { "rustfmt" },
-		sh = { "shfmt" },
-		tex = { "latexindent" },
-		toml = { "taplo" },
-		xml = { "xmlformat" },
-
-		javascript = { "biome", "prettier", stop_after_first = true },
-		javascriptreact = { "biome", "prettier", stop_after_first = true },
-		json = { "biome", "prettier", stop_after_first = true },
-		jsonc = { "biome", "prettier", stop_after_first = true },
-		typescript = { "biome", "prettier", stop_after_first = true },
-		typescriptreact = { "biome", "prettier", stop_after_first = true },
-
-		-- note: none of the sql formatters seem to work; sqlfluff fix is supposed
-		-- to work, but 'Root directory not found'
-		-- sql = { "sqlfluff" },
 	},
 })
 
@@ -932,6 +921,3 @@ cmp.setup({
 require("cmp-gitcommit").setup({}) -- i don't really use this
 
 -- }}}
-
-require("util"):random_colorscheme()
-vim.keymap.set("n", "<F12>", require("util").random_colorscheme)

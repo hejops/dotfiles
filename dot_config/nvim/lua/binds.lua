@@ -1,4 +1,3 @@
--- vim: ts=2 sts=2 sw=2 et
 -- https://vim.fandom.com/wiki/Unused_keys
 -- https://stackoverflow.com/a/3806664 -- mostly visual mode
 -- https://vi.stackexchange.com/a/28080
@@ -19,6 +18,7 @@ vim.keymap.set("i", "<c-l>", "<s-right>")
 vim.keymap.set("n", "!", ":!")
 vim.keymap.set("n", "-", "~h") -- +/- are just j/k
 vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
+vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
 vim.keymap.set("n", "<c-c>", "<nop>")
 vim.keymap.set("n", "<c-z>", "<nop>")
 vim.keymap.set("n", "<tab>", "<nop>") -- tab may be equivalent to c-i
@@ -100,13 +100,13 @@ vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
 
 -- commands
 -- vim.keymap.set("n", "<c-s>", ":keepjumps normal! mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
+-- vim.keymap.set("n", "<leader>X", ":call Build()<cr>")
 vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true }) -- vim's sort n is not at all like !sort -V
 vim.keymap.set("n", "<f10>", ":colo<cr>")
 vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 vim.keymap.set("n", "<leader>D", [[:g/\v/d<Left><Left>]])
 vim.keymap.set("n", "<leader>T", ":tabe ")
 vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- remove all undos -- https://stackoverflow.com/a/47524696
-vim.keymap.set("n", "<leader>X", ":call Build()<cr>")
 vim.keymap.set("n", "<leader>n", [[:%g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("n", "<leader>r", [[:%s/\v/g<Left><Left>]]) -- TODO: % -> g/PATT/
 vim.keymap.set("v", "D", [[:g/\v/d<Left><Left>]]) -- delete lines
@@ -115,14 +115,27 @@ vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
 
 -- context dependent binds
 -- https://github.com/neovim/neovim/blob/012cfced9b5384fefa11d74346779b1725106d07/runtime/doc/lua-guide.txt#L450
--- local exec_or_close = [[&buftype == 'nofile' ? ':bd<cr>' : ':call Exec()<cr>']]
--- vim.keymap.set("n", "<leader>x", exec_or_close, { silent = true, expr = true })
-local update_or_close = [[&buftype == 'nofile' ? ':bd<cr>' : ':update<cr>']] -- close window if scratch
-local x_or_close = [[&modifiable == 0 ? ':bd<cr>' : '"_x']]
-vim.keymap.set("n", "<c-c>", update_or_close, { silent = true, expr = true })
-vim.keymap.set("n", "<cr>", update_or_close, { silent = true, expr = true })
-vim.keymap.set("n", "<leader><space>", update_or_close, { silent = true, expr = true })
-vim.keymap.set("n", "x", x_or_close, { silent = true, expr = true })
+
+-- close window if scratch
+local function update_or_close()
+	vim.cmd(
+		-- expr must be false, else 'not allowed to change text'
+		(
+			vim.bo.buftype == "nofile" -- ugh
+			or vim.bo.buftype == "help"
+			or vim.bo.ft == "sqls_output"
+		)
+				and "bd"
+			or "update"
+	)
+end
+
+vim.keymap.set("n", "<c-c>", update_or_close, { silent = true })
+vim.keymap.set("n", "<cr>", update_or_close, { silent = true })
+vim.keymap.set("n", "<leader><space>", update_or_close, { silent = true })
+vim.keymap.set("n", "x", function()
+	return vim.bo.modifiable == 0 and ":bd<cr>" or '"_x'
+end, { silent = true, expr = true })
 
 -- map <2-rightmouse> <nop>
 -- map <3-rightmouse> <nop>
@@ -142,16 +155,19 @@ vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push 
 
 -- TODO: git add % + git commit --amend --no-edit
 
+local function commit_staged()
+	vim.cmd("silent !pre-commit run") -- limit to staged files
+	vim.cmd("Git commit --quiet -v") -- commit currently staged chunk(s)
+end
+
+vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit currently staged hunks" })
+vim.keymap.set("n", "<leader>gc", commit_staged, { desc = "commit currently staged hunks" })
+
 vim.keymap.set("n", "<leader>C", function()
 	-- TODO: if no changes, do nothing
 	vim.cmd("silent !pre-commit run --files %")
 	vim.cmd("Git commit --quiet -v %") -- commit entire file
 end, { desc = "commit current buffer" })
-
-vim.keymap.set("n", "<leader>gc", function()
-	vim.cmd("silent !pre-commit run") -- limit to staged files
-	vim.cmd("Git commit --quiet -v") -- commit currently staged chunk(s)
-end, { desc = "commit currently staged hunks" })
 
 vim.keymap.set("n", "<leader>gC", function()
 	vim.cmd("Git commit --quiet --amend -v")
@@ -180,135 +196,256 @@ local function toggle_diagnostics()
 	end
 end
 
+local function get_c_doc()
+	-- requires man-pages (c) and cppman (cpp)
+	local cmd = (vim.bo.filetype == "c" and "man 3" or "cppman") .. " " .. vim.fn.expand("<cword>")
+	cmd = "vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! " .. cmd
+	vim.cmd(cmd)
+
+	vim.cmd.norm("gg")
+
+	vim.cmd.setlocal("ft=man")
+	vim.keymap.set("n", "J", "}zz", { buffer = true })
+	vim.keymap.set("n", "K", "{zz", { buffer = true })
+end
+
+-- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
+---@type {[string]: { mode: string, lhs: string, rhs: string|function, opts: table? }[]}
 local ft_binds = { -- {{{
 
-	gitcommit = function()
-		vim.keymap.set("n", "J", "}zz", { buffer = true })
-		vim.keymap.set("n", "K", "{zz", { buffer = true })
-	end,
+	git = {
+		{ "n", "<cr>", ":q<cr>" },
+		{ "n", "j", "J", { remap = true } }, -- https://github.com/tpope/vim-fugitive/blob/320b18fba2a4f2fe3c8225c778c687e0d2620384/autoload/fugitive.vim#L8019
+		{ "n", "k", "K", { remap = true } },
+	},
 
-	man = function()
-		vim.keymap.set("n", "J", "<c-f>zz", { buffer = true })
-		vim.keymap.set("n", "K", "<c-b>zz", { buffer = true })
-	end,
+	gitcommit = {
+		{ "n", "J", "}zz" },
+		{ "n", "K", "{zz" },
+	},
 
-	["qf,help,man,lspinfo,startuptime,Trouble,lazy"] = function()
-		vim.keymap.set("n", "q", "ZZ", { buffer = true })
-		vim.keymap.set("n", "x", "ZZ", { buffer = true })
-		vim.keymap.set("n", "<esc>", "ZZ", { buffer = true })
-	end,
+	man = {
+		{ "n", "J", "<c-f>zz" },
+		{ "n", "K", "<c-b>zz" },
+	},
 
-	["sh,bash"] = function()
-		vim.keymap.set("n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>", { buffer = true })
-	end,
+	["qf,help,man,lspinfo,startuptime,Trouble,lazy"] = {
+		{ "n", "q", "ZZ" },
+		{ "n", "x", "ZZ" },
+		{ "n", "<esc>", "ZZ" },
+	},
 
-	["typescript,javascript,typescriptreact,javascriptreact"] = function()
+	["sh,bash"] = {
+		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>" },
+	},
+
+	["typescript,javascript,typescriptreact,javascriptreact"] = {
 		-- replace != and ==; probably better via find+sed
-		vim.keymap.set("n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]], { buffer = true })
-		vim.keymap.set("n", "<leader>a", ":!npm install ", { buffer = true })
-	end,
+		{ "n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]] },
+		{ "n", "<leader>a", ":!npm install " },
+	},
 
-	rust = function()
+	rust = {
 		-- TODO: <c-l> to exit parens?
+		-- {"n", "<leader>A", "oassert_eq!();<esc>hi", {  }},
+		{ "i", "<c-j>", ";<cr>" },
+		{ "n", "<leader>a", ":!cargo add " },
+	},
 
-		-- vim.keymap.set("n", "<leader>A", "oassert_eq!();<esc>hi", { buffer = true })
-		vim.keymap.set("i", "<c-j>", ";<cr>", { buffer = true })
-		vim.keymap.set("n", "<leader>a", ":!cargo add ", { buffer = true })
-	end,
+	zig = {
+		{ "i", "<c-j>", ";<cr>" },
+	},
 
-	zig = function()
-		vim.keymap.set("i", "<c-j>", ";<cr>", { buffer = true })
-	end,
+	c = {
+		-- TODO: switch between .c and .h (vim-fswitch, maybe clangd already has this)
+
+		{
+			"n",
+			"<leader>I", -- <leader>i reserved for lsp incoming
+			function()
+				local line = vim.fn.input("include: ")
+				vim.api.nvim_buf_set_lines(0, 0, 0, false, { string.format("#include <%s.h>", line) })
+				vim.cmd.w()
+			end,
+		},
+
+		-- TODO: #include <cFOO> -> #include <FOO.h>
+
+		-- {
+		-- 	"n",
+		-- 	"<leader>E",
+		-- 	-- TODO: selecting a declaration is not trivial (e.g. func param)
+		-- 	function()
+		-- 		local decl = vim.api.nvim_get_current_line()
+		-- 		print(string.format([[cdecl <(echo 'explain %s')]], decl))
+		-- 	end,
+		-- },
+
+		{ "n", "<leader>H", get_c_doc },
+
+		{
+			"n",
+			"<leader>E",
+			function()
+				-- add error handling to fallible func call
+				local line = vim.api.nvim_get_current_line()
+				if not string.find(line, ";$") then
+					print("cannot wrap multi-line func")
+					return
+				end
+
+				local func = string.match(line, "%S[^(]+")
+				local repl = string.format([[if (%s == -1) { die("%s"); };]], string.gsub(line, ";$", ""), func)
+				vim.api.nvim_set_current_line(repl)
+				vim.cmd.w()
+			end,
+		},
+	},
+
+	cpp = {
+		{ "n", "<leader>H", get_c_doc },
+	},
 
 	-- TODO: also include gomod
-	go = function()
-		vim.keymap.set("n", "<leader>E", "oif err!=nil{panic(err)}<esc>:w<cr>o", { buffer = true }) -- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
+	go = {
+		{ "n", "<leader>E", "oif err!=nil{panic(err)}<esc>:w<cr>o" }, -- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
 
-		-- TODO: go get foo, and import foo
-		-- https://github.com/ray-x/go.nvim/blob/cde0c7a110c0f65b9e4e6baf342654268efff371/lua/go/goget.lua#L23
-		-- vim.keymap.set("n", "<leader>a", 'gg/import<cr>o"":!go get github.com/', { buffer = true })
-
-		function GoGet(pkg)
-			local url = "github.com/" .. pkg
-
-			-- 1. go get github...
-			vim.system(
-				{ "go", "get", url },
-				{},
-				-- on_exit
-				function(obj)
-					if obj.code == 0 then
-						print("ok: " .. pkg)
-						os.execute("notify-send " .. pkg)
-					else
-						print(obj.signal)
-						print(obj.stdout)
-						print(obj.stderr)
-					end
-				end
-			):wait()
-			-- 2. add import statement (_ "github.com/..."), save
-			-- 3. go mod tidy
-		end
-
-		vim.keymap.set("n", "<leader>a", ":lua GoGet''<left>", { buffer = true })
-		vim.keymap.set("n", "<leader>t", function()
-			vim.system({ "go", "mod", "tidy" })
-			vim.cmd("LspRestart")
-			vim.cmd("Trouble refresh")
-		end, { buffer = true })
+		{
+			"n",
+			"<leader>t",
+			function()
+				vim.system({ "go", "mod", "tidy" })
+				vim.cmd("LspRestart")
+				vim.cmd("Trouble refresh")
+			end,
+		},
 
 		-- switch to early return to reduce nesting, assumes return block is 1-line
 		-- note: this does -not- invert the condition
-		vim.keymap.set("n", "<leader>N", "$m`%dddj``p:w<cr>", { buffer = true })
-	end,
+		{ "n", "<leader>N", "$m`%dddj``p:w<cr>" },
 
-	python = function()
-		-- TODO: try_lint may stop working after a file is written?
-		-- https://github.com/mfussenegger/nvim-lint/issues/553#issuecomment-2041042145
-		vim.keymap.set("n", "<leader>d", function()
-			vim.diagnostic.reset(nil, 0)
-			require("lint").linters_by_ft = {
-				python = #require("lint").linters_by_ft.python > 0 and {} or { "ruff" },
-			}
-			require("lint").try_lint()
-		end)
-	end,
+		-- TODO: go get foo, and import foo
+		-- https://github.com/ray-x/go.nvim/blob/cde0c7a110c0f65b9e4e6baf342654268efff371/lua/go/goget.lua#L23
+		-- {"n", "<leader>a", 'gg/import<cr>o"":!go get github.com/', {  }},
 
-	markdown = function()
+		-- function GoGet(pkg)
+		-- 	local url = "github.com/" .. pkg
+		--
+		-- 	-- 1. go get github...
+		-- 	vim.system(
+		-- 		{ "go", "get", url },
+		-- 		{},
+		-- 		-- on_exit
+		-- 		function(obj)
+		-- 			if obj.code == 0 then
+		-- 				print("ok: " .. pkg)
+		-- 				os.execute("notify-send " .. pkg)
+		-- 			else
+		-- 				print(obj.signal)
+		-- 				print(obj.stdout)
+		-- 				print(obj.stderr)
+		-- 		}
+		-- 	}
+		-- 	):wait()
+		-- 	-- 2. add import statement (_ "github.com/..."), save
+		-- 	-- 3. go mod tidy
+		-- { "n", "<leader>a", ":lua GoGet''<left>" },
+	},
+
+	python = {
+		{
+			"n",
+			"<leader>dd",
+			function() -- toggle ruff
+				vim.diagnostic.reset(nil, 0)
+				require("lint").linters_by_ft = {
+					python = #require("lint").linters_by_ft.python > 0 and {} or { "ruff" },
+				}
+				require("lint").try_lint()
+			end,
+		},
+	},
+
+	markdown = {
 		-- TODO: if checkbox item (`- [ ]`), toggle check
 		-- https://github.com/tadmccorkle/markdown.nvim#lists
 
-		local function mn()
-			require("markdown.nav").next_heading()
-			vim.cmd.norm("zz")
-		end
+		-- local function mn()
+		-- 	require("markdown.nav").next_heading()
+		-- 	vim.cmd.norm("zz")
+		-- end
+		-- local function mp()
+		-- 	require("markdown.nav").prev_heading()
+		-- 	vim.cmd.norm("zz")
+		-- end
 
-		local function mp()
-			require("markdown.nav").prev_heading()
-			vim.cmd.norm("zz")
-		end
+		-- {"n", "J", mn, { remap = true }},
+		-- {"n", "K", mp, { remap = true }}, -- TS hover
+		-- {"n", "[[", mp, { remap = true }},
+		-- {"n", "]]", mn, { remap = true }},
+		-- {"n", "gk", require("markdown.nav").prev_heading, { remap = true }},
+		{ "n", "<c-k>", "ysiw]Ea()<esc>Pgqq", { remap = true } }, -- wrap in hyperlink
+		{ "n", "<leader>d", toggle_diagnostics },
+		{
+			"n",
+			"<leader>s",
+			function()
+				-- 'plain' require('foo').func requires 'foo' to be available
+				require("telescope").extensions.heading.heading()
+			end,
+		},
+	},
+} -- }}}
 
-		vim.keymap.set("n", "<leader>d", toggle_diagnostics)
-
-		-- vim.keymap.set("n", "J", mn, { buffer = true, remap = true })
-		-- vim.keymap.set("n", "K", mp, { buffer = true, remap = true }) -- TS hover
-		-- vim.keymap.set("n", "gk", require("markdown.nav").prev_heading, { buffer = true, remap = true })
-		vim.keymap.set("n", "<c-k>", "ysiw]Ea()<esc>Pgqq", { buffer = true, remap = true }) -- wrap in hyperlink
-		vim.keymap.set("n", "<leader>s", require("telescope").extensions.heading.heading, { buffer = true })
-		-- vim.keymap.set("n", "[[", mp, { buffer = true, remap = true })
-		-- vim.keymap.set("n", "]]", mn, { buffer = true, remap = true })
-	end,
-}
-
-for ft, callback in pairs(ft_binds) do
+for ft, binds in pairs(ft_binds) do
 	vim.api.nvim_create_autocmd("FileType", {
 		pattern = ft,
-		callback = callback,
+		callback = function()
+			for _, bind in pairs(binds) do
+				if #bind >= 4 then
+					bind[4]["buffer"] = true
+				else
+					table.insert(bind, { buffer = true })
+				end
+				vim.keymap.set(unpack(bind))
+			end
+		end,
 	})
 end
 
--- }}}
+local function c_compiler_cmd()
+	-- if vim.fn.executable("tcc") then
+	-- 	return "tcc"
+	-- end
+
+	return table.concat({
+		-- allegedly, gcc/g++ prioritises fast runtime (slow compile time),
+		-- clang(++) prioritises fast compile time (slow runtime).
+		-- https://github.com/nordlow/compiler-benchmark
+		--
+		-- however, with my limited testing, this is not true; gcc compile time is
+		-- about 65% that of clang. in doubt, profile compile times on your
+		-- machine.
+
+		-- "clang",
+		"gcc",
+
+		-- https://clang.llvm.org/docs/ClangCommandLineReference.html#target-independent-compilation-options
+		-- https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+
+		"-fno-omit-frame-pointer",
+		"-fsanitize=address,undefined,leak",
+		"-ftrivial-auto-var-init=zero",
+		-- "-O0",
+		-- "-coverage",
+		-- "-fdiagnostics-format=vi", -- clang and gcc have different options
+		-- "-ferror-limit=0", -- clang-only
+		-- "-ggdb",
+	}, " ")
+end
+
+-- https://en.wikipedia.org/wiki/C_POSIX_library
+-- pacman -Ql glibc | grep -Po '/usr/include/.+\.h'
 
 -- run current file and dump stdout to scratch buffer
 local function exec()
@@ -316,7 +453,11 @@ local function exec()
 	-- running tests is better left to the terminal itself (e.g. wezterm)
 	if vim.bo.filetype == "nofile" then
 		return
+	elseif vim.bo.filetype == "sql" then
+		vim.cmd("SqlsExecuteQuery")
+		return
 	end
+
 	-- TODO: async (Dispatch)
 	local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
 	local wide = vim.o.columns > 150
@@ -412,6 +553,7 @@ local function exec()
 		dhall = "dhall-to-json --file " .. curr_file,
 		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 		elvish = "elvish " .. curr_file,
+		haskell = "runghc " .. curr_file,
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
 		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
@@ -423,7 +565,7 @@ local function exec()
 
 		-- the iffy langs
 		-- typescript = "NO_COLOR=1 deno run --check=all " .. curr_file,
-		sql = get_sql_cmd, --(curr_file),
+		-- sql = get_sql_cmd, --(curr_file),
 		typescript = get_ts_runner, --(curr_file),
 
 		-- note that :new brings us to repo root (verify with :new|pwd), so we need
@@ -437,12 +579,31 @@ local function exec()
 		-- -- TODO: it is not clear which cmd should be used
 		-- go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
 
+		-- note: -static generates a fully self-contained binary. this roughly
+		-- doubles compile time, and makes the binary about 50x bigger
+
+		-- note: -W flags should be passed to clangd directly
+		-- optional: checksec --file=main --output=json | jq .
+		-- optional: strace ./main
+
 		c = string.format(
-			[[ gcc %s -o %s ; ./%s ]],
+			[[ %s %s -o %s && ./%s 2>&1 ]],
+			c_compiler_cmd(),
 			curr_file,
 			string.gsub(curr_file, ".c", ""),
 			string.gsub(curr_file, ".c", "")
 		),
+
+		-- should use make/cmake/ccache:
+		-- hello: hello.cpp
+		-- 	g++ hello.cpp -o hello
+		cpp = vim.loop.fs_stat("Makefile") and string.format([[ make && ./%s ]], string.gsub(curr_file, ".cpp", ""))
+			or string.format(
+				[[ time g++ %s -O0 -o %s && ./%s ]],
+				curr_file,
+				string.gsub(curr_file, ".cpp", ""),
+				string.gsub(curr_file, ".cpp", "")
+			),
 
 		-- -- the... kotlin
 		-- -- https://kotlinlang.org/docs/command-line.html#create-and-run-an-application
@@ -457,7 +618,9 @@ local function exec()
 	local ft = vim.bo.filetype
 	local runner = runners[ft]
 
-	if runner == nil then
+	if ft == "" then
+		return
+	elseif runner == nil then
 		print("No runner configured for " .. ft)
 		return
 	elseif type(runner) == "function" then
@@ -619,10 +782,12 @@ local function debug_print()
 		gleam = "io.debug(@)",
 		go = "fmt.Println(@)",
 		javascript = "console.log(@);",
+		javascriptreact = "console.log(@);",
 		lua = "print(@)",
 		python = "print(@)",
 		rust = 'println!("{:?}", @);',
 		typescript = "console.log(@);",
+		typescriptreact = "console.log(@);",
 		zig = [[std.debug.print("{any}\n", .{@});]],
 	}
 

@@ -7,8 +7,6 @@
 vim.o.directory = vim.fn.expand("~/.vim/swap//") -- directory is an awful name for a hardcode
 vim.o.undodir = vim.fn.expand("~/.vim/undo2//")
 
--- TODO: what is ^= in vim syntax? (was used in clipboard only)
-
 -- vim.o.guicursor = vim.o.guicursor .. "a:blinkon0"
 -- vim.o.switchbuf ..= "usetab,newtab" -- open quickfix files (?) etc in new tab -- https://stackoverflow.com/a/6853779
 -- vim.o.switchbuf = table.concat(vim.o.switchbuf, "usetab,newtab")
@@ -34,6 +32,8 @@ end
 
 -- vim.g.netrw_browse_split=4	-- open in vsplit
 -- vim.o.spellsuggest = 5 -- show less suggestions
+vim.g.c_syntax_for_h = true
+vim.g.ftplugin_sql_omni_key = "<C-j>" -- default <C-c> is annoying
 vim.g.lasttab = 1
 vim.g.netrw_altv = 1
 vim.g.netrw_banner = 0
@@ -95,4 +95,3 @@ vim.o.wildignore = "*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store,*.o,*~,*.pyc"
 vim.o.wildmenu = true -- show suggestions above cmdline
 vim.o.wrap = true
 vim.o.wrapmargin = 0
-vim.g.ftplugin_sql_omni_key = "<C-j>" -- default <C-c> is annoying

@@ -60,7 +60,7 @@ local function get_output(command)
 	return handle:close()
 end
 
-local is_ubuntu = get_output("grep Ubuntu /etc/lsb-release")
+local is_ubuntu = get_output("grep Ubuntu /etc/*-release")
 
 -- TODO: tab title?
 -- TODO: projects (see old kitty example)
@@ -165,6 +165,7 @@ local font = wezterm.font_with_fallback({
 	-- "Geist Mono", -- chonky
 
 	-- narrow
+	"NanumGothicCoding", -- only has underline >= 12
 	-- "Mplus Code 60", -- too tall, otherwise quite good
 	-- "Iosevka",
 
