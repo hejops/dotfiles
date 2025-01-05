@@ -6,7 +6,7 @@
 configuration {
 
 	dpi: 1;
-	font: "haskplex 12"; // generally, should be kitty size +2
+	font: "source code pro 12"; // generally, should be kitty size +2
 
 	// terminal:	"urxvt";
 	matching:	"regex";	// fuzzy can be very slow https://github.com/davatorium/rofi/blob/next/doc/rofi.1.markdown#matching
