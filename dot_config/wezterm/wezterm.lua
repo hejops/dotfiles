@@ -3,6 +3,7 @@
 -- https://github.com/pynappo/dotfiles/blob/ec6476a4cb78176be10293812c02dda7a4ac999a/.config/wezterm/wezterm.lua#L182
 
 -- os.execute("notify-send hi")
+-- os.execute("setxkbmap -layout us")
 
 -- TODO: investigate high memory usage (up to 1.3 GB RSS)
 -- pmap -x $(\pgrep wezterm-gui) | sort -k3 -n | tail -n20
@@ -60,7 +61,7 @@ local function get_output(command)
 	return handle:close()
 end
 
-local is_ubuntu = get_output("grep Ubuntu /etc/lsb-release")
+local is_ubuntu = get_output("grep Ubuntu /etc/issue")
 
 -- TODO: tab title?
 -- TODO: projects (see old kitty example)
@@ -171,13 +172,14 @@ local font = wezterm.font_with_fallback({
 	"Source Code Pro",
 })
 
-if is_ubuntu then
-	-- https://github.com/wez/wezterm/issues/284#issuecomment-1177628870
-	wezterm.on("gui-startup", function() -- note: not reliable
-		local _, _, window = wezterm.mux.spawn_window({})
-		window:gui_window():maximize()
-	end)
-end
+-- TODO: and not dwm
+-- if is_ubuntu then
+-- 	-- https://github.com/wez/wezterm/issues/284#issuecomment-1177628870
+-- 	wezterm.on("gui-startup", function() -- note: not reliable
+-- 		local _, _, window = wezterm.mux.spawn_window({})
+-- 		window:gui_window():maximize()
+-- 	end)
+-- end
 
 -- config.freetype_load_flags = "NO_HINTING" -- squashes fonts (makes them shorter)
 
@@ -187,14 +189,21 @@ end
 
 local cell_width = 0.9
 
+-- note: entire config is evaluated on window open (but not close), tab
+-- open/close, but not on split
+
 -- relying on xrdb dpi is unreliable, as ubuntu seems to ignore it
 local font_size
 if is_ubuntu then
 	-- note: xrandr is unacceptably slow
-	font_size = get_output("xdpyinfo | grep -F '3840x1200'") and 12.0 or 18.0
+	font_size = get_output("xdpyinfo | grep -F 'x1200'") and 12.0 -- (dual) 2k
+		or get_output("xdpyinfo | grep -F '1920x1080'") and 16.0 -- laptop-only (2k)
+		or 18.0 -- home, 4k only
 else
-	font_size = 10.0
+	font_size = 10.0 -- home, 4k
 end
+
+-- font_size = 12.0 -- home, 4k
 
 -- config.font, config.font_size = wezterm.font_with_fallback({ "B612 Mono" }), 9.0
 -- config.font, config.font_size = wezterm.font_with_fallback({ "Source Code Pro" }), 10.0
@@ -256,7 +265,8 @@ local function keys()
 				-- 	wezterm.open_with(url, "mpv")
 				-- 	return
 				-- end
-				wezterm.open_with(url)
+				-- xdg-open on ubuntu wrongly chooses chromium, might as well be explicit
+				wezterm.open_with(url, "firefox")
 			end),
 		},
 	}
@@ -469,6 +479,7 @@ local function keys()
 		end
 	end
 
+	-- note: dwm binds always override these
 	if is_ubuntu then
 		extend(_keys, test_keys)
 	end
