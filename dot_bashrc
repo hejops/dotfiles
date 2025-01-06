@@ -45,9 +45,16 @@ unset p paths
 export TERMINAL=kitty
 export TERMINAL='wezterm start'
 
-if type nvim > /dev/null 2> /dev/null; then
+if command -v nvim > /dev/null 2> /dev/null; then
 	export EDITOR=nvim
-	if ! cat /etc/*-release | grep -q Ubuntu; then
+
+	if
+		# /etc/issue (single line)
+		# /etc/lsb-release (DISTRIB_ID)
+		# /usr/lib/os-release (most verbose)
+		! < /etc/issue grep -Fq Ubuntu
+	then
+		# TODO: disable man sudo_root message -- https://askubuntu.com/a/22646
 		export MANPAGER="nvim +Man!"
 	fi
 else
@@ -179,11 +186,14 @@ export WORK_DIRS=(
 # }}}
 # misc {{{
 
+# https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html
+
 # complete -c man which
 # set -o ignoreeof
 # export IGNOREEOF=1 # require 2 ctrl-d's to exit; must be declared after set
-# shopt -s autocd # autocomplete is still limited to cmds
-shopt -s checkwinsize
+
+shopt -s checkwinsize # enabled by default
+# shopt -s failglob     # fail if glob matches nothing; note: cmds with failed globs will not be stored in history
 
 # https://doc.qt.io/qt-5/highdpi.html#high-dpi-support-in-qt
 # should be disabled (0) on prism solo
@@ -191,16 +201,15 @@ export QT_AUTO_SCREEN_SCALE_FACTOR=0
 
 # TODO: to include this when sourcing, LINES needs to be set
 # include hidden files, can be quite slow from $HOME
+
+# note: ctrl-shift not supported: https://github.com/junegunn/fzf/issues/2867
 export FZF_DEFAULT_OPTS="
 
---bind ctrl-b:preview-page-up
 --bind ctrl-c:cancel
---bind ctrl-f:preview-page-down
---bind ctrl-x:cancel
---bind down:down
---bind shift-down:preview-page-down
---bind shift-up:preview-page-up
---bind up:up
+--bind ctrl-h:preview-page-down
+--bind ctrl-i:preview-page-up
+--bind ctrl-l:preview-page-up
+--bind ctrl-u:preview-page-down
 --cycle
 --pointer='→'
 --preview-window='bottom,cycle,wrap,border-top,5'
@@ -211,6 +220,10 @@ export FZF_DEFAULT_OPTS="
 
 export STREAMLIT_SERVER_RUN_ON_SAVE=true
 # export STREAMLIT_THEME_BASE=light
+
+# https://python-poetry.org/docs/configuration/#virtualenvsin-project
+# going to ~/.cache/pypoetry/virtualenvs is annoying
+export POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # }}}
 
@@ -338,7 +351,8 @@ if type pacman > /dev/null 2> /dev/null; then
 
 elif type apt > /dev/null 2> /dev/null; then
 
-	alias get="sudo apt install"
+	alias get="sudo apt install" # || snap
+	alias rem="sudo apt --purge autoremove"
 
 elif type port > /dev/null 2> /dev/null; then
 
@@ -429,6 +443,7 @@ GIT_PROMPT() {
 	)
 	if [[ $state == '0 0' ]]; then
 		: up to date with master
+		state=""
 	else
 		# state=$(<<< "$state" tr -s '\t' :)
 		# probably better to destructure fields (readarray?), but this
@@ -438,14 +453,18 @@ GIT_PROMPT() {
 			s/ / commits behind, /g
 		')
 		state+=" commits ahead of $REM_BRANCH"
-		prompt+="$state"
+
 	fi
-	# set +x
 
 	# list number of dead local branches
 	if dead=$(git branch -vv | grep -c ': gone]'); then
-		prompt+=" ($dead dead branches)"
+		[[ -n $state ]] && state+=' '
+		state+="($dead dead branches)"
 	fi
+
+	prompt+="$state"
+
+	# set +x
 
 	echo "$prompt"
 
@@ -464,6 +483,10 @@ PS1+='\n'  # newline
 PS1+='\W/' # cwd with trailing slash -- TODO: relativise to project root
 PS1+=' '
 PS1+='> ' # prompt symbol
+
+# note: modifying PS1 gives more control than modifying PROMPT_COMMAND, since
+# we have 3 dynamic parts (and we already use PROMPT_COMMAND for history
+# anyway)
 
 if [[ -n $CONDA_PREFIX ]]; then
 	PS1="($(basename "$CONDA_PREFIX")) $PS1"
