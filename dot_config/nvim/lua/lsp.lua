@@ -127,6 +127,7 @@ local servers = { -- {{{
 	-- ocamllsp = {}, -- requires global opam installation
 	-- ruff = {}, -- i don't know if this actually does anything
 	bashls = {},
+	biome = {}, -- at work, root_dir should resolve to repo root, so no further config necessary
 	clangd = {}, -- TODO: suppress (?) "Call to undeclared function"
 	dockerls = {},
 	lexical = {},
@@ -167,19 +168,35 @@ local servers = { -- {{{
 		},
 	},
 
-	biome = {
-		root_dir = require("util"):root_directory(), -- important: use root biome.json
-	},
-
 	ts_ls = {
 
-		-- ts_ls generally does not need to be at root, but better to be consistent
-		-- with biome
-		root_dir = require("util"):root_directory(),
+		-- -- ts_ls generally does not need to be at root, but it may be better to be
+		-- -- consistent with biome
+		-- root_dir = require("util"):root_directory(),
+
+		-- https://github.com/Virus288/Neovim-Config/blob/5cb7f321d217d3f9163ddc26c4b25c4c35f80211/lua/configs/lspConfig.lua#L46
+		init_options = {
+			preferences = {
+				disableSuggestions = false,
+				includeCompletionsForModuleExports = true,
+				includeCompletionsForImportStatements = true,
+				importModuleSpecifierPreference = "relative",
+			},
+		},
 
 		settings = {
 			javascript = { inlayHints = js_ts_hints },
-			typescript = { inlayHints = js_ts_hints },
+			typescript = {
+				inlayHints = js_ts_hints,
+				experimental = { -- typescript only?
+					updateImportsOnPaste = true,
+					enableProjectDiagnostics = true,
+				},
+				preferences = {
+					preferTypeOnlyAutoImports = true,
+					importModuleSpecifier = "relative",
+				},
+			},
 
 			-- note: js projects will require jsconfig.json
 			diagnostics = {
