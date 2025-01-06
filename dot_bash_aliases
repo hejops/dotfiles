@@ -274,9 +274,12 @@ gcf() {
 	# messages
 	git commit --fixup "$sha" "$@"
 
-	# TODO: not sure what to do when unstaged changes are present
+	# TODO: not sure what to do yet when unstaged changes are present
 
-	git rebase -i --autosquash "$(gmaster)" || gC
+	# with no arg, defaults to curr branch (NEVER use gmaster; to avoid
+	# losing work, git rebase --abort immediately)
+	# is -i necessary?
+	git rebase -i --autosquash || gC
 }
 
 gA() {
@@ -1164,7 +1167,10 @@ doslow() {
 		paste <(echo "$steps") <(
 			<<< "$steps" cut -d' ' -f1 |
 				while read -r n; do
-					< "$1" grep -Fm1 "$n" | cut -d' ' -f2-
+					< "$1" grep "$n" |
+						tac |
+						grep -Pm1 "$n \[" |
+						cut -d' ' -f2-
 				done
 		)
 	else
@@ -1780,5 +1786,17 @@ scan() {
 # 	sort -u |
 # 	xargs rm -rf
 
+npmup() {
+	: upgrade npm package
+	pkg=$1
+	# TODO: list package.json
+	c "https://www.npmjs.com/package/$1?activeTab=versions" |
+		grep -Po '\d+?\.\d+?\.\d+?</a></td><td class="downloads">[0-9,]+' |
+		sed -r 's|</a></td><td class="downloads">|\t|' |
+		sort -k2n
+	# yarn upgrade "$pkg@^$ver"
+}
+
 # note: sendmail unresponsive
-# echo "$msg" | mail -s "$subj" $addr
+# note: it is not known what set up is needed
+# echo "$body" | mail --subject="$subject" $email
