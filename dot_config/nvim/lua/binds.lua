@@ -21,7 +21,7 @@ vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
 vim.keymap.set("n", "<c-c>", "<nop>")
 vim.keymap.set("n", "<c-z>", "<nop>")
 vim.keymap.set("n", "<tab>", "<nop>") -- tab may be equivalent to c-i
-vim.keymap.set("n", "G", "G$zz") -- because of the InsertEnter zz autocmd
+vim.keymap.set("n", "G", "Gzz") -- because of the InsertEnter zz autocmd
 vim.keymap.set("n", "H", "^")
 vim.keymap.set("n", "J", "mzJ`z") -- join without moving cursor
 vim.keymap.set("n", "L", "g_")
@@ -90,19 +90,19 @@ vim.keymap.set("n", "zl", "zr") -- expand
 -- https://stackoverflow.com/a/2439848
 -- https://vim.fandom.com/wiki/Moving_lines_up_or_down
 -- i very rarely use alt nowadays
-vim.keymap.set("i", "<a-j>", "<esc>:m .+1<cr>==gi")
-vim.keymap.set("i", "<a-k>", "<esc>:m .-2<cr>==gi")
-vim.keymap.set("n", "<a-j>", ":m .+1<cr>==")
-vim.keymap.set("n", "<a-k>", ":m .-2<cr>==")
-vim.keymap.set("v", "<a-j>", ":m '>+1<cr>gv=gv")
-vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
+-- vim.keymap.set("i", "<a-j>", "<esc>:m .+1<cr>==gi")
+-- vim.keymap.set("i", "<a-k>", "<esc>:m .-2<cr>==gi")
+-- vim.keymap.set("n", "<a-j>", ":m .+1<cr>==")
+-- vim.keymap.set("n", "<a-k>", ":m .-2<cr>==")
+-- vim.keymap.set("v", "<a-j>", ":m '>+1<cr>gv=gv")
+-- vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
 
 -- commands
 -- vim.keymap.set("n", "<c-s>", ":keepjumps normal! mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
+-- vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 -- vim.keymap.set("n", "<leader>X", ":call Build()<cr>")
 vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true }) -- vim's sort n is not at all like !sort -V
 vim.keymap.set("n", "<f10>", ":colo<cr>")
-vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 vim.keymap.set("n", "<leader>D", [[:g/\v/d<Left><Left>]])
 vim.keymap.set("n", "<leader>T", ":tabe ")
 vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- remove all undos -- https://stackoverflow.com/a/47524696
@@ -167,12 +167,11 @@ vim.keymap.set("n", "<leader>gd", function()
 	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
 end, { desc = "diff current HEAD against master" })
 
+-- TODO: set mark and return to it (mz...z"ap)
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
 vim.keymap.set("n", "<leader>M", '"qp0dd') -- dump q buffer into a newline and cut it (for binding)
-vim.keymap.set("n", "z/", "ZZ") -- lazy exit
 vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
--- TODO: set mark and return to it (mz...z"ap)
 
 local function toggle_diagnostics()
 	-- only disables inlay hints; popups (and trouble) remain
@@ -219,6 +218,12 @@ local ft_binds = { -- {{{
 	["typescript,javascript,typescriptreact,javascriptreact"] = {
 		-- replace != and ==; probably better via find+sed
 		{ "n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]] },
+		-- turn fake (Go-like) inline docstrings into real docstrings
+		-- https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
+		-- would be nicer as a sed command
+		-- rg -t typescript '^(  [^: ]+:.+) // (.+)' .
+		-- /** \2 */\n\1
+		{ "n", "<leader>X", [[0f/wbDO<esc>pA<space>*/<esc>0ciw/**<esc>:w<cr>]] },
 		{ "n", "<leader>a", ":!npm install " },
 	},
 
