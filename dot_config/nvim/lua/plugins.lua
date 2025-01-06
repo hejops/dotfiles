@@ -773,40 +773,25 @@ require("lazy").setup(
 		}, -- }}}
 		-- colorschemes {{{
 
-		{
-			"zootedb0t/citruszest.nvim",
-			lazy = true,
-			config = function()
-				require("citruszest").setup({
-					option = {
-						transparent = false,
-						bold = false,
-						italic = false,
-					},
-				})
-			end,
-		},
-
-		"erichdongubler/vim-sublime-monokai",
-		"iagorrr/noctis-high-contrast.nvim",
-		"patstockwell/vim-monokai-tasty",
-		-- { "nlcodes/my_nvim_config", lazy = true }, -- mono tabline
 		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets, lol)
-		{ "tomasr/molokai", lazy = true }, -- italic types
+		{ "zootedb0t/citruszest.nvim", lazy = true, opts = { option = { italic = false } } },
 
 		-- "ajmwagar/vim-deus", -- mono tabline
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "danilo-augusto/vim-afterglow", -- mono tabline
 		-- "dasupradyumna/midnight.nvim", -- mono tabline
+		-- "erichdongubler/vim-sublime-monokai", -- mono tabline
 		-- "fenetikm/falcon", -- mono tabline
 		-- "gosukiwi/vim-atom-dark", -- bad lualine
 		-- "hachy/eva01.vim", -- don't like the low contrast one
+		-- "iagorrr/noctis-high-contrast.nvim", -- uses highlight instead of underline
 		-- "jaredgorski/spacecamp", -- bad lualine
 		-- "kvrohit/rasmus.nvim", -- mono tabline
 		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
 		-- "nvimdev/oceanic-material", -- mono tabline
 		-- "oxfist/night-owl.nvim", -- mono tabline
+		-- "patstockwell/vim-monokai-tasty", -- mono tabline
 		-- "pauchiner/pastelnight.nvim", -- inlay hints too dark
 		-- "paulo-granthon/hyper.nvim", -- blue against black
 		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
@@ -827,7 +812,9 @@ require("lazy").setup(
 		-- { "challenger-deep-theme/vim", lazy = true }, -- mid contrast
 		-- { "morhetz/gruvbox", lazy = true }, -- has bold
 		-- { "nanotech/jellybeans.vim", lazy = true }, -- mid contrast
+		-- { "nlcodes/my_nvim_config", lazy = true }, -- mono tabline
 		-- { "shawilly/ponokai", lazy = true }, -- mid contrast
+		-- { "tomasr/molokai", lazy = true }, -- italic types
 
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
 		-- https://vimcolorschemes.com/i/new/b.dark
