@@ -632,6 +632,12 @@ require("lint").linters.clangtidy.args = {
 		}, ","),
 }
 
+require("lint").linters.markdownlint.args = {
+	"--disable",
+	"MD010", -- no hard tabs (they only appear in Go blocks)
+	"--stdin",
+}
+
 -- }}}
 -- formatter: conform {{{
 
