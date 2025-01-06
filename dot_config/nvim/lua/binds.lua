@@ -18,6 +18,7 @@ vim.keymap.set("i", "<c-l>", "<s-right>")
 vim.keymap.set("n", "!", ":!")
 vim.keymap.set("n", "-", "~h") -- +/- are just j/k
 vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
+vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
 vim.keymap.set("n", "<c-c>", "<nop>")
 vim.keymap.set("n", "<c-z>", "<nop>")
 vim.keymap.set("n", "<tab>", "<nop>") -- tab may be equivalent to c-i
@@ -117,7 +118,16 @@ vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
 
 -- close window if scratch
 local function update_or_close()
-	vim.cmd(vim.bo.buftype == "nofile" and "bd" or "update") -- expr must be false, else 'not allowed to change text'
+	vim.cmd(
+		-- expr must be false, else 'not allowed to change text'
+		(
+			vim.bo.buftype == "nofile" -- ugh
+			or vim.bo.buftype == "help"
+			or vim.bo.ft == "sqls_output"
+		)
+				and "bd"
+			or "update"
+	)
 end
 
 vim.keymap.set("n", "<c-c>", update_or_close, { silent = true })
@@ -185,6 +195,19 @@ local function toggle_diagnostics()
 	end
 end
 
+local function get_c_doc()
+	-- requires man-pages (c) and cppman (cpp)
+	local cmd = (vim.bo.filetype == "c" and "man 3" or "cppman") .. " " .. vim.fn.expand("<cword>")
+	cmd = "vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! " .. cmd
+	vim.cmd(cmd)
+
+	vim.cmd.norm("gg")
+
+	vim.cmd.setlocal("ft=man")
+	vim.keymap.set("n", "J", "}zz", { buffer = true })
+	vim.keymap.set("n", "K", "{zz", { buffer = true })
+end
+
 -- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
 ---@type {[string]: { mode: string, lhs: string, rhs: string|function, opts: table? }[]}
 local ft_binds = { -- {{{
@@ -236,6 +259,56 @@ local ft_binds = { -- {{{
 
 	zig = {
 		{ "i", "<c-j>", ";<cr>" },
+	},
+
+	c = {
+		-- TODO: switch between .c and .h (vim-fswitch, maybe clangd already has this)
+
+		{
+			"n",
+			"<leader>I", -- <leader>i reserved for lsp incoming
+			function()
+				local line = vim.fn.input("include: ")
+				vim.api.nvim_buf_set_lines(0, 0, 0, false, { string.format("#include <%s.h>", line) })
+				vim.cmd.w()
+			end,
+		},
+
+		-- TODO: #include <cFOO> -> #include <FOO.h>
+
+		-- {
+		-- 	"n",
+		-- 	"<leader>E",
+		-- 	-- TODO: selecting a declaration is not trivial (e.g. func param)
+		-- 	function()
+		-- 		local decl = vim.api.nvim_get_current_line()
+		-- 		print(string.format([[cdecl <(echo 'explain %s')]], decl))
+		-- 	end,
+		-- },
+
+		{ "n", "<leader>H", get_c_doc },
+
+		{
+			"n",
+			"<leader>E",
+			function()
+				-- add error handling to fallible func call
+				local line = vim.api.nvim_get_current_line()
+				if not string.find(line, ";$") then
+					print("cannot wrap multi-line func")
+					return
+				end
+
+				local func = string.match(line, "%S[^(]+")
+				local repl = string.format([[if (%s == -1) { die("%s"); };]], string.gsub(line, ";$", ""), func)
+				vim.api.nvim_set_current_line(repl)
+				vim.cmd.w()
+			end,
+		},
+	},
+
+	cpp = {
+		{ "n", "<leader>H", get_c_doc },
 	},
 
 	-- TODO: also include gomod
@@ -345,13 +418,51 @@ for ft, binds in pairs(ft_binds) do
 	})
 end
 
+local function c_compiler_cmd()
+	-- if vim.fn.executable("tcc") then
+	-- 	return "tcc"
+	-- end
+
+	return table.concat({
+		-- allegedly, gcc/g++ prioritises fast runtime (slow compile time),
+		-- clang(++) prioritises fast compile time (slow runtime).
+		-- https://github.com/nordlow/compiler-benchmark
+		--
+		-- however, with my limited testing, this is not true; gcc compile time is
+		-- about 65% that of clang. in doubt, profile compile times on your
+		-- machine.
+
+		-- "clang",
+		"gcc",
+
+		-- https://clang.llvm.org/docs/ClangCommandLineReference.html#target-independent-compilation-options
+		-- https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+
+		"-fno-omit-frame-pointer",
+		"-fsanitize=address,undefined,leak",
+		"-ftrivial-auto-var-init=zero",
+		-- "-O0",
+		-- "-coverage",
+		-- "-fdiagnostics-format=vi", -- clang and gcc have different options
+		-- "-ferror-limit=0", -- clang-only
+		-- "-ggdb",
+	}, " ")
+end
+
+-- https://en.wikipedia.org/wiki/C_POSIX_library
+-- pacman -Ql glibc | grep -Po '/usr/include/.+\.h'
+
 -- run current file and dump stdout to scratch buffer
 local function exec()
 	-- {{{
 	-- running tests is better left to the terminal itself (e.g. wezterm)
 	if vim.bo.filetype == "nofile" then
 		return
+	elseif vim.bo.filetype == "sql" then
+		vim.cmd("SqlsExecuteQuery")
+		return
 	end
+
 	-- TODO: async (Dispatch)
 	local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
 	local wide = vim.o.columns > 150
@@ -447,6 +558,7 @@ local function exec()
 		dhall = "dhall-to-json --file " .. curr_file,
 		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 		elvish = "elvish " .. curr_file,
+		haskell = "runghc " .. curr_file,
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
 		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
@@ -458,27 +570,45 @@ local function exec()
 
 		-- the iffy langs
 		-- typescript = "NO_COLOR=1 deno run --check=all " .. curr_file,
-		sql = get_sql_cmd, --(curr_file),
+		-- sql = get_sql_cmd, --(curr_file),
 		typescript = get_ts_runner, --(curr_file),
 
-		-- -- note that :new brings us to repo root (verify with :new|pwd), so we need
-		-- -- to not only know where we used to be, but also run the basename.go
-		-- -- correctly
-		-- go = string.format("cd %s; ", cwd)
-		-- 	-- https://stackoverflow.com/a/43953582
-		-- 	.. "ls *.go | " -- import functions from same package
-		-- 	.. "grep -v _test | " -- ignore test files (ugh)
-		-- 	.. "xargs go run",
+		-- note that :new brings us to repo root (verify with :new|pwd), so we need
+		-- to not only know where we used to be, but also run the basename.go
+		-- correctly
+		go = string.format([[ cd %s; go run ./*.go ]], cwd),
+		-- .. "ls *.go | " -- import functions from same package; https://stackoverflow.com/a/43953582
+		-- .. "grep -v _test | " -- ignore test files (ugh)
+		-- .. "xargs go run",
 
-		-- TODO: it is not clear which cmd should be used
-		go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
+		-- -- TODO: it is not clear which cmd should be used
+		-- go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
+
+		-- note: -static generates a fully self-contained binary. this roughly
+		-- doubles compile time, and makes the binary about 50x bigger
+
+		-- note: -W flags should be passed to clangd directly
+		-- optional: checksec --file=main --output=json | jq .
+		-- optional: strace ./main
 
 		c = string.format(
-			[[ gcc %s -o %s ; ./%s ]],
+			[[ %s %s -o %s && ./%s 2>&1 ]],
+			c_compiler_cmd(),
 			curr_file,
 			string.gsub(curr_file, ".c", ""),
 			string.gsub(curr_file, ".c", "")
 		),
+
+		-- should use make/cmake/ccache:
+		-- hello: hello.cpp
+		-- 	g++ hello.cpp -o hello
+		cpp = vim.loop.fs_stat("Makefile") and string.format([[ make && ./%s ]], string.gsub(curr_file, ".cpp", ""))
+			or string.format(
+				[[ time g++ %s -O0 -o %s && ./%s ]],
+				curr_file,
+				string.gsub(curr_file, ".cpp", ""),
+				string.gsub(curr_file, ".cpp", "")
+			),
 
 		-- -- the... kotlin
 		-- -- https://kotlinlang.org/docs/command-line.html#create-and-run-an-application
@@ -657,10 +787,12 @@ local function debug_print()
 		gleam = "io.debug(@)",
 		go = "fmt.Println(@)",
 		javascript = "console.log(@);",
+		javascriptreact = "console.log(@);",
 		lua = "print(@)",
 		python = "print(@)",
 		rust = 'println!("{:?}", @);',
 		typescript = "console.log(@);",
+		typescriptreact = "console.log(@);",
 		zig = [[std.debug.print("{any}\n", .{@});]],
 	}
 

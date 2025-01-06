@@ -248,6 +248,16 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 		# may get unset after update? not sure what causes it
 		setxkbmap -layout us -option -option compose:rctrl,caps:menu
 
+	elif
+		# if pacman hasn't been run in a long time, keys in keyring
+		# will expire. updating archlinux-keyring should fix this
+		command -v expac > /dev/null &&
+			last_update=$(expac --timefmt '%s' "%l" | sort -n | tail -n1) &&
+			# https://stackoverflow.com/a/6948865
+			[[ $(((last_update - $(date +%s)) / (60 * 60 * 24))) -gt 14 ]]
+	then
+		sudo pacman -Sy archlinux-keyring
+
 	fi
 fi
 
@@ -393,9 +403,16 @@ GIT_PROMPT() {
 
 	# TODO: could allow /tmp, but this is only for testing purposes
 	[[ $PWD != $HOME* ]] && return # don't check outside home
-	[[ -d ./.git ]] ||
-		# https://stackoverflow.com/a/16925062
-		git rev-parse --is-inside-work-tree > /dev/null 2>&1 || return
+
+	# must be in a git repo
+	{
+		[[ ! -d ./.git ]] &&
+			# https://stackoverflow.com/a/16925062
+			! git rev-parse --is-inside-work-tree > /dev/null 2>&1
+	} && return
+
+	# remote must exist
+	[[ -z $(git remote -v) ]] && return
 
 	# git branch -r (remote)
 	# git branch -l (local)
@@ -406,7 +423,8 @@ GIT_PROMPT() {
 	prompt=''
 
 	if [[ $(git branch | wc -l) -ne 1 ]]; then
-		prompt+="<$CURRENT_LOCAL_BRANCH:$(git rev-parse --short HEAD)> "
+		# rev-parse fails if no remote yet
+		prompt+="<$CURRENT_LOCAL_BRANCH:$(git rev-parse --short HEAD 2> /dev/null)> " || return
 	fi
 
 	# set -x
@@ -476,8 +494,9 @@ GIT_PROMPT() {
 # https://stackoverflow.com/a/23879264
 # PS1='[\A] \W/ $(GIT_PROMPT)> '
 PS1=''
-PS1+='\n'    # newline
-PS1+='[\A] ' # time
+PS1+='\n'                                 # newline
+ps --pid $PPID | grep -q yazi && PS1+="📁" # current shell was spawned from within file manager
+PS1+='[\A] '                              # time
 PS1+='$(GIT_PROMPT)'
 PS1+='\n'  # newline
 PS1+='\W/' # cwd with trailing slash -- TODO: relativise to project root
@@ -488,16 +507,10 @@ PS1+='> ' # prompt symbol
 # we have 3 dynamic parts (and we already use PROMPT_COMMAND for history
 # anyway)
 
-if [[ -n $CONDA_PREFIX ]]; then
-	PS1="($(basename "$CONDA_PREFIX")) $PS1"
-fi
-
-if
-	# current shell was spawned from within file manager
-	! ps --pid $PPID | grep -q wezterm
-then
-	PS1="📁 $PS1"
-fi
+# # from now on, only poetry should be used
+# if [[ -n $CONDA_PREFIX ]]; then
+# 	PS1="($(basename "$CONDA_PREFIX")) $PS1"
+# fi
 
 # }}}
 

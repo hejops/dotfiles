@@ -1,15 +1,12 @@
--- https://luabyexample.netlify.app/docs/nvim-autocmd/
--- https://github.com/rafi/vim-config/blob/801e4456b6c135e92f1bccecd740421a3738f339/lua/rafi/config/autocmds.lua#L38
+-- vim.cmd("autocmd BufNewFile,BufRead *.h setlocal filetype=c")
 
-vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "set nocursorline" })
+vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "set nocursorline | norm zz" })
 vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 
 -- restore last cursor position
 vim.api.nvim_create_autocmd("BufReadPost", {
 	command = [[if line("'\"") > 1 && line("'\"") <= line("$") | execute "normal! g`\"" | endif]],
 })
-
-vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "norm zz" })
 
 -- highlight yanked text
 -- local highlight_group = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
@@ -26,7 +23,7 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 vim.api.nvim_create_autocmd("CursorHold", {
 	callback = function()
 		vim.diagnostic.open_float(nil, {
-			focusable = false, -- still doesn't prevent K from entering float
+			focusable = false,
 			source = "always",
 			severity_sort = true,
 			-- scope = "cursor",
@@ -122,24 +119,54 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
--- vim.api.nvim_create_autocmd({ "FileType" }, {
--- 	pattern = { "ruby" },
--- 	-- https://github.com/semanticart/ruby-code-actions.nvim/blob/a6f4c95063e2034f85913821475f8761bb4aff0c/lua/ruby-code-actions/init.lua#L74
--- 	callback = function()
--- 		local frozen_string_literal_comment = "# frozen_string_literal: true"
--- 		-- local first_line = context.content[1]
--- 		local first_line = vim.api.nvim_buf_get_lines(0, 0, 0, false)[0] -- TODO: doesn't work
--- 		if first_line == frozen_string_literal_comment then
--- 			return
--- 		end
--- 		local newlines = {
--- 			frozen_string_literal_comment,
--- 			"",
--- 			first_line,
--- 		}
--- 		vim.api.nvim_buf_set_lines(0, 0, 0, false, newlines)
--- 	end,
--- })
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "html" },
+	callback = function()
+		if not require("util"):buf_contains("htmx.org", 20) then
+			return
+		end
+
+		if
+			-- TODO: project node_modules might make more sense?
+			not vim.loop.fs_stat(
+				vim.fn.stdpath("data") .. "/mason/packages/markuplint/node_modules/@markuplint/htmx-parser"
+			)
+		then
+			os.execute([[
+				cd ~/.local/share/nvim/mason/packages/markuplint
+				npm install -D @markuplint/htmx-parser
+			]])
+			print("installed htmx-parser")
+		end
+
+		if not vim.loop.fs_stat(".markuplintrc.json") then
+			os.execute([[	
+				echo '{
+					"extends": ["markuplint:recommended"],
+					"parser": {"\\.html$": "@markuplint/htmx-parser"},
+					"specs": {"\\.html$": "@markuplint/htmx-parser/spec"}
+				}' > .markuplintrc.json
+			]])
+			print("generated .markuplintrc.json")
+		end
+	end,
+})
+
+-- see also https://github.com/BigAirJosh/nvim/blob/2e8dc08/lua/config/vim-dispatch.lua#L4
+vim.api.nvim_create_autocmd("BufWritePost", {
+	pattern = { "*.c", "*.cpp" },
+	callback = function()
+		if vim.loop.fs_stat("Makefile") then
+			vim.cmd("Dispatch!")
+		end
+
+		-- technically, this should belong in plugin autocmds
+		local t = require("conform").formatters_by_ft.cpp
+		table.insert(t, "clang-tidy")
+		require("conform").format({ async = true })
+		table.remove(t, #require("conform").formatters_by_ft.cpp)
+	end,
+})
 
 -- vim.api.nvim_create_autocmd({ "FileType" }, {
 -- 	pattern = "mail",
@@ -210,5 +237,26 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 			},
 		})
 		vim.cmd("write")
+	end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "c" },
+	callback = function()
+		-- vim.cmd([[badd %<.c]]) -- adds buffer, but clangd cannot access it
+
+		vim.keymap.set("n", "<c-c>", function()
+			local c = string.find(vim.fn.expand("%"), "%.c$")
+			local other = vim.fn.expand("%<") .. (c and ".h" or ".c")
+			if vim.loop.fs_stat(other) then
+				vim.cmd("tab drop " .. other)
+				vim.cmd.norm("zz")
+			end
+
+			-- -- vim.cmd([[e %<.c]]) -- no syntax hl, and tends to race with gitsigns
+			-- vim.cmd([[tabe %<.c]])
+			-- -- vim.cmd("ClangdSwitchSourceHeader") -- like e, but without race
+			-- -- vim.cmd.e("#") -- enable syntax hl (somehow)
+		end, { buffer = true })
 	end,
 })

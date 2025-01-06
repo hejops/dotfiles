@@ -61,7 +61,7 @@ local function get_output(command)
 	return handle:close()
 end
 
-local is_ubuntu = get_output("grep Ubuntu /etc/issue")
+local is_ubuntu = get_output("grep Ubuntu /etc/*-release")
 
 -- TODO: tab title?
 -- TODO: projects (see old kitty example)
@@ -145,6 +145,11 @@ config.switch_to_last_active_tab_when_closing_tab = true
 -- note: source han sans is implicitly used as fallback for cn/jp/kr (which is
 -- why scp goes great with it). scp also has cyrillic
 local font = wezterm.font_with_fallback({
+
+	-- https://devfonts.gafi.dev
+	-- https://www.codingfont.com
+	-- https://www.programmingfonts.org
+
 	-- quirky
 	-- "mononoki", -- very cramped
 	-- "Intel One Mono", -- cramped {x}, too wide
@@ -156,11 +161,12 @@ local font = wezterm.font_with_fallback({
 	-- round
 	-- "Google Sans Mono", -- somewhat round (but exact same size as SCP); latin only
 	-- "Commit Mono", -- tall, vertically cramped
-	-- "Inconsolata", -- classic (small)
+	-- "Inconsolata", -- small (need +2), vertically cramped
 	-- "Uiua386", -- comic sans-ish (not very readable imo)
 	-- "Geist Mono", -- chonky
 
 	-- narrow
+	-- "NanumGothicCoding", -- only has underline >= 12
 	-- "Mplus Code 60", -- too tall, otherwise quite good
 	-- "Iosevka",
 
