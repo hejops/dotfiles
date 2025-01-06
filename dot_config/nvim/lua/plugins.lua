@@ -675,7 +675,15 @@ require("lazy").setup(
 			dependencies = {
 				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
 				-- "JoosepAlviste/nvim-ts-context-commentstring", -- context-aware comment char, e.g. markdown embed?
-				{ "danymat/neogen", config = true }, -- docs generator
+				{
+					-- interestingly, in Go, the func name gets highlighted in the
+					-- docstring, and persists after colorscheme change. however, this
+					-- highlight is lost on restarting vim
+					"danymat/neogen", -- docs generator
+					-- https://github.com/danymat/neogen#supported-languages
+					-- TODO: for python, use google_docstrings
+					opts = { snippet_engine = "luasnip" },
+				},
 			},
 			build = ":TSUpdate", -- update parsers when updating plugin
 			lazy = false,
@@ -853,9 +861,11 @@ require("lazy").setup(
 
 		"bluz71/vim-moonfly-colors",
 		"challenger-deep-theme/vim",
+		"erichdongubler/vim-sublime-monokai",
 		"judaew/ronny.nvim", -- requires git-lfs (only for assets, lol)
 		"morhetz/gruvbox",
 		"nanotech/jellybeans.vim",
+		"patstockwell/vim-monokai-tasty",
 		"shawilly/ponokai",
 		"tomasr/molokai",
 		-- "ajmwagar/vim-deus", -- mono tabline
