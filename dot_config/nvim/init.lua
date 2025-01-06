@@ -228,9 +228,9 @@ vim.api.nvim_create_autocmd({ "VimResized" }, {
 -- vim.keymap.set("n", "<leader>gB", ":GitBlameToggle<cr>") -- must be explicitly enabled on mac (due to lacking horizontal space)
 vim.keymap.set("n", "<leader>J", ":TSJToggle<cr>")
 
-vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
-vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>", { desc = "stage all hunks in current buffer" }) -- same as :Gwrite?
-vim.keymap.set("n", "<leader>gh", ":Gitsigns stage_hunk<cr>") -- more ergonomic than gs, but my muscle memory goes to gs
+-- vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
+vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>", { desc = "stage all hunks in current buffer" }) -- same as :Gwrite, but without making the commit
+vim.keymap.set("n", "<leader>gh", ":Gitsigns stage_hunk<cr>") -- more ergonomic than gs? (debatable)
 vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>")
 vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
@@ -239,51 +239,51 @@ vim.keymap.set("n", "<leader>gb", function()
 	-- https://github.com/f-person/git-blame.nvim/issues/103
 	-- ubuntu xdg-open doesn't work
 	vim.cmd("GitBlameCopyCommitURL")
-	vim.fn.jobstart('sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"')
+	vim.fn.jobstart([[sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"]])
 end, { desc = "view commit of current line (in browser)" })
 
 -- https://github.com/ThePrimeagen/refactoring.nvim#configuration-for-refactoring-operations
 -- https://github.com/kentchiu/nvim-config/blob/d60768f59bfee285a26f24a3879f6b155a1c630c/lua/custom/plugins/refactory.lua#L11
 
-vim.keymap.set({ "n", "x" }, "<leader>R", function()
-	-- https://github.com/ThePrimeagen/refactoring.nvim/issues/270#issuecomment-1071037162
-	-- require("telescope").extensions.refactoring.refactors({ initial_mode = "normal" })
-	require("refactoring").select_refactor({ show_success_message = true })
-end, {
-	noremap = true,
-	desc = "refactor menu",
-})
-
--- nmap r = tab prefix
--- nmap R = rename
--- vmap r = substitute
--- vmap R = redundant with c
-
--- inlines actually increase code repetition, not sure when this would be desirable
-vim.keymap.set("n", "rfI", ":Refactor inline_func")
-vim.keymap.set("n", "rfi", ":Refactor inline_var")
-vim.keymap.set("x", "Rfi", ":Refactor inline_var")
-
-vim.keymap.set("n", "rfb", ":Refactor extract_block") -- rename current block (usually func)
-vim.keymap.set("n", "rfbf", ":Refactor extract_block_to_file")
-vim.keymap.set("x", "Rfe", ":Refactor extract ") -- places refactored func at top, which is less than ideal
-vim.keymap.set("x", "Rff", ":Refactor extract_to_file ") -- does not update existing imports of the func; https://github.com/ThePrimeagen/refactoring.nvim/issues/426#issuecomment-1808512168
-vim.keymap.set("x", "Rfv", ":Refactor extract_var ")
-
--- You can also use below = true here to to change the position of the printf
--- statement (or set two remaps for either one). This remap must be made in normal mode.
-vim.keymap.set("n", "<leader>Rp", function()
-	require("refactoring").debug.printf({ below = true, show_success_message = true })
-end, { desc = "refactor printf" })
-
-vim.keymap.set({ "x", "n" }, "<leader>Rv", function()
-	require("refactoring").debug.print_var({ show_success_message = true })
-end, { desc = "refactor print var" })
-
-vim.keymap.set("n", "<leader>Rc", function()
-	-- Supports only normal mode
-	require("refactoring").debug.cleanup({ show_success_message = true })
-end, { desc = "refactor cleanup" })
+-- vim.keymap.set({ "n", "x" }, "<leader>R", function()
+-- 	-- https://github.com/ThePrimeagen/refactoring.nvim/issues/270#issuecomment-1071037162
+-- 	-- require("telescope").extensions.refactoring.refactors({ initial_mode = "normal" })
+-- 	require("refactoring").select_refactor({ show_success_message = true })
+-- end, {
+-- 	noremap = true,
+-- 	desc = "refactor menu",
+-- })
+--
+-- -- nmap r = tab prefix
+-- -- nmap R = rename
+-- -- vmap r = substitute
+-- -- vmap R = redundant with c
+--
+-- -- inlines actually increase code repetition, not sure when this would be desirable
+-- vim.keymap.set("n", "rfI", ":Refactor inline_func")
+-- vim.keymap.set("n", "rfi", ":Refactor inline_var")
+-- vim.keymap.set("x", "Rfi", ":Refactor inline_var")
+--
+-- vim.keymap.set("n", "rfb", ":Refactor extract_block") -- rename current block (usually func)
+-- vim.keymap.set("n", "rfbf", ":Refactor extract_block_to_file")
+-- vim.keymap.set("x", "Rfe", ":Refactor extract ") -- places refactored func at top, which is less than ideal
+-- vim.keymap.set("x", "Rff", ":Refactor extract_to_file ") -- does not update existing imports of the func; https://github.com/ThePrimeagen/refactoring.nvim/issues/426#issuecomment-1808512168
+-- vim.keymap.set("x", "Rfv", ":Refactor extract_var ")
+--
+-- -- You can also use below = true here to to change the position of the printf
+-- -- statement (or set two remaps for either one). This remap must be made in normal mode.
+-- vim.keymap.set("n", "<leader>Rp", function()
+-- 	require("refactoring").debug.printf({ below = true, show_success_message = true })
+-- end, { desc = "refactor printf" })
+--
+-- vim.keymap.set({ "x", "n" }, "<leader>Rv", function()
+-- 	require("refactoring").debug.print_var({ show_success_message = true })
+-- end, { desc = "refactor print var" })
+--
+-- vim.keymap.set("n", "<leader>Rc", function()
+-- 	-- Supports only normal mode
+-- 	require("refactoring").debug.cleanup({ show_success_message = true })
+-- end, { desc = "refactor cleanup" })
 
 -- unlike telescope diagnostics, trouble is persistent (per tab)
 vim.keymap.set("n", "<leader>j", function()
@@ -307,10 +307,7 @@ vim.keymap.set("n", "<leader>l", function()
 	require("trouble").toggle({ mode = "diagnostics", focus = true })
 end)
 
--- google_docstrings
--- https://github.com/danymat/neogen#supported-languages
-require("neogen").setup({ snippet_engine = "luasnip" })
-vim.keymap.set("n", "<leader>nf", require("neogen").generate, { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>ds", require("neogen").generate, { noremap = true, silent = true })
 
 -- }}}
 -- navigator: telescope {{{
@@ -397,7 +394,6 @@ telescope.setup({
 
 		colorscheme = { enable_preview = true },
 		find_files = { prompt_title = "find" },
-		git_branches = { show_remote_tracking_branches = false },
 		live_grep = { prompt_title = "ripgrep" },
 		lsp_definitions = { show_line = false },
 		lsp_document_symbols = { path_display = "hidden", show_line = false },
@@ -408,6 +404,13 @@ telescope.setup({
 		lsp_references = { show_line = false },
 		lsp_type_definitions = { show_line = false },
 		lsp_workspace_symbols = { show_line = false },
+
+		git_branches = {
+			show_remote_tracking_branches = false,
+			mappings = {
+				i = { ["<cr>"] = telescope_actions.select_default }, -- override the overridden default
+			},
+		},
 
 		--   -- use trouble instead
 		-- diagnostics = {
@@ -480,7 +483,7 @@ vim.keymap.set("n", "<leader>f", telescope_b.find_files, { desc = "find" })
 vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tabs)
 
 -- vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" }) -- like git ls-files with diff
--- vim.keymap.set("n", "<leader>gb", telescope_b.git_branches, { desc = "git branches" }) -- generally better to switch branches in shell, due to annoying checkout hooks
+vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" })
 vim.keymap.set("n", "<leader>gl", telescope_b.git_commits, { desc = "git log with commit diffs" }) -- basically gld
 
 -- vim.keymap.set("n", "<leader>?", telescope_b.help_tags, { desc = "search help" }) -- let's face it; i never use this
@@ -492,6 +495,7 @@ vim.keymap.set("n", "<leader>h", function()
 	vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
 end, { desc = "toggle inlay hints" })
 
+-- TODO :should be moved into lsp.lua
 local function gotodef_tabdrop()
 	vim.lsp.buf.definition({
 		on_list = function(options)
@@ -578,8 +582,9 @@ local linters = {
 	go = { "golangcilint" },
 	html = { "markuplint" },
 	htmldjango = { "djlint" },
-	javascript = { "biomejs" },
+	javascript = { "biomejs" }, -- should resolve to repo root
 	javascriptreact = { "biomejs" },
+	-- lua = { "selene" }, -- disabled until i can get condition to work
 	make = { "checkmake" },
 	markdown = { "markdownlint", "proselint" },
 	python = { "ruff" }, -- pylint is too slow and unreliable
@@ -634,6 +639,17 @@ require("lint").linters.ruff.args = {
 	"--output-format=json", -- important
 	"-",
 }
+
+-- linters cannot be conditionally disabled at config time. they can only be
+-- disabled at runtime:
+-- https://github.com/mfussenegger/nvim-lint/issues/370#issuecomment-1729671151
+
+-- -- print(vim.inspect(require("lint").linters.selene.condition))
+-- require("lint").linters.selene.foo = function(ctx)
+-- 	return false
+-- 	-- return vim.fs.find({ "selene.toml" }, { path = ctx.filename, upward = true })[1]
+-- end
+-- print(vim.inspect(require("lint").linters.selene.foo))
 
 local custom_gcl = vim.fn.globpath(
 	-- note: on startup, starts in cwd. path is only adjusted to project root
@@ -696,7 +712,7 @@ require("conform").setup({
 				}, ","),
 
 				"--fix",
-				"--unsafe-fixes",
+				-- "--unsafe-fixes",
 				"--force-exclude",
 				"--exit-zero",
 				"--no-cache",
@@ -731,11 +747,12 @@ require("conform").setup({
 			},
 		},
 
-		biome = {
-			-- important: at work, use top-level biome.json
-			-- note: cwd must be a func, not a string
-			cwd = require("util").root_directory,
-		},
+		-- biome = {
+		-- 	-- important: at work, use top-level biome.json
+		-- 	-- note: cwd must be a func, not a string
+		-- 	-- cwd may not be necessary?
+		-- 	cwd = require("util").root_directory,
+		-- },
 
 		shfmt = {
 			prepend_args = {
