@@ -10,8 +10,12 @@ M = {}
 -- function M:bar -> require('foo'):bar(baz) = bar(self, baz) = self:bar(baz)
 -- function M:bar -> require('foo').bar(baz) = bar(baz) = baz:bar()
 
--- https://stackoverflow.com/a/23827063
-M.is_ubuntu = os.execute("grep Ubuntu /etc/lsb-release") / 256 == 0
+function M:command_ok(cmd)
+	-- https://stackoverflow.com/a/23827063
+	return os.execute(cmd) / 256 == 0
+end
+
+M.is_ubuntu = M:command_ok("grep Ubuntu /etc/*-release")
 
 -- only first 10 lines of buffer are checked
 function M:buf_contains(target, lines)

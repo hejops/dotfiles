@@ -72,6 +72,7 @@ alias n="NO_COLOR=1 node --import=tsx"
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && mpv --profile=bcx ./out && rm -rI ./out"
 alias pq="~/plaque/plaque"
 alias synctime="sudo ntpd --quit --panicgate"
+alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tx="tectonic -X"
@@ -82,6 +83,9 @@ alias y="bash ~/gripts/disq/ytm.sh"
 # }}}
 
 # git {{{
+
+get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
+alias cdr="cd \$(get_repo_root)"
 
 # shellcheck disable=SC2120
 gls() {
@@ -116,7 +120,7 @@ gb() {
 			echo "Already on $default_local_branch"
 		else
 			git checkout "$default_local_branch" || err
-			git pull
+			timeout 30 git pull
 		fi
 	else
 
@@ -124,23 +128,26 @@ gb() {
 		# may not always be the case, so an optional 2nd arg is needed
 		if ! git checkout "${2:-$default_local_branch}"; then
 			err
-			return
 		fi
 
-		git pull || return
+		timeout 30 git pull || return
+
 		# existing remote branch > create local branch > existing local branch
 		if
 			git branch -r | grep "origin/$1"
 		then
 			# note: git hook stdout cannot be suppressed
+			echo "Switching to remote branch $1"
 			git switch "$1" || err
 
 		elif git switch --create "$1"; then
 			# git switch --create does not produce output, for some
 			# reason (but git switch does)
 			echo "Switched to new branch $1"
+
 		else
 			git switch "$1" || err
+
 		fi
 	fi
 
@@ -278,9 +285,12 @@ gcf() {
 	# messages
 	git commit --fixup "$sha" "$@"
 
-	# TODO: not sure what to do when unstaged changes are present
+	# TODO: not sure what to do yet when unstaged changes are present
 
-	git rebase -i --autosquash "$(gmaster)" || gC
+	# with no arg, defaults to curr branch (NEVER use gmaster; to avoid
+	# losing work, git rebase --abort immediately)
+	# is -i necessary?
+	git rebase -i --autosquash || gC
 }
 
 gA() {
@@ -292,25 +302,21 @@ gA() {
 
 gc() {
 
-	# TODO: if work repo, master branch, return
-
-	# pcrc
-
 	if [[ $# -gt 0 ]]; then
 
-		# use glob to automatically exclude untracked files
+		# 1. specified files, but excluding untracked files
+		# note: this loop commits renamed files, but does not commit
+		# their old names
 		arr=()
 		for f in "$@"; do
 			[[ ! -f $f ]] && continue
 			git ls-files | grep -q "$(basename "$f")" && arr+=("$f")
 		done
-		# TODO: this loop commits renamed files, but does not commit
-		# their old names
 
 		git commit -v "${arr[@]}"
 
 	elif
-		# 2. file(s) have been renamed/deleted
+		# 2. file(s) that have been renamed/deleted
 		git status --porcelain | grep -Pq '^(R | D)'
 	then
 		git status --porcelain |
@@ -326,7 +332,7 @@ gc() {
 		git commit -v
 
 	else
-		# 4. commit all files that have changed
+		# 4. all files that have changed
 		git diff --name-only | xargs git commit -v
 
 	fi
@@ -598,9 +604,10 @@ gnew() {
 }
 
 gssh() {
-	# init github ssh key
-
+	: init github ssh key
 	# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key
+	#
+	# note: this key must still be added to github!
 	# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account#adding-a-new-ssh-key-to-your-account
 
 	# password not strictly necessary
@@ -704,7 +711,7 @@ gUN() {
 	git reset --hard HEAD~1
 }
 
-# $repo/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
+# $(git config --get remote.origin.url)/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
 
 guns() {
 	: revert file to its state in a previous commit
@@ -714,208 +721,10 @@ guns() {
 }
 
 # }}}
-# pre-commit {{{
-alias pcu="pre-commit autoupdate"
-
-pci() {
-	if ! command -v pre-commit > /dev/null; then
-		echo "pre-commit not installed"
-		return
-	fi
-
-	# init
-	local f
-
-	repo_root=$(get_repo_root)
-
-	f="$repo_root/.pre-commit-config.yaml"
-
-	[[ -f $f ]] && return
-
-	# https://pre-commit.com/#command-line-interface
-	# https://pre-commit.com/#quick-start
-	# https://pre-commit.com/hooks.html
-
-	git init
-	cat << EOF > "$f"
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
-repos:
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
-    hooks:
-      - id: detect-secrets
-        # args: ["--baseline", ".secrets.baseline"]
-        exclude: package.lock.json
-
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      - id: check-added-large-files
-      - id: check-executables-have-shebangs
-      - id: check-shebang-scripts-are-executable
-      - id: check-yaml
-      - id: detect-private-key
-      - id: end-of-file-fixer
-        exclude: \.sql$
-      - id: trailing-whitespace
-EOF
-
-	if find . -name '*.py' | grep -q .; then
-
-		# https://github.com/MarcoGorelli/auto-walrus#usage-as-a-pre-commit-hook
-		# https://github.com/PyCQA/docformatter/blob/master/.pre-commit-config.yaml#L23C1-L28C57
-		# https://github.com/dannysepler/rm_unneeded_f_str#usage
-		# https://github.com/hadialqattan/pycln/blob/master/.pre-commit-config.yaml#L4
-		# https://github.com/hhatto/autopep8#usage-with-pre-commit
-		# https://github.com/pre-commit/mirrors-mypy#using-mypy-with-pre-commit
-
-		cat << EOF >> "$f"
-      - id: name-tests-test
-        args: ["--pytest-test-first"]
-      - id: requirements-txt-fixer
-
-  # reorder-python-imports is no longer compatible with black
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort
-        args: [--force-single-line, --profile=black]
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0
-    hooks:
-      - id: pyupgrade
-        args: ["--py36-plus"]
-
-  # % format -> f-string
-  - repo: https://github.com/ikamensh/flynt/
-    rev: 1.0.1
-    hooks:
-      - id: flynt
-
-  - repo: https://github.com/psf/black
-    rev: 24.1.1
-    hooks:
-      - id: black
-        args: ["--preview"]
-EOF
-	fi
-
-	# TODO: https://github.com/TekWizely/pre-commit-golang/blob/master/sample-config.yaml#L85
-
-	pcu
-}
-
-pcr() {
-	pci && pre-commit run --all-files
-}
-
-pcrc() {
-	# only files which have changed since latest remote commit
-
-	# check if remote repo exists
-	git config --get remote.origin.url > /dev/null || return
-
-	pci && pre-commit run --all-files --from-ref "origin/$(gmaster)" --to-ref HEAD
-}
-
-# }}}
 
 # python {{{
 
 # i haven't worked in python in a while, so this may be cleaned up
-
-# ve() {
-# 	return
-#
-# 	# important reading:
-# 	# https://www.b-list.org/weblog/2022/may/13/boring-python-dependencies/
-# 	# https://github.com/jazzband/pip-tools
-#
-# 	# "always work in, and deploy in, a virtual environment"; this is how
-# 	# cargo works.
-#
-# 	# venv comes before pip install (etc), not the other way round, and
-# 	# python -m pip (in venv) should always be used over bare pip.
-#
-# 	python -m venv .venv
-# 	. .venv/bin/activate
-#
-# 	# do work, manually add deps to requirements.in (no cargo add, too bad)
-#
-# 	python -m pip install --upgrade pip-tools
-# 	python -m pip-tools compile --generate-hashes requirements/app.in --output-file requirements/app.txt
-# 	# python -m pip-tools compile --generate-hashes requirements/tests.in --output-file requirements/tests.txt
-# 	# if some package doesn't provide wheel, omit --only-binary
-# 	python -m pip install --only-binary :all: -r requirements/app.txt
-#
-# 	# for monitoring dep updates of a "finished" project, use dependabot
-#
-# }
-
-alias cx=coac
-
-get_repo_root() {
-	git rev-parse --show-toplevel 2> /dev/null
-}
-
-eval_conda() {
-	# subshell only generates the code, which must then be executed
-	# note: this command alone does not re-source .bashrc, so don't expect
-	# PS1 to change
-	eval "$("$HOME/anaconda3/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
-}
-
-coac() {
-	# set -x
-
-	# local _env
-
-	local DEFAULT_ENV=foo
-
-	if
-		[[ -n $CONDA_PREFIX ]] #&& [[ $CONDA_PREFIX == *${_env} ]]
-	then
-		# echo "Already activated"
-		return
-	elif [[ ! -d $HOME/anaconda3/envs/$DEFAULT_ENV ]]; then
-		echo "\"$DEFAULT_ENV\" environment not found!"
-		return
-	fi
-
-	if ! command -v conda > /dev/null; then
-		echo >&2 'Activating conda...'
-		eval_conda
-	fi
-
-	echo "Activating $DEFAULT_ENV..."
-	conda activate "$DEFAULT_ENV"
-
-	# note: conda activate causes PS1 to be overridden
-
-	# generally always better to set
-	# conda config --set changeps1 false
-	# because you never really know what conda does to PS1
-
-}
-
-# python venvs should now be managed from nvim itself:
-# pyright: function get_python_path
-# pylint: require("lint").linters.pylint.cmd
-
-sl() {
-	# set -x
-	[[ $# -eq 0 ]] && return
-	arr=("$@")
-	f="$(realpath "${arr[0]}")"
-	arr[0]=$f
-	# [[ -f $f ]] &&
-	# check_env "$f"
-	streamlit run "${arr[@]}"
-	cd
-}
 
 pta() {
 	: run all tests
@@ -926,12 +735,10 @@ pta() {
 pget() {
 	if [[ -f $1 ]]; then
 		pip3 install -r "$1"
-	elif [[ -n $CONDA_PREFIX ]]; then
-		pip3 install "$@"
+	# elif [[ -n $CONDA_PREFIX ]]; then
+	# 	pip3 install "$@"
 	else
-
 		pip3 install --break-system-packages "$@"
-
 	fi
 }
 
@@ -943,31 +750,32 @@ pup() {
 	fi
 }
 
-p() {
-	# set -x
-	if [[ $# -eq 0 ]]; then
-		python3
-		return
-	fi
-
-	arr=("$@")
-	f="$(realpath "${arr[0]}")"
-	repo_root="$(get_repo_root)"
-	mod=$(sed <<< "$f" -r "s#$repo_root/##; s#.py##" | tr / .)
-	arr[0]=$mod
-
-	# check_env "$f" # go to file's project root, activate env
-
-	# python3 "${arr[@]}" || :
-	python3 -m "${arr[@]}"
-
-	# command -v deactivate > /dev/null && deactivate
-	# cd || return
-}
+# p() {
+# 	# set -x
+# 	if [[ $# -eq 0 ]]; then
+# 		python3
+# 		return
+# 	fi
+#
+# 	arr=("$@")
+# 	f="$(realpath "${arr[0]}")"
+# 	repo_root="$(get_repo_root)"
+# 	mod=$(sed <<< "$f" -r "s#$repo_root/##; s#.py##" | tr / .)
+# 	arr[0]=$mod
+#
+# 	# check_env "$f" # go to file's project root, activate env
+#
+# 	# python3 "${arr[@]}" || :
+# 	python3 -m "${arr[@]}"
+#
+# 	# command -v deactivate > /dev/null && deactivate
+# 	# cd || return
+# }
 
 pentmd() {
 	: render entry points as markdown
 	# - [`poetry run XXX`](./path/to/script.py)
+	# shellcheck disable=SC2016
 	grep < pyproject.toml :main |
 		sed -r 's|^([^ ]+) = "([^:]+):main"|- [`poetry run \1`](./\2.py)|g' |
 		tr . / |
@@ -1101,6 +909,7 @@ rsmod() {
 	fi
 
 }
+
 # }}}
 # go {{{
 
@@ -1118,6 +927,8 @@ gop() {
 }
 
 gopk() {
+	: move foo.go to foo/foo.go
+	# parent must then import from foo; goimports should fix this?
 	f=$1
 	pkg=${f/.go/}
 	[[ -d $pkg ]] && return
@@ -1148,11 +959,29 @@ gob() { # build and run (gor won't work with args)
 	go build && ./"$name" "$@"
 }
 
+gorep() {
+	patt=$1
+	repl=$2
+
+	# # see matches
+	# rg -IN "$patt" ./*.go
+	# read -r -p 'press enter to preview changes'
+
+	# preview changes
+	# note: gofmt can only modify expressions, not func declarations!
+	gofmt -r "$patt -> $repl" ./*.go | less
+	read -r -p 'press enter to accept changes'
+
+	# execute
+	gofmt -r "$patt -> $repl" -w ./*.go
+}
+
 # https://leg100.github.io/en/posts/building-bubbletea-programs/
 
 # ideally i would like gow to be spawned in a background tab (not window!),
 # then gowr in the main tab, BUT wezterm tabs mess with bubbletea dims
-gow() { # watch code changes, trigger re-build, and kill process
+gow() {
+	: watch code changes, trigger re-build, and kill process
 	name=$(< go.mod head -n1 | cut -d' ' -f2)
 	while :; do
 		go build && pkill "$name"
@@ -1163,20 +992,120 @@ gow() { # watch code changes, trigger re-build, and kill process
 gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run app
 
 # }}}
+# js {{{
+
+npmup() {
+	: upgrade npm package
+	pkg=$1
+	# TODO: list package.json
+	c "https://www.npmjs.com/package/$1?activeTab=versions" |
+		grep -Po '\d+?\.\d+?\.\d+?</a></td><td class="downloads">[0-9,]+' |
+		sed -r 's|</a></td><td class="downloads">|\t|' |
+		sort -k2n
+	# yarn upgrade "$pkg@^$ver"
+}
+
+perfnode() {
+	if [[ $# -gt 0 ]]; then
+		# creates perf.data
+		perf record -e cycles:u -g -- node --perf-basic-prof "$@"
+	elif [[ -f perf.data ]]; then
+		# https://nodejs.org/en/learn/diagnostics/flame-graphs#create-a-flame-graph-with-system-perf-tools
+		# https://speakerdeck.com/mrfoto/what-are-flame-graphs-and-how-to-read-them
+		perf script | # reads perf.data
+			# remove internal
+			sed -r -e "/( __libc_start| LazyCompile | v8::internal::| Builtin:| Stub:| LoadIC:|\[unknown\]| LoadPolymorphicIC:)/d" \
+				-e 's/ LazyCompile:[*~]?/ /' |
+			# show only user defined functions
+			grep -e "$USER" -e '^\S' -e '^$' |
+			stackvis perf > flamegraph.htm
+		chromium flamegraph.htm 2> /dev/null &
+	fi
+}
+
+nps() {
+	# vite is probaly the way to go...
+
+	# # xdg default browser always overrides BROWSER var
+	# # https://github.com/facebook/create-react-app/issues/9531#issuecomment-1022412062
+	# BROWSER=chromium npm start
+
+	# https://peter.sh/experiments/chromium-command-line-switches/#auto-open-devtools-for-tabs
+	chromium --auto-open-devtools-for-tabs http://localhost:3000 &
+	BROWSER=none npm start
+}
+
+# }}}
+# c {{{
+
+mch() {
+	# f=$1
+
+	: [re]generate header files
+	for f in *.c; do
+		[[ $f == main.c ]] && continue
+
+		h="${f/.c/.h}"
+		if [[ -f $h ]]; then
+			# for merge to work, fn decls must all be placed at the
+			# bottom of the .h file. includes, macros, structs
+			# should be placed at the top. (is there a recommended
+			# order?)
+			{
+				< "$h" grep -Pv '\);$' # discard existing fn decls
+				cproto "$f" | sed 1d   # cproto only generates fn decls
+			} | sponge "$h"
+		else
+			cproto "$f" > "$h"
+		fi
+	done
+}
+
+# }}}
+# sql {{{
+
+sq() {
+
+	# TODO: sqlite in prod
+	# https://fractaledmind.github.io/2023/09/07/enhancing-rails-sqlite-fine-tuning/#pragmas-summary
+
+	# PRAGMA busy_timeout = 5000;
+	# PRAGMA cache_size = 2000;
+	# PRAGMA journal_mode = WAL;
+	# PRAGMA journal_size_limit = 67108864; -- 64 megabytes
+	# PRAGMA mmap_size = 134217728; -- 128 megabytes
+	# PRAGMA synchronous = NORMAL;
+
+	if [[ -f $1 ]]; then
+		< "$2" sqlite3 "$1"
+	else
+		echo "$2" | sqlite3 "$1"
+	fi
+	# echo "Not a file: $1"
+}
+
+# }}}
 
 # docker {{{
 
 doslow() {
 	: list slowest steps in a docker log
+
 	# set -eu
 	if
-		steps=$(< "$1" grep -P 'DONE \d{3}' | sort -Vu | awk '!a[$1]++') &&
-			[[ -n $steps ]]
+		steps=$(
+			< "$1" grep -P '^#\d+ DONE' |
+				# sort -k3nr | head -n$n # n slowest steps
+				sort -Vu | awk '!a[$1]++' # steps >= 100 secs
+		) && [[ -n $steps ]]
 	then
 		paste <(echo "$steps") <(
 			<<< "$steps" cut -d' ' -f1 |
 				while read -r n; do
-					< "$1" grep -Fm1 "$n" | cut -d' ' -f2-
+					< "$1" grep "$n" |
+						tac |
+						grep -Pm1 "$n \[" |
+						cut -d' ' -f2-
 				done
 		)
 	else
@@ -1186,18 +1115,17 @@ doslow() {
 
 docl() {
 	sudo docker system prune
-	sudo docker volume rm $(sudo docker volume ls -f dangling=true -q)
+	sudo docker volume ls -f dangling=true -q | xargs sudo docker volume rm
 }
 
 dostop() {
-	containers=$(docker ps --all --quiet)
-	docker stop $containers
+	docker ps --all --quiet | xargs docker stop
 }
 
 dorm() {
-	containers=$(docker ps --all --quiet)
-	docker stop $containers
-	docker rm $containers
+	mapfile -t containers < "$(docker ps --all --quiet)"
+	docker stop "${containers[@]}"
+	docker rm "${containers[@]}"
 }
 
 # }}}
@@ -1224,6 +1152,9 @@ fi
 
 # }}}
 # files, navigation {{{
+
+zd() { zip -jr "${1%/}" "${1%/}"; }                         # zip directory (flat); stripping trailing slash is important
+zin() { < /dev/stdin zip --junk-paths --names-stdin "$1"; } # pipe files from stdin to zip
 
 f() {
 	case $1 in
@@ -1283,20 +1214,65 @@ mcd() {
 	[[ -d $p ]] && cd "$p"
 }
 
-rm() {
-	: use python to robustly prevent accidental deletion of some dir
-	# parsing arbitrary args with bash is nonsense
+if [[ -n $MU ]]; then
+	: wrap rm in a python check to prevent accidental deletion of some dir
+	rm() {
+		# parsing arbitrary args with bash is nonsense
 
-	if [[ -n $MU ]] && [[ $* == *"$MU"* ]]; then
-		python3 -c "
+		if [[ $* == *"$MU"* ]]; then
+			python3 -c "
 import sys
 if \"$MU\" in {x.rstrip('/') for x in sys.argv}:
     print('FATAL')
     raise Exception
 " $*
-	fi
+		fi
 
-	command rm -v "$@"
+		command rm -v "$@"
+	}
+fi
+
+rgo() {
+	: useful when you know what to look for but dont want to open vim
+	# https://blog.burntsushi.net/ripgrep
+	# https://github.com/nvim-telescope/telescope.nvim/blob/7b5c5f56a21e82fdcfe5b250278b8dfc4b1cbab4/lua/telescope/config.lua#L646
+	# match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' "${1:-.}" |
+	# 	fzf -e)
+	# $1 = fzf query generally more useful than $1 = file
+	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' . |
+		fzf -e -q "${1:-}")
+	[[ -z $match ]] && return
+
+	# file:line:col:match
+	IFS=':' read -ra array <<< "$match"
+
+	# TODO: --glob '!libs/*' (! must be single quoted)
+
+	{
+		# force insert into history
+		echo "vim $(realpath "${array[0]}")"
+		echo "#$(date +%s)"
+	} >> ~/.bash_history
+
+	# note: this won't go into history (only rgo will)
+	$EDITOR +"${array[1]}" "${array[0]}"
+
+}
+
+j() {
+	: jump to frequently used file, should be used in conjunction with rgo
+	sel=$(< ~/.bash_history grep -P '^n?vim' |
+		awk '!seen[$0]++' |
+		while read -r cmd; do
+			f=$(<<< "$cmd" cut -d' ' -f2)
+			f=$(realpath "$f" 2> /dev/null) || continue
+			[[ ! -f $f ]] && continue
+			echo "$f"
+		done |
+		awk '!seen[$0]++' |
+		fzf --tac)
+	[[ -z $sel ]] && return
+	$EDITOR "$sel"
 }
 
 # }}}
@@ -1441,17 +1417,29 @@ utm() {
 	echo "[$title]($1)"
 }
 
+mw() {
+	cd ~/.mail/account.gmail || return
+	while true; do
+		# note: deleting empty dirs will almost certainly break sync
+		gmi pull
+		new=$(notmuch count tag:inbox and tag:unread and date:today)
+		if [[ $new -gt 0 ]]; then
+			notify-send -u critical "$new new mail"
+			# TODO: neomutt -F? use symlink? (neomuttrc -> neomuttrc_work)
+			neomutt
+		fi
+		sleep 15m
+	done
+}
+
 # }}}
 
 # ugly funcs that don't warrant a script yet
 
-blog() { $EDITOR "$(date -I)-${1//-/_}.md"; }
 bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
 rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
+ya() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
 yt() { mpv --force-window "ytdl://ytsearch10:\'$*\'"; }
-ytn() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
-zd() { zip -jr "${1%/}" "${1%/}"; }                         # zip directory (flat); stripping trailing slash is important
-zin() { < /dev/stdin zip --junk-paths --names-stdin "$1"; } # pipe files from stdin to zip
 
 ys() { # read youtube subs in less
 	yt-dlp -j "$1" |
@@ -1469,48 +1457,19 @@ ys() { # read youtube subs in less
 		less
 }
 
-sq() {
-
-	# TODO: sqlite in prod
-	# https://fractaledmind.github.io/2023/09/07/enhancing-rails-sqlite-fine-tuning/#pragmas-summary
-
-	# PRAGMA busy_timeout = 5000;
-	# PRAGMA cache_size = 2000;
-	# PRAGMA journal_mode = WAL;
-	# PRAGMA journal_size_limit = 67108864; -- 64 megabytes
-	# PRAGMA mmap_size = 134217728; -- 128 megabytes
-	# PRAGMA synchronous = NORMAL;
-
-	if [[ -f $1 ]]; then
-		< "$2" sqlite3 "$1"
-	else
-		echo "$2" | sqlite3 "$1"
-	fi
-	# echo "Not a file: $1"
-}
-
-nps() {
-	: please don\'t make me do frontend work...
-
-	# # xdg default browser always overrides BROWSER var
-	# # https://github.com/facebook/create-react-app/issues/9531#issuecomment-1022412062
-	# BROWSER=chromium npm start
-
-	# https://peter.sh/experiments/chromium-command-line-switches/#auto-open-devtools-for-tabs
-	chromium --auto-open-devtools-for-tabs http://localhost:3000 &
-	BROWSER=none npm start
+nico() {
+	# set -x
+	xdotool key super+8
+	# ensure window is focused!
+	while read -r line; do
+		echo "$line" | xclip -sel c
+		xdotool key ctrl+2 F6 ctrl+v enter
+		sleep 2
+	done < "$1"
 }
 
 np() {
 	pgrep nicotine > /dev/null || return
-
-	# while read -r line; do
-	# 	[[ $line == "" ]] && break
-	# 	[[ $line == http* ]] && break
-	# 	echo "$line" | xclip -sel c
-	# 	xdotool key super+8 ctrl+2 F6 ctrl+v F6 return
-	# 	sleep 2
-	# done < ~/to_dl
 
 	while read -r id; do
 		# 12 because newline included? whatever
@@ -1539,20 +1498,20 @@ np() {
 
 }
 
-nb() {
-	: download audio from rss feeds
-	sort -u -o ~/dita/dita/scrape/discogs.txt{,}
-	less ~/dita/dita/scrape/discogs.txt
-	rm ~/dita/dita/scrape/discogs.txt
-
-	time fetch_rss &&
-		time ~/dita/ytdl &&
-		waitdie mpv
-	vol --auto
-	mpv --profile=bcx ~/testdir
-	rm -rI ~/testdir ~/.config/newsboat/cache.txt
-	np
-}
+# nb() {
+# 	: download audio from rss feeds
+# 	sort -u -o ~/dita/dita/scrape/discogs.txt{,}
+# 	less ~/dita/dita/scrape/discogs.txt
+# 	rm ~/dita/dita/scrape/discogs.txt
+#
+# 	time fetch_rss &&
+# 		time ~/dita/ytdl &&
+# 		waitdie mpv
+# 	vol --auto
+# 	mpv --profile=bcx ~/testdir
+# 	rm -rI ~/testdir ~/.config/newsboat/cache.txt
+# 	np
+# }
 
 replace() {
 	# mostly for python module refactors
@@ -1631,79 +1590,6 @@ epk() {
 	done | sort >> failed
 }
 
-# inject() {
-# 	python -c "import fcntl; import termios; import sys
-# with open('/dev/stdout', 'w') as fd:
-#   for c in ' '.join(sys.argv[1:]): fcntl.ioctl(fd, termios.TIOCSTI, c)" "$@"
-# }
-
-# inject() {
-# 	perl -le 'require "sys/ioctl.ph";
-#             $delay = 0.05;
-#             unless(fork) {
-#               select undef, undef, undef, $delay;
-#               ioctl(STDIN, &TIOCSTI, $_) for split "", join " ", @ARGV;
-#             }' -- "$@"
-# }
-
-rgo() {
-	: useful when you know what to look for but dont want to open vim
-	# https://blog.burntsushi.net/ripgrep
-	# https://github.com/nvim-telescope/telescope.nvim/blob/7b5c5f56a21e82fdcfe5b250278b8dfc4b1cbab4/lua/telescope/config.lua#L646
-	# match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' "${1:-.}" |
-	# 	fzf -e)
-	# $1 = fzf query generally more useful than $1 = file
-	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' . |
-		fzf -e -q "${1:-}")
-	[[ -z $match ]] && return
-
-	# file:line:col:match
-	IFS=':' read -ra array <<< "$match"
-
-	# TODO: --glob '!libs/*' (! must be single quoted)
-
-	{
-		# force insert into history
-		echo "vim $(realpath "${array[0]}")"
-		echo "#$(date +%s)"
-	} >> ~/.bash_history
-
-	# note: this won't go into history (only rgo will)
-	$EDITOR +"${array[1]}" "${array[0]}"
-
-}
-
-j() {
-	: jump to frequently used file, should be used in conjunction with rgo
-	sel=$(< ~/.bash_history grep -P '^n?vim' |
-		awk '!seen[$0]++' |
-		while read -r cmd; do
-			f=$(<<< "$cmd" cut -d' ' -f2)
-			f=$(realpath "$f" 2> /dev/null) || continue
-			[[ ! -f $f ]] && continue
-			echo "$f"
-		done |
-		awk '!seen[$0]++' |
-		fzf --tac)
-	[[ -z $sel ]] && return
-	$EDITOR "$sel"
-}
-
-mw() {
-	cd ~/.mail/account.gmail || return
-	while true; do
-		# note: deleting empty dirs will almost certainly break sync
-		gmi pull
-		new=$(notmuch count tag:inbox and tag:unread and date:today)
-		if [[ $new -gt 0 ]]; then
-			notify-send -u critical "$new new mail"
-			# TODO: neomutt -F? use symlink? (neomuttrc -> neomuttrc_work)
-			neomutt
-		fi
-		sleep 15m
-	done
-}
-
 watchmem() {
 	stdin="$(< /dev/stdin)"
 
@@ -1725,17 +1611,6 @@ watchmem() {
 
 }
 
-nico() {
-	# set -x
-	xdotool key super+8
-	# ensure window is focused!
-	while read -r line; do
-		echo "$line" | xclip -sel c
-		xdotool key ctrl+2 F6 ctrl+v enter
-		sleep 2
-	done < "$1"
-}
-
 gev() {
 	: get env var
 	find . -type f -name '.*env' -print0 |
@@ -1748,41 +1623,6 @@ gev() {
 
 ,pgrep() { \pgrep "$1" | xargs ps; }            # ps for runtime
 pkill1() { \pgrep "$1" | sed 1d | xargs kill; } # kill all procs except 1st
-
-gorep() {
-	patt=$1
-	repl=$2
-
-	# # see matches
-	# rg -IN "$patt" ./*.go
-	# read -r -p 'press enter to preview changes'
-
-	# preview changes
-	# note: gofmt can only modify expressions, not func declarations!
-	gofmt -r "$patt -> $repl" ./*.go | less
-	read -r -p 'press enter to accept changes'
-
-	# execute
-	gofmt -r "$patt -> $repl" -w ./*.go
-}
-
-perfnode() {
-	if [[ $# -gt 0 ]]; then
-		# creates perf.data
-		perf record -e cycles:u -g -- node --perf-basic-prof "$@"
-	elif [[ -f perf.data ]]; then
-		# https://nodejs.org/en/learn/diagnostics/flame-graphs#create-a-flame-graph-with-system-perf-tools
-		# https://speakerdeck.com/mrfoto/what-are-flame-graphs-and-how-to-read-them
-		perf script | # reads perf.data
-			# remove internal
-			sed -r -e "/( __libc_start| LazyCompile | v8::internal::| Builtin:| Stub:| LoadIC:|\[unknown\]| LoadPolymorphicIC:)/d" \
-				-e 's/ LazyCompile:[*~]?/ /' |
-			# show only user defined functions
-			grep -e "$USER" -e '^\S' -e '^$' |
-			stackvis perf > flamegraph.htm
-		chromium flamegraph.htm 2> /dev/null &
-	fi
-}
 
 scan() {
 	cd ~/scores || return
@@ -1815,27 +1655,5 @@ scan() {
 # 	xargs rm -rf
 
 # note: sendmail unresponsive
-# echo "$msg" | mail -s "$subj" $addr
-
-mch() {
-	# f=$1
-
-	: [re]generate header files
-	for f in *.c; do
-		[[ $f == main.c ]] && continue
-
-		h="${f/.c/.h}"
-		if [[ -f $h ]]; then
-			# for merge to work, fn decls must all be placed at the
-			# bottom of the .h file. includes, macros, structs
-			# should be placed at the top. (is there a recommended
-			# order?)
-			{
-				< "$h" grep -Pv '\);$' # discard existing fn decls
-				cproto "$f" | sed 1d   # cproto only generates fn decls
-			} | sponge "$h"
-		else
-			cproto "$f" > "$h"
-		fi
-	done
-}
+# note: it is not known what set up is needed
+# echo "$body" | mail --subject="$subject" $email

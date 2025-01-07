@@ -3,6 +3,7 @@
 -- https://github.com/pynappo/dotfiles/blob/ec6476a4cb78176be10293812c02dda7a4ac999a/.config/wezterm/wezterm.lua#L182
 
 -- os.execute("notify-send hi")
+-- os.execute("setxkbmap -layout us")
 
 -- TODO: investigate high memory usage (up to 1.3 GB RSS)
 -- pmap -x $(\pgrep wezterm-gui) | sort -k3 -n | tail -n20
@@ -141,9 +142,7 @@ config.switch_to_last_active_tab_when_closing_tab = true
 
 -- wezterm ls-fonts --list-system | cut -d, -f1 | grep ^wez | cut -d'(' -f2 | sort -u | append ,
 
--- note: source han sans is implicitly used as fallback for cn/jp/kr (which is
--- why scp goes great with it). scp also has cyrillic
-local font = wezterm.font_with_fallback({
+local fonts = {
 
 	-- https://devfonts.gafi.dev
 	-- https://www.codingfont.com
@@ -165,7 +164,7 @@ local font = wezterm.font_with_fallback({
 	-- "Geist Mono", -- chonky
 
 	-- narrow
-	"NanumGothicCoding", -- only has underline >= 12
+	-- "NanumGothicCoding", -- only has underline at certain sizes/resolutions (<= 13/2k)
 	-- "Mplus Code 60", -- too tall, otherwise quite good
 	-- "Iosevka",
 
@@ -175,42 +174,56 @@ local font = wezterm.font_with_fallback({
 	-- "SF Mono", -- '--' too close (almost ligature-ish)
 	-- "Input Mono", -- why so short?
 	"Source Code Pro",
-})
+}
 
-if is_ubuntu then
-	-- https://github.com/wez/wezterm/issues/284#issuecomment-1177628870
-	wezterm.on("gui-startup", function() -- note: not reliable
-		local _, _, window = wezterm.mux.spawn_window({})
-		window:gui_window():maximize()
-	end)
-end
+-- TODO: and not dwm
+-- if is_ubuntu then
+-- 	-- https://github.com/wez/wezterm/issues/284#issuecomment-1177628870
+-- 	wezterm.on("gui-startup", function() -- note: not reliable
+-- 		local _, _, window = wezterm.mux.spawn_window({})
+-- 		window:gui_window():maximize()
+-- 	end)
+-- end
 
--- config.freetype_load_flags = "NO_HINTING" -- squashes fonts (makes them shorter)
-
--- -- yikes
 -- config.freetype_load_flags = "MONOCHROME"
--- config.freetype_load_target = "Mono"
+-- config.freetype_load_flags = "NO_HINTING" -- squashes fonts (makes them shorter)
+-- config.freetype_load_target = "Mono" -- yikes
 
-local cell_width = 0.9
+-- note: entire config is evaluated on window open (but not close), tab
+-- open/close, but not on split
 
 -- relying on xrdb dpi is unreliable, as ubuntu seems to ignore it
+local cell_width = 0.9
 local font_size
-if is_ubuntu then
-	-- note: xrandr is unacceptably slow
-	font_size = get_output("xdpyinfo | grep -F '3840x1200'") and 12.0 or 18.0
+
+if not is_ubuntu then
+	-- home, 4k only
+	font_size = 18.0
+elseif get_output("xdpyinfo | grep -F 'x1200'") then -- note: xrandr is unacceptably slow
+	-- (dual) 2k
+	table.insert(fonts, 1, "NanumGothicCoding")
+	font_size = 12.0
+elseif get_output("xdpyinfo | grep -F '1920x1080'") then
+	-- laptop-only (2k)
+	font_size = 16.0
 else
+	-- home, 4k
 	font_size = 10.0
 end
+
+-- note: source han sans is implicitly used as fallback for cn/jp/kr (which is
+-- why scp goes great with it). scp also has cyrillic
+local main_font = wezterm.font_with_fallback(fonts)
 
 -- config.font, config.font_size = wezterm.font_with_fallback({ "B612 Mono" }), 9.0
 -- config.font, config.font_size = wezterm.font_with_fallback({ "Source Code Pro" }), 10.0
 config.cell_width = cell_width > 0 and cell_width or 0.9 -- negative values will kill wezterm
 config.command_palette_font_size = font_size
-config.font = font
+config.font = main_font
 config.font_size = font_size
 config.harfbuzz_features = { "calt=0", "clig=0", "liga=0" }
 config.warn_about_missing_glyphs = false
-config.window_frame = { font = font, font_size = font_size }
+config.window_frame = { font = main_font, font_size = font_size }
 
 -- }}}
 -- appearance {{{
@@ -262,7 +275,8 @@ local function keys()
 				-- 	wezterm.open_with(url, "mpv")
 				-- 	return
 				-- end
-				wezterm.open_with(url)
+				-- xdg-open on ubuntu wrongly chooses chromium, might as well be explicit
+				wezterm.open_with(url, "firefox")
 			end),
 		},
 	}
@@ -475,6 +489,7 @@ local function keys()
 		end
 	end
 
+	-- note: dwm binds always override these
 	if is_ubuntu then
 		extend(_keys, test_keys)
 	end
