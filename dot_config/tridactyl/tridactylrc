@@ -153,9 +153,6 @@ unbind gd
 
 " until bind f: 3 s
 
-" https://github.com/glacambre/.dotfiles/blob/c7dc7029d508e5b10dc9a89c39c1c824809877a6/default/.config/tridactyl/tridactylrc#L1
-alias tabsortalpha jsb browser.tabs.query({}).then(tabs => tabs.sort((t1, t2) => t1.url.localeCompare(t2.url)).forEach((tab, index) => browser.tabs.move(tab.id, {index})))
-
 " bind B tab #
 " bind w fullscreen
 bind , jsb tri.excmds.tabnext() //
@@ -165,7 +162,7 @@ bind <c-g> tab #
 bind c jsb tri.excmds.tabprev() //
 bind d jsb tri.excmds.tabclose() //
 bind gD composite tabduplicate | tabdetach
-bind s composite tabsortalpha ; tabsort --containers
+bind s composite tabsort --url ; tabsort --containers
 bind x tabmove -1
 bind z tab #
 
@@ -336,6 +333,7 @@ command tabcloseallbykeyword jsb -p browser.tabs.query({}).then(tabs => tabs.for
 bindurl 1337x.to f hint -Jcpipe [href^="/torrent"]
 bindurl 1fichier.com f hint -Jc .btn-orange.btn-general.ok
 bindurl 1lib.eu f hint -Jc .addDownloadedBook.dlButton.btn-primary.btn
+bindurl atlassian.net f hint -Jc .css-mjkbzy, .css-8ut1ye
 bindurl bandcamp.com/download f hint -c [href^="https://p4.bcbits.com/download"] -F i => tri.excmds.shellescape(i).then(url => tri.excmds.exclaim_quiet('$TERMINAL dl ' + url))
 bindurl commons.wikimedia.org f hint -Jc .internal
 bindurl duckduckgo.com f hint .EKtkFWMYpwzMKOYr0GYm, .Bl3t3iYRHX9BeMH_V52u.JhFQAeU7IMxZaS7jCOQm
