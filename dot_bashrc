@@ -17,12 +17,12 @@
 
 paths=(
 
-	/opt/local/bin                               # mac
-	/snap/go/current/bin                         # ubuntu
-	/usr/local/bin                               # dwm
-	~/.cache/pypoetry/virtualenvs/dita-*3.12/bin # glob only returns first match?
-	~/.cargo/bin                                 # arch installs are preferred over cargo
-	~/.local/bin                                 # TODO: ensure .local/bin precedes /usr/bin?
+	/opt/local/bin       # mac
+	/snap/go/current/bin # ubuntu
+	/usr/local/bin       # dwm
+	~/.cargo/bin         # arch installs are preferred over cargo
+	~/.local/bin
+	~/dita/.venv/bin # poetry config --local virtualenvs.in-project true
 	~/go/bin
 	~/rust/fours/target/release
 	~/rust/search/target/release
@@ -42,7 +42,6 @@ unset p paths
 # export GOPATH=$HOME/go
 
 # note: TERM is set by x
-export TERMINAL=kitty
 export TERMINAL='wezterm start'
 
 if type nvim > /dev/null 2> /dev/null; then
@@ -226,8 +225,8 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 
 	cat /tmp/updates
 
-	grep < /tmp/updates '^python ' && echo -e "Beware: new Python\n"
-	# TODO: check $HOME/.local/lib/python3.11
+	< /tmp/updates grep '^python ' && echo -e "Beware: new Python\n"
+	# TODO: after major python update, update globally installed pips (scrobblerh)
 
 	if sudo pacman -Syu; then
 		rm /tmp/updates
