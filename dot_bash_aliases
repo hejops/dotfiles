@@ -83,6 +83,9 @@ alias y="bash ~/gripts/disq/ytm.sh"
 
 # git {{{
 
+get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
+alias cdr="cd \$(get_repo_root)"
+
 # shellcheck disable=SC2120
 gls() {
 	git ls-files "${1:-.}"
@@ -714,208 +717,10 @@ guns() {
 }
 
 # }}}
-# pre-commit {{{
-alias pcu="pre-commit autoupdate"
-
-pci() {
-	if ! command -v pre-commit > /dev/null; then
-		echo "pre-commit not installed"
-		return
-	fi
-
-	# init
-	local f
-
-	repo_root=$(get_repo_root)
-
-	f="$repo_root/.pre-commit-config.yaml"
-
-	[[ -f $f ]] && return
-
-	# https://pre-commit.com/#command-line-interface
-	# https://pre-commit.com/#quick-start
-	# https://pre-commit.com/hooks.html
-
-	git init
-	cat << EOF > "$f"
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
-repos:
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
-    hooks:
-      - id: detect-secrets
-        # args: ["--baseline", ".secrets.baseline"]
-        exclude: package.lock.json
-
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      - id: check-added-large-files
-      - id: check-executables-have-shebangs
-      - id: check-shebang-scripts-are-executable
-      - id: check-yaml
-      - id: detect-private-key
-      - id: end-of-file-fixer
-        exclude: \.sql$
-      - id: trailing-whitespace
-EOF
-
-	if find . -name '*.py' | grep -q .; then
-
-		# https://github.com/MarcoGorelli/auto-walrus#usage-as-a-pre-commit-hook
-		# https://github.com/PyCQA/docformatter/blob/master/.pre-commit-config.yaml#L23C1-L28C57
-		# https://github.com/dannysepler/rm_unneeded_f_str#usage
-		# https://github.com/hadialqattan/pycln/blob/master/.pre-commit-config.yaml#L4
-		# https://github.com/hhatto/autopep8#usage-with-pre-commit
-		# https://github.com/pre-commit/mirrors-mypy#using-mypy-with-pre-commit
-
-		cat << EOF >> "$f"
-      - id: name-tests-test
-        args: ["--pytest-test-first"]
-      - id: requirements-txt-fixer
-
-  # reorder-python-imports is no longer compatible with black
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort
-        args: [--force-single-line, --profile=black]
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0
-    hooks:
-      - id: pyupgrade
-        args: ["--py36-plus"]
-
-  # % format -> f-string
-  - repo: https://github.com/ikamensh/flynt/
-    rev: 1.0.1
-    hooks:
-      - id: flynt
-
-  - repo: https://github.com/psf/black
-    rev: 24.1.1
-    hooks:
-      - id: black
-        args: ["--preview"]
-EOF
-	fi
-
-	# TODO: https://github.com/TekWizely/pre-commit-golang/blob/master/sample-config.yaml#L85
-
-	pcu
-}
-
-pcr() {
-	pci && pre-commit run --all-files
-}
-
-pcrc() {
-	# only files which have changed since latest remote commit
-
-	# check if remote repo exists
-	git config --get remote.origin.url > /dev/null || return
-
-	pci && pre-commit run --all-files --from-ref "origin/$(gmaster)" --to-ref HEAD
-}
-
-# }}}
 
 # python {{{
 
 # i haven't worked in python in a while, so this may be cleaned up
-
-# ve() {
-# 	return
-#
-# 	# important reading:
-# 	# https://www.b-list.org/weblog/2022/may/13/boring-python-dependencies/
-# 	# https://github.com/jazzband/pip-tools
-#
-# 	# "always work in, and deploy in, a virtual environment"; this is how
-# 	# cargo works.
-#
-# 	# venv comes before pip install (etc), not the other way round, and
-# 	# python -m pip (in venv) should always be used over bare pip.
-#
-# 	python -m venv .venv
-# 	. .venv/bin/activate
-#
-# 	# do work, manually add deps to requirements.in (no cargo add, too bad)
-#
-# 	python -m pip install --upgrade pip-tools
-# 	python -m pip-tools compile --generate-hashes requirements/app.in --output-file requirements/app.txt
-# 	# python -m pip-tools compile --generate-hashes requirements/tests.in --output-file requirements/tests.txt
-# 	# if some package doesn't provide wheel, omit --only-binary
-# 	python -m pip install --only-binary :all: -r requirements/app.txt
-#
-# 	# for monitoring dep updates of a "finished" project, use dependabot
-#
-# }
-
-alias cx=coac
-
-get_repo_root() {
-	git rev-parse --show-toplevel 2> /dev/null
-}
-
-eval_conda() {
-	# subshell only generates the code, which must then be executed
-	# note: this command alone does not re-source .bashrc, so don't expect
-	# PS1 to change
-	eval "$("$HOME/anaconda3/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
-}
-
-coac() {
-	# set -x
-
-	# local _env
-
-	local DEFAULT_ENV=foo
-
-	if
-		[[ -n $CONDA_PREFIX ]] #&& [[ $CONDA_PREFIX == *${_env} ]]
-	then
-		# echo "Already activated"
-		return
-	elif [[ ! -d $HOME/anaconda3/envs/$DEFAULT_ENV ]]; then
-		echo "\"$DEFAULT_ENV\" environment not found!"
-		return
-	fi
-
-	if ! command -v conda > /dev/null; then
-		echo >&2 'Activating conda...'
-		eval_conda
-	fi
-
-	echo "Activating $DEFAULT_ENV..."
-	conda activate "$DEFAULT_ENV"
-
-	# note: conda activate causes PS1 to be overridden
-
-	# generally always better to set
-	# conda config --set changeps1 false
-	# because you never really know what conda does to PS1
-
-}
-
-# python venvs should now be managed from nvim itself:
-# pyright: function get_python_path
-# pylint: require("lint").linters.pylint.cmd
-
-sl() {
-	# set -x
-	[[ $# -eq 0 ]] && return
-	arr=("$@")
-	f="$(realpath "${arr[0]}")"
-	arr[0]=$f
-	# [[ -f $f ]] &&
-	# check_env "$f"
-	streamlit run "${arr[@]}"
-	cd
-}
 
 pta() {
 	: run all tests
@@ -929,9 +734,7 @@ pget() {
 	elif [[ -n $CONDA_PREFIX ]]; then
 		pip3 install "$@"
 	else
-
 		pip3 install --break-system-packages "$@"
-
 	fi
 }
 
@@ -968,6 +771,7 @@ p() {
 pentmd() {
 	: render entry points as markdown
 	# - [`poetry run XXX`](./path/to/script.py)
+	# shellcheck disable=SC2016
 	grep < pyproject.toml :main |
 		sed -r 's|^([^ ]+) = "([^:]+):main"|- [`poetry run \1`](./\2.py)|g' |
 		tr . / |
@@ -1168,10 +972,14 @@ gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run
 
 doslow() {
 	: list slowest steps in a docker log
+
 	# set -eu
 	if
-		steps=$(< "$1" grep -P 'DONE \d{3}' | sort -Vu | awk '!a[$1]++') &&
-			[[ -n $steps ]]
+		steps=$(
+			< "$1" grep -P '^#\d+ DONE' |
+				# sort -k3nr | head -n$n # n slowest steps
+				sort -Vu | awk '!a[$1]++' # steps >= 100 secs
+		) && [[ -n $steps ]]
 	then
 		paste <(echo "$steps") <(
 			<<< "$steps" cut -d' ' -f1 |
@@ -1493,7 +1301,7 @@ sq() {
 }
 
 nps() {
-	: please don\'t make me do frontend work...
+	# vite is probaly the way to go...
 
 	# # xdg default browser always overrides BROWSER var
 	# # https://github.com/facebook/create-react-app/issues/9531#issuecomment-1022412062
@@ -1633,21 +1441,6 @@ epk() {
 		fi
 	done | sort >> failed
 }
-
-# inject() {
-# 	python -c "import fcntl; import termios; import sys
-# with open('/dev/stdout', 'w') as fd:
-#   for c in ' '.join(sys.argv[1:]): fcntl.ioctl(fd, termios.TIOCSTI, c)" "$@"
-# }
-
-# inject() {
-# 	perl -le 'require "sys/ioctl.ph";
-#             $delay = 0.05;
-#             unless(fork) {
-#               select undef, undef, undef, $delay;
-#               ioctl(STDIN, &TIOCSTI, $_) for split "", join " ", @ARGV;
-#             }' -- "$@"
-# }
 
 rgo() {
 	: useful when you know what to look for but dont want to open vim
