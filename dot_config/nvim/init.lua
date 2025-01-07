@@ -778,13 +778,14 @@ require("conform").setup({
 			-- important: at work, use top-level biome.json
 			-- note: cwd must be a func, not a string
 			cwd = require("util").root_directory,
-			-- TODO: if biome.json exists, leave args unchanged
-			args = {
-				"format",
-				"--indent-style=space",
-				"--stdin-file-path",
-				"$FILENAME",
-			},
+			args = vim.loop.fs_stat(require("util"):root_directory() .. "/biome.json") -- if biome.json exists, leave args unchanged
+					and { "format", "--stdin-file-path", "$FILENAME" }
+				or {
+					"format",
+					"--indent-style=space",
+					"--stdin-file-path",
+					"$FILENAME",
+				},
 		},
 
 		shfmt = {
