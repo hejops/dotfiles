@@ -197,8 +197,8 @@ local cell_width = 0.9
 local font_size
 
 if not is_ubuntu then
-	-- home, 4k only
-	font_size = 18.0
+	-- home, 4k
+	font_size = 10.0
 elseif get_output("xdpyinfo | grep -F 'x1200'") then -- note: xrandr is unacceptably slow
 	-- (dual) 2k
 	table.insert(fonts, 1, "NanumGothicCoding")
@@ -207,16 +207,14 @@ elseif get_output("xdpyinfo | grep -F '1920x1080'") then
 	-- laptop-only (2k)
 	font_size = 16.0
 else
-	-- home, 4k
-	font_size = 10.0
+	-- home, 4k only
+	font_size = 18.0
 end
 
 -- note: source han sans is implicitly used as fallback for cn/jp/kr (which is
 -- why scp goes great with it). scp also has cyrillic
 local main_font = wezterm.font_with_fallback(fonts)
 
--- config.font, config.font_size = wezterm.font_with_fallback({ "B612 Mono" }), 9.0
--- config.font, config.font_size = wezterm.font_with_fallback({ "Source Code Pro" }), 10.0
 config.cell_width = cell_width > 0 and cell_width or 0.9 -- negative values will kill wezterm
 config.command_palette_font_size = font_size
 config.font = main_font
