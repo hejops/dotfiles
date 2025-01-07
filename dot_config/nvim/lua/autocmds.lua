@@ -273,3 +273,9 @@ vim.api.nvim_create_autocmd("FileType", {
 		end
 	end,
 })
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "dbee" },
+	-- return focus to main window
+	command = "norm <c-w>k",
+})

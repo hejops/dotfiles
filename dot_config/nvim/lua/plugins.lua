@@ -576,6 +576,68 @@ require("lazy").setup(
 				})
 			end,
 		}, -- }}}
+		{ -- nvim-dbee {{{
+			"kndndrj/nvim-dbee",
+
+			-- + api is quite hackable
+			-- + implements pagination (good for large queries)
+			-- + query execution is async
+			-- + query history
+			-- + query results are copied as json
+			-- - BB is a silly default binding to execute query (fixable?)
+			-- - executing a query focuses the result pane (fixed with autocmd)
+			-- - i dislike the 4-pane gui
+
+			dependencies = { "MunifTanjim/nui.nvim" },
+			build = function()
+				require("dbee").install()
+			end,
+			config = function()
+				require("dbee").setup({
+					sources = {
+						require("dbee.sources").MemorySource:new({
+							{
+								name = "foo",
+								type = "sqlite",
+								url = vim.env.HOME .. "/gripts/disq/collection2.db",
+							},
+						}),
+						require("dbee.sources").EnvSource:new("DBEE_CONNECTIONS"),
+						require("dbee.sources").FileSource:new(vim.fn.stdpath("cache") .. "/dbee/persistence.json"),
+					},
+
+					editor = {
+						mappings = {
+							-- TODO: this overrides the original binding, making Sqls (or whatever) unavailable after dbee is exited
+							{ key = "<leader>x", mode = "n", action = "run_file" },
+						},
+					},
+
+					result = { mappings = {
+						{ key = "<C-c>", mode = "", action = "cancel_call" },
+					} },
+				})
+
+				local dbee = require("dbee")
+				vim.keymap.set("n", "<leader>X", function()
+					local scratch_dir = vim.env.HOME .. "/.local/state/nvim/dbee/notes/memory_source_memory1"
+					local scratch_path = scratch_dir .. "/" .. vim.fn.expand("%:t")
+
+					-- ensure note is synced to the file
+					local cmd = string.format([[ln -sf %s %s/]], vim.fn.expand("%:p"), scratch_dir)
+					os.execute(cmd)
+
+					local id = require("dbee").api.ui.editor_search_note_with_file(scratch_path).id
+					dbee.api.ui.editor_set_current_note(id)
+
+					local function buffer_to_string()
+						local content = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
+						return table.concat(content, "\n")
+					end
+					dbee.execute(buffer_to_string())
+				end)
+			end,
+		}, -- }}}
 
 		{ -- gitsigns {{{
 			"lewis6991/gitsigns.nvim",
