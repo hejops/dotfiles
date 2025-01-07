@@ -72,6 +72,7 @@ alias n="NO_COLOR=1 node --import=tsx"
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && mpv --profile=bcx ./out && rm -rI ./out"
 alias pq="~/plaque/plaque"
 alias synctime="sudo ntpd --quit --panicgate"
+alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tx="tectonic -X"
@@ -1434,8 +1435,8 @@ mw() {
 
 bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
 rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
+ya() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
 yt() { mpv --force-window "ytdl://ytsearch10:\'$*\'"; }
-ytn() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
 
 ys() { # read youtube subs in less
 	yt-dlp -j "$1" |
