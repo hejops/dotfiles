@@ -166,7 +166,7 @@ local fonts = {
 	-- "Geist Mono", -- chonky
 
 	-- narrow
-	-- "NanumGothicCoding", -- the main drawback is subpar non-ascii support (e.g. cyrillic), which is a slight problem at home
+	-- "NanumGothicCoding",
 	-- "Mplus Code 60", -- too tall, otherwise quite good
 	-- "Iosevka",
 
@@ -201,11 +201,12 @@ local font_size
 
 if not is_ubuntu then
 	-- home, 4k
-	-- font_size = 10.0 -- scp
-	table.insert(fonts, 1, "NanumGothicCoding")
-	font_size = 12.0
-	-- underline 'disappears' at larger sizes in wezterm (works ootb in ghostty, regardless of size)
-	config.underline_position = -6
+	font_size = 10.0 -- scp
+	-- the main drawback is subpar non-ascii support (e.g. cyrillic), which is a slight problem at home
+	-- table.insert(fonts, 1, "NanumGothicCoding")
+	-- font_size = 12.0
+	-- -- underline 'disappears' at larger sizes in wezterm (works ootb in ghostty, regardless of size)
+	-- config.underline_position = -6
 elseif get_output("xdpyinfo | grep -F 'x1200'") then -- note: xrandr is unacceptably slow
 	-- (dual) 2k
 	table.insert(fonts, 1, "NanumGothicCoding")
