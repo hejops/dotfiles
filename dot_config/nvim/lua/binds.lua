@@ -170,7 +170,11 @@ vim.keymap.set("n", "<leader>C", function()
 end, { desc = "commit current buffer" })
 
 vim.keymap.set("n", "<leader>gC", function()
-	vim.cmd("Git commit --quiet --amend -v")
+	if require("util"):command_ok("git status --porcelain | grep '^M'") then
+		vim.cmd("Git commit --quiet --amend -v")
+	else
+		print("No hunks staged")
+	end
 end, { desc = "append currently staged hunks to previous commit" })
 
 vim.keymap.set("n", "<leader>gd", function()
