@@ -638,6 +638,29 @@ require("lazy").setup(
 				end)
 			end,
 		}, -- }}}
+		{ -- vim-dadbod-ui {{{
+
+			-- + can view table schema (though with sqls)
+			-- + queries are executed immediately on write
+			-- + works without lsp (but uses cmp)
+			-- - extra cmp dependency + setup
+			-- - no real api
+			-- - not immediately obvious how to 'sync' files
+			-- - r is bound in result pane
+
+			"kristijanhusak/vim-dadbod-ui",
+			ft = { "sql" },
+			dependencies = {
+				"tpope/vim-dadbod",
+				"kristijanhusak/vim-dadbod-completion",
+			},
+			cmd = { "DBUI", "DBUIToggle", "DBUIAddConnection", "DBUIFindBuffer" },
+			init = function()
+				vim.g.dbs = {
+					{ name = "foo", url = "sqlite://" .. vim.env.HOME .. "/gripts/disq/collection2.db" },
+				}
+			end,
+		}, -- }}}
 
 		{ -- gitsigns {{{
 			"lewis6991/gitsigns.nvim",
