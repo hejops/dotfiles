@@ -66,7 +66,7 @@ require("conform").setup({
 		-- }}}
 		-- sql {{{
 		sqruff = {
-			command = "sqruff", -- need nightly install https://github.com/quarylabs/sqruff?tab=readme-ov-file#for-other-platforms
+			command = "sqruff",
 			args = { "fix", "-" },
 			stdin = true,
 			exit_codes = { 0, 1 }, -- lol https://github.com/quarylabs/sqruff/issues/1134
