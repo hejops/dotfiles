@@ -26,6 +26,9 @@ function mkmetatable()
 	local m = {}
 	-- doesn't work for opus, i guess?
 	-- https://github.com/mpv-player/mpv/blob/4f129a3eca7f8e1d6e3407c0689cbe313debf301/DOCS/man/input.rst#property-list
+	-- for  mp.get_property("metadata") - 1 do
+	-- 	local p = "metadata/list/" .. i .. "/" -- .. = string concat
+	-- end
 	for i = 0, mp.get_property("metadata/list/count") - 1 do
 		local p = "metadata/list/" .. i .. "/" -- .. = string concat
 		m[mp.get_property(p .. "key")] = mp.get_property(p .. "value")
@@ -54,60 +57,75 @@ end
 
 function enqueue()
 	-- mp.resume_all()
-	if artist and title then
-		if options.username == "" then
-			msg.info(string.format("Could not find a username! Please follow the steps in the README.md"))
-			return
-		end
-		args = string.format(
-			"scrobbler now-playing %s '%s' '%s' -a '%s' -d %ds > /dev/null",
-			esc(options.username),
-			esc(artist),
-			esc(title),
-			esc(album),
-			length
-		)
-		msg.verbose(args)
-		os.execute(args .. " 2>/dev/null")
-		if tim then
-			tim.kill(tim)
-		end
-		if length then
-			timeout = length / 2
-		else
-			timeout = 240
-		end
-		tim = mp.add_timeout(timeout, scrobble)
+	if options.username == "" then
+		msg.info(string.format("Could not find a username! Please follow the steps in the README.md"))
+		return
 	end
+	if not (artist and title) then
+		return
+	end
+	args = string.format(
+		"scrobbler now-playing %s '%s' '%s' -a '%s' -d %ds > /dev/null",
+		esc(options.username),
+		esc(artist),
+		esc(title),
+		esc(album),
+		length
+	)
+	msg.verbose(args)
+	os.execute(args .. " 2>/dev/null")
+	if tim then
+		tim.kill(tim)
+	end
+	timeout = length and length / 2 or 240
+	tim = mp.add_timeout(timeout, scrobble)
 end
 
 function new_track()
+	-- os.execute(string.format("echo '%s' >> /tmp/mpvscrobble.log", mp.get_property("metadata")))
+	-- for k, v in pairs(mp.get_property_native("metadata")) do
+	-- 	os.execute(string.format("echo '%s:%s' >> /tmp/mpvscrobble.log", k, v))
+	-- end
+
 	if mp.get_property("metadata/list/count") then
 		local m = mkmetatable()
 		local icy = m["icy-title"]
 		if icy then
-			-- TODO better magic
+			-- TODO: better magic
 			artist, title = string.gmatch(icy, "(.+) %- (.+)")()
-			os.execute(string.format("echo %s > /tmp/mpvscrob.log", artist))
 			album = nil
 			length = nil
 		else
 			length = mp.get_property("duration")
+			-- last.fm doesn't allow scrobbling short tracks
 			if length and tonumber(length) < 30 then
 				return
-			end -- last.fm doesn't allow scrobbling short tracks
-			artist = m["artist"]
-			if not artist then
-				artist = m["ARTIST"]
 			end
+
+			local function get_nth_line(s, n)
+				local i = 1
+				for l in s:gmatch("[^\r\n]+") do
+					if i == n then
+						return l
+					end
+					i = i + 1
+				end
+			end
+
+			-- mp.osd_message(
+			-- 	get_nth_line(mp.get_property_native("metadata")["ytdl_description"]),
+			-- 	-- mp.get_property_native("metadata")["ytdl_description"]:gmatch("[^\r\n]+"), --[3],
+			-- 	10000
+			-- )
+
+			title = m["title"] or m["TITLE"] or mp.get_property("media-title")
 			album = m["album"]
-			if not album then
-				album = m["ALBUM"]
-			end
-			title = m["title"]
-			if not title then
-				title = m["TITLE"]
-			end
+				or m["ALBUM"]
+				or get_nth_line(mp.get_property_native("metadata")["ytdl_description"], 3)
+				or ""
+			artist = m["artist"]
+				or m["ARTIST"]
+				or string.gsub(mp.get_property_native("metadata")["uploader"], " %- Topic", "")
 		end
 		enqueue()
 	end
@@ -124,7 +142,6 @@ end
 function on_file_loaded()
 	file_format = mp.get_property("file-format")
 	path = mp.get_property("path")
-	-- os.execute(string.format("echo '%s %s' > /tmp/mpvscrobble.log", file_format, path))
 
 	if path:find("music.youtube.com") ~= nil then
 		print(path)
