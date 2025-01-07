@@ -60,6 +60,10 @@ require("lazy").setup(
 			config = function()
 				require("lspconfig").sqls.setup({
 					on_attach = function(client, bufnr)
+						local cfg = vim.env.HOME .. "/.config/sqls/config.yml"
+						if not vim.loop.fs_stat(cfg) then
+							print("Warning: one or more connections must be defined in", cfg)
+						end
 						require("sqls").on_attach(client, bufnr)
 					end,
 				})
@@ -595,6 +599,7 @@ require("lazy").setup(
 		}, -- }}}
 		{ -- treesitter {{{
 			-- in case of breakage on ubuntu, remove and reinstall snap package
+
 			"nvim-treesitter/nvim-treesitter",
 			build = ":TSUpdate", -- update parsers when updating plugin
 			lazy = false,
@@ -618,15 +623,7 @@ require("lazy").setup(
 
 				"joosepalviste/nvim-ts-context-commentstring", -- TS-aware commentstring (slow)
 				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
-				{
-					-- interestingly, in Go, the func name gets highlighted in the
-					-- docstring, and persists after colorscheme change. however, this
-					-- highlight is lost on restarting vim
-					"danymat/neogen", -- docs generator
-					-- https://github.com/danymat/neogen#supported-languages
-					-- TODO: for python, use google_docstrings
-					opts = { snippet_engine = "luasnip" },
-				},
+				{ "danymat/neogen", opts = {} }, -- docs generator
 			},
 
 			config = function()
@@ -773,25 +770,38 @@ require("lazy").setup(
 		}, -- }}}
 		-- colorschemes {{{
 
+		{
+			"zootedb0t/citruszest.nvim",
+			lazy = true,
+			config = function()
+				require("citruszest").setup({
+					option = {
+						transparent = false,
+						bold = false,
+						italic = false,
+					},
+				})
+			end,
+		},
+
+		"iagorrr/noctis-high-contrast.nvim",
+		-- { "nlcodes/my_nvim_config", lazy = true }, -- mono tabline
 		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets, lol)
-		{ "zootedb0t/citruszest.nvim", lazy = true, opts = { option = { italic = false } } },
+		{ "tomasr/molokai", lazy = true }, -- italic types
 
 		-- "ajmwagar/vim-deus", -- mono tabline
 		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "danilo-augusto/vim-afterglow", -- mono tabline
 		-- "dasupradyumna/midnight.nvim", -- mono tabline
-		-- "erichdongubler/vim-sublime-monokai", -- mono tabline
 		-- "fenetikm/falcon", -- mono tabline
 		-- "gosukiwi/vim-atom-dark", -- bad lualine
 		-- "hachy/eva01.vim", -- don't like the low contrast one
-		-- "iagorrr/noctis-high-contrast.nvim", -- uses highlight instead of underline
 		-- "jaredgorski/spacecamp", -- bad lualine
 		-- "kvrohit/rasmus.nvim", -- mono tabline
 		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
 		-- "nvimdev/oceanic-material", -- mono tabline
 		-- "oxfist/night-owl.nvim", -- mono tabline
-		-- "patstockwell/vim-monokai-tasty", -- mono tabline
 		-- "pauchiner/pastelnight.nvim", -- inlay hints too dark
 		-- "paulo-granthon/hyper.nvim", -- blue against black
 		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
@@ -812,9 +822,7 @@ require("lazy").setup(
 		-- { "challenger-deep-theme/vim", lazy = true }, -- mid contrast
 		-- { "morhetz/gruvbox", lazy = true }, -- has bold
 		-- { "nanotech/jellybeans.vim", lazy = true }, -- mid contrast
-		-- { "nlcodes/my_nvim_config", lazy = true }, -- mono tabline
 		-- { "shawilly/ponokai", lazy = true }, -- mid contrast
-		-- { "tomasr/molokai", lazy = true }, -- italic types
 
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
 		-- https://vimcolorschemes.com/i/new/b.dark
