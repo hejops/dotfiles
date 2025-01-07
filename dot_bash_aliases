@@ -294,7 +294,7 @@ gc() {
 
 	# TODO: if work repo, master branch, return
 
-	pcrc
+	# pcrc
 
 	if [[ $# -gt 0 ]]; then
 
@@ -453,9 +453,12 @@ gpl() {
 	# [[ $# -eq 1 ]] && cd "$1"
 
 	# TODO: pull/update?
-	# https://devconnected.com/how-to-add-and-update-git-submodules/#Pull_a_Git_Submodule
+	# git pull --recurse-submodules	# didn't seem to work (reverts to commit of parent)
+	# git submodule sync
 	# git submodule update --init --recursive
 	# git submodule update --remote --merge
+	# https://devconnected.com/how-to-add-and-update-git-submodules/#Pull_a_Git_Submodule
+	# https://stackoverflow.com/questions/10054011
 
 	if git branch -r | grep -q 'upstream/'; then
 		# pull from upstream
@@ -1722,11 +1725,16 @@ watchmem() {
 
 }
 
-# xdotool key super+8
-# while read -r line; do
-# 	echo "$line" | xclip -sel c
-# 	xdotool key F6 ctrl+v enter
-# done < "$1"
+nico() {
+	# set -x
+	xdotool key super+8
+	# ensure window is focused!
+	while read -r line; do
+		echo "$line" | xclip -sel c
+		xdotool key ctrl+2 F6 ctrl+v enter
+		sleep 2
+	done < "$1"
+}
 
 gev() {
 	: get env var
