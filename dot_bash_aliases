@@ -303,8 +303,6 @@ gc() {
 
 	# TODO: if work repo, master branch, return
 
-	pcrc
-
 	if [[ $# -gt 0 ]]; then
 
 		# use glob to automatically exclude untracked files
