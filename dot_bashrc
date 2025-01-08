@@ -1,4 +1,3 @@
-# #!/bin/bash
 # shellcheck shell=bash
 # vim:ft=bash
 # this file is sourced on any unix-like system and should remain under 400 LOC.
