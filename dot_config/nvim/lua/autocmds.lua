@@ -222,24 +222,6 @@ vim.api.nvim_create_autocmd("TermOpen", {
 -- 	end,
 -- })
 
--- https://github.com/Virus288/Neovim-Config/blob/5cb7f321d217d3f9163ddc26c4b25c4c35f80211/lua/configs/lspConfig.lua#L95
--- auto import missing files on save
-vim.api.nvim_create_autocmd("BufWritePre", {
-	group = vim.api.nvim_create_augroup("TS_add_missing_imports", { clear = true }),
-	desc = "TS_add_missing_imports",
-	pattern = { "*.ts" },
-	callback = function()
-		vim.lsp.buf.code_action({
-			apply = true,
-			context = {
-				diagnostics = {},
-				only = { "refactor" },
-			},
-		})
-		vim.cmd("write")
-	end,
-})
-
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "c" },
 	callback = function()
@@ -272,10 +254,4 @@ vim.api.nvim_create_autocmd("FileType", {
 			os.execute(cmd)
 		end
 	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "dbee" },
-	-- return focus to main window
-	command = "norm <c-w>k",
 })
