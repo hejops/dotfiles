@@ -577,7 +577,9 @@ require("lazy").setup(
 			end,
 		}, -- }}}
 		{ -- nvim-dbee {{{
-			"kndndrj/nvim-dbee",
+			-- "kndndrj/nvim-dbee",
+			"hejops/nvim-dbee",
+			commit = "4562e67",
 
 			-- + api is quite hackable
 			-- + implements pagination (good for large queries)
@@ -585,42 +587,55 @@ require("lazy").setup(
 			-- + query history
 			-- + query results are copied as json
 			-- - BB is a silly default binding to execute query (fixable?)
-			-- - executing a query focuses the result pane (fixed with autocmd)
+			-- - executing a query always focuses the result pane (see PR)
 			-- - i dislike the 4-pane gui
+			-- - table schema cannot really be viewed? (sqlite)
 
+			ft = { "sql" },
 			dependencies = { "MunifTanjim/nui.nvim" },
 			build = function()
 				require("dbee").install()
 			end,
 			config = function()
+				-- https://github.com/kndndrj/nvim-dbee/blob/master/doc/dbee.txt#L136
 				require("dbee").setup({
+
 					sources = {
 						require("dbee.sources").MemorySource:new({
 							{
 								name = "foo",
 								type = "sqlite",
-								url = vim.env.HOME .. "/gripts/disq/collection2.db",
+								url = os.getenv("HOME") .. "/gripts/disq/collection2.db",
 							},
 						}),
 						require("dbee.sources").EnvSource:new("DBEE_CONNECTIONS"),
 						require("dbee.sources").FileSource:new(vim.fn.stdpath("cache") .. "/dbee/persistence.json"),
 					},
 
-					editor = {
+					result = {
+						focus_result = false,
 						mappings = {
-							-- TODO: this overrides the original binding, making Sqls (or whatever) unavailable after dbee is exited
-							{ key = "<leader>x", mode = "n", action = "run_file" },
+							{ key = "<C-c>", mode = "", action = "cancel_call" },
 						},
 					},
 
-					result = { mappings = {
-						{ key = "<C-c>", mode = "", action = "cancel_call" },
-					} },
+					-- -- https://github.com/MishimaPorte/asu-dotfiles/blob/09f5280e/.config/nvim/lua/plgs/dbee.lua#L148
+					-- ui = {
+					-- 	window_open_order = { "editor", "result", "drawer" },
+					-- },
+
+					-- https://github.com/kndndrj/nvim-dbee/blob/21d2cc08/lua/dbee/layouts/init.lua#L44
+					window_layout = require("dbee.layouts").Default:new({
+						result_height = vim.o.lines * 0.2,
+						call_log_height = 0,
+						drawer_width = 0,
+					}),
 				})
 
 				local dbee = require("dbee")
+
 				vim.keymap.set("n", "<leader>X", function()
-					local scratch_dir = vim.env.HOME .. "/.local/state/nvim/dbee/notes/memory_source_memory1"
+					local scratch_dir = os.getenv("HOME") .. "/.local/state/nvim/dbee/notes/memory_source_memory1"
 					local scratch_path = scratch_dir .. "/" .. vim.fn.expand("%:t")
 
 					-- ensure note is synced to the file
@@ -635,7 +650,8 @@ require("lazy").setup(
 						return table.concat(content, "\n")
 					end
 					dbee.execute(buffer_to_string())
-				end)
+					vim.cmd.wincmd("|") -- hide drawer+call log (hacky)
+				end, { buffer = true })
 			end,
 		}, -- }}}
 		{ -- vim-dadbod-ui {{{

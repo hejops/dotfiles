@@ -463,7 +463,11 @@ local function exec()
 	if vim.bo.filetype == "nofile" then
 		return
 	elseif vim.bo.filetype == "sql" then
-		vim.cmd("SqlsExecuteQuery")
+		if require("dbee").is_open() then
+			require("dbee").api.ui.editor_do_action("run_file")
+		else
+			vim.cmd("SqlsExecuteQuery")
+		end
 		return
 	end
 
