@@ -86,7 +86,15 @@ alias y="bash ~/gripts/disq/ytm.sh"
 # git {{{
 
 get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
-alias cdr="cd \$(get_repo_root)"
+
+cdr() {
+	if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+		cd "$(get_repo_root)" || :
+	elif [[ -n $REPO ]]; then
+		cd "$REPO" || :
+	fi
+
+}
 
 # shellcheck disable=SC2120
 gls() {
