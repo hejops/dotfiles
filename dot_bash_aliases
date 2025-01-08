@@ -333,8 +333,11 @@ gc() {
 		git commit -v
 
 	else
-		# 4. all files that have changed
-		git diff --name-only | xargs git commit -v
+		# 4. all files that have changed in the current dir
+		git diff --name-only |
+			prepend "$(get_repo_root)/" |
+			grep "$PWD" |
+			xargs git commit -v
 
 	fi
 
