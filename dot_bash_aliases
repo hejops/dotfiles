@@ -1,4 +1,5 @@
-# vim: set filetype=sh -- .bash_aliases is known, this isn't
+# shellcheck shell=bash
+# vim:ft=bash
 # if possible, this file should remain under 1000 LOC.
 
 # autostart {{{
@@ -85,7 +86,15 @@ alias y="bash ~/gripts/disq/ytm.sh"
 # git {{{
 
 get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
-alias cdr="cd \$(get_repo_root)"
+
+cdr() {
+	if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+		cd "$(get_repo_root)" || :
+	elif [[ -n $REPO ]]; then
+		cd "$REPO" || :
+	fi
+
+}
 
 # shellcheck disable=SC2120
 gls() {
@@ -332,8 +341,11 @@ gc() {
 		git commit -v
 
 	else
-		# 4. all files that have changed
-		git diff --name-only | xargs git commit -v
+		# 4. all files that have changed in the current dir
+		git diff --name-only |
+			prepend "$(get_repo_root)/" |
+			grep "$PWD" |
+			xargs git commit -v
 
 	fi
 

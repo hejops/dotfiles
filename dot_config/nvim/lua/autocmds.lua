@@ -140,7 +140,7 @@ vim.api.nvim_create_autocmd("FileType", {
 		end
 
 		if not vim.loop.fs_stat(".markuplintrc.json") then
-			os.execute([[	
+			os.execute([[
 				echo '{
 					"extends": ["markuplint:recommended"],
 					"parser": {"\\.html$": "@markuplint/htmx-parser"},
@@ -219,6 +219,23 @@ vim.api.nvim_create_autocmd("TermOpen", {
 -- 		-- vim.cmd.redraw()
 -- 		-- vim.cmd.norm("h")
 -- 		-- vim.cmd.norm("l")
+-- 	end,
+-- })
+
+-- https://github.com/Virus288/Neovim-Config/blob/5cb7f321/lua/configs/lspConfig.lua#L95
+-- WARN: this applies -all- code actions, even ones that are undesired (e.g.
+-- export default), so this is almost always a bad idea
+-- vim.api.nvim_create_autocmd("BufWritePre", {
+-- 	pattern = { "*.ts" },
+-- 	callback = function()
+-- 		vim.lsp.buf.code_action({
+-- 			apply = true,
+-- 			context = {
+-- 				diagnostics = {},
+-- 				only = { "refactor" },
+-- 			},
+-- 		})
+-- 		vim.cmd("write")
 -- 	end,
 -- })
 
