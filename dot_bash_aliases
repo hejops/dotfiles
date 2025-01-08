@@ -1,4 +1,5 @@
-# vim: set filetype=sh -- .bash_aliases is known, this isn't
+# shellcheck shell=bash
+# vim:ft=bash
 # if possible, this file should remain under 1000 LOC.
 
 # autostart {{{
