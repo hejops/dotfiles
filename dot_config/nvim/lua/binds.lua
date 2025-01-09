@@ -251,7 +251,9 @@ local ft_binds = { -- {{{
 		-- rg -t typescript '^(  [^: ]+:.+) // (.+)' .
 		-- /** \2 */\n\1
 		{ "n", "<leader>X", [[0f/wbDO<esc>pA<space>*/<esc>0ciw/**<esc>:w<cr>]] },
-		{ "n", "<leader>a", ":!npm install " },
+		{ "n", "<leader>a", ":!npm install " }, -- TODO: yarn.lock -> yarn
+
+		-- [[(async () => {})();]]
 	},
 
 	rust = {
@@ -456,6 +458,65 @@ end
 -- https://en.wikipedia.org/wiki/C_POSIX_library
 -- pacman -Ql glibc | grep -Po '/usr/include/.+\.h'
 
+local function ts_is_compiled(js, ts)
+	-- if the js file newer than the ts file, the ts file can be said to be
+	-- compiled
+
+	local f1 = assert(io.popen("stat -c %Y " .. js))
+	local js_epoch = f1:read()
+	f1:close()
+
+	local f2 = assert(io.popen("stat -c %Y " .. ts))
+	local ts_epoch = f2:read()
+	f2:close()
+
+	return js_epoch > ts_epoch
+end
+
+local function get_ts_runner(file) -- attempt to run .ts file
+	-- -- https://old.reddit.com/r/neovim/comments/mq4pxn/best_way_to_get_current_buffer_content_as_a_lua/gufgtv8/
+	-- if require("util"):buf_contains("@observablehq/plot") then
+	-- 	local tmpfile = "/tmp/foo.html"
+	-- 	-- vim.cmd(front .. runner .. " | tee " .. tmpfile)
+	-- 	vim.cmd(string.format("%s %s | tee %s", front, runner, tmpfile))
+	-- 	os.execute("firefox " .. tmpfile)
+	-- 	vim.cmd.wincmd("k")
+	-- 	vim.cmd.wincmd("h")
+	-- 	return
+	-- end
+
+	local js = string.gsub(file, ".ts", ".js")
+
+	-- cd first, so that child's node_modules/tsx can be found
+	-- this assumes that node_modules and file.ts are at the same level
+	vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
+	file = vim.fn.expand("%:.") -- relative to child dir
+
+	if vim.loop.fs_stat(".env") and vim.loop.fs_stat("~/.local/bin/node23") then
+		return "node23 --no-warnings --import=tsx --env-file=.env " .. file
+	elseif vim.loop.fs_stat(js) and ts_is_compiled(js, file) then
+		-- fastest, but requires already compiled js (which is slow)
+		return "node " .. js -- 0.035 s
+	elseif vim.loop.fs_stat("./node_modules/tsx") then
+		-- run with node directly (without transpilation); requires tsx
+		-- npm install --save-dev tsx
+		-- https://nodejs.org/api/typescript.html#full-typescript-support
+		-- --enable-source-maps doesn't seem to report source line number correctly
+		return "node --no-warnings --import=tsx " .. file
+	elseif vim.fn.executable("tsc") == 1 and vim.loop.fs_stat("./node_modules/@types/node") then
+		-- https://stackoverflow.com/a/78148646
+		os.execute("tsc " .. file) -- ts -> js, 1.46 s
+		return "node " .. js
+	elseif vim.loop.fs_stat("./package.json") then
+		vim.notify("installing tsx...")
+		os.execute("yarn add --dev tsx")
+		get_ts_runner(file) -- may not work
+	else
+		-- TODO: force install?
+		error("No suitable ts runner; try npm install --save-dev tsx")
+	end
+end
+
 -- run current file and dump stdout to scratch buffer
 local function exec()
 	-- {{{
@@ -495,65 +556,6 @@ local function exec()
 		-- local cmd = string.format("cat %s | sqlite3 %s", file, db)
 		-- print(cmd)
 		return cmd
-	end
-
-	-- if the js file newer than the ts file, the ts file can be said to be
-	-- compiled
-	local function ts_is_compiled(js, ts)
-		local f1 = io.popen("stat -c %Y " .. js)
-		local js_epoch = f1:read()
-		f1:close()
-
-		local f2 = io.popen("stat -c %Y " .. ts)
-		local ts_epoch = f2:read()
-		f2:close()
-
-		return js_epoch > ts_epoch
-	end
-
-	-- attempt to run .ts file
-	local function get_ts_runner(file)
-		-- -- https://old.reddit.com/r/neovim/comments/mq4pxn/best_way_to_get_current_buffer_content_as_a_lua/gufgtv8/
-		-- if require("util"):buf_contains("@observablehq/plot") then
-		-- 	local tmpfile = "/tmp/foo.html"
-		-- 	-- vim.cmd(front .. runner .. " | tee " .. tmpfile)
-		-- 	vim.cmd(string.format("%s %s | tee %s", front, runner, tmpfile))
-		-- 	os.execute("firefox " .. tmpfile)
-		-- 	vim.cmd.wincmd("k")
-		-- 	vim.cmd.wincmd("h")
-		-- 	return
-		-- end
-
-		local js = string.gsub(file, ".ts", ".js")
-
-		-- cd first, so that child's node_modules/tsx can be found
-		-- this assumes that node_modules and file.ts are at the same level
-		vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
-		file = vim.fn.expand("%:.") -- relative to child dir
-
-		if vim.loop.fs_stat(".env") and vim.loop.fs_stat("~/.local/bin/node23") then
-			return "node23 --no-warnings --import=tsx --env-file=.env " .. file
-		elseif vim.loop.fs_stat(js) and ts_is_compiled(js, file) then
-			-- fastest, but requires already compiled js (which is slow)
-			return "node " .. js -- 0.035 s
-		elseif vim.loop.fs_stat("./node_modules/tsx") then
-			-- run with node directly (without transpilation); requires tsx
-			-- npm install --save-dev tsx
-			-- https://nodejs.org/api/typescript.html#full-typescript-support
-			-- --enable-source-maps doesn't seem to report source line number correctly
-			return "node --no-warnings --import=tsx " .. file
-		elseif vim.fn.executable("tsc") == 1 and vim.loop.fs_stat("./node_modules/@types/node") then
-			-- https://stackoverflow.com/a/78148646
-			os.execute("tsc " .. file) -- ts -> js, 1.46 s
-			return "node " .. js
-		elseif vim.loop.fs_stat("./package.json") then
-			vim.notify("installing tsx...")
-			os.execute("yarn add --dev tsx")
-			get_ts_runner(file) -- may not work
-		else
-			-- TODO: force install?
-			error("No suitable ts runner; try npm install --save-dev tsx")
-		end
 	end
 
 	local runners = {
@@ -639,10 +641,9 @@ local function exec()
 	elseif type(runner) == "function" then
 		runner = runner(curr_file)
 	elseif vim.loop.fs_stat(cwd .. "/pyproject.toml") then
-		-- if pyproject.toml, prepend poetry run
 		runner = "poetry run " .. runner
-	elseif vim.loop.fs_stat(cwd .. "/manage.py") then -- django
-		runner = "./manage.py shell < " .. curr_file
+		-- elseif vim.loop.fs_stat(cwd .. "/manage.py") then -- django
+		-- 	runner = "./manage.py shell < " .. curr_file
 		-- elseif string.find(curr_file, "grammar.js") ~= nil then
 		-- 	-- runner = "tree-sitter generate ; tree-sitter parse ./testfile 2>/dev/null"
 		-- 	-- runner = "tree-sitter generate ; tree-sitter test" -- hard to diff without color
