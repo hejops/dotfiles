@@ -77,7 +77,7 @@ alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tx="tectonic -X"
-alias tz=trizen
+alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 alias vf="\$EDITOR \$(fzf)"
 alias y="bash ~/gripts/disq/ytm.sh"
 
@@ -325,7 +325,21 @@ gc() {
 		git commit -v "${arr[@]}"
 
 	elif
-		# 2. file(s) that have been renamed/deleted
+		# 2a. file(s) that have been renamed/deleted
+		git status --porcelain | grep -Pq '^R.+ -> '
+	then
+		pushd "$(get_repo_root)" || return
+		git status --porcelain |
+			grep -P '^R' |
+			sed 's/^R[^ ]* //; s/->//' | # very iffy
+			# ideally, i want this (to avoid pushd), but xargs cannot be used on func
+			# xargs prepend "$(get_repo_root)"/ |
+			# realpath --relative-to=.
+			xargs git commit -v
+		popd || return
+
+	elif
+		# 2b. file(s) that have been renamed/deleted
 		git status --porcelain | grep -Pq '^(R | D)'
 	then
 		git status --porcelain |
@@ -1290,9 +1304,9 @@ j() {
 # }}}
 # stdout manipulation {{{
 
-append() { awk < /dev/stdin '{print $0 "'"$1"'"}'; }
-largs() { xargs < /dev/stdin --no-run-if-empty --delimiter='\n' "$@"; } # split xargs by newline instead of space
-prepend() { awk < /dev/stdin '{print "'"$1"'" $0}'; }
+append() { < /dev/stdin awk '{print $0 "'"$1"'"}'; }
+largs() { < /dev/stdin xargs --no-run-if-empty --delimiter='\n' "$@"; } # split xargs by newline instead of space
+prepend() { < /dev/stdin awk '{print "'"$1"'" $0}'; }
 sum() { < /dev/stdin paste -sd+ | bc; }
 
 jqk() {
