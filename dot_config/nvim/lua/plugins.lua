@@ -28,8 +28,8 @@ require("lazy").setup(
 		"stevearc/conform.nvim",
 		"tpope/vim-fugitive",
 		"tpope/vim-repeat",
-		"tpope/vim-sleuth", -- detect tabstop and shiftwidth automatically
 		"tpope/vim-surround",
+		-- "tpope/vim-sleuth", -- detect tabstop and shiftwidth automatically; disabled because it has unexpected side effects
 		{ "akinsho/git-conflict.nvim", version = "*", opts = {} },
 		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} },
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
