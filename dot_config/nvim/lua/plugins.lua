@@ -297,8 +297,11 @@ require("lazy").setup(
 						{
 							"tabs", -- more configurable than buffers
 
-							-- tab_max_length = 40,
-							max_length = vim.o.columns,
+							-- tab_max_length = 40, -- cannot be a func
+							max_length = function()
+								-- ensure tab bar is dynamically resized
+								return vim.o.columns
+							end,
 							mode = 2, -- tab_nr + tab_name
 
 							-- 0: just shows the filename
