@@ -612,11 +612,14 @@ require("lazy").setup(
 						require("dbee.sources").FileSource:new(vim.fn.stdpath("cache") .. "/dbee/persistence.json"),
 					},
 
+					editor = {
+						mappings = { { key = "BB", mode = "", action = "" } },
+					},
+
 					result = {
 						focus_result = false,
-						mappings = {
-							{ key = "<C-c>", mode = "", action = "cancel_call" },
-						},
+						page_size = 10,
+						mappings = { { key = "<c-c>", mode = "", action = "cancel_call" } },
 					},
 
 					-- -- https://github.com/MishimaPorte/asu-dotfiles/blob/09f5280e/.config/nvim/lua/plgs/dbee.lua#L148
@@ -626,7 +629,7 @@ require("lazy").setup(
 
 					-- https://github.com/kndndrj/nvim-dbee/blob/21d2cc08/lua/dbee/layouts/init.lua#L44
 					window_layout = require("dbee.layouts").Default:new({
-						result_height = vim.o.lines * 0.2,
+						result_height = 11, -- not dynamic!
 						call_log_height = 0,
 						drawer_width = 0,
 					}),
