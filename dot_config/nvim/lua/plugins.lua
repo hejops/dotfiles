@@ -188,25 +188,21 @@ require("lazy").setup(
 
 					-- formatters
 
-					"black",
+					"biome",
 					"gofumpt",
 					"goimports", -- required for autoimport (reviser only performs grouping)
 					"goimports-reviser",
 					"golines",
-					"isort",
+					"mdslw",
 					"prettier",
 					"shfmt",
 					"stylua",
-					-- "astyle",
-					-- "clang_format",
-					-- "rustfmt", -- 'use rustup instead'
 
 					-- linters
 
 					"gitlint",
 					"golangci-lint",
 					"markdownlint",
-					"pylint",
 					"ruff",
 					"shellcheck",
 				},
