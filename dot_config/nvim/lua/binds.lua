@@ -232,6 +232,28 @@ local ft_binds = { -- {{{
 		{ "n", "K", "<c-b>zz" },
 	},
 
+	sql = {
+
+		{
+			"n",
+			"J",
+			function()
+				if require("dbee").is_open() then
+					require("dbee").api.ui.result_page_next()
+				end
+			end,
+		},
+		{
+			"n",
+			"K",
+			function()
+				if require("dbee").is_open() then
+					require("dbee").api.ui.result_page_prev()
+				end
+			end,
+		},
+	},
+
 	["qf,help,man,lspinfo,startuptime,Trouble,lazy"] = {
 		{ "n", "q", "ZZ" },
 		{ "n", "x", "ZZ" },
