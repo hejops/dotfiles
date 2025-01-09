@@ -10,12 +10,27 @@ M = {}
 -- function M:bar -> require('foo'):bar(baz) = bar(self, baz) = self:bar(baz)
 -- function M:bar -> require('foo').bar(baz) = bar(baz) = baz:bar()
 
-function M:command_ok(cmd)
-	-- https://stackoverflow.com/a/23827063
-	return os.execute(cmd) / 256 == 0
+-- vim.tbl_keys is non-deterministic
+function M:keys(t)
+	local _keys = {}
+	for k, _ in pairs(t) do
+		table.insert(_keys, k)
+	end
+	return _keys
 end
 
-M.is_ubuntu = M:command_ok("grep Ubuntu /etc/*-release")
+-- buffers {{{
+
+function M:get_bufnr(fname)
+	-- nvim_list_bufs implicitly includes bufs that are not actually loaded!
+	-- (:buffers) how though? seems interesting
+	for _, bn in pairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_is_loaded(bn) and vim.api.nvim_buf_get_name(bn) == fname then
+			return bn
+		end
+	end
+	return nil
+end
 
 -- only first 10 lines of buffer are checked
 function M:buf_contains(target, lines)
@@ -27,43 +42,7 @@ function M:buf_contains(target, lines)
 	return false
 end
 
-function M:in_git_repo()
-	-- https://www.reddit.com/r/neovim/comments/y2t9rt/comment/is4wjmb/
-	-- https://www.reddit.com/r/neovim/comments/vkckjb/comment/idosy7m/
-	-- maybe use this cond to lazy-start gitsigns
-	vim.fn.system("git rev-parse --is-inside-work-tree")
-	return vim.v.shell_error == 0
-end
-
--- get git repo root, ignoring all possible child directories
-function M:root_directory()
-	local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
-	local toplevel = vim.fn.system(cmd)
-	if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
-		return vim.fn.getcwd()
-	end
-	return toplevel:sub(0, -2)
-end
-
-function M:get_layout_strategy()
-	-- "vertical" is recommended if file previews are important, e.g. git
-	-- diff, symbol search, or if window is narrow
-	--
-	-- "center" is recommended if previews are unimportant (or
-	-- irrelevant)
-	--
-	-- for everything else, "horizontal" is a good fallback. having said
-	-- that, thinking about layouts is cognitive load and should be
-	-- avoided
-	if vim.o.lines > 60 or vim.o.columns < 100 then
-		return "vertical"
-	else
-		return "horizontal"
-	end
-end
-
--- return list of (open) buffer paths
-function M:get_bufs_loaded()
+function M:get_bufs_loaded() -- return list of (open) buffer paths
 	-- TODO: ...that are git tracked
 	-- Git commit <paths>
 	local bufs_loaded = {}
@@ -94,6 +73,15 @@ function M:buf_loaded(fname)
 	return false
 end
 
+function M:open_split(file)
+	if not M:buf_loaded(vim.fs.basename(file)) then
+		local h = vim.o.lines * 0.2
+		local cmd = h .. " new " .. file
+		vim.cmd(cmd)
+		vim.cmd.wincmd("k")
+	end
+end
+
 function M:close_unnamed_splits()
 	for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
 		if vim.api.nvim_buf_get_name(bufnr) == "" then
@@ -102,12 +90,40 @@ function M:close_unnamed_splits()
 	end
 end
 
-function M:open_split(file)
-	if not M:buf_loaded(vim.fs.basename(file)) then
-		local h = vim.o.lines * 0.2
-		local cmd = h .. " new " .. file
-		vim.cmd(cmd)
-		vim.cmd.wincmd("k")
+-- }}}
+
+-- ui {{{
+
+function M:resize_2_splits()
+	-- maximise required, else 50/50 split
+	vim.cmd("resize " .. vim.o.lines) -- max height (no default)
+	vim.cmd("vertical resize " .. vim.o.columns) -- max width
+
+	local height = vim.o.lines
+	local width = vim.o.columns
+
+	local wide = vim.o.columns > 150
+	if wide then
+		vim.cmd("vertical resize -" .. math.floor(width * 0.33))
+	else
+		vim.cmd("resize -" .. math.floor(height * 0.2))
+	end
+end
+
+function M:get_layout_strategy()
+	-- "vertical" is recommended if file previews are important, e.g. git
+	-- diff, symbol search, or if window is narrow
+	--
+	-- "center" is recommended if previews are unimportant (or
+	-- irrelevant)
+	--
+	-- for everything else, "horizontal" is a good fallback. having said
+	-- that, thinking about layouts is cognitive load and should be
+	-- avoided
+	if vim.o.lines > 60 or vim.o.columns < 100 then
+		return "vertical"
+	else
+		return "horizontal"
 	end
 end
 
@@ -166,6 +182,38 @@ function M:random_colorscheme() -- {{{
 	vim.cmd.colorscheme(scheme)
 end -- }}}
 
+-- }}}
+
+-- i/o {{{
+
+function M:command_ok(cmd)
+	-- https://stackoverflow.com/a/23827063
+	return os.execute(cmd) / 256 == 0
+end
+
+M.is_ubuntu = M:command_ok("grep Ubuntu /etc/*-release")
+
+function M:in_git_repo()
+	-- https://www.reddit.com/r/neovim/comments/y2t9rt/comment/is4wjmb/
+	-- https://www.reddit.com/r/neovim/comments/vkckjb/comment/idosy7m/
+	-- maybe use this cond to lazy-start gitsigns
+	return M:command_ok("git rev-parse --is-inside-work-tree")
+end
+
+-- get git repo root, ignoring all possible child directories
+function M:root_directory()
+	local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
+	local toplevel = vim.fn.system(cmd)
+	if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
+		return vim.fn.getcwd()
+	end
+	return toplevel:sub(0, -2)
+end
+
+-- }}}
+
+-- markdown {{{
+
 function M:md_to_pdf()
 	local _in = vim.fn.shellescape(vim.fn.expand("%")) -- basename!
 	if string.find(_in, "chapter_") ~= nil then -- don't compile mdbook
@@ -184,40 +232,6 @@ function M:md_to_pdf()
 	end
 end
 
-function M:resize_2_splits()
-	-- maximise required, else 50/50 split
-	vim.cmd("resize " .. vim.o.lines) -- max height (no default)
-	vim.cmd("vertical resize " .. vim.o.columns) -- max width
-
-	local height = vim.o.lines
-	local width = vim.o.columns
-
-	local wide = vim.o.columns > 150
-	if wide then
-		vim.cmd("vertical resize -" .. math.floor(width * 0.33))
-	else
-		vim.cmd("resize -" .. math.floor(height * 0.2))
-	end
-end
-
--- vim.tbl_keys is non-deterministic
-function M:keys(t)
-	local _keys = {}
-	for k, _ in pairs(t) do
-		table.insert(_keys, k)
-	end
-	return _keys
-end
-
-function M:get_bufnr(fname)
-	-- nvim_list_bufs implicitly includes bufs that are not actually loaded!
-	-- (:buffers) how though? seems interesting
-	for _, bn in pairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_is_loaded(bn) and vim.api.nvim_buf_get_name(bn) == fname then
-			return bn
-		end
-	end
-	return nil
-end
+-- }}}
 
 return M
