@@ -55,22 +55,6 @@ require("lazy").setup(
 		},
 
 		{
-			"nanotee/sqls.nvim",
-			ft = "sql",
-			config = function()
-				require("lspconfig").sqls.setup({
-					on_attach = function(client, bufnr)
-						local cfg = vim.env.HOME .. "/.config/sqls/config.yml"
-						if not vim.loop.fs_stat(cfg) then
-							print("Warning: one or more connections must be defined in", cfg)
-						end
-						require("sqls").on_attach(client, bufnr)
-					end,
-				})
-			end,
-		},
-
-		{
 			"ray-x/lsp_signature.nvim",
 			lazy = true,
 			-- event = "LspAttach", -- the config func will NOT be run (properly), so using an event is pointless
@@ -343,10 +327,10 @@ require("lazy").setup(
 				-- https://github.com/nvim-telescope/telescope.nvim/wiki/Extensions#different-plugins-with-telescope-integration
 
 				"LukasPietzschmann/telescope-tabs", -- do i use this?
-				-- "MaximilianLloyd/adjacent.nvim",
-				{ "hejops/adjacent.nvim", branch = "ignore-binary" },
 				"nvim-lua/plenary.nvim", -- backend
 				"nvim-telescope/telescope-file-browser.nvim", -- netrw-like
+				"nvim-telescope/telescope-frecency.nvim",
+				-- "MaximilianLloyd/adjacent.nvim",
 				-- "aznhe21/actions-preview.nvim", -- https://github.com/aznhe21/actions-preview.nvim/issues/54
 				-- "fcying/telescope-ctags-outline.nvim",
 				-- "nvim-telescope/telescope-ui-select.nvim", -- https://github.com/nvim-telescope/telescope-ui-select.nvim/issues/44
@@ -354,6 +338,7 @@ require("lazy").setup(
 				-- "tsakirist/telescope-lazy.nvim",
 				{ "AckslD/nvim-neoclip.lua", opts = {} }, -- yank history; do i use this?
 				{ "crispgm/telescope-heading.nvim", ft = "markdown" }, -- headings in markdown
+				{ "hejops/adjacent.nvim", branch = "ignore-binary" },
 			},
 		},
 
@@ -525,6 +510,7 @@ require("lazy").setup(
 				"mfussenegger/nvim-dap-python",
 				"thehamsta/nvim-dap-virtual-text",
 			},
+			ft = { "python" },
 			config = function()
 				-- https://github.com/mfussenegger/dotfiles/blob/da93d1f7f52ea50b00199696a6977dd70a84736e/vim/dot-config/nvim/lua/me/dap.lua
 
@@ -630,31 +616,6 @@ require("lazy").setup(
 						drawer_width = 0,
 					}),
 				})
-
-				-- vim.keymap.set("n", "<leader>X", start_dbee, { buffer = true })
-			end,
-		}, -- }}}
-		{ -- vim-dadbod-ui {{{
-
-			-- + can view table schema (though with sqls)
-			-- + queries are executed immediately on write
-			-- + works without lsp (but uses cmp)
-			-- - extra cmp dependency + setup
-			-- - no real api
-			-- - not immediately obvious how to 'sync' files
-			-- - r is bound in result pane
-
-			"kristijanhusak/vim-dadbod-ui",
-			ft = { "sql" },
-			dependencies = {
-				"tpope/vim-dadbod",
-				"kristijanhusak/vim-dadbod-completion",
-			},
-			cmd = { "DBUI", "DBUIToggle", "DBUIAddConnection", "DBUIFindBuffer" },
-			init = function()
-				vim.g.dbs = {
-					{ name = "foo", url = "sqlite://" .. vim.env.HOME .. "/gripts/disq/collection2.db" },
-				}
 			end,
 		}, -- }}}
 
