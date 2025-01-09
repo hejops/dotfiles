@@ -542,10 +542,14 @@ local function exec()
 			-- https://nodejs.org/api/typescript.html#full-typescript-support
 			-- --enable-source-maps doesn't seem to report source line number correctly
 			return "node --no-warnings --import=tsx " .. file
-		elseif vim.loop.fs_stat("./node_modules/@types/node") then
+		elseif vim.fn.executable("tsc") == 1 and vim.loop.fs_stat("./node_modules/@types/node") then
 			-- https://stackoverflow.com/a/78148646
 			os.execute("tsc " .. file) -- ts -> js, 1.46 s
 			return "node " .. js
+		elseif vim.loop.fs_stat("./package.json") then
+			vim.notify("installing tsx...")
+			os.execute("yarn add --dev tsx")
+			get_ts_runner(file) -- may not work
 		else
 			-- TODO: force install?
 			error("No suitable ts runner; try npm install --save-dev tsx")
