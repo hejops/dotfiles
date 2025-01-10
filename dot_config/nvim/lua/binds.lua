@@ -252,16 +252,7 @@ local ft_binds = { -- {{{
 			end,
 		},
 
-		{
-			"n",
-			"<leader>H",
-			function()
-				local dialect = "postgresql"
-				-- local dialect = "sqlite"
-				local url = string.format("https://devdocs.io/#q=%s+%s", dialect, vim.fn.expand("<cword>"))
-				os.execute("xdg-open " .. url)
-			end,
-		},
+		{ "n", "<leader>H", require("pickers").devdocs },
 	},
 
 	["qf,help,man,lspinfo,startuptime,Trouble,lazy"] = {
