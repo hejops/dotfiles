@@ -164,9 +164,11 @@ vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit currently stage
 vim.keymap.set("n", "<leader>gc", commit_staged, { desc = "commit currently staged hunks" })
 
 vim.keymap.set("n", "<leader>C", function()
-	-- TODO: if no changes, do nothing
-	vim.cmd("silent !pre-commit run --files %")
-	vim.cmd("Git commit --quiet -v %") -- commit entire file
+	if require("util"):command_ok("git diff --exit-code " .. vim.api.nvim_buf_get_name(0)) then
+		print("no changes to stage")
+	else
+		vim.cmd("Git commit --quiet -v %") -- commit entire file
+	end
 end, { desc = "commit current buffer" })
 
 vim.keymap.set("n", "<leader>gC", function()
