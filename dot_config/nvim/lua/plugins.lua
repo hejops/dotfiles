@@ -28,8 +28,8 @@ require("lazy").setup(
 		"stevearc/conform.nvim",
 		"tpope/vim-fugitive",
 		"tpope/vim-repeat",
-		"tpope/vim-sleuth", -- detect tabstop and shiftwidth automatically
 		"tpope/vim-surround",
+		-- "tpope/vim-sleuth", -- detect tabstop and shiftwidth automatically; disabled because it has unexpected side effects
 		{ "akinsho/git-conflict.nvim", version = "*", opts = {} },
 		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} },
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
@@ -281,8 +281,11 @@ require("lazy").setup(
 						{
 							"tabs", -- more configurable than buffers
 
-							-- tab_max_length = 40,
-							max_length = vim.o.columns,
+							-- tab_max_length = 40, -- cannot be a func
+							max_length = function()
+								-- ensure tab bar is dynamically resized
+								return vim.o.columns
+							end,
 							mode = 2, -- tab_nr + tab_name
 
 							-- 0: just shows the filename
