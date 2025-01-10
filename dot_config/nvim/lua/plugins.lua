@@ -469,7 +469,7 @@ require("lazy").setup(
 				"williamboman/mason-lspconfig.nvim",
 				{ "folke/neodev.nvim", opts = {} }, -- for init.lua only
 				{ "j-hui/fidget.nvim", opts = {}, event = "LspAttach" }, -- status updates for LSP
-				{ -- alert for possible code actions
+				{
 					"kosayoda/nvim-lightbulb",
 					event = "LspAttach",
 					opts = {
@@ -488,7 +488,7 @@ require("lazy").setup(
 							win_opts = { focusable = false },
 						},
 					},
-				},
+				}, -- alert for possible code actions
 
 				{
 					"williamboman/mason.nvim",
@@ -922,11 +922,3 @@ require("lazy").setup(
 		-- },
 	} -- }}}
 )
-
--- nvim-tree - might remove {{{
--- disable netrw at the very start of your init.lua
-vim.g.loaded_netrw = 1
-vim.g.loaded_netrwPlugin = 1
-
--- optionally enable 24-bit colour
-vim.opt.termguicolors = true
