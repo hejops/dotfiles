@@ -244,6 +244,9 @@ local ft_binds = { -- {{{
 		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>" },
 	},
 
+	-- %s/\vt\.true([^;]+)/expect\1.toBe(true)/g
+	-- %s/\vt\.is\(([^,]+), ([^)]+)\)/expect\(\1).toBe(\2)/g
+
 	["typescript,javascript,typescriptreact,javascriptreact"] = {
 		-- replace != and ==; probably better via find+sed
 		{ "n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]] },
@@ -741,13 +744,20 @@ local function debug_print()
 end -- }}}
 vim.keymap.set("n", "<leader>p", debug_print, { silent = true })
 
+local function yank_path()
+	local path = vim.fn.expand("%:p")
+	vim.fn.setreg("+", path)
+	print("yanked:", path)
+end
+vim.keymap.set("n", "yp", yank_path, { silent = true })
+
 -- example output:
 -- `lua/binds.lua:394	local function yank_path()`
-local function yank_path()
+local function yank_line_and_path()
 	local path = vim.fn.expand("%")
 	local lnum = vim.fn.line(".")
 	local line = vim.fn.trim(vim.api.nvim_get_current_line())
 	local str = path .. ":" .. lnum .. "\t" .. line .. "\n"
 	vim.fn.setreg("+", str)
 end
-vim.keymap.set("n", "yp", yank_path, { silent = true })
+vim.keymap.set("n", "yl", yank_line_and_path, { silent = true })
