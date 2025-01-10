@@ -522,6 +522,26 @@ local function get_ts_runner(file) -- attempt to run .ts file
 	end
 end
 
+local function start_dbee()
+	local dbee = require("dbee")
+	local scratch_dir = os.getenv("HOME") .. "/.local/state/nvim/dbee/notes/memory_source_memory1"
+	local scratch_path = scratch_dir .. "/" .. vim.fn.expand("%:t")
+
+	-- ensure note is synced to the file
+	local cmd = string.format([[ln -sf %s %s/]], vim.fn.expand("%:p"), scratch_dir)
+	os.execute(cmd)
+
+	local id = require("dbee").api.ui.editor_search_note_with_file(scratch_path).id
+	dbee.api.ui.editor_set_current_note(id)
+
+	local function buffer_to_string()
+		local content = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
+		return table.concat(content, "\n")
+	end
+	dbee.execute(buffer_to_string())
+	vim.cmd.wincmd("|") -- hide drawer+call log (hacky)
+end
+
 -- run current file and dump stdout to scratch buffer
 local function exec()
 	-- {{{
@@ -529,7 +549,12 @@ local function exec()
 	if vim.bo.filetype == "nofile" then
 		return
 	elseif vim.bo.filetype == "sql" then
-		vim.cmd("SqlsExecuteQuery")
+		if require("dbee").is_open() then
+			require("dbee").api.ui.editor_do_action("run_file")
+		else
+			start_dbee()
+			-- vim.cmd("SqlsExecuteQuery")
+		end
 		return
 	end
 

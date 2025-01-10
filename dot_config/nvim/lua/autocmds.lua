@@ -259,3 +259,16 @@ vim.api.nvim_create_autocmd("FileType", {
 		end, { buffer = true })
 	end,
 })
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "sql" },
+	callback = function()
+		-- may need nightly install https://github.com/quarylabs/sqruff?tab=readme-ov-file#for-other-platforms
+		local cmd =
+			[[curl -fsSL https://raw.githubusercontent.com/quarylabs/sqruff/main/install.sh | sed -r '/INSTALL_DIR/ s|/usr/local/bin|$HOME/.local/bin|; s/sudo mv/mv -v/' | bash -x]]
+		if not vim.fn.executable("sqruff") then
+			print("installing sqruff...")
+			os.execute(cmd)
+		end
+	end,
+})

@@ -42,6 +42,7 @@ unset p paths
 
 # note: TERM is set by x
 export TERMINAL='wezterm start'
+# export TERMINAL='ghostty -e'
 
 if command -v nvim > /dev/null 2> /dev/null; then
 	export EDITOR=nvim
@@ -200,14 +201,13 @@ export QT_AUTO_SCREEN_SCALE_FACTOR=0
 # TODO: to include this when sourcing, LINES needs to be set
 # include hidden files, can be quite slow from $HOME
 
+# note: ctrl-i mirrors tab, so it cannot be bound
 # note: ctrl-shift not supported: https://github.com/junegunn/fzf/issues/2867
 export FZF_DEFAULT_OPTS="
 
 --bind ctrl-c:cancel
 --bind ctrl-h:preview-page-down
---bind ctrl-i:preview-page-up
 --bind ctrl-l:preview-page-up
---bind ctrl-u:preview-page-down
 --cycle
 --pointer='→'
 --preview-window='bottom,cycle,wrap,border-top,5'

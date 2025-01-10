@@ -541,6 +541,9 @@ cmp.setup({
 		-- { name = "gitcommit" }, -- dunno how this is supposed to work -- https://github.com/Cassin01/cmp-gitcommit#usage
 	},
 })
+-- cmp.setup.filetype({ "sql" }, {
+-- 	sources = { { name = "vim-dadbod-completion" } },
+-- })
 
 require("cmp-gitcommit").setup({}) -- i don't really use this
 

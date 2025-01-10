@@ -1451,6 +1451,7 @@ mw() {
 bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
 rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
 ya() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
+yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '.title, .description, .webpage_url, .channel_url'; }
 yt() { mpv --force-window "ytdl://ytsearch10:\'$*\'"; }
 
 ys() { # read youtube subs in less
