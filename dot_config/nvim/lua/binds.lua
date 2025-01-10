@@ -153,27 +153,25 @@ vim.keymap.set("n", "<rightmouse>", "<nop>")
 vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
 vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 
--- TODO: git add % + git commit --amend --no-edit
-
 local function commit_staged()
-	vim.cmd("silent !pre-commit run") -- limit to staged files
-	vim.cmd("Git commit --quiet -v") -- commit currently staged chunk(s)
+	if require("util"):command_ok("git status --porcelain | grep '^M'") then
+		vim.cmd("Git commit --quiet -v") -- commit currently staged chunk(s)
+	elseif not require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0)) then
+		vim.cmd("Git commit --quiet -v %") -- commit entire file
+	else
+		print("no changes to stage")
+	end
 end
 
-vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit currently staged hunks" })
-vim.keymap.set("n", "<leader>gc", commit_staged, { desc = "commit currently staged hunks" })
+vim.keymap.set("n", "<leader>C", commit_staged, { desc = "commit current buffer/hunks" })
+vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit current buffer/hunks" })
+vim.keymap.set("n", "<leader>gc", commit_staged, { desc = "commit current buffer/hunks" })
 
-vim.keymap.set("n", "<leader>C", function()
-	if require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0)) then
-		print("no changes to stage")
-	else
-		vim.cmd("Git commit --quiet -v %") -- commit entire file
-	end
-end, { desc = "commit current buffer" })
-
+-- TODO: git add % + git commit --amend --no-edit
 vim.keymap.set("n", "<leader>gC", function()
 	if require("util"):command_ok("git status --porcelain | grep '^M'") then
-		vim.cmd("Git commit --quiet --amend -v")
+		vim.cmd("Git commit --quiet --amend --no-edit")
+		print("Added hunk(s) to previous commit") -- TODO: sha?
 	else
 		print("No hunks staged")
 	end
