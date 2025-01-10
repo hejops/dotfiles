@@ -746,7 +746,8 @@ local function debug_print()
 
 	local ft = vim.bo.filetype
 	local cmd = filetypes[ft]
-	if ft == nil then
+	if cmd == nil then
+		print("No printer configured for " .. ft)
 		return
 	end
 
