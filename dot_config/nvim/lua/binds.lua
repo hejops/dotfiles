@@ -154,7 +154,8 @@ vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" }
 vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 
 local function commit_staged()
-	if require("util"):command_ok("git status --porcelain | grep '^M'") then
+	-- taken from gc
+	if require("util"):command_ok("git diff --name-only --cached --diff-filter=M") then
 		vim.cmd("Git commit --quiet -v") -- commit currently staged chunk(s)
 	elseif not require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0)) then
 		vim.cmd("Git commit --quiet -v %") -- commit entire file
