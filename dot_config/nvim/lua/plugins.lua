@@ -469,7 +469,26 @@ require("lazy").setup(
 				"williamboman/mason-lspconfig.nvim",
 				{ "folke/neodev.nvim", opts = {} }, -- for init.lua only
 				{ "j-hui/fidget.nvim", opts = {}, event = "LspAttach" }, -- status updates for LSP
-				{ "kosayoda/nvim-lightbulb", event = "LspAttach" }, -- alert for possible code actions
+				{ -- alert for possible code actions
+					"kosayoda/nvim-lightbulb",
+					event = "LspAttach",
+					opts = {
+						autocmd = { enabled = true },
+						sign = {
+							-- may distract from gitsigns
+							enabled = true,
+							text = "!",
+							-- text = "ⓘ",
+						},
+						float = {
+							enabled = false, -- messes with diagnostic floats (esp in rust)
+							-- text = "!",
+							text = "ⓘ",
+							hl = "LightBulbFloatWin", -- Highlight group to highlight the floating window.
+							win_opts = { focusable = false },
+						},
+					},
+				},
 
 				{
 					"williamboman/mason.nvim",
@@ -911,20 +930,3 @@ vim.g.loaded_netrwPlugin = 1
 
 -- optionally enable 24-bit colour
 vim.opt.termguicolors = true
-
-require("nvim-lightbulb").setup({
-	autocmd = { enabled = true },
-	sign = {
-		-- may distract from gitsigns
-		enabled = true,
-		text = "!",
-		-- text = "ⓘ",
-	},
-	float = {
-		enabled = false, -- messes with diagnostic floats (esp in rust)
-		-- text = "!",
-		text = "ⓘ",
-		hl = "LightBulbFloatWin", -- Highlight group to highlight the floating window.
-		win_opts = { focusable = false },
-	},
-})
