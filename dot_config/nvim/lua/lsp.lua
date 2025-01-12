@@ -245,14 +245,10 @@ local servers = { -- {{{
 				"-I",
 				".", -- https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html#index-I
 
-				-- "Since -Weverything enables every diagnostic, we generally don’t recommend using it."
+				"-Weverything",
 
-				"-Wall", -- https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wall
-				"-Wextra", -- https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-W
-				"-Wpedantic", -- https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-pedantic-1
-
-				"-Wshadow",
-				"-Wconversion",
+				"-Wno-declaration-after-statement", -- `int foo = 1;` not allowed in C99
+				"-Wno-missing-noreturn", -- noreturn requires C23, which breaks cproto
 			},
 
 			-- https://github.com/kuprTheMan/dotfiles/blob/b340744e0b4964e02ea43f34d4fd8303e6e8c644/.config/nvim/init.lua#L670
