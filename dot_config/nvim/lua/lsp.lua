@@ -249,6 +249,7 @@ local servers = { -- {{{
 
 				"-Wno-declaration-after-statement", -- `int foo = 1;` not allowed in C99
 				"-Wno-missing-noreturn", -- noreturn requires C23, which breaks cproto
+				"-Wno-unsafe-buffer-usage", -- asserts do not fix this -- https://stackoverflow.com/a/77017754
 			},
 
 			-- https://github.com/kuprTheMan/dotfiles/blob/b340744e0b4964e02ea43f34d4fd8303e6e8c644/.config/nvim/init.lua#L670
