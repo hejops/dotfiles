@@ -263,12 +263,30 @@ vim.api.nvim_create_autocmd("FileType", {
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "sql" },
 	callback = function()
+		if vim.fn.executable("sqruff") then
+			return
+		end
+
 		-- may need nightly install https://github.com/quarylabs/sqruff?tab=readme-ov-file#for-other-platforms
+		print("installing sqruff...")
 		local cmd =
 			[[curl -fsSL https://raw.githubusercontent.com/quarylabs/sqruff/main/install.sh | sed -r '/INSTALL_DIR/ s|/usr/local/bin|$HOME/.local/bin|; s/sudo mv/mv -v/' | bash -x]]
-		if not vim.fn.executable("sqruff") then
-			print("installing sqruff...")
-			os.execute(cmd)
+		os.execute(cmd)
+	end,
+})
+
+vim.api.nvim_create_autocmd("BufNewFile", {
+	callback = function()
+		local parent = vim.fn.expand("%:p:h")
+		if vim.loop.fs_stat(parent) then
+			return
 		end
+
+		local prompt = string.format("Directory %s does not exist. Create? ", parent)
+		vim.ui.input({ prompt = prompt }, function(choice)
+			if choice == "y" then
+				os.execute("mkdir -p " .. vim.fn.shellescape(parent))
+			end
+		end)
 	end,
 })
