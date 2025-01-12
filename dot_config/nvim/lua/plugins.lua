@@ -127,7 +127,8 @@ require("lazy").setup(
 		},
 
 		{
-			"xvzc/chezmoi.nvim",
+			"hejops/chezmoi.nvim",
+			branch = "check-text-nil",
 			dependencies = { "nvim-lua/plenary.nvim" },
 			config = function()
 				require("chezmoi").setup({
