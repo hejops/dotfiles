@@ -55,22 +55,6 @@ require("lazy").setup(
 		},
 
 		{
-			"nanotee/sqls.nvim",
-			ft = "sql",
-			config = function()
-				require("lspconfig").sqls.setup({
-					on_attach = function(client, bufnr)
-						local cfg = vim.env.HOME .. "/.config/sqls/config.yml"
-						if not vim.loop.fs_stat(cfg) then
-							print("Warning: one or more connections must be defined in", cfg)
-						end
-						require("sqls").on_attach(client, bufnr)
-					end,
-				})
-			end,
-		},
-
-		{
 			"ray-x/lsp_signature.nvim",
 			lazy = true,
 			-- event = "LspAttach", -- the config func will NOT be run (properly), so using an event is pointless
@@ -143,7 +127,8 @@ require("lazy").setup(
 		},
 
 		{
-			"xvzc/chezmoi.nvim",
+			"hejops/chezmoi.nvim",
+			branch = "check-text-nil",
 			dependencies = { "nvim-lua/plenary.nvim" },
 			config = function()
 				require("chezmoi").setup({
@@ -188,25 +173,21 @@ require("lazy").setup(
 
 					-- formatters
 
-					"black",
+					"biome",
 					"gofumpt",
 					"goimports", -- required for autoimport (reviser only performs grouping)
 					"goimports-reviser",
 					"golines",
-					"isort",
+					"mdslw",
 					"prettier",
 					"shfmt",
 					"stylua",
-					-- "astyle",
-					-- "clang_format",
-					-- "rustfmt", -- 'use rustup instead'
 
 					-- linters
 
 					"gitlint",
 					"golangci-lint",
 					"markdownlint",
-					"pylint",
 					"ruff",
 					"shellcheck",
 				},
@@ -350,10 +331,10 @@ require("lazy").setup(
 				-- https://github.com/nvim-telescope/telescope.nvim/wiki/Extensions#different-plugins-with-telescope-integration
 
 				"LukasPietzschmann/telescope-tabs", -- do i use this?
-				-- "MaximilianLloyd/adjacent.nvim",
-				{ "hejops/adjacent.nvim", branch = "ignore-binary" },
 				"nvim-lua/plenary.nvim", -- backend
 				"nvim-telescope/telescope-file-browser.nvim", -- netrw-like
+				"nvim-telescope/telescope-frecency.nvim",
+				-- "MaximilianLloyd/adjacent.nvim",
 				-- "aznhe21/actions-preview.nvim", -- https://github.com/aznhe21/actions-preview.nvim/issues/54
 				-- "fcying/telescope-ctags-outline.nvim",
 				-- "nvim-telescope/telescope-ui-select.nvim", -- https://github.com/nvim-telescope/telescope-ui-select.nvim/issues/44
@@ -361,6 +342,7 @@ require("lazy").setup(
 				-- "tsakirist/telescope-lazy.nvim",
 				{ "AckslD/nvim-neoclip.lua", opts = {} }, -- yank history; do i use this?
 				{ "crispgm/telescope-heading.nvim", ft = "markdown" }, -- headings in markdown
+				{ "hejops/adjacent.nvim", branch = "ignore-binary" },
 			},
 		},
 
@@ -488,7 +470,26 @@ require("lazy").setup(
 				"williamboman/mason-lspconfig.nvim",
 				{ "folke/neodev.nvim", opts = {} }, -- for init.lua only
 				{ "j-hui/fidget.nvim", opts = {}, event = "LspAttach" }, -- status updates for LSP
-				{ "kosayoda/nvim-lightbulb", event = "LspAttach" }, -- alert for possible code actions
+				{
+					"kosayoda/nvim-lightbulb",
+					event = "LspAttach",
+					opts = {
+						autocmd = { enabled = true },
+						sign = {
+							-- may distract from gitsigns
+							enabled = true,
+							text = "!",
+							-- text = "ⓘ",
+						},
+						float = {
+							enabled = false, -- messes with diagnostic floats (esp in rust)
+							-- text = "!",
+							text = "ⓘ",
+							hl = "LightBulbFloatWin", -- Highlight group to highlight the floating window.
+							win_opts = { focusable = false },
+						},
+					},
+				}, -- alert for possible code actions
 
 				{
 					"williamboman/mason.nvim",
@@ -532,6 +533,7 @@ require("lazy").setup(
 				"mfussenegger/nvim-dap-python",
 				"thehamsta/nvim-dap-virtual-text",
 			},
+			ft = { "python" },
 			config = function()
 				-- https://github.com/mfussenegger/dotfiles/blob/da93d1f7f52ea50b00199696a6977dd70a84736e/vim/dot-config/nvim/lua/me/dap.lua
 
@@ -615,11 +617,14 @@ require("lazy").setup(
 						require("dbee.sources").FileSource:new(vim.fn.stdpath("cache") .. "/dbee/persistence.json"),
 					},
 
+					editor = {
+						mappings = { { key = "BB", mode = "", action = "" } },
+					},
+
 					result = {
 						focus_result = false,
-						mappings = {
-							{ key = "<C-c>", mode = "", action = "cancel_call" },
-						},
+						page_size = 10,
+						mappings = { { key = "<c-c>", mode = "", action = "cancel_call" } },
 					},
 
 					-- -- https://github.com/MishimaPorte/asu-dotfiles/blob/09f5280e/.config/nvim/lua/plgs/dbee.lua#L148
@@ -629,36 +634,11 @@ require("lazy").setup(
 
 					-- https://github.com/kndndrj/nvim-dbee/blob/21d2cc08/lua/dbee/layouts/init.lua#L44
 					window_layout = require("dbee.layouts").Default:new({
-						result_height = vim.o.lines * 0.2,
+						result_height = 11, -- not dynamic!
 						call_log_height = 0,
 						drawer_width = 0,
 					}),
 				})
-
-				-- vim.keymap.set("n", "<leader>X", start_dbee, { buffer = true })
-			end,
-		}, -- }}}
-		{ -- vim-dadbod-ui {{{
-
-			-- + can view table schema (though with sqls)
-			-- + queries are executed immediately on write
-			-- + works without lsp (but uses cmp)
-			-- - extra cmp dependency + setup
-			-- - no real api
-			-- - not immediately obvious how to 'sync' files
-			-- - r is bound in result pane
-
-			"kristijanhusak/vim-dadbod-ui",
-			ft = { "sql" },
-			dependencies = {
-				"tpope/vim-dadbod",
-				"kristijanhusak/vim-dadbod-completion",
-			},
-			cmd = { "DBUI", "DBUIToggle", "DBUIAddConnection", "DBUIFindBuffer" },
-			init = function()
-				vim.g.dbs = {
-					{ name = "foo", url = "sqlite://" .. vim.env.HOME .. "/gripts/disq/collection2.db" },
-				}
 			end,
 		}, -- }}}
 
@@ -943,28 +923,3 @@ require("lazy").setup(
 		-- },
 	} -- }}}
 )
-
--- nvim-tree - might remove {{{
--- disable netrw at the very start of your init.lua
-vim.g.loaded_netrw = 1
-vim.g.loaded_netrwPlugin = 1
-
--- optionally enable 24-bit colour
-vim.opt.termguicolors = true
-
-require("nvim-lightbulb").setup({
-	autocmd = { enabled = true },
-	sign = {
-		-- may distract from gitsigns
-		enabled = true,
-		text = "!",
-		-- text = "ⓘ",
-	},
-	float = {
-		enabled = false, -- messes with diagnostic floats (esp in rust)
-		-- text = "!",
-		text = "ⓘ",
-		hl = "LightBulbFloatWin", -- Highlight group to highlight the floating window.
-		win_opts = { focusable = false },
-	},
-})

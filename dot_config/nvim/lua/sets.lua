@@ -1,5 +1,3 @@
--- local vim
-
 -- if empty(glob(&directory)) | call mkdir(&directory, "p") | endif
 -- if empty(glob(&undodir)) | call mkdir(&undodir, "p") | endif
 
@@ -82,6 +80,7 @@ vim.o.smartindent = true
 vim.o.splitbelow = true
 vim.o.splitright = true -- open new split on bottom/right
 vim.o.startofline = false -- don't put cursor at start of line (e.g. after gg)
+vim.o.termguicolors = true -- enable 24-bit colour
 vim.o.timeout = true
 vim.o.timeoutlen = 1000
 vim.o.title = true -- set custom window title

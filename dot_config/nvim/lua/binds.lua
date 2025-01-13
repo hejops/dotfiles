@@ -22,7 +22,7 @@ vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
 vim.keymap.set("n", "<c-c>", "<nop>")
 vim.keymap.set("n", "<c-z>", "<nop>")
 vim.keymap.set("n", "<tab>", "<nop>") -- tab may be equivalent to c-i
-vim.keymap.set("n", "G", "Gzz") -- because of the InsertEnter zz autocmd
+vim.keymap.set("n", "G", "G$zz") -- because of the InsertEnter zz autocmd
 vim.keymap.set("n", "H", "^")
 vim.keymap.set("n", "J", "mzJ`z") -- join without moving cursor
 vim.keymap.set("n", "L", "g_")
@@ -79,11 +79,12 @@ vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- unload all other buffers/tabs -- h
 vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other buffers/tabs (but not delete)
 
 -- splits are only used for exec
+vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- delete all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rh", "<c-w><c-h>")
 vim.keymap.set("n", "ri", "<c-W>_") -- maximise current split height
+vim.keymap.set("n", "ri", "<c-w>_") -- maximise current split height
 vim.keymap.set("n", "rj", "<c-w><c-j>")
 vim.keymap.set("n", "rk", "<c-w><c-k>")
-vim.keymap.set("n", "rl", "<c-w><c-l>")
 
 -- folds
 vim.keymap.set("n", "zH", "zM")
@@ -94,18 +95,19 @@ vim.keymap.set("n", "zl", "zr") -- expand
 -- https://stackoverflow.com/a/2439848
 -- https://vim.fandom.com/wiki/Moving_lines_up_or_down
 -- i very rarely use alt nowadays
--- vim.keymap.set("i", "<a-j>", "<esc>:m .+1<cr>==gi")
--- vim.keymap.set("i", "<a-k>", "<esc>:m .-2<cr>==gi")
--- vim.keymap.set("n", "<a-j>", ":m .+1<cr>==")
--- vim.keymap.set("n", "<a-k>", ":m .-2<cr>==")
--- vim.keymap.set("v", "<a-j>", ":m '>+1<cr>gv=gv")
--- vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
+vim.keymap.set("i", "<a-j>", "<esc>:m .+1<cr>==gi")
+vim.keymap.set("i", "<a-k>", "<esc>:m .-2<cr>==gi")
+vim.keymap.set("n", "<a-j>", ":m .+1<cr>==")
+vim.keymap.set("n", "<a-k>", ":m .-2<cr>==")
+vim.keymap.set("v", "<a-j>", ":m '>+1<cr>gv=gv")
+vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
 
 -- commands
 -- vim.keymap.set("n", "<c-s>", ":keepjumps normal! mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
 -- vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true }) -- vim's sort n is not at all like !sort -V
 vim.keymap.set("n", "<f10>", ":colo<cr>")
+vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 vim.keymap.set("n", "<leader>D", [[:g/\v/d<Left><Left>]])
 vim.keymap.set("n", "<leader>T", ":tabe ")
 vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- remove all undos -- https://stackoverflow.com/a/47524696
@@ -193,11 +195,12 @@ vim.keymap.set("n", "<leader>gd", function()
 	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
 end, { desc = "diff current HEAD against master" })
 
--- TODO: set mark and return to it (mz...z"ap)
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
 vim.keymap.set("n", "<leader>M", '"qp0dd') -- dump q buffer into a newline and cut it (for binding)
+vim.keymap.set("n", "z/", "ZZ") -- lazy exit
 vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
+-- TODO: set mark and return to it (mz...z"ap)
 
 local function toggle_diagnostics()
 	-- only disables inlay hints; popups (and trouble) remain
@@ -244,6 +247,30 @@ local ft_binds = { -- {{{
 		{ "n", "K", "<c-b>zz" },
 	},
 
+	sql = {
+
+		{
+			"n",
+			"J",
+			function()
+				if require("dbee").is_open() then
+					require("dbee").api.ui.result_page_next()
+				end
+			end,
+		},
+		{
+			"n",
+			"K",
+			function()
+				if require("dbee").is_open() then
+					require("dbee").api.ui.result_page_prev()
+				end
+			end,
+		},
+
+		{ "n", "<leader>H", require("pickers").devdocs },
+	},
+
 	["qf,help,man,lspinfo,startuptime,Trouble,lazy"] = {
 		{ "n", "q", "ZZ" },
 		{ "n", "x", "ZZ" },
@@ -254,20 +281,21 @@ local ft_binds = { -- {{{
 		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>" },
 	},
 
-	-- %s/\vt\.true([^;]+)/expect\1.toBe(true)/g
-	-- %s/\vt\.is\(([^,]+), ([^)]+)\)/expect\(\1).toBe(\2)/g
-
 	["typescript,javascript,typescriptreact,javascriptreact"] = {
+		{ "n", "<leader>a", ":!npm install " }, -- TODO: yarn.lock -> yarn
+
 		-- replace != and ==; probably better via find+sed
 		{ "n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]] },
+
 		-- turn fake (Go-like) inline docstrings into real docstrings
 		-- https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
 		-- would be nicer as a sed command
 		-- rg -t typescript '^(  [^: ]+:.+) // (.+)' .
 		-- /** \2 */\n\1
 		{ "n", "<leader>X", [[0f/wbDO<esc>pA<space>*/<esc>0ciw/**<esc>:w<cr>]] },
-		{ "n", "<leader>a", ":!npm install " }, -- TODO: yarn.lock -> yarn
 
+		-- %s/\vt\.true([^;]+)/expect\1.toBe(true)/g
+		-- %s/\vt\.is\(([^,]+), ([^)]+)\)/expect\(\1).toBe(\2)/g
 		-- [[(async () => {})();]]
 	},
 
@@ -740,8 +768,6 @@ local function debug_print()
 	-- {{{
 	local filetypes = {
 
-		-- python = 'print(f"{@=}")',
-		-- rust = 'println!("{:#?}", @);', -- TODO: bind to <leader>P (need new func param)
 		c = "printf(@);",
 		elixir = "IO.puts(@)",
 		gleam = "io.debug(@)",
@@ -751,6 +777,7 @@ local function debug_print()
 		lua = "print(@)",
 		python = "print(@)",
 		rust = 'println!("{:?}", @);',
+		sh = 'echo "$@"',
 		typescript = "console.log(@);",
 		typescriptreact = "console.log(@);",
 		zig = [[std.debug.print("{any}\n", .{@});]],

@@ -10,6 +10,7 @@ require("filetypes")
 require("sets")
 
 require("plugins")
+require("pickers")
 require("util"):random_colorscheme()
 
 -- TODO: start moving sections with >200 lines out into separate files

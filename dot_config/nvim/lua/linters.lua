@@ -118,7 +118,7 @@ require("lint").linters.sqlfluff.args = { -- {{{
 
 require("lint").linters.clangtidy.args = { -- {{{
 
-	"-std=" .. (vim.bo.filetype == "cpp" and "c++3" or "c3"),
+	-- clang-tidy is standard-agnostic!
 
 	-- clangtidy:
 	-- performs linting based on file extension (thus does not accept stdin)
