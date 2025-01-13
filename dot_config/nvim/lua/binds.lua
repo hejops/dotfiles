@@ -65,24 +65,28 @@ vim.keymap.set("n", "}", ":keepjumps normal! }<cr>zz", { silent = true })
 -- TODO: close all other splits (not tabs)
 -- default r behaviour is useless (cl)
 -- nmap ZF zfaft{blDkp$%bli<cR><esc>ld0<cR>zl|	" add folds around a func, like a real man, in any language
--- tabs and folds; splits are only used for exec
+-- tabs
+-- vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
 -- vim.keymap.set("n", "rH", ":silent! tabm -1<cr>", { silent = true }) -- do i need this?
 -- vim.keymap.set("n", "rL", ":silent! tabm +1<cr>", { silent = true })
 -- vim.keymap.set("n", "re", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
+vim.keymap.set("n", "<c-;>", "g<tab>")
 vim.keymap.set("n", "<c-h>", "gT")
 vim.keymap.set("n", "<c-l>", "gt")
-vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
-vim.keymap.set("n", "<c-t>", "<c-6>", { silent = true })
+vim.keymap.set("n", "<c-t>", "<c-6>") -- overridden by wezterm!
 vim.keymap.set("n", "r", "<nop>")
-vim.keymap.set("n", "rH", "<c-w><c-h>")
-vim.keymap.set("n", "rL", "<c-w><c-l>")
+vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- unload all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
+vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other buffers/tabs (but not delete)
+
+-- splits are only used for exec
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- delete all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
-vim.keymap.set("n", "rh", "gT")
+vim.keymap.set("n", "rh", "<c-w><c-h>")
+vim.keymap.set("n", "ri", "<c-W>_") -- maximise current split height
 vim.keymap.set("n", "ri", "<c-w>_") -- maximise current split height
 vim.keymap.set("n", "rj", "<c-w><c-j>")
 vim.keymap.set("n", "rk", "<c-w><c-k>")
-vim.keymap.set("n", "rl", "gt")
-vim.keymap.set("n", "rx", ":tabo<cr>") -- close all other buffers (but not delete)
+
+-- folds
 vim.keymap.set("n", "zH", "zM")
 vim.keymap.set("n", "zL", "zR")
 vim.keymap.set("n", "zh", "zm") -- fold
@@ -100,7 +104,7 @@ vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
 
 -- commands
 -- vim.keymap.set("n", "<c-s>", ":keepjumps normal! mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
--- vim.keymap.set("n", "<leader>X", ":call Build()<cr>")
+-- vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true }) -- vim's sort n is not at all like !sort -V
 vim.keymap.set("n", "<f10>", ":colo<cr>")
 vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
@@ -114,7 +118,7 @@ vim.keymap.set("v", "n", [[:g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
 
 -- context dependent binds
--- https://github.com/neovim/neovim/blob/012cfced9b5384fefa11d74346779b1725106d07/runtime/doc/lua-guide.txt#L450
+-- https://github.com/neovim/neovim/blob/012cfced9b5/runtime/doc/lua-guide.txt#L450
 
 -- close window if scratch
 local function update_or_close()
@@ -131,42 +135,54 @@ vim.keymap.set("n", "x", function()
 	return vim.bo.modifiable == 0 and ":bd<cr>" or '"_x'
 end, { silent = true, expr = true })
 
--- map <2-rightmouse> <nop>
--- map <3-rightmouse> <nop>
 -- map <4-leftmouse> <nop>|	" vblock mode
--- map <4-rightmouse> <nop>
 -- map <A-rightmouse> <c-f>zz|	" doesn't work
 -- map <c-leftmouse> <nop>
--- mouse
--- nmap <rightmouse> <cr>
-vim.keymap.set("i", "<rightmouse>", "<esc>")
-vim.keymap.set("n", "<rightmouse>", "<nop>")
+
+for _, x in pairs({ "", "2-", "3-", "4-" }) do
+	vim.keymap.set("i", string.format("<%srightmouse>", x), "<esc>")
+	vim.keymap.set("n", string.format("<%srightmouse>", x), "<nop>")
+	vim.keymap.set("i", string.format("<%smiddlemouse>", x), "<nop>")
+	vim.keymap.set("n", string.format("<%smiddlemouse>", x), "<nop>")
+end
 
 -- vim-fugitive; the only plugin allowed in this file, because of how critical it is
 -- most of fugitive's interactive features are better done via telescope (e.g. git log, git status)
 vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
 vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 
--- TODO: git add % + git commit --amend --no-edit
-
 local function commit_staged()
-	vim.cmd("silent !pre-commit run") -- limit to staged files
-	vim.cmd("Git commit --quiet -v") -- commit currently staged chunk(s)
+	if -- any changes have been staged (taken from gc)
+		-- commit currently staged chunk(s)
+		require("util"):command_ok("git diff --name-only --cached --diff-filter=M | grep .")
+	then
+		vim.cmd("Git commit --quiet -v")
+	elseif -- current file has changes
+		-- commit entire file
+		not require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0))
+	then
+		-- do i ever need to commit a whole file while there are staged chunks? remains to be seen
+		vim.cmd("Git commit --quiet -v %")
+	else
+		print("no changes to stage")
+	end
 end
 
-vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit currently staged hunks" })
-vim.keymap.set("n", "<leader>gc", commit_staged, { desc = "commit currently staged hunks" })
+vim.keymap.set("n", "<leader>C", commit_staged, { desc = "commit current buffer/hunks" })
+vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit current buffer/hunks" })
 
-vim.keymap.set("n", "<leader>C", function()
-	if require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0)) then
-		print("no changes to stage")
-	else
-		vim.cmd("Git commit --quiet -v %") -- commit entire file
-	end
-end, { desc = "commit current buffer" })
+vim.keymap.set("n", "<leader>gc", function()
+	print("deprecated; use <leader>c or <leader>C")
+end, { desc = "deprecated" })
 
+-- TODO: git add % + git commit --amend --no-edit
 vim.keymap.set("n", "<leader>gC", function()
-	vim.cmd("Git commit --quiet --amend -v")
+	if require("util"):command_ok("git status --porcelain | grep '^M'") then
+		vim.cmd("Git commit --quiet --amend --no-edit")
+		print("Added hunk(s) to previous commit") -- TODO: sha?
+	else
+		print("No hunks staged")
+	end
 end, { desc = "append currently staged hunks to previous commit" })
 
 vim.keymap.set("n", "<leader>gd", function()
@@ -768,7 +784,8 @@ local function debug_print()
 
 	local ft = vim.bo.filetype
 	local cmd = filetypes[ft]
-	if ft == nil then
+	if cmd == nil then
+		print("No printer configured for " .. ft)
 		return
 	end
 

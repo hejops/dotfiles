@@ -112,6 +112,8 @@ gunb() {
 }
 
 gb() {
+	: switch to new branch, or existing branch
+
 	# no remote branches
 	default_local_branch=$(gmaster) || :
 	current_local_branch=$(git branch --show-current)
@@ -166,7 +168,7 @@ gB() {
 	# TODO: include date/author, but preserve color
 	# TODO: handle master..master
 	prv_cmd="echo {} | sed -r 's/^[ *]+//; s/^/master../' | xargs git log --oneline --color=always"
-	branch=$(git branch |
+	branch=$(git branch --sort=-committerdate |
 		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi |
 		sed -r 's/^[ *]+//')
 	[[ -z $branch ]] && return
