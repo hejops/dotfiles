@@ -2,9 +2,10 @@
 
 local M = {}
 
-local slug = "sqlite"
+local default_action = "select_tab_drop"
 
-local function open(path)
+local slug = "sqlite"
+local function open_devdocs(path)
 	-- we just dump the string into a buffer, so we don't need to popen
 
 	path = string.gsub(path, "#.+", "") -- strip #section, since it is useless in a text dump
@@ -20,7 +21,7 @@ local function open(path)
 	vim.cmd.setlocal("ft=markdown")
 end
 
-function M:devdocs(opts)
+function M:devdocs(opts) -- {{{
 	-- require must be deferred!
 	local action_state = require("telescope.actions.state")
 	local actions = require("telescope.actions")
@@ -57,27 +58,77 @@ function M:devdocs(opts)
 	f:close()
 
 	if #results == 1 then
-		open(results[1])
+		open_devdocs(results[1])
 		return
 	end
 
 	pickers
 		.new(opts, {
-			prompt_title = "colors",
+			prompt_title = slug,
 			finder = finders.new_table({ results = results }),
 
 			sorter = conf.generic_sorter(opts),
 
 			attach_mappings = function(prompt_bufnr, _)
-				actions.select_tab_drop:replace(function()
+				actions[default_action]:replace(function()
 					actions.close(prompt_bufnr)
-					open(action_state.get_selected_entry()[1])
+					open_devdocs(action_state.get_selected_entry()[1])
 				end)
 				return true
 			end,
 		})
 		:find()
-end
+end -- }}}
+
+function M:dbee_connections(opts) -- {{{
+	local action_state = require("telescope.actions.state")
+	local actions = require("telescope.actions")
+	local conf = require("telescope.config").values
+	local finders = require("telescope.finders")
+	local pickers = require("telescope.pickers")
+
+	opts = opts or {}
+
+	local names = {}
+
+	-- find first table with key 'conns'
+	local conns
+	for _, s in pairs(require("dbee").api.core.get_sources()) do
+		if s.conns then
+			conns = s.conns
+			break
+		end
+	end
+
+	if not conns then
+		print("No connections found")
+		return
+	end
+
+	for _, c in pairs(conns) do
+		names[c.name] = c.id
+	end
+
+	pickers
+		.new(opts, {
+			prompt_title = "dbee connections",
+			finder = finders.new_table({ results = require("util"):keys(names) }),
+
+			sorter = conf.generic_sorter(opts),
+
+			attach_mappings = function(prompt_bufnr, _)
+				actions[default_action]:replace(function()
+					actions.close(prompt_bufnr)
+					local choice = action_state.get_selected_entry()[1]
+					require("dbee").api.core.set_current_connection(names[choice])
+					print("Connected to", choice)
+				end)
+				return true
+			end,
+		})
+		:find()
+end -- }}}
 
 return M
+
 -- vim.keymap.set("n", "<leader>H", devdocs)

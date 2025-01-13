@@ -639,6 +639,9 @@ require("lazy").setup(
 						drawer_width = 0,
 					}),
 				})
+
+				local c = require("dbee").api.core.get_current_connection()
+				print(string.format("Connected to database %s (%s)", c.name, c.url))
 			end,
 		}, -- }}}
 
