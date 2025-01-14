@@ -757,6 +757,32 @@ guns() {
 
 # i haven't worked in python in a while, so this may be cleaned up
 
+pydeps() {
+	# https://stackoverflow.com/a/75344709
+	mapfile -t args < /dev/stdin
+	python -c 'import sys
+for i in sys.argv[1:]:
+    if i.split(".")[0] not in sys.stdlib_module_names:
+        print(i)' "${args[@]}"
+}
+
+genuv() {
+	: generate dependencies of a uv script
+	# assumes there are no 1st party imports; when generating dependencies
+	# of a uv script, this is probably true
+	deps=$(< "$1" grep -P '^(from|import)' | cut -d' ' -f2 | sort -u | pydeps)
+	[[ -z $deps ]] && return
+
+	cat << EOF
+# /// script
+# dependencies = [
+$(echo "$deps" | while read -r dep; do echo "#   \"$dep\","; done)
+# ]
+# ///
+EOF
+
+}
+
 pta() {
 	: run all tests
 	# TODO: gls: allow arg that calls from proj root
