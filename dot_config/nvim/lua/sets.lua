@@ -18,8 +18,8 @@ end
 local titlestring =
 	-- :h statusline
 	"%f " -- path to file, relative to cwd
-	.. "[%LL] " -- lines
-	.. "%a" -- "Argument list status as in default title." (?)
+	-- .. "[%LL] " -- lines
+	-- .. "%a" -- "Argument list status as in default title." (?)
 	.. "%r" -- [RO]
 	.. "%m" -- [+]
 
