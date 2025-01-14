@@ -96,6 +96,8 @@ cdr() {
 
 }
 
+alias cr=cdr
+
 # shellcheck disable=SC2120
 gls() {
 	git ls-files "${1:-.}"
@@ -246,6 +248,12 @@ _gld() {
 gld() {
 	: browse git log, showing each commit\'s diff in fzf preview
 	_gld "$@" | awk '{print $1}' | xargs git show
+}
+
+gsdel() {
+	: show last state of a deleted file
+	# https://stackoverflow.com/a/19727752
+	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
 }
 
 gS() {
@@ -673,7 +681,7 @@ gdm() {
 	git diff "$(gmaster)...HEAD"
 }
 
-grescon() {
+gcon() {
 	: resolved conflicts, if any, and merge
 
 	# git diff --name-only --diff-filter=U --relative
@@ -684,6 +692,7 @@ grescon() {
 
 	while rg '^[<=>]{7}'; do
 		echo "Unresolved conflicts remaining!"
+		# TODO: may not only be UU
 		git status --porcelain | grep UU | cut -d' ' -f2- | xargs nvim -p
 	done
 
