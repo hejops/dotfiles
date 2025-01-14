@@ -560,20 +560,32 @@ end
 
 wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
 	local title = assert(tab.active_pane.title)
-	local dir = assert(tostring(tab.active_pane.current_working_dir)) -- url type?
+	local dir = assert(tab.active_pane.current_working_dir.path)
 
 	-- local proc = assert(tab.active_pane.foreground_process_name)
 
-	-- if proc == os.getenv("SHELL") then
-	if title == "bash" then -- os.getenv not really reliable
-		title = "> " .. basename(dir)
-	elseif title == "yazi" then
-		title = " 📁 " .. basename(dir)
-	elseif basename(tab.active_pane.foreground_process_name) == "nvim" then
-		title = basename(title):gsub(" +$", "") -- vim titlestring adds trailing space, apparently
+	local function get_dir()
+		return dir == os.getenv("HOME") and "~" or "> " .. basename(dir)
 	end
 
-	return " " .. tostring(tab.tab_index + 1) .. " " .. title .. " "
+	-- if proc == os.getenv("SHELL") then
+	if title == "bash" and dir then -- os.getenv not really reliable
+		title = get_dir()
+	elseif title == "yazi" then
+		title = "📁 " .. basename(dir)
+	elseif basename(tab.active_pane.foreground_process_name) == "nvim" then
+		title = basename(title):gsub(" +$", "") -- vim titlestring adds trailing space, apparently
+	elseif dir ~= nil then -- bash may not set title correctly after leaving yazi
+		title = get_dir()
+	else
+		title = "unreachable"
+	end
+
+	-- TODO: the following actions do not update tab title automatically (rofi
+	-- may trigger update)
+	-- bash -> yazi
+
+	return string.format(" %s %s ", tostring(tab.tab_index + 1), title)
 end)
 
 return config
