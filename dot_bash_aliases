@@ -4,33 +4,11 @@
 
 # autostart {{{
 
-# TODO: sudo clean journal log
-
-open_file() {
-	f=$1
-	if
-		[[ -f $f ]] && [[ -s $f ]] &&
-			# file not opened
-			# [[ ! -f "$HOME/.vim/swap/${f//\//%}.swp" ]] # breaks treesitter
-			[[ ! -f "$HOME/.vim/swap/$(echo "$f" | tr / %).swp" ]]
-	then
-		# note: nvim generally always spawns with --embed
-		# https://neovim.io/doc/user/starting.html#--embed
-		exec nvim + "$f"
-	fi
-}
-# open_file /tmp/hr-loona
-
-if
-	[[ -f /tmp/verse.json ]] && [[ -s /tmp/verse.json ]]
-then
-	{
-		jq -r '.votd | .reference, .content' < /tmp/verse.json |
-			sed -e 's/<[^>]*>//g' |
-			fold -w 65 -s
-		# echo
-	} >&2
-fi
+[[ -f /tmp/verse.json ]] && [[ -s /tmp/verse.json ]] &&
+	< /tmp/verse.json jq -r '.votd | .reference, .content' |
+	sed -e 's/<[^>]*>//g' |
+		fold -w 65 -s
+# echo
 
 # }}}
 # aliases {{{
