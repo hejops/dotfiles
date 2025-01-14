@@ -612,6 +612,11 @@ require("lazy").setup(
 								type = "sqlite",
 								url = os.getenv("HOME") .. "/gripts/disq/collection2.db",
 							},
+							{
+								name = "neon",
+								type = "postgres",
+								url = "postgres://postgres:postgres@localhost:5432/dvdrental?sslmode=disable",
+							},
 						}),
 						require("dbee.sources").EnvSource:new("DBEE_CONNECTIONS"),
 						require("dbee.sources").FileSource:new(vim.fn.stdpath("cache") .. "/dbee/persistence.json"),
@@ -852,13 +857,15 @@ require("lazy").setup(
 			end,
 		},
 
-		"iagorrr/noctis-high-contrast.nvim",
-		-- { "nlcodes/my_nvim_config", lazy = true }, -- mono tabline
+		"bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
+		"ingsme/nvim-smyck.nvim", -- 'hybrid', italic comments
+		"uncleten276/dark_flat.nvim", -- italic comments
+		{ "iagorrr/noctis-high-contrast.nvim", lazy = true }, -- italic comments/types
 		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets, lol)
-		{ "tomasr/molokai", lazy = true }, -- italic types
+		{ "tomasr/molokai", lazy = true }, -- italic types/funcs, bold keywords
 
+		-- "abstract-ide/abstract-cs", -- unreadable comments
 		-- "ajmwagar/vim-deus", -- mono tabline
-		-- "bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "danilo-augusto/vim-afterglow", -- mono tabline
 		-- "dasupradyumna/midnight.nvim", -- mono tabline
@@ -867,6 +874,8 @@ require("lazy").setup(
 		-- "hachy/eva01.vim", -- don't like the low contrast one
 		-- "jaredgorski/spacecamp", -- bad lualine
 		-- "kvrohit/rasmus.nvim", -- mono tabline
+		-- "lighthaus-theme/vim-lighthaus", -- mono tabline
+		-- "martinsione/darkplus.nvim", -- tab/lualine too bright
 		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
 		-- "nvimdev/oceanic-material", -- mono tabline
 		-- "oxfist/night-owl.nvim", -- mono tabline
@@ -890,6 +899,7 @@ require("lazy").setup(
 		-- { "challenger-deep-theme/vim", lazy = true }, -- mid contrast
 		-- { "morhetz/gruvbox", lazy = true }, -- has bold
 		-- { "nanotech/jellybeans.vim", lazy = true }, -- mid contrast
+		-- { "nlcodes/my_nvim_config", lazy = true }, -- mono tabline
 		-- { "shawilly/ponokai", lazy = true }, -- mid contrast
 
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
