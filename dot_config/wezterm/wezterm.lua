@@ -56,7 +56,7 @@ if wezterm.config_builder then
 end
 
 local function get_output(command)
-	local handle = io.popen(command)
+	local handle = assert(io.popen(command))
 	_ = handle:read("*a")
 	return handle:close()
 end
@@ -74,7 +74,7 @@ wezterm.on("view-history-in-pager", function(window, pane)
 
 	-- TODO: mkfifo or something to avoid writing tmpfile?
 	local name = os.tmpname()
-	local f = io.open(name, "w+")
+	local f = assert(io.open(name, "w+"))
 	f:write(text)
 	f:flush()
 	f:close()
@@ -164,6 +164,7 @@ local fonts = {
 	-- "Inconsolata", -- small (need +2), vertically cramped
 	-- "Uiua386", -- comic sans-ish (not very readable imo)
 	-- "Geist Mono", -- chonky
+	-- "Monoisome", -- extremely wide
 
 	-- narrow
 	-- "NanumGothicCoding",
@@ -231,6 +232,13 @@ config.harfbuzz_features = { "calt=0", "clig=0", "liga=0" }
 config.warn_about_missing_glyphs = false
 config.window_frame = { font = main_font, font_size = font_size }
 
+-- config.font_rules = {
+-- 	{
+-- 		italic = true, -- this has the unintended effect of disabling italics entirely
+-- 		font = main_font,
+-- 	},
+-- }
+
 -- }}}
 -- appearance {{{
 
@@ -243,7 +251,9 @@ config.default_cwd = wezterm.home_dir
 config.default_prog = { "bash" } -- source .bashrc
 config.enable_scroll_bar = false
 config.hide_tab_bar_if_only_one_tab = true
-config.text_background_opacity = 0.8
+config.show_new_tab_button_in_tab_bar = false
+config.tab_max_width = 999
+config.text_background_opacity = 0.8 -- dim slightly
 config.use_fancy_tab_bar = false
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 
@@ -543,5 +553,27 @@ config.keys = keys()
 -- }
 
 -- }}}
+
+local function basename(s)
+	return string.gsub(s, "(.*[/\\])(.*)", "%2")
+end
+
+wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
+	local title = assert(tab.active_pane.title)
+	local dir = assert(tostring(tab.active_pane.current_working_dir)) -- url type?
+
+	-- local proc = assert(tab.active_pane.foreground_process_name)
+
+	-- if proc == os.getenv("SHELL") then
+	if title == "bash" then -- os.getenv not really reliable
+		title = "> " .. basename(dir)
+	elseif title == "yazi" then
+		title = " 📁 " .. basename(dir)
+	elseif basename(tab.active_pane.foreground_process_name) == "nvim" then
+		title = basename(title):gsub(" +$", "") -- vim titlestring adds trailing space, apparently
+	end
+
+	return " " .. tostring(tab.tab_index + 1) .. " " .. title .. " "
+end)
 
 return config

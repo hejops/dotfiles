@@ -85,7 +85,10 @@ alias y="bash ~/gripts/disq/ytm.sh"
 
 # git {{{
 
+# shellcheck disable=SC2120
+gls() { git ls-files "${1:-.}"; }
 get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
+alias groot=get_repo_root
 
 cdr() {
 	if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
@@ -98,13 +101,8 @@ cdr() {
 
 alias cr=cdr
 
-# shellcheck disable=SC2120
-gls() {
-	git ls-files "${1:-.}"
-}
-
 gmaster() {
-	: get default branch, e.g. 'master'
+	: get default branch, e.g. master
 	# https://stackoverflow.com/a/44750379
 	# default_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's|^refs/remotes/origin/||')
 	git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4
@@ -396,8 +394,7 @@ gs() {
 	# No commits staged.
 
 	if
-		# not repo
-		! git status > /dev/null
+		! git rev-parse --is-inside-work-tree > /dev/null 2>&1
 	then
 		return
 	elif
@@ -485,7 +482,8 @@ gp() {
 
 	git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"
 
-	[[ $# -eq 1 ]] && { popd || :; }
+	# shellcheck disable=SC2164
+	[[ $# -eq 1 ]] && popd
 
 }
 
@@ -564,7 +562,7 @@ gh() {
 	repo=${repo%*.git}
 
 	if [[ -f $1 ]] && git ls-files --error-unmatch "$1" &> /dev/null; then
-		# TODO: path must be relativised to repo root
+		# TODO: path must be relativised to repo root (rev-parse?)
 		# i.e. realpath - repo_root
 
 		# view file at its most recent commit
@@ -1019,12 +1017,18 @@ gorep() {
 # then gowr in the main tab, BUT wezterm tabs mess with bubbletea dims
 gow() {
 	: watch code changes, trigger re-build, and kill process
-	name=$(< go.mod head -n1 | cut -d' ' -f2)
-	while :; do
-		go build && pkill "$name"
-		# inotifywait --event attrib $(find . -name '*.go') > /dev/null || return
-		find . -name '*.go' -print0 | xargs -0 inotifywait --event attrib > /dev/null || return
-	done
+
+	cdr
+	find . -name '*.go' | entr -cr go test ./...
+
+	# [[ ! -f go.mod ]] && return
+	# name=$(< go.mod head -n1 | cut -d' ' -f2)
+	# while :; do
+	# 	go build && pkill "$name"
+	# 	# inotifywait --event attrib $(find . -name '*.go') > /dev/null || return
+	# 	find . -name '*.go' -print0 | xargs -0 inotifywait --event attrib > /dev/null || return
+	# done
+
 }
 gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run app
 
@@ -1074,6 +1078,11 @@ nps() {
 
 # }}}
 # c {{{
+
+x() {
+	n=$(basename "$(realpath .)")
+	gcc -o "$n" ./*.c && "./$n"
+}
 
 mch() {
 	# f=$1
@@ -1661,6 +1670,7 @@ gev() {
 
 ,pgrep() { \pgrep "$1" | xargs ps; }            # ps for runtime
 pkill1() { \pgrep "$1" | sed 1d | xargs kill; } # kill all procs except 1st
+pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill; }
 
 scan() {
 	cd ~/scores || return
@@ -1695,3 +1705,11 @@ scan() {
 # note: sendmail unresponsive
 # note: it is not known what set up is needed
 # echo "$body" | mail --subject="$subject" $email
+
+mdr() {
+	c 'https://www.mdr.de/nachrichten/index.html' |
+		grep 'class="headline" ' |
+		prepend '<li>' |
+		html2markdown --domain https://www.mdr.de |
+		sort -u
+}

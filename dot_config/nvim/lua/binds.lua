@@ -124,13 +124,7 @@ vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
 local function update_or_close()
 	vim.cmd(
 		-- expr must be false, else 'not allowed to change text'
-		(
-			vim.bo.buftype == "nofile" -- ugh
-			or vim.bo.buftype == "help"
-			or vim.bo.ft == "sqls_output"
-		)
-				and "bd"
-			or "update"
+		(vim.bo.buftype == "nofile" or vim.bo.buftype == "help") and "bd" or "update"
 	)
 end
 
@@ -219,9 +213,7 @@ local function get_c_doc()
 	local cmd = (vim.bo.filetype == "c" and "man 3" or "cppman") .. " " .. vim.fn.expand("<cword>")
 	cmd = "vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! " .. cmd
 	vim.cmd(cmd)
-
 	vim.cmd.norm("gg")
-
 	vim.cmd.setlocal("ft=man")
 	vim.keymap.set("n", "J", "}zz", { buffer = true })
 	vim.keymap.set("n", "K", "{zz", { buffer = true })
@@ -584,16 +576,36 @@ end
 local function exec()
 	-- {{{
 	-- running tests is better left to the terminal itself (e.g. wezterm)
+	local curr_file = vim.fn.expand("%") -- relative to cwd
+	local ft = vim.bo.filetype
+
 	if vim.bo.filetype == "nofile" then
 		return
 	elseif vim.bo.filetype == "sql" then
-		if require("dbee").is_open() then
+		local script = curr_file:gsub("%.sql$", "")
+		if vim.loop.fs_stat(script) then
+			-- local function get_sql_cmd(file)
+			-- 	local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)
+			-- 	local db = string.gsub(first_line[1], "^-- ", "")
+			-- 	-- TODO: check file exists
+			--
+			-- 	-- litecli has nicer (tabular) output, but some ill-placed comments will
+			-- 	-- cause syntax error
+			-- 	local cmd = string.format("cat %s | litecli -t %s", file, db)
+			-- 	-- local cmd = string.format("cat %s | sqlite3 %s", file, db)
+			-- 	-- print(cmd)
+			-- 	return cmd
+			-- end
+
+			curr_file = curr_file:gsub("%.sql$", "")
+			ft = "sh"
+		elseif require("dbee").is_open() then
 			require("dbee").api.ui.editor_do_action("run_file")
+			return
 		else
 			start_dbee()
-			-- vim.cmd("SqlsExecuteQuery")
+			return
 		end
-		return
 	end
 
 	-- TODO: async (Dispatch)
@@ -610,21 +622,8 @@ local function exec()
 		front = h .. front
 	end
 
-	local curr_file = vim.fn.shellescape(vim.fn.expand("%")) -- relative to cwd
+	curr_file = vim.fn.shellescape(curr_file)
 	local cwd = vim.fn.getcwd()
-
-	local function get_sql_cmd(file)
-		local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)
-		local db = string.gsub(first_line[1], "^-- ", "")
-		-- TODO: check file exists
-
-		-- litecli has nicer (tabular) output, but some ill-placed comments will
-		-- cause syntax error
-		local cmd = string.format("cat %s | litecli -t %s", file, db)
-		-- local cmd = string.format("cat %s | sqlite3 %s", file, db)
-		-- print(cmd)
-		return cmd
-	end
 
 	local function get_py_runner()
 		if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
@@ -709,7 +708,6 @@ local function exec()
 		-- ),
 	}
 
-	local ft = vim.bo.filetype
 	local runner = runners[ft]
 
 	if ft == "" then
@@ -730,6 +728,7 @@ local function exec()
 	require("util"):close_unnamed_splits()
 	-- print(front .. runner)
 	vim.cmd(front .. runner)
+	vim.cmd.norm("gg")
 	vim.cmd.wincmd(wide and "h" or "k") -- return focus to main split
 	require("util"):resize_2_splits()
 end -- }}}
