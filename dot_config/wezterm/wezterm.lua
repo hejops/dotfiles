@@ -211,7 +211,7 @@ if not is_ubuntu then
 elseif get_output("xdpyinfo | grep -F 'x1200'") then -- note: xrandr is unacceptably slow
 	-- (dual) 2k
 	table.insert(fonts, 1, "NanumGothicCoding")
-	font_size = 12.0
+	font_size = 13.0
 elseif get_output("xdpyinfo | grep -F '1920x1080'") then
 	-- laptop-only (2k)
 	font_size = 16.0
