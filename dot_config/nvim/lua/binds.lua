@@ -509,6 +509,8 @@ local function ts_is_compiled(js, ts)
 end
 
 local function get_ts_runner(file) -- attempt to run .ts file
+	local node_version = require("util"):get_command_output()
+
 	-- -- https://old.reddit.com/r/neovim/comments/mq4pxn/best_way_to_get_current_buffer_content_as_a_lua/gufgtv8/
 	-- if require("util"):buf_contains("@observablehq/plot") then
 	-- 	local tmpfile = "/tmp/foo.html"
@@ -529,9 +531,15 @@ local function get_ts_runner(file) -- attempt to run .ts file
 
 	if vim.loop.fs_stat(".env") and vim.loop.fs_stat("~/.local/bin/node23") then
 		return "node23 --no-warnings --import=tsx --env-file=.env " .. file
+	elseif node_version >= "v22.7.0" then -- 2x faster than tsx, but not guaranteed to work
+		-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
+		return "node --experimental-strip-types --experimental-transform-types " .. file
+	elseif node_version >= "v22.6.0" then
+		return "node --experimental-strip-types " .. file
 	elseif vim.loop.fs_stat(js) and ts_is_compiled(js, file) then
 		-- fastest, but requires already compiled js (which is slow)
 		return "node " .. js -- 0.035 s
+	--experimental-transform-types
 	elseif vim.loop.fs_stat("./node_modules/tsx") then
 		-- run with node directly (without transpilation); requires tsx
 		-- https://nodejs.org/api/typescript.html#full-typescript-support

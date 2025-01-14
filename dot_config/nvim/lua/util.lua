@@ -193,6 +193,11 @@ end
 
 M.is_ubuntu = M:command_ok("grep Ubuntu /etc/*-release")
 
+function M:get_command_output(cmd)
+	local f = assert(io.popen(cmd))
+	return f:read("*all")
+end
+
 function M:in_git_repo()
 	-- https://www.reddit.com/r/neovim/comments/y2t9rt/comment/is4wjmb/
 	-- https://www.reddit.com/r/neovim/comments/vkckjb/comment/idosy7m/
