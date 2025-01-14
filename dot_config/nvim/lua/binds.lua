@@ -822,4 +822,7 @@ local function yank_line_and_path()
 	local str = path .. ":" .. lnum .. "\t" .. line .. "\n"
 	vim.fn.setreg("+", str)
 end
-vim.keymap.set("n", "yl", yank_line_and_path, { silent = true })
+vim.keymap.set("n", "yP", yank_line_and_path, { silent = true })
+
+-- [[#!/usr/bin/env bash
+-- set -euo pipefail]]
