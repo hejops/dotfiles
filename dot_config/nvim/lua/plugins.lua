@@ -218,7 +218,6 @@ require("lazy").setup(
 
 					lualine_c = {
 						{
-							-- not dynamic on resize: https://github.com/nvim-lualine/lualine.nvim?tab=readme-ov-file#filename-component-options
 							function()
 								return vim.o.columns > 170 and vim.fn.expand("%:p:h") or vim.fn.expand("%")
 							end,
@@ -251,7 +250,7 @@ require("lazy").setup(
 						function()
 							local current_line = vim.fn.line(".")
 							local total_line = vim.fn.line("$")
-							return string.format("%.2f %s", current_line / total_line, vim.fn.mode())
+							return string.format("%.2f [%s] %s", current_line / total_line, total_line, vim.fn.mode())
 						end,
 					},
 				}
