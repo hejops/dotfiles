@@ -186,6 +186,8 @@ end -- }}}
 
 -- i/o {{{
 
+-- commands should not contain pipe, because exit code will always be 2 (use
+-- get_command_output and check for non-empty output instead)
 function M:command_ok(cmd)
 	-- https://stackoverflow.com/a/23827063
 	return os.execute(cmd) / 256 == 0

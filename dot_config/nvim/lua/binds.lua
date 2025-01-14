@@ -154,7 +154,7 @@ vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push 
 local function commit_staged()
 	if -- any changes have been staged (taken from gc)
 		-- commit currently staged chunk(s)
-		require("util"):command_ok("git diff --name-only --cached --diff-filter=M | grep .")
+		require("util"):get_command_output("git diff --name-only --cached --diff-filter=M | grep .")
 	then
 		vim.cmd("Git commit --quiet -v")
 	elseif -- current file has changes
