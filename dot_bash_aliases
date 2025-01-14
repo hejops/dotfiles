@@ -251,6 +251,7 @@ gld() {
 gsdel() {
 	: show last state of a deleted file
 	# https://stackoverflow.com/a/19727752
+	f=$1
 	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
 }
 
@@ -686,6 +687,23 @@ gcon() {
 
 	if ! git status --porcelain | grep UU; then
 		echo "No conflicts detected"
+	fi
+
+	# all conflicts are due to lock files
+	if ! git status --porcelain | grep UU | grep -v yarn.lock; then
+		git status --porcelain |
+			grep UU |
+			cut -d' ' -f2- |
+			xargs dirname |
+			while read -r d; do
+				pushd "$d" || return
+				yarn install || return
+				git add yarn.lock
+				popd || return
+			done
+		rg '^[<=>]{7}' && return
+		git commit -v
+		return
 	fi
 
 	while rg '^[<=>]{7}'; do
