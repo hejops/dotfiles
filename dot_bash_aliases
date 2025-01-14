@@ -99,6 +99,8 @@ cdr() {
 
 }
 
+alias cr=cdr
+
 gmaster() {
 	: get default branch, e.g. master
 	# https://stackoverflow.com/a/44750379
@@ -244,6 +246,13 @@ _gld() {
 gld() {
 	: browse git log, showing each commit\'s diff in fzf preview
 	_gld "$@" | awk '{print $1}' | xargs git show
+}
+
+gsdel() {
+	: show last state of a deleted file
+	# https://stackoverflow.com/a/19727752
+	f=$1
+	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
 }
 
 gS() {
@@ -671,7 +680,7 @@ gdm() {
 	git diff "$(gmaster)...HEAD"
 }
 
-grescon() {
+gcon() {
 	: resolved conflicts, if any, and merge
 
 	# git diff --name-only --diff-filter=U --relative
@@ -680,8 +689,26 @@ grescon() {
 		echo "No conflicts detected"
 	fi
 
+	# all conflicts are due to lock files
+	if ! git status --porcelain | grep UU | grep -v yarn.lock; then
+		git status --porcelain |
+			grep UU |
+			cut -d' ' -f2- |
+			xargs dirname |
+			while read -r d; do
+				pushd "$d" || return
+				yarn install || return
+				git add yarn.lock
+				popd || return
+			done
+		rg '^[<=>]{7}' && return
+		git commit -v
+		return
+	fi
+
 	while rg '^[<=>]{7}'; do
 		echo "Unresolved conflicts remaining!"
+		# TODO: may not only be UU
 		git status --porcelain | grep UU | cut -d' ' -f2- | xargs nvim -p
 	done
 

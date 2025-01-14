@@ -625,6 +625,17 @@ local function exec()
 	curr_file = vim.fn.shellescape(curr_file)
 	local cwd = vim.fn.getcwd()
 
+	local function get_py_runner()
+		if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
+			-- ~/.cache/uv
+			return "uv run "
+		elseif vim.loop.fs_stat(cwd .. "/pyproject.toml") then
+			return "poetry run python3 "
+		else
+			return "python3 "
+		end
+	end
+
 	local runners = {
 
 		-- the great langs
@@ -640,7 +651,7 @@ local function exec()
 		javascript = "node " .. curr_file,
 		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
 		ocaml = "ocaml " .. curr_file,
-		python = "python3 " .. curr_file,
+		python = get_py_runner() .. curr_file,
 		ruby = "ruby " .. curr_file,
 		sh = "env bash " .. curr_file,
 		zig = "zig run " .. curr_file,
@@ -706,8 +717,6 @@ local function exec()
 		return
 	elseif type(runner) == "function" then
 		runner = runner(curr_file)
-	elseif vim.loop.fs_stat(cwd .. "/pyproject.toml") then
-		runner = "poetry run " .. runner
 		-- elseif vim.loop.fs_stat(cwd .. "/manage.py") then -- django
 		-- 	runner = "./manage.py shell < " .. curr_file
 		-- elseif string.find(curr_file, "grammar.js") ~= nil then
