@@ -534,18 +534,20 @@ local function get_ts_runner(file) -- attempt to run .ts file
 		return "node " .. js -- 0.035 s
 	elseif vim.loop.fs_stat("./node_modules/tsx") then
 		-- run with node directly (without transpilation); requires tsx
-		-- npm install --save-dev tsx
 		-- https://nodejs.org/api/typescript.html#full-typescript-support
 		-- --enable-source-maps doesn't seem to report source line number correctly
+		-- node --import=tsx is significantly faster than yarn tsx (avoids unnecessary overhead)
 		return "node --no-warnings --import=tsx " .. file
 	elseif vim.fn.executable("tsc") == 1 and vim.loop.fs_stat("./node_modules/@types/node") then
 		-- https://stackoverflow.com/a/78148646
 		os.execute("tsc " .. file) -- ts -> js, 1.46 s
 		return "node " .. js
 	elseif vim.loop.fs_stat("./package.json") then
-		vim.notify("installing tsx...")
-		os.execute("yarn add --dev tsx")
-		get_ts_runner(file) -- may not work
+		vim.notify("installing tsx...") -- ts-node is not just single binary
+		-- npm install --save-dev tsx
+		os.execute("yarn add --dev tsx >/dev/null")
+		-- vim.fn.jobstart("yarn add --dev tsx") -- possibly bad recursion, high memory
+		return get_ts_runner(file)
 	else
 		-- TODO: force install?
 		error("No suitable ts runner; try npm install --save-dev tsx")
