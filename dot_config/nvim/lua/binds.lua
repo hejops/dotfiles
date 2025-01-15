@@ -509,7 +509,7 @@ local function ts_is_compiled(js, ts)
 end
 
 local function get_ts_runner(file) -- attempt to run .ts file
-	local node_version = require("util"):get_command_output()
+	local node_version = require("util"):get_command_output("node -v")
 
 	-- -- https://old.reddit.com/r/neovim/comments/mq4pxn/best_way_to_get_current_buffer_content_as_a_lua/gufgtv8/
 	-- if require("util"):buf_contains("@observablehq/plot") then
@@ -529,7 +529,7 @@ local function get_ts_runner(file) -- attempt to run .ts file
 	vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
 	file = vim.fn.expand("%:.") -- relative to child dir
 
-	if vim.loop.fs_stat(".env") and vim.loop.fs_stat("~/.local/bin/node23") then
+	if vim.loop.fs_stat(".env") and vim.fn.executable("node23") then
 		return "node23 --no-warnings --import=tsx --env-file=.env " .. file
 	elseif node_version >= "v22.7.0" then -- 2x faster than tsx, but not guaranteed to work
 		-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
@@ -551,14 +551,14 @@ local function get_ts_runner(file) -- attempt to run .ts file
 		os.execute("tsc " .. file) -- ts -> js, 1.46 s
 		return "node " .. js
 	elseif vim.loop.fs_stat("./package.json") then
-		vim.notify("installing tsx...") -- ts-node is not just single binary
+		-- TODO: print is shown after execute
+		print("installing tsx...") -- ts-node is not just single binary
 		-- npm install --save-dev tsx
 		os.execute("yarn add --dev tsx >/dev/null")
 		-- vim.fn.jobstart("yarn add --dev tsx") -- possibly bad recursion, high memory
 		return get_ts_runner(file)
 	else
-		-- TODO: force install?
-		error("No suitable ts runner; try npm install --save-dev tsx")
+		error("need npm init")
 	end
 end
 
