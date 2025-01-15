@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. ~/.bashrc # required for WORK_DIRS
-
 usage() {
 	cat << EOF
 Usage: $(basename "$0")
@@ -25,10 +23,15 @@ fi
 
 sel=$(
 	{
-
+		. ~/.bashrc
 		# multiple dirs can be specified, but are sorted separately
 		# TODO: WORK_DIRS -> sort mtime
-		echo "${WORK_DIRS[@]}" | tr ' ' '\n'
+		echo "${WORK_DIRS[@]}" |
+			tr ' ' '\n' |
+			while read -r d; do
+				[[ -d $d ]] && echo "$d"
+			done
+
 		echo "$dotfiles"
 
 	} |
