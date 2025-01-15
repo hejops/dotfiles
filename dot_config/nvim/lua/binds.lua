@@ -244,7 +244,27 @@ local ft_binds = { -- {{{
 
 		{
 			"n",
-			"J",
+			"?",
+			function() -- view table schema
+				local t = vim.fn.expand("<cword>")
+				-- TODO: suppress connection_get_columns error
+				local cols = require("dbee").api.core.connection_get_columns(
+					require("dbee").api.core.get_current_connection().id,
+					{ table = t, schema = "public", materialization = "table" }
+				)
+				-- only one print statement (the last) can be displayed, so use
+				-- vim.notify to display multiline string
+				local s = {}
+				for _, col in pairs(cols) do
+					table.insert(s, string.format("%s: %s", col.name, col.type))
+				end
+				-- TODO: display in float window
+				vim.notify(table.concat(s, "\n"))
+			end,
+		},
+		{
+			"n",
+			")",
 			function()
 				if require("dbee").is_open() then
 					require("dbee").api.ui.result_page_next()
@@ -253,7 +273,7 @@ local ft_binds = { -- {{{
 		},
 		{
 			"n",
-			"K",
+			"(",
 			function()
 				if require("dbee").is_open() then
 					require("dbee").api.ui.result_page_prev()
