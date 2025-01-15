@@ -98,25 +98,21 @@ gb() {
 	default_local_branch=$(gmaster) || :
 	current_local_branch=$(git branch --show-current)
 
-	err() {
-		# echo "need commit/undo"
-		# gun .
-		return 1
-	}
-
 	if [[ $# -eq 0 ]]; then
 		if [[ $default_local_branch == "$current_local_branch" ]]; then
 			echo "Already on $default_local_branch"
 		else
-			git checkout "$default_local_branch" || err
+			# func retval is not propagated to parent
+			git checkout "$default_local_branch" || return 1
 			timeout 30 git pull
 		fi
 	else
 
-		# generally, new branches are based on master. however, this
-		# may not always be the case, so an optional 2nd arg is needed
+		# generally, new branches should target master. however, this
+		# may not always be the case, so accept an optional 2nd arg to
+		# specify target branch (should be current)
 		if ! git checkout "${2:-$default_local_branch}"; then
-			err
+			return 1
 		fi
 
 		timeout 30 git pull || return
@@ -127,7 +123,7 @@ gb() {
 		then
 			# note: git hook stdout cannot be suppressed
 			echo "Switching to remote branch $1"
-			git switch "$1" || err
+			git switch "$1" || return 1
 
 		elif git switch --create "$1"; then
 			# git switch --create does not produce output, for some
@@ -135,7 +131,8 @@ gb() {
 			echo "Switched to new branch $1"
 
 		else
-			git switch "$1" || err
+			# should be infallible?
+			git switch "$1" || return 1
 
 		fi
 	fi
