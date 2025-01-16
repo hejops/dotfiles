@@ -30,6 +30,7 @@ alias rad="exec yazi \"\$SLSK/complete\"" # TODO: investigate `ya pub`
 alias rag="exec yazi \"\$HDD/guitar\""
 alias rat="exec yazi \"\$HDD/torrent\" \"\$HDD/movies\""
 
+# alias n="NO_COLOR=1 node --import=tsx"
 alias ..="cd .."
 alias au="audacious -H"
 alias bh="vb -b"
@@ -47,9 +48,9 @@ alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken
 alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
 alias md="\$EDITOR -c 'set ft=markdown'"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
-alias n="NO_COLOR=1 node --import=tsx"
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && mpv --profile=bcx ./out && rm -rI ./out"
 alias pq="~/plaque/plaque"
+alias rgl="rg --no-heading --with-filename"
 alias synctime="sudo ntpd --quit --panicgate"
 alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tf="waitdie con; fix_tags"

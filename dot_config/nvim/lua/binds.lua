@@ -109,7 +109,7 @@ vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
 vim.keymap.set("n", "<f10>", ":colo<cr>")
 vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 vim.keymap.set("n", "<leader>D", [[:g/\v/d<Left><Left>]])
-vim.keymap.set("n", "<leader>T", ":tabe ")
+vim.keymap.set("n", "<leader>T", ":tabe " .. vim.fn.expand("%:p:h")) -- pwd for explicitness
 vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- remove all undos -- https://stackoverflow.com/a/47524696
 vim.keymap.set("n", "<leader>n", [[:%g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("n", "<leader>r", [[:%s/\v/g<Left><Left>]]) -- TODO: % -> g/PATT/

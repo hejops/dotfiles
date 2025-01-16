@@ -189,6 +189,7 @@ end -- }}}
 -- commands should not contain pipe, because exit code will always be 2 (use
 -- get_command_output and check for non-empty output instead)
 function M:command_ok(cmd)
+	assert(cmd)
 	-- https://stackoverflow.com/a/23827063
 	return os.execute(cmd) / 256 == 0
 end
@@ -196,15 +197,15 @@ end
 M.is_ubuntu = M:command_ok("grep Ubuntu /etc/*-release")
 
 function M:get_command_output(cmd)
-	local f = assert(io.popen(cmd))
-	return f:read("*all")
+	assert(cmd)
+	return assert(io.popen(cmd)):read("*all")
 end
 
 function M:in_git_repo()
 	-- https://www.reddit.com/r/neovim/comments/y2t9rt/comment/is4wjmb/
 	-- https://www.reddit.com/r/neovim/comments/vkckjb/comment/idosy7m/
 	-- maybe use this cond to lazy-start gitsigns
-	return M:command_ok("git rev-parse --is-inside-work-tree")
+	return M:command_ok("git rev-parse --is-inside-work-tree 2>/dev/null")
 end
 
 -- get git repo root, ignoring all possible child directories

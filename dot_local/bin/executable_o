@@ -24,6 +24,7 @@ fi
 sel=$(
 	{
 		. ~/.bashrc
+		[[ -f ~/.bash_aliases_work ]] && . ~/.bash_aliases_work
 		# multiple dirs can be specified, but are sorted separately
 		# TODO: WORK_DIRS -> sort mtime
 		echo "${WORK_DIRS[@]}" |
