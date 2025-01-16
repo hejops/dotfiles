@@ -32,6 +32,18 @@ vim.api.nvim_create_autocmd({
 	end,
 })
 
+vim.api.nvim_create_autocmd({ "BufReadPost" }, {
+	pattern = { "*.sql" },
+	callback = function()
+		-- somehow this works, even though we haven't `require`d formatters yet
+		-- clearly, idx positioning is extremely hacky
+		local d = require("util"):sql_dialect()
+		require("conform").formatters.sqlfluff.args[3] = "--dialect=" .. d
+		require("lint").linters.sqlfluff.args[2] = "--dialect=" .. d
+		-- os.execute("notify-send -- " .. require("conform").formatters.sqlfluff.args[3])
+	end,
+})
+
 -- trying to make vil files pretend to be json causes problems with both
 -- prettier and biome
 vim.api.nvim_create_autocmd("BufWritePost", {

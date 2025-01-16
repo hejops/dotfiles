@@ -159,6 +159,7 @@ local function commit_staged()
 		vim.cmd("Git commit --quiet -v")
 	elseif -- current file has changes
 		-- commit entire file
+		-- exits with 1 if there were differences
 		not require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0))
 	then
 		-- do i ever need to commit a whole file while there are staged chunks? remains to be seen
@@ -177,7 +178,7 @@ end, { desc = "deprecated" })
 
 -- TODO: git add % + git commit --amend --no-edit
 vim.keymap.set("n", "<leader>gC", function()
-	if require("util"):command_ok("git status --porcelain | grep '^M'") then
+	if require("util"):command_ok("git status --porcelain | grep -q '^M'") then
 		vim.cmd("Git commit --quiet --amend --no-edit")
 		print("Added hunk(s) to previous commit") -- TODO: sha?
 	else

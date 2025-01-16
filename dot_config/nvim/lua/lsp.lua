@@ -286,36 +286,28 @@ local servers = { -- {{{
 	},
 
 	sqls = {
+
+		-- autostart = vim.loop.fs_stat(vim.env.HOME .. "/.config/sqls/config.yml"),
+		autostart = vim.loop.fs_stat("./config.yml") ~= nil,
+
+		-- rely on workspace-specific config file
 		-- https://github.com/sqls-server/sqls?tab=readme-ov-file#db-configuration
-		-- lol https://github.com/qbedard/dotfiles/blob/c30c58adc90d4c72859e322c480388677adee175/config/nvim/lua/plugins/lspconfig.lua#L213
+		-- centralised config can be defined at ~/.config/sqls/config.yml
+		cmd = { "sqls", "--config", "./config.yml" },
 
-		autostart = vim.loop.fs_stat(vim.env.HOME .. "/.config/sqls/config.yml") ~= nil,
-
-		-- -- not sure what this is supposed to do
-		-- on_attach = function(client, bufnr)
-		-- 	require("sqls").on_attach(client, bufnr)
-		-- end,
-
+		-- -- lol https://github.com/qbedard/dotfiles/blob/c30c58adc90d4c72859e322c480388677adee175/config/nvim/lua/plugins/lspconfig.lua#L213
 		-- -- 1. workspace-specific db via settings.sqls.connections; doesn't work
 		-- settings = {
 		-- 	sqls = {
 		-- 		connections = {
 		-- 			{
+		-- 				alias = "foo",
 		-- 				driver = "sqlite3",
 		-- 				dataSourceName = vim.env.HOME .. "/gripts/disq/collection2.db",
 		-- 			},
 		-- 		},
 		-- 	},
 		-- },
-
-		-- -- 2. workspace-specific config file via cmd; doesn't work
-		-- cmd = {
-		-- 	"sqls",
-		-- 	"-config",
-		-- 	vim.env.HOME .. "/gripts/disq/queries/config.yml",
-		-- },
-
-		-- 3. centralised config at ~/.config/sqls/config.yml
 	},
 
 	-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md

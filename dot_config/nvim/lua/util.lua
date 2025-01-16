@@ -242,4 +242,32 @@ end
 
 -- }}}
 
+function M:sql_dialect()
+	local default = "sqlite"
+	local allowed = { sqlite = 0, postgres = 0, clickhouse = 0 } -- lol
+	local lines = vim.api.nvim_buf_get_lines(0, 0, 5, false)
+
+	-- calling nvim_buf_get_lines too early leads to empty table
+	if #lines == 0 then
+		return default
+	end
+
+	for _, line in pairs(lines) do
+		if line:find("^-- *dialect:") then
+			local dialect = line:gsub("-- *dialect: *", "")
+			if not allowed[dialect] then
+				error(
+					string.format(
+						"Invalid dialect: '%s'. Dialect must be one of %s",
+						dialect,
+						vim.inspect(require("util"):keys(allowed))
+					)
+				)
+			end
+			return dialect
+		end
+	end
+	return default
+end
+
 return M

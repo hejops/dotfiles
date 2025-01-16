@@ -790,10 +790,8 @@ pta() {
 pget() {
 	if [[ -f $1 ]]; then
 		pip3 install -r "$1"
-	# elif [[ -n $CONDA_PREFIX ]]; then
-	# 	pip3 install "$@"
 	else
-		pip3 install --break-system-packages "$@"
+		pip3 install "$@"
 	fi
 }
 
@@ -804,28 +802,6 @@ pup() {
 		pip install --upgrade "$1"
 	fi
 }
-
-# p() {
-# 	# set -x
-# 	if [[ $# -eq 0 ]]; then
-# 		python3
-# 		return
-# 	fi
-#
-# 	arr=("$@")
-# 	f="$(realpath "${arr[0]}")"
-# 	repo_root="$(get_repo_root)"
-# 	mod=$(sed <<< "$f" -r "s#$repo_root/##; s#.py##" | tr / .)
-# 	arr[0]=$mod
-#
-# 	# check_env "$f" # go to file's project root, activate env
-#
-# 	# python3 "${arr[@]}" || :
-# 	python3 -m "${arr[@]}"
-#
-# 	# command -v deactivate > /dev/null && deactivate
-# 	# cd || return
-# }
 
 pentmd() {
 	: render entry points as markdown
