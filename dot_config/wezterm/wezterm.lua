@@ -576,24 +576,23 @@ local function get_title(tab)
 	-- }, " ")
 
 	if proc == "bash" then
-		title = get_dir()
+		return get_dir()
 	elseif proc == "nvim" or title ~= "___" then
 		-- this is the only situation where we ever check the title. when nvim is
-		-- started from yazi (i.e. yazi -> nvim) proc still remains yazi, which
+		-- started from yazi (i.e. yazi -> nvim), proc still remains yazi, which
 		-- makes sense, because yazi does not (and should not) exec. if only proc
 		-- is checked, it would be impossible to react to yazi -> nvim.
 		--
 		-- to work around this, we force nvim to set title, which is caught in this
 		-- condition. on exit, nvim must then set title to some reserved string to
 		-- signal that we should proceed to the next condition.
-		title = basename(title)
+		return basename(title)
 	elseif proc == "yazi" then
-		title = "📁 " .. basename(dir)
+		return "📁 " .. basename(dir)
 	else
 		-- os.execute("notify-send unreachable!")
 		error("unreachable")
 	end
-	return string.format(" %s %s ", tostring(tab.tab_index + 1), title)
 
 	--
 end
@@ -603,7 +602,7 @@ wezterm.on("format-window-title", function(tab, pane, tabs, panes, cfg)
 end)
 
 wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
-	return get_title(tab)
+	return string.format(" %s %s ", tostring(tab.tab_index + 1), get_title(tab))
 end)
 
 return config
