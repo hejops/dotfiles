@@ -558,34 +558,52 @@ local function basename(s)
 	return string.gsub(s, "(.*[/\\])(.*)", "%2")
 end
 
-wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
-	local title = assert(tab.active_pane.title)
-	local dir = assert(tab.active_pane.current_working_dir.path)
-
-	-- local proc = assert(tab.active_pane.foreground_process_name)
+local function get_title(tab)
+	local pane = tab.active_pane
+	local title = assert(pane.title) -- may be ""
+	local dir = assert(pane.current_working_dir.path)
+	local proc = basename(assert(pane.foreground_process_name))
 
 	local function get_dir()
+		-- os.execute("notify-send " .. dir)
 		return dir == os.getenv("HOME") and "~" or "> " .. basename(dir)
 	end
 
-	-- if proc == os.getenv("SHELL") then
-	if title == "bash" and dir then -- os.getenv not really reliable
+	-- return table.concat({
+	-- 	proc,
+	-- 	basename(title),
+	-- 	basename(dir),
+	-- }, " ")
+
+	if proc == "bash" then
 		title = get_dir()
-	elseif title == "yazi" then
+	elseif proc == "nvim" or title ~= "___" then
+		-- this is the only situation where we ever check the title. when nvim is
+		-- started from yazi (i.e. yazi -> nvim) proc still remains yazi, which
+		-- makes sense, because yazi does not (and should not) exec. if only proc
+		-- is checked, it would be impossible to react to yazi -> nvim.
+		--
+		-- to work around this, we force nvim to set title, which is caught in this
+		-- condition. on exit, nvim must then set title to some reserved string to
+		-- signal that we should proceed to the next condition.
+		title = basename(title)
+	elseif proc == "yazi" then
 		title = "📁 " .. basename(dir)
-	elseif basename(tab.active_pane.foreground_process_name) == "nvim" then
-		title = basename(title):gsub(" +$", "") -- vim titlestring adds trailing space, apparently
-	elseif dir ~= nil then -- bash may not set title correctly after leaving yazi
-		title = get_dir()
 	else
-		title = "unreachable"
+		-- os.execute("notify-send unreachable!")
+		error("unreachable")
 	end
-
-	-- TODO: the following actions do not update tab title automatically (rofi
-	-- may trigger update)
-	-- bash -> yazi
-
 	return string.format(" %s %s ", tostring(tab.tab_index + 1), title)
+
+	--
+end
+
+wezterm.on("format-window-title", function(tab, pane, tabs, panes, cfg)
+	return get_title(tab)
+end)
+
+wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
+	return get_title(tab)
 end)
 
 return config
