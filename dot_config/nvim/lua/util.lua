@@ -194,7 +194,7 @@ function M:command_ok(cmd)
 	return os.execute(cmd) / 256 == 0
 end
 
-M.is_ubuntu = M:command_ok("grep Ubuntu /etc/*-release")
+M.is_ubuntu = M:command_ok("grep -q Ubuntu /etc/*-release")
 
 function M:get_command_output(cmd)
 	assert(cmd)
