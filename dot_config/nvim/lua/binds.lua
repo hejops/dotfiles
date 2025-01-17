@@ -1,6 +1,4 @@
 -- https://vim.fandom.com/wiki/Unused_keys
--- https://stackoverflow.com/a/3806664 -- mostly visual mode
--- https://vi.stackexchange.com/a/28080
 
 vim.g.mapleader = " " -- must be declared before declaring lazy plugins (citation needed)
 vim.g.maplocalleader = " "
@@ -43,6 +41,7 @@ vim.keymap.set("n", "~", "~h")
 vim.keymap.set("v", "<", "<gv") -- vim puts you back in normal mode by default
 vim.keymap.set("v", ">", ">gv")
 vim.keymap.set("v", "P", '"_dP')
+vim.keymap.set("v", "ZZ", "<esc>ZZ")
 vim.keymap.set("v", "x", '"_x')
 
 -- https://unix.stackexchange.com/a/356407
@@ -226,6 +225,21 @@ local function get_c_doc()
 	vim.keymap.set("n", "K", "{zz", { buffer = true })
 end
 
+local function surround_selection(left, right)
+	-- TODO: will fail first time
+	local line_start = vim.fn.getpos("'<")[2]
+	local line_end = vim.fn.getpos("'>")[2]
+	if line_start == 0 then
+		return
+	end
+
+	local lines = vim.fn.getline(line_start, line_end)
+	assert(type(lines) == "table")
+	table.insert(lines, 1, left)
+	table.insert(lines, right)
+	vim.api.nvim_buf_set_lines(0, line_start - 1, line_end, false, lines)
+end
+
 -- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
 ---@type {[string]: { mode: string, lhs: string, rhs: string|function, opts: table? }[]}
 local ft_binds = { -- {{{
@@ -315,7 +329,14 @@ local ft_binds = { -- {{{
 
 		-- %s/\vt\.true([^;]+)/expect\1.toBe(true)/g
 		-- %s/\vt\.is\(([^,]+), ([^)]+)\)/expect\(\1).toBe(\2)/g
-		-- [[(async () => {})();]]
+
+		{
+			"v",
+			"a",
+			function()
+				surround_selection([[(async () => {]], [[})();]])
+			end,
+		},
 	},
 
 	rust = {
