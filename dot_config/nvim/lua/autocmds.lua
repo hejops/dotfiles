@@ -18,6 +18,46 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 	-- pattern = "*",
 })
 
+-- prevent cursor movement when yanking
+-- https://github.com/neovim/neovim/issues/12374#issuecomment-2121867087
+vim.api.nvim_create_autocmd("ModeChanged", {
+	pattern = { "n:no", "no:n" }, -- :h mode()
+	callback = function(ev)
+		if vim.v.operator ~= "y" then
+			return
+		end
+
+		if ev.match == "n:no" then -- on y
+			vim.b.user_yank_last_pos = vim.fn.getpos(".") -- store current pos in buffer variable
+		elseif ev.match == "no:n" and vim.b.user_yank_last_pos then
+			vim.fn.setpos(".", vim.b.user_yank_last_pos)
+			vim.b.user_yank_last_pos = nil
+		end
+	end,
+})
+
+-- vim.api.nvim_create_autocmd("ModeChanged", {
+-- 	pattern = { "V:n", "n:V", "v:n", "n:v" },
+-- 	callback = function(ev)
+-- 		local match = ev.match
+-- 		if vim.tbl_contains({ "n:V", "n:v" }, match) then
+-- 			-- vim.b.user_yank_last_pos = vim.fn.getpos(".")
+-- 			vim.b.user_yank_last_pos = vim.api.nvim_win_get_cursor(0)
+-- 		else
+-- 			-- if vim.tbl_contains({ "V:n", "v:n" }, match) then
+-- 			if vim.v.operator == "y" then
+-- 				local last_pos = vim.b.user_yank_last_pos
+-- 				if last_pos then
+-- 					-- vim.fn.setpos(".", last_pos)
+-- 					vim.api.nvim_win_set_cursor(0, last_pos)
+-- 				end
+-- 			end
+-- 			vim.b.user_yank_last_pos = nil
+-- 			-- end
+-- 		end
+-- 	end,
+-- })
+
 -- show line diagnostics on hover
 -- TODO: disable the virtual line (since it's redundant and only shows the last diagnostic)
 vim.api.nvim_create_autocmd("CursorHold", {
@@ -290,3 +330,5 @@ vim.api.nvim_create_autocmd("BufNewFile", {
 		end)
 	end,
 })
+
+vim.api.nvim_create_autocmd("VimLeave", { command = "Lazy clean" })
