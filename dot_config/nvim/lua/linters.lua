@@ -101,9 +101,6 @@ require("lint").linters.sqlfluff.args = { -- {{{
 	-- https://github.com/sqlfluff/sqlfluff/pull/4876
 	-- https://github.com/sqlfluff/sqlfluff/wiki/Contributing-Dialect-Changes
 	-- https://github.com/sqlfluff/sqlfluff/blob/main/src/sqlfluff/dialects/dialect_clickhouse.py
-	-- note: sql_dialect will probably be triggered before buf is loaded. a
-	-- BufReadPost will likely be needed to set this to the correct value
-	"--dialect=" .. require("util"):sql_dialect(),
 	"--format=json",
 	"--exclude-rules",
 	table.concat({

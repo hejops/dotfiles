@@ -79,9 +79,6 @@ require("conform").setup({
 			args = {
 				"format",
 				"--processes=32", -- lol
-				-- note: sql_dialect will probably be triggered before buf is loaded. a
-				-- BufReadPost will likely be needed to set this to the correct value
-				"--dialect=" .. require("util"):sql_dialect(),
 				"--exclude-rules",
 				"layout.long_lines",
 				"-",
