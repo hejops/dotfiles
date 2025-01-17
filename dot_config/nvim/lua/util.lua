@@ -235,7 +235,7 @@ function M:md_to_pdf()
 		out
 	)
 	os.execute(compile)
-	if #io.popen("lsof " .. out):read("*a") == 0 then
+	if require("util"):command_ok("lsof " .. out) then
 		os.execute(string.format("zathura %s >/dev/null 2>/dev/null &", out))
 	end
 end
@@ -252,9 +252,11 @@ function M:sql_dialect()
 		return default
 	end
 
+	local pat = "-- *dialect:([a-z]+)"
+
 	for _, line in pairs(lines) do
-		if line:find("^-- *dialect:") then
-			local dialect = line:gsub("-- *dialect: *", "")
+		if line:find(pat) then
+			local dialect = line:match(pat)
 			if not allowed[dialect] then
 				error(
 					string.format(

@@ -180,7 +180,12 @@ end, { desc = "deprecated" })
 vim.keymap.set("n", "<leader>gC", function()
 	if require("util"):command_ok("git status --porcelain | grep -q '^M'") then
 		vim.cmd("Git commit --quiet --amend --no-edit")
-		print("Added hunk(s) to previous commit") -- TODO: sha?
+		print(
+			string.format(
+				"Added hunk(s) to previous commit: %s",
+				require("util"):get_command_output("git log -n 1 --pretty=format:%s")
+			)
+		)
 	else
 		print("No hunks staged")
 	end
@@ -190,12 +195,13 @@ vim.keymap.set("n", "<leader>gd", function()
 	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
 end, { desc = "diff current HEAD against master" })
 
+-- TODO: set mark and return to it (mz...z"ap)
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
+vim.keymap.set("n", "<leader>I", [[:lua print(vim.inspect())<left><left>]])
 vim.keymap.set("n", "<leader>M", '"qp0dd') -- dump q buffer into a newline and cut it (for binding)
-vim.keymap.set("n", "z/", "ZZ") -- lazy exit
 vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
--- TODO: set mark and return to it (mz...z"ap)
+vim.keymap.set("n", "z/", "ZZ") -- lazy exit
 
 local function toggle_diagnostics()
 	-- only disables inlay hints; popups (and trouble) remain
@@ -244,7 +250,27 @@ local ft_binds = { -- {{{
 
 		{
 			"n",
-			"J",
+			"?",
+			function() -- view table schema
+				local t = vim.fn.expand("<cword>")
+				-- TODO: suppress connection_get_columns error
+				local cols = require("dbee").api.core.connection_get_columns(
+					require("dbee").api.core.get_current_connection().id,
+					{ table = t, schema = "public", materialization = "table" }
+				)
+				-- only one print statement (the last) can be displayed, so use
+				-- vim.notify to display multiline string
+				local s = {}
+				for _, col in pairs(cols) do
+					table.insert(s, string.format("%s: %s", col.name, col.type))
+				end
+				-- TODO: display in float window
+				vim.notify(table.concat(s, "\n"))
+			end,
+		},
+		{
+			"n",
+			")",
 			function()
 				if require("dbee").is_open() then
 					require("dbee").api.ui.result_page_next()
@@ -253,7 +279,7 @@ local ft_binds = { -- {{{
 		},
 		{
 			"n",
-			"K",
+			"(",
 			function()
 				if require("dbee").is_open() then
 					require("dbee").api.ui.result_page_prev()
@@ -572,6 +598,7 @@ local function start_dbee()
 	local cmd = string.format([[ln -sf %s %s/]], vim.fn.expand("%:p"), scratch_dir)
 	os.execute(cmd)
 
+	-- file -> note -> id
 	local id = require("dbee").api.ui.editor_search_note_with_file(scratch_path).id
 	dbee.api.ui.editor_set_current_note(id)
 
