@@ -151,7 +151,10 @@ vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" }
 vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 
 local function commit_staged()
-	if -- any changes have been staged (taken from gc)
+	-- {{{
+	if not require("util"):in_git_repo() then
+		print("not in git repo")
+	elseif -- any changes have been staged (taken from gc)
 		-- commit currently staged chunk(s)
 		require("util"):get_command_output("git diff --name-only --cached --diff-filter=M | grep .") ~= ""
 	then
@@ -166,7 +169,7 @@ local function commit_staged()
 	else
 		print("no changes to stage")
 	end
-end
+end -- }}}
 
 vim.keymap.set("n", "<leader>C", commit_staged, { desc = "commit current buffer/hunks" })
 vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit current buffer/hunks" })
