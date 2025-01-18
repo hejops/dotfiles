@@ -323,12 +323,24 @@ local ft_binds = { -- {{{
 		-- replace != and ==; probably better via find+sed
 		{ "n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]] },
 
-		-- turn fake (Go-like) inline docstrings into real docstrings
-		-- https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
-		-- would be nicer as a sed command
-		-- rg -t typescript '^(  [^: ]+:.+) // (.+)' .
-		-- /** \2 */\n\1
-		{ "n", "<leader>X", [[0f/wbDO<esc>pA<space>*/<esc>0ciw/**<esc>:w<cr>]] },
+		{
+			"n",
+			"<leader>X",
+			function()
+				-- turn inline comments into jsdoc
+				-- https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
+				-- for large scale changes, consider doing this in sed:
+				-- rg -t typescript '^(  [^: ]+:.+) // (.+)' .
+				-- /** \2 */\n\1
+				local line = vim.fn.getline(".")
+				local stmt, comment = line:match("(.+) // (.+)")
+				local lnum = vim.fn.getpos(".")[2]
+				vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, false, {
+					string.format("/** %s */", comment),
+					stmt,
+				})
+			end,
+		},
 
 		-- %s/\vt\.true([^;]+)/expect\1.toBe(true)/g
 		-- %s/\vt\.is\(([^,]+), ([^)]+)\)/expect\(\1).toBe(\2)/g
