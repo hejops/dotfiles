@@ -35,11 +35,14 @@ vim.api.nvim_create_autocmd({
 vim.api.nvim_create_autocmd({ "BufReadPost" }, {
 	pattern = { "*.sql" },
 	callback = function()
+		if not vim.loop.fs_stat("config.yml") then
+			print("No config.yml found, sqls will not be started")
+		end
+
 		-- somehow this works, even though we haven't `require`d formatters yet
-		-- clearly, idx positioning is extremely hacky
 		local d = require("util"):sql_dialect()
-		require("conform").formatters.sqlfluff.args[3] = "--dialect=" .. d
-		require("lint").linters.sqlfluff.args[2] = "--dialect=" .. d
+		table.insert(require("conform").formatters.sqlfluff.args, 2, "--dialect=" .. d)
+		table.insert(require("lint").linters.sqlfluff.args, 2, "--dialect=" .. d)
 		-- os.execute("notify-send -- " .. require("conform").formatters.sqlfluff.args[3])
 	end,
 })

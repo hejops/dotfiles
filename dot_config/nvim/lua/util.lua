@@ -244,7 +244,7 @@ end
 
 function M:sql_dialect()
 	local default = "sqlite"
-	local allowed = { sqlite = 0, postgres = 0, clickhouse = 0 } -- lol
+	local allowed = { "sqlite", "postgres", "clickhouse" }
 	local lines = vim.api.nvim_buf_get_lines(0, 0, 5, false)
 
 	-- calling nvim_buf_get_lines too early leads to empty table
@@ -257,14 +257,8 @@ function M:sql_dialect()
 	for _, line in pairs(lines) do
 		if line:find(pat) then
 			local dialect = line:match(pat)
-			if not allowed[dialect] then
-				error(
-					string.format(
-						"Invalid dialect: '%s'. Dialect must be one of %s",
-						dialect,
-						vim.inspect(require("util"):keys(allowed))
-					)
-				)
+			if not vim.tbl_contains(allowed, dialect) then
+				error(string.format("Invalid dialect: '%s'. Dialect must be one of %s", dialect, vim.inspect(allowed)))
 			end
 			return dialect
 		end

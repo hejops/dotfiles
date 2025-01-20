@@ -234,14 +234,25 @@ gsdel() {
 
 gS() {
 	: like gs+gld, for files to stage/commit
-	files=$(git status --porcelain)
-	prv_cmd="echo {} | awk '{print \$2}' | xargs git diff --color=always"
+
+	# # porcelain v1 is -always- relative to repo root, which makes parsing harder
+	# files=$(git status --porcelain)
+
+	# https://git-scm.com/docs/git-status#_changed_tracked_entries
+	# $2 is more useful for tracked files (since it more closely maps to v1
+	# labels), but for untracked files this duplicates the file path, so we
+	# stick to $1
+	# HACK: i have no idea how to 'return' multiple columns inside a
+	# ternary, so concat with a space as an ugly workaround
+	files=$(git status --porcelain=2 | awk '{print ($1=="?") ? $1" "$NF : $2" "$NF}')
+	# note: untracked files have no diff
+	prv_cmd="echo {} | awk '{print \$NF}' | xargs git diff --color=always"
 	sel=$(<<< "$files" fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
 	echo "$sel" |
-		grep -P '^\?\?' |
-		awk '{print $2}' |
+		grep -P '^\?' | # add untracked files first
+		awk '{print $NF}' |
 		xargs git add
-	echo "$sel" | awk '{print $2}' | xargs git commit -v
+	echo "$sel" | awk '{print $NF}' | xargs git commit -v
 }
 
 gac() {
@@ -424,8 +435,12 @@ gs() {
 
 	if
 		untracked=$(git ls-files --others --exclude-standard) &&
-			[[ -n $untracked ]]
+			num_untracked=$(<<< "$untracked" wc -l) &&
+			[[ $num_untracked -ge $LINES ]]
 	then
+		echo "[$num_untracked untracked files]"
+		echo
+	elif [[ -n $untracked ]]; then
 		echo "$untracked"
 		echo
 	fi
