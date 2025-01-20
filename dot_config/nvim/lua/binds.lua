@@ -302,13 +302,14 @@ local ft_binds = { -- {{{
 
 	["typescript,javascript,typescriptreact,javascriptreact"] = {
 		{ "n", "<leader>a", ":!npm install " }, -- TODO: yarn.lock -> yarn
+		{ "n", "<leader>d", "O/**  */<left><left><left>" }, -- neogen always documents class, not field
 
 		-- replace != and ==; probably better via find+sed
 		{ "n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]] },
 
 		-- turn fake (Go-like) inline docstrings into real docstrings
 		-- https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
-		-- would be nicer as a sed command
+		-- would be nicer as a sed command, but detecting which lines to modify is not trivial
 		-- rg -t typescript '^(  [^: ]+:.+) // (.+)' .
 		-- /** \2 */\n\1
 		{ "n", "<leader>X", [[0f/wbDO<esc>pA<space>*/<esc>0ciw/**<esc>:w<cr>]] },
