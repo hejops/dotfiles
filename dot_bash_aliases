@@ -36,7 +36,7 @@ alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit" # TODO: handle >1 video device (just increment n until file not exist)
 alias ci="chromium --incognito"
-alias con="convert_files && fix_genres --auto && fix_tags -a && fix_tags && fix_genres && move_files" # && notify-send ok"
+alias con="convert_files && fix_genres --auto && fix_tags -a && fix_tags && fix_genres && ~/gripts/mover/mover" # && notify-send ok"
 alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
 alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
 alias da="dc artist:"
@@ -796,11 +796,7 @@ EOF
 
 }
 
-pta() {
-	: run all tests
-	# TODO: gls: allow arg that calls from proj root
-	gls | grep 'test.*py' | xargs pytest -xvv
-}
+alias pt='gls | grep 'test_.\*py' | xargs pytest -x -vv --disable-warnings'
 
 pget() {
 	if [[ -f $1 ]]; then
@@ -1492,6 +1488,14 @@ mw() {
 # }}}
 
 # ugly funcs that don't warrant a script yet
+
+cm() {
+	if [[ $# -eq 0 ]]; then
+		chezmoi cd
+	else
+		chezmoi "$@"
+	fi
+}
 
 bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
 rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }

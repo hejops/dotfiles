@@ -30,7 +30,9 @@ paths=(
 # to see 'clean' sys.path, run 'python3 -S -m site'
 for p in "${paths[@]}"; do
 	echo "$PATH" | grep -Fq "$p" && continue
-	[[ -d $p ]] && export PATH=$p:$PATH # important: prepend, not append
+	[[ -d $p ]] &&
+		# export PATH=$p:$PATH # prepend (more problematic, esp with venvs)
+		export PATH=$PATH:$p # append
 done
 # echo "${paths[@]}";
 unset p paths
@@ -164,6 +166,7 @@ export WORK_DIRS=(
 
 	# ~/blog
 	# ~/febe
+	# ~/mappy
 	# ~/rust/discogs
 	# ~/rust/discoll
 	# ~/rust/fours
@@ -172,8 +175,10 @@ export WORK_DIRS=(
 	~/gone
 	~/gripts
 	~/ibb
-	~/mappy
+	~/kilo
+	~/monkey
 	~/mpv-search
+	~/pg-neon
 	~/plaque
 	~/rust/lasttree
 	~/scripts
@@ -314,6 +319,7 @@ alias pgrep="pgrep --list-full --exact"
 alias pip=pip3
 alias python=python3
 alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
+alias xargs1="xargs --max-args=1"
 alias xargs="xargs --no-run-if-empty --verbose"
 
 # alias cget="curl -JLO" # https://stackoverflow.com/a/8841522
@@ -325,7 +331,6 @@ alias _exa="exa --all --long --links --dereference --color=always --git" # helpe
 alias c="curl --silent --location --fail"
 alias cg=cget
 alias cget="wget --continue"
-alias cm=chezmoi
 alias cn="cargo new"
 alias ftail="tail -f"
 alias gtime="env time --format \"\$GNUTIMEFORMAT\" -- echo" # aliasing time to gnu time will disable the builtin
@@ -333,7 +338,6 @@ alias ls="_exa --group-directories-first --tree --level 2"  # note: --tree is sl
 alias lsc="_exa --time-style=iso --sort created"
 alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permissions --no-user"
 alias prem="pip3 uninstall"
-alias pt="pytest -x -vv --disable-warnings"
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
 alias r="fm" # --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
 
@@ -349,20 +353,21 @@ alias gig="\$EDITOR .gitignore"
 alias gl="git log --stat --oneline"
 alias gun="git checkout --" # discard all local changes ("undo"); git revert is the same, but also creates a commit
 
-if type pacman > /dev/null 2> /dev/null; then
+if command -v pacman > /dev/null; then
 
 	alias get="sudo pacman --sync"
 	alias lp="pacman --query --search"
 	alias pclean="paccache --remove && sudo pacman -Scc"
+	alias pwhich="pacman -Qo"
 	alias rem="sudo pacman --remove --recursive" # --cascade
 	alias sp="pacman --sync --search"
 
-elif type apt > /dev/null 2> /dev/null; then
+elif command -v apt > /dev/null; then
 
 	alias get="sudo apt install" # || snap
 	alias rem="sudo apt --purge autoremove"
 
-elif type port > /dev/null 2> /dev/null; then
+elif command -v port > /dev/null; then
 
 	alias get="sudo port install"
 
@@ -399,15 +404,14 @@ GIT_PROMPT() {
 
 	# set -x
 
-	# TODO: could allow /tmp, but this is only for testing purposes
-	[[ $PWD != $HOME* ]] && return # don't check outside home
+	# # don't check outside home
+	[[ $PWD == $HOME* ]] || return
 
-	# must be in a git repo
 	{
-		[[ ! -d ./.git ]] &&
+		[[ -d ./.git ]] ||
 			# https://stackoverflow.com/a/16925062
-			! git rev-parse --is-inside-work-tree > /dev/null 2>&1
-	} && return
+			git rev-parse --is-inside-work-tree > /dev/null 2>&1
+	} || return
 
 	# remote must exist
 	[[ -z $(git remote -v) ]] && return
