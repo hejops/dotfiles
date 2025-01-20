@@ -65,8 +65,6 @@ export VISUAL=$EDITOR
 alias vim="\$EDITOR -p" # equivalent to -c ':tab ball'
 alias v="vim"
 
-export LESS="-R --mouse --wheel-lines=$((LINES / 2))" # ensure mouse wheel works in delta
-
 # }}}
 # xdg {{{
 
@@ -238,6 +236,9 @@ case $- in
 *) return ;;
 esac
 
+export FZF_DEFAULT_COMMAND="find -L"
+export LESS="-R --mouse --wheel-lines=$((LINES / 2))" # ensure mouse wheel works in delta
+
 # startup {{{
 
 if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
@@ -269,18 +270,16 @@ fi
 # }}}
 # macos settings {{{
 
-FIND="find -L" # follow symlinks
-
 if [[ $OSTYPE == darwin* ]]; then
 
 	# time desync cannot be fixed in system settings, even though the same
 	# server is used -- thanks apple!
 	# sudo sntp -sS time.apple.com
 
-	FIND="find ." # path cannot be omitted
 	alias exa=eza # exa is unmaintained; on arch, eza is aliased to exa
 	alias xdg-open=open
 	export BASH_SILENCE_DEPRECATION_WARNING=1
+	export FZF_DEFAULT_COMMAND="find ." # path cannot be omitted
 
 	# osxkeychain is a fairly painless, https based (not ssh) way to access
 	# private repos from multiple accounts
@@ -291,22 +290,12 @@ if [[ $OSTYPE == darwin* ]]; then
 	# https://gist.github.com/nepsilon/0fd0c779f76d7172f12477ba9d71bb66#how-to-use-mac-keychain-to-store-github-repos-credentials
 	# https://git-scm.com/book/sv/v2/Git-Tools-Credential-Storage
 
-	if
-		[[ -n $COMPANY ]] && ! git config --get user.email | grep -iq "$COMPANY"
-	then
-		[[ -n $WORK_EMAIL ]] && git config --global user.email "$WORK_EMAIL"
-		[[ -n $NAME ]] && git config --global user.name "$NAME"
-	fi
-
 	# for gui (VNC Viewer)
 
 	# docker rm -vf $(docker ps -aq)
 	# docker rmi -f $(docker images -aq)
 
 fi
-
-export FZF_DEFAULT_COMMAND=$FIND
-unset FIND
 
 # }}}
 # aliases {{{
@@ -323,11 +312,6 @@ alias rsync="rsync --partial --progress --recursive --archive --update" # all op
 alias xargs1="xargs --max-args=1"
 alias xargs="xargs --no-run-if-empty --verbose"
 
-# alias cget="curl -JLO" # https://stackoverflow.com/a/8841522
-# alias r="exec bash; clear" # reload this file
-# alias ra=fm
-# alias rac=r
-# alias ud="sudo udevadm control --reload-rules && sudo udevadm trigger"
 alias _exa="exa --all --long --links --dereference --color=always --git" # helper
 alias c="curl --silent --location --fail"
 alias cg=cget
@@ -341,16 +325,16 @@ alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permis
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
 alias r="fm" # --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
 
-alias gC="git reset --soft HEAD~1"        # un-commit
-alias gD="git --no-pager diff --no-index" # default pager (not delta)
+# alias gD="git --no-pager diff --no-index" # default pager (not delta)
+# alias gdw="git diff --color-words"
+# alias gl="git log --stat --oneline"
+alias gC="git reset --soft HEAD~1" # un-commit
 alias ga="git add"
 alias gap="git add --patch"
 alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
 alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
 alias gdnw="git diff --color-words --no-index"
-alias gdw="git diff --color-words"
 alias gig="\$EDITOR .gitignore"
-alias gl="git log --stat --oneline"
 alias gun="git checkout --" # discard all local changes ("undo"); git revert is the same, but also creates a commit
 
 if command -v pacman > /dev/null; then
