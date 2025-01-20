@@ -62,6 +62,7 @@ vim.keymap.set("n", "{", ":keepjumps normal! {<cr>zz", { silent = true })
 vim.keymap.set("n", "}", ":keepjumps normal! }<cr>zz", { silent = true })
 
 -- TODO: close all other splits (not tabs)
+
 -- default r behaviour is useless (cl)
 -- nmap ZF zfaft{blDkp$%bli<cR><esc>ld0<cR>zl|	" add folds around a func, like a real man, in any language
 -- tabs
@@ -80,10 +81,10 @@ vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other buffers/tabs (but n
 -- splits are only used for exec
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- delete all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rh", "<c-w><c-h>")
-vim.keymap.set("n", "ri", "<c-W>_") -- maximise current split height
 vim.keymap.set("n", "ri", "<c-w>_") -- maximise current split height
 vim.keymap.set("n", "rj", "<c-w><c-j>")
 vim.keymap.set("n", "rk", "<c-w><c-k>")
+vim.keymap.set("n", "rl", "<c-w><c-l>")
 
 -- folds
 vim.keymap.set("n", "zH", "zM")
@@ -123,7 +124,9 @@ vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
 local function update_or_close()
 	vim.cmd(
 		-- expr must be false, else 'not allowed to change text'
-		(vim.bo.buftype == "nofile" or vim.bo.buftype == "help") and "bd" or "silent update"
+		(vim.bo.buftype == "nofile" or vim.bo.buftype == "help") and "bd"
+			-- see also: shortmess
+			or "silent update"
 	)
 end
 
@@ -218,6 +221,7 @@ local function toggle_diagnostics()
 end
 
 local function get_c_doc()
+	-- {{{
 	-- requires man-pages (c) and cppman (cpp)
 	local cmd = (vim.bo.filetype == "c" and "man 3" or "cppman") .. " " .. vim.fn.expand("<cword>")
 	cmd = "vnew | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! " .. cmd
@@ -226,9 +230,10 @@ local function get_c_doc()
 	vim.cmd.setlocal("ft=man")
 	vim.keymap.set("n", "J", "}zz", { buffer = true })
 	vim.keymap.set("n", "K", "{zz", { buffer = true })
-end
+end -- }}}
 
 local function surround_selection(left, right)
+	-- {{{
 	-- TODO: will fail first time
 	local line_start = vim.fn.getpos("'<")[2]
 	local line_end = vim.fn.getpos("'>")[2]
@@ -241,7 +246,43 @@ local function surround_selection(left, right)
 	table.insert(lines, 1, left)
 	table.insert(lines, right)
 	vim.api.nvim_buf_set_lines(0, line_start - 1, line_end, false, lines)
-end
+end -- }}}
+
+local function serde_value_to_struct()
+	-- {{{
+	-- https://github.com/mfussenegger/dotfiles/blob/fa58149048/vim/dot-config/nvim/lua/me/term.lua#L180
+	local mode = vim.api.nvim_get_mode()
+	local pos1
+	local pos2
+	if vim.tbl_contains({ "v", "V", "" }, mode.mode) then
+		pos1 = vim.fn.getpos("v")
+		pos2 = vim.fn.getpos(".")
+	else
+		return
+	end
+
+	-- https://neovim.io/doc/user/builtin.html#getregion()
+	local lines = vim.fn.getregion(pos1, pos2, { type = mode.mode })
+
+	-- replace lines
+	local new = table.concat(lines, "\n")
+	local foo = [[\([^)]+\)]]
+	local types = {
+		-- TODO: serde type -> rust type
+		Number = "usize",
+		Array = "Vec",
+		["["] = "<",
+		["]"] = ">",
+		['"'] = "",
+		[foo] = "",
+	}
+	for k, v in pairs(types) do
+		new = vim.fn.substitute(new, k, v, "g")
+	end
+
+	-- replace current v selection with new lines
+	vim.api.nvim_paste(new .. "\n", false, -1)
+end -- }}}
 
 -- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
 ---@type {[string]: { mode: string, lhs: string, rhs: string|function, opts: table? }[]}
@@ -254,8 +295,24 @@ local ft_binds = { -- {{{
 	},
 
 	gitcommit = {
-		{ "n", "J", "}zz" },
-		{ "n", "K", "{zz" },
+		-- { "n", "J", "}zz" },
+		-- { "n", "K", "{zz" },
+		{
+			"n",
+			"J",
+			function()
+				vim.fn.search("^@@", "W")
+				vim.cmd.norm("zt")
+			end,
+		},
+		{
+			"n",
+			"K",
+			function()
+				vim.fn.search("^@@", "Wb")
+				vim.cmd.norm("zt")
+			end,
+		},
 	},
 
 	man = {
@@ -265,26 +322,28 @@ local ft_binds = { -- {{{
 
 	sql = {
 
-		{
-			"n",
-			"?",
-			function() -- view table schema
-				local t = vim.fn.expand("<cword>")
-				-- TODO: suppress connection_get_columns error
-				local cols = require("dbee").api.core.connection_get_columns(
-					require("dbee").api.core.get_current_connection().id,
-					{ table = t, schema = "public", materialization = "table" }
-				)
-				-- only one print statement (the last) can be displayed, so use
-				-- vim.notify to display multiline string
-				local s = {}
-				for _, col in pairs(cols) do
-					table.insert(s, string.format("%s: %s", col.name, col.type))
-				end
-				-- TODO: display in float window
-				vim.notify(table.concat(s, "\n"))
-			end,
-		},
+		-- -- not very useful, hover is still more informative
+		-- {
+		-- 	"n",
+		-- 	"?",
+		-- 	function() -- view table schema
+		-- 		local t = vim.fn.expand("<cword>")
+		-- 		-- TODO: suppress connection_get_columns error
+		-- 		local cols = require("dbee").api.core.connection_get_columns(
+		-- 			require("dbee").api.core.get_current_connection().id,
+		-- 			{ table = t, schema = "public", materialization = "table" }
+		-- 		)
+		-- 		-- only one print statement (the last) can be displayed, so use
+		-- 		-- vim.notify to display multiline string
+		-- 		local s = {}
+		-- 		for _, col in pairs(cols) do
+		-- 			table.insert(s, string.format("%s: %s", col.name, col.type))
+		-- 		end
+		-- 		-- TODO: display in float window
+		-- 		vim.notify(table.concat(s, "\n"))
+		-- 	end,
+		-- },
+
 		{
 			"n",
 			")",
@@ -349,16 +408,18 @@ local ft_binds = { -- {{{
 			"v",
 			"a",
 			function()
-				surround_selection([[(async () => {]], [[})();]])
+				surround_selection("(async () => {", "})();")
 			end,
 		},
 	},
 
 	rust = {
-		-- TODO: <c-l> to exit parens?
+
 		-- {"n", "<leader>A", "oassert_eq!();<esc>hi", {  }},
 		{ "i", "<c-j>", ";<cr>" },
+		{ "i", "<c-l>", "<c-o>f)<c-o>l" }, -- exit parens (idk)
 		{ "n", "<leader>a", ":!cargo add " },
+		{ "v", "C", serde_value_to_struct },
 	},
 
 	zig = {
@@ -367,6 +428,9 @@ local ft_binds = { -- {{{
 
 	c = {
 		-- TODO: switch between .c and .h (vim-fswitch, maybe clangd already has this)
+
+		-- https://en.wikipedia.org/wiki/C_POSIX_library
+		-- pacman -Ql glibc | grep -Po '/usr/include/.+\.h'
 
 		{
 			"n",
@@ -523,6 +587,7 @@ for ft, binds in pairs(ft_binds) do
 end
 
 local function c_compiler_cmd()
+	-- {{{
 	-- if vim.fn.executable("tcc") then
 	-- 	return "tcc"
 	-- end
@@ -551,12 +616,10 @@ local function c_compiler_cmd()
 		-- "-ferror-limit=0", -- clang-only
 		-- "-ggdb",
 	}, " ")
-end
-
--- https://en.wikipedia.org/wiki/C_POSIX_library
--- pacman -Ql glibc | grep -Po '/usr/include/.+\.h'
+end -- }}}
 
 local function ts_is_compiled(js, ts)
+	-- {{{
 	-- if the js file newer than the ts file, the ts file can be said to be
 	-- compiled
 
@@ -569,9 +632,10 @@ local function ts_is_compiled(js, ts)
 	f2:close()
 
 	return js_epoch > ts_epoch
-end
+end -- }}}
 
-local function get_ts_runner(file) -- attempt to run .ts file
+local function get_ts_runner(file)
+	-- {{{
 	local node_version = require("util"):get_command_output("node -v")
 
 	-- -- https://old.reddit.com/r/neovim/comments/mq4pxn/best_way_to_get_current_buffer_content_as_a_lua/gufgtv8/
@@ -623,9 +687,10 @@ local function get_ts_runner(file) -- attempt to run .ts file
 	else
 		error("need npm init")
 	end
-end
+end -- }}}
 
 local function start_dbee()
+	-- {{{
 	local dbee = require("dbee")
 	local scratch_dir = os.getenv("HOME") .. "/.local/state/nvim/dbee/notes/memory_source_memory1"
 	local scratch_path = scratch_dir .. "/" .. vim.fn.expand("%:t")
@@ -644,7 +709,7 @@ local function start_dbee()
 	end
 	dbee.execute(buffer_to_string())
 	vim.cmd.wincmd("|") -- hide drawer+call log (hacky)
-end
+end -- }}}
 
 -- run current file and dump stdout to scratch buffer
 local function exec()
@@ -808,44 +873,6 @@ local function exec()
 end -- }}}
 vim.keymap.set("n", "<leader>x", exec, { silent = true })
 
--- a crappy hack meant for copying a serde `Value` and turning it into a struct
-local function replace_selection()
-	-- {{{
-	-- https://github.com/mfussenegger/dotfiles/blob/fa58149048db153fc27c38e5c815d40a7d637851/vim/dot-config/nvim/lua/me/term.lua#L180
-	local mode = vim.api.nvim_get_mode()
-	local pos1
-	local pos2
-	if vim.tbl_contains({ "v", "V", "" }, mode.mode) then
-		pos1 = vim.fn.getpos("v")
-		pos2 = vim.fn.getpos(".")
-	else
-		return
-	end
-
-	-- https://neovim.io/doc/user/builtin.html#getregion()
-	local lines = vim.fn.getregion(pos1, pos2, { type = mode.mode })
-
-	-- replace lines
-	local new = table.concat(lines, "\n")
-	local foo = [[\([^)]+\)]]
-	local types = {
-		-- TODO: serde type -> rust type
-		Number = "usize",
-		Array = "Vec",
-		["["] = "<",
-		["]"] = ">",
-		['"'] = "",
-		[foo] = "",
-	}
-	for k, v in pairs(types) do
-		new = vim.fn.substitute(new, k, v, "g")
-	end
-
-	-- replace current v selection with new lines
-	vim.api.nvim_paste(new .. "\n", false, -1)
-end -- }}}
-vim.keymap.set("v", "C", replace_selection, { silent = true })
-
 local function debug_print()
 	-- {{{
 	local filetypes = {
@@ -853,12 +880,12 @@ local function debug_print()
 		c = "printf(@);",
 		elixir = "IO.puts(@)",
 		gleam = "io.debug(@)",
-		go = "fmt.Println(@)",
+		go = "fmt.Println(@)", -- fmt.Printf("%+v\n", @)
 		javascript = "console.log(@);",
 		javascriptreact = "console.log(@);",
-		lua = "print(@)",
+		lua = "print(@)", -- print(vim.inspect(@))
 		python = "print(@)",
-		rust = 'println!("{:?}", @);',
+		rust = 'println!("{:?}", @);', -- println!("{:#?}", @);
 		sh = 'echo "$@"',
 		typescript = "console.log(@);",
 		typescriptreact = "console.log(@);",
