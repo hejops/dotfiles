@@ -318,7 +318,6 @@ alias ln="ln -v"
 alias mkdir="mkdir -p"
 alias mv="mv -v"
 alias pgrep="pgrep --list-full --exact"
-alias pip=pip3
 alias python=python3
 alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
 alias xargs1="xargs --max-args=1"
@@ -339,7 +338,6 @@ alias gtime="env time --format \"\$GNUTIMEFORMAT\" -- echo" # aliasing time to g
 alias ls="_exa --group-directories-first --tree --level 2"  # note: --tree is slow in large dirs
 alias lsc="_exa --time-style=iso --sort created"
 alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permissions --no-user"
-alias prem="pip3 uninstall"
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
 alias r="fm" # --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
 

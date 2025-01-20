@@ -823,18 +823,30 @@ EOF
 alias pt='gls | grep 'test_.\*py' | xargs pytest -x -vv --disable-warnings'
 
 pget() {
-	if [[ -f $1 ]]; then
-		pip3 install -r "$1"
-	else
-		pip3 install "$@"
+	pyp=$(groot)/pyproject.toml
+
+	if [[ -f $pyp ]]; then
+		echo "not in python project"
+
+	elif < "$pyp" grep -Fq tool.poetry; then
+		poetry add "$1"
+
+	elif command -v uv > /dev/null; then
+		uv add "$1"
 	fi
 }
 
 pup() {
-	if [[ -f $(get_repo_root)/pyproject.toml ]]; then
-		poetry add "$1@latest"
-	else
-		pip install --upgrade "$1"
+	pyp=$(groot)/pyproject.toml
+
+	if [[ -f $pyp ]]; then
+		echo "not in python project"
+
+	elif < "$pyp" grep -Fq tool.poetry; then
+		poetry update "$1"
+
+	elif command -v uv > /dev/null; then
+		uv lock --upgrade-package "$1"
 	fi
 }
 
