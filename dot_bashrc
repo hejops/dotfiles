@@ -63,6 +63,8 @@ export VISUAL=$EDITOR
 alias vim="\$EDITOR -p" # equivalent to -c ':tab ball'
 alias v="vim"
 
+export LESS="-R --mouse --wheel-lines=$((LINES / 2))" # ensure mouse wheel works in delta
+
 # }}}
 # xdg {{{
 
