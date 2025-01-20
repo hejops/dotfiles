@@ -5,7 +5,10 @@ vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 
 -- restore last cursor position
 vim.api.nvim_create_autocmd("BufReadPost", {
-	command = [[if line("'\"") > 1 && line("'\"") <= line("$") | execute "normal! g`\"" | endif]],
+	callback = function()
+		vim.cmd.norm([[g'"]]) -- :h '", :h last-position-jump
+		vim.cmd.norm("zz")
+	end,
 })
 
 -- highlight yanked text
