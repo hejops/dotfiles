@@ -54,6 +54,7 @@ alias rgl="rg --no-heading --with-filename"
 alias synctime="sudo ntpd --quit --panicgate"
 alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tf="waitdie con; fix_tags"
+alias tmp="cd \$(mktemp -d)"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tx="tectonic -X"
 alias tz=trizen # if gpg fail, gpg --recv-keys <key>
@@ -653,7 +654,30 @@ gd() {
 
 gdm() {
 	: diff against master, like in a PR
-	git diff "$(gmaster)...HEAD"
+
+	# caveat: due to git internals, it is not trivial to produce a diff
+	# that is both 'cumulative' and completely excludes merges.
+	#
+	# https://stackoverflow.com/q/25403705
+	#
+	# this gets reasonably close, but if a file was changed in the current
+	# branch as well as in a merge, both changes will be shown. for the
+	# purpose of fast diffing (i.e. without network), this is usually fine.
+
+	span="$(gmaster)...HEAD"
+	git log --no-merges --first-parent --name-only --oneline --pretty= "$span" |
+		sort -u |
+		xargs git diff "$span"
+
+	# if command -v glab > /dev/null; then
+	# 	glab mr diff |
+	# 		grep -v Subproject | # https://github.com/dandavison/delta/issues/1943
+	# 		delta
+	# else
+	# 	# includes merges (can be noisy)
+	# 	git diff "$(gmaster)...HEAD"
+	# fi
+
 }
 
 gcon() {
@@ -1567,13 +1591,13 @@ replace() {
 
 	search=$1
 	replace=$2
-	if ! rg "$search" -n; then
+	if ! rg -n -- "$search"; then
 		echo "Pattern not found"
 		return
 	fi
-	rg "$search" -n | rep "$search" "$replace"
+	rg -n -- "$search" | rep -- "$search" "$replace"
 	read -r -p 'OK?' || return
-	rg "$search" -n | rep "$search" "$replace" -w
+	rg -n -- "$search" | rep -w -- "$search" "$replace"
 	# if only rep allowed backreferencing the search pattern...
 	git diff
 	# git add -u
