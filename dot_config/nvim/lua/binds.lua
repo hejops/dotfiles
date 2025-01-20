@@ -378,6 +378,7 @@ local ft_binds = { -- {{{
 
 	["typescript,javascript,typescriptreact,javascriptreact"] = {
 		{ "n", "<leader>a", ":!npm install " }, -- TODO: yarn.lock -> yarn
+		{ "n", "<leader>d", "O/**  */<left><left><left>" }, -- neogen always documents class, not field
 
 		-- replace != and ==; probably better via find+sed
 		{ "n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]] },
