@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# generate a verbose biome.json configuration, because biome makes it
+# unreasonably obtuse to do so
+
+ver=1.8.3
+flat=$(curl -sL https://biomejs.dev/schemas/$ver/schema.json | gron | grep -v Nursery)
+
+categories=$(<<< "$flat" grep json.definitions |
+	grep 'rules that belong' |
+	cut -d. -f3 |
+	tr '\n' '|' |
+	sed -r 's/\|$//')
+
+# json `rules` object
+<<< "$flat" grep -Po "json.definitions.($categories).properties.(no|use)[^. ]+" |
+	sort -u |
+	sed -r '
+		s/\.(properties|definitions)//g
+		s/[A-Z]/\L&/
+		s/json/json.rules/
+		s/$/ = "off";/
+	' |
+	gron -u |
+	jq . |
+	sed '1d; $d'
+
+# cli args (--only=<group>/<rule>)
+<<< "$flat" grep -Po "json.definitions.($categories).properties.(no|use)[^. ]+" |
+	sort -u |
+	cut -d. -f3,5 |
+	sed -r '
+		s/[A-Z]/\L&/
+		s/^/--only=/
+		s|\.|/|
+	'
