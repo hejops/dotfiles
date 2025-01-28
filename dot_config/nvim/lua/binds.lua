@@ -137,15 +137,18 @@ vim.keymap.set("n", "x", function()
 	return vim.bo.modifiable == 0 and ":bd<cr>" or '"_x'
 end, { silent = true, expr = true })
 
--- map <4-leftmouse> <nop>|	" vblock mode
--- map <A-rightmouse> <c-f>zz|	" doesn't work
--- map <c-leftmouse> <nop>
+for _, vmode in pairs({ "i", "n", "x" }) do
+	for _, mod in pairs({ "", "c-", "a-" }) do
+		for _, n in pairs({ "", "2-", "3-", "4-" }) do
+			vim.keymap.set(vmode, string.format("<%s%smiddlemouse>", mod, n), "<nop>")
+			vim.keymap.set(vmode, string.format("<%s%srightmouse>", mod, n), "<nop>")
+		end
+	end
+end
 
-for _, x in pairs({ "", "2-", "3-", "4-" }) do
-	vim.keymap.set("i", string.format("<%srightmouse>", x), "<esc>")
-	vim.keymap.set("n", string.format("<%srightmouse>", x), "<nop>")
-	vim.keymap.set("i", string.format("<%smiddlemouse>", x), "<nop>")
-	vim.keymap.set("n", string.format("<%smiddlemouse>", x), "<nop>")
+for _, n in pairs({ "2-", "3-", "4-", "c-", "a-" }) do
+	vim.keymap.set("i", string.format("<%sleftmouse>", n), "<nop>")
+	vim.keymap.set("n", string.format("<%sleftmouse>", n), "<nop>")
 end
 
 -- vim-fugitive; the only plugin allowed in this file, because of how critical it is
