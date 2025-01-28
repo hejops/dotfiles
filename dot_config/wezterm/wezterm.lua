@@ -1,40 +1,5 @@
--- https://github.com/pynappo/dotfiles/blob/ec6476a4cb78176be10293812c02dda7a4ac999a/.config/wezterm/wezterm.lua
 -- https://gist.github.com/alexpls/83d7af23426c8928402d6d79e72f9401
 -- https://github.com/pynappo/dotfiles/blob/ec6476a4cb78176be10293812c02dda7a4ac999a/.config/wezterm/wezterm.lua#L182
-
--- os.execute("notify-send hi")
--- os.execute("setxkbmap -layout us")
-
--- TODO: investigate high memory usage (up to 1.3 GB RSS)
--- pmap -x $(\pgrep wezterm-gui) | sort -k3 -n | tail -n20
---
--- https://github.com/wez/wezterm/issues/2626
---
--- benchmarks (dwmstatus):
--- cold boot (1 term + ff):
--- warm login (1 term + ff): 4.0 G
--- extended uptime (~1 week): >7 G
-
--- 00005bb89ee9e000    5640    5640    5640 r---- wezterm-gui
--- 0000797ca8000000    5828    5824    5824 rw---   [ anon ]
--- 0000797c90000000    5992    5960    5960 rw---   [ anon ]
--- 0000797b8c000000    6988    6036    6036 rw---   [ anon ]
--- 0000797bec000000    6108    6108    6108 rw---   [ anon ]
--- 0000797caf1c2000   11364    6392       0 r---- radeonsi_dri.so
--- 00005bb89bb5f000    6620    6600       0 r---- wezterm-gui
--- 0000797c9c000000    9756    9708    9708 rw---   [ anon ]
--- 0000797cadc14000   22200   13584       0 r-x-- radeonsi_dri.so
--- 0000797ac4000000   15232   15232   15232 rw---   [ anon ]
--- 00005bb89c1d6000   32252   16292       0 r-x-- wezterm-gui
--- 0000797c74e9d000   46436   19704       0 r---- libLLVM.so.18.1
--- 0000797a94000000   23448   23448   23448 rw---   [ anon ]
--- 0000797b54000000   30552   30488   30488 rw---   [ anon ]
--- 0000797c702ab000   77768   52480       0 r-x-- libLLVM.so.18.1
--- 0000797b50000000   62184   62184   62184 rw---   [ anon ]
--- 0000797b60000000   62596   62596   62596 rw---   [ anon ]
--- 0000797c14000000   65228   63048   63048 rw---   [ anon ]
--- 00005bb8d87ea000  692676  692536  692536 rw---   [ anon ]
--- total kB         7587336 1325072 1155516
 
 -- reasons to use wezterm over kitty:
 -- declarative config
@@ -43,10 +8,10 @@
 -- superior documentation
 
 -- reasons not to use wezterm:
--- memory leak
+-- memory leak? (not really an issue any more)
 
 local wezterm = require("wezterm")
-local log = wezterm.log_info
+-- local log = wezterm.log_info
 
 local act = wezterm.action
 local config = {}
@@ -63,8 +28,20 @@ end
 
 local is_ubuntu = get_output("grep Ubuntu /etc/*-release")
 
--- TODO: tab title?
--- TODO: projects (see old kitty example)
+-- local function extend(t1, t2)
+-- 	for _, v in ipairs(t2) do
+-- 		table.insert(t1, v)
+-- 	end
+-- end
+
+-- behaviour {{{
+
+-- config.default_domain = "unix"
+-- config.enable_kitty_graphics = false -- ranger: iterm2
+config.default_cwd = wezterm.home_dir
+config.default_prog = { "bash" } -- source .bashrc
+config.pane_focus_follows_mouse = true
+config.switch_to_last_active_tab_when_closing_tab = true
 
 -- https://github.com/P1n3appl3/config/blob/46b4935f2a0d9cf88ebc444bac5b10c03e8c6df3/dotfiles/.config/wezterm/wezterm.lua#L46
 -- https://github.com/wez/wezterm/blob/main/docs/config/lua/wezterm/on.md#example-opening-whole-scrollback-in-vim
@@ -90,7 +67,7 @@ wezterm.on(
 	-- this is similar to exec (in my init.lua); but i generally don't want to
 	-- run tests in a vim split
 	-- https://github.com/rwxrob/dot/blob/fa81b2b138805276a35b458196b67ddb87660505/scripts/goentrtest
-	-- https://github.com/vouch/vouch-proxy/blob/ad2e9ac8ad03e7d22cdbb44abc47c74ad046071a/do.sh#L109C1-L109C38
+	-- https://github.com/vouch/vouch-proxy/blob/ad2e9ac8ad03e7d22cdbb44abc47c74ad046071a/do.sh#L109
 	function(window, pane) -- {{{
 		-- determine what lang we are in. we always assume we are at project root
 
@@ -133,9 +110,7 @@ wezterm.on(
 	end -- }}}
 )
 
-config.pane_focus_follows_mouse = true
-config.switch_to_last_active_tab_when_closing_tab = true
-
+-- }}}
 -- font {{{
 
 -- wezterm.font("Haskplex", {weight="Regular", stretch="Normal", style="Normal"})
@@ -179,15 +154,6 @@ local fonts = {
 	-- "Input Mono", -- why so short?
 	"Source Code Pro",
 }
-
--- TODO: and not dwm
--- if is_ubuntu then
--- 	-- https://github.com/wez/wezterm/issues/284#issuecomment-1177628870
--- 	wezterm.on("gui-startup", function() -- note: not reliable
--- 		local _, _, window = wezterm.mux.spawn_window({})
--- 		window:gui_window():maximize()
--- 	end)
--- end
 
 -- config.freetype_load_flags = "MONOCHROME"
 -- config.freetype_load_flags = "NO_HINTING" -- squashes fonts (makes them shorter)
@@ -243,12 +209,8 @@ config.window_frame = { font = main_font, font_size = font_size }
 -- appearance {{{
 
 -- config.default_cursor_style = "SteadyBlock"
--- config.default_domain = "unix"
--- config.enable_kitty_graphics = false -- ranger: iterm2
 -- config.window_background_opacity = 0.8 -- see opacity-rule in picom.conf
 config.color_scheme = "citruszest"
-config.default_cwd = wezterm.home_dir
-config.default_prog = { "bash" } -- source .bashrc
 config.enable_scroll_bar = false
 config.hide_tab_bar_if_only_one_tab = true
 config.show_new_tab_button_in_tab_bar = false
@@ -257,23 +219,68 @@ config.text_background_opacity = 0.8 -- dim slightly
 config.use_fancy_tab_bar = false
 config.window_padding = { left = 0, right = 0, top = 0, bottom = 0 }
 
+local function basename(s)
+	return string.gsub(s, "(.*[/\\])(.*)", "%2")
+end
+
+local function get_title(tab)
+	local pane = tab.active_pane
+	local title = assert(pane.title) -- may be ""
+	local dir = assert(pane.current_working_dir.path)
+	local proc = basename(assert(pane.foreground_process_name))
+
+	local function get_dir()
+		-- os.execute("notify-send " .. dir)
+		return dir == os.getenv("HOME") and "~" or "> " .. basename(dir)
+	end
+
+	-- return table.concat({
+	-- 	proc,
+	-- 	basename(title),
+	-- 	basename(dir),
+	-- }, " ")
+
+	if proc == "bash" then
+		return get_dir()
+	elseif proc == "nvim" or title ~= "___" then
+		-- TODO: long-lived processes invoked from bash (e.g. yarn, sleep) may get this
+
+		-- this is the only situation where we ever check the title. when nvim is
+		-- started from yazi (i.e. yazi -> nvim), proc still remains yazi, which
+		-- makes sense, because yazi does not (and should not) exec. if only proc
+		-- is checked, it would be impossible to react to yazi -> nvim.
+		--
+		-- to work around this, we force nvim to set title, which is caught in this
+		-- condition. on exit, nvim must then set title to some reserved string to
+		-- signal that we should proceed to the next condition.
+		return basename(title)
+	elseif proc == "yazi" then
+		return "📁 " .. basename(dir)
+	else
+		-- os.execute("notify-send unreachable!")
+		error("unreachable")
+	end
+
+	--
+end
+
+wezterm.on("format-window-title", function(tab, pane, tabs, panes, cfg)
+	return get_title(tab) -- only applies to wezterm windows
+end)
+
+wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
+	local t = string.format(" %s %s ", tostring(tab.tab_index + 1), get_title(tab))
+	-- if tab.active_pane.has_unseen_output then
+	-- 	t = "! " .. t
+	-- end
+	return t
+end)
+
 -- }}}
 -- keys {{{
 
 local function keys()
 	local leader = "SHIFT|CTRL"
-
-	-- https://wezfurlong.org/wezterm/config/lua/keyassignment/PromptInputLine.html#example-of-interactively-renaming-the-current-tab
-	local rename_tab = {
-		-- initial_value = "My Tab Name", -- nightly only
-		description = "Rename tab",
-		action = wezterm.action_callback(function(window, pane, line)
-			_ = pane
-			if line then
-				window:active_tab():set_title(line)
-			end
-		end),
-	}
 
 	-- https://github.com/wez/wezterm/issues/1362#issuecomment-1000457693
 	-- https://wezfurlong.org/wezterm/config/lua/keyassignment/QuickSelectArgs.html
@@ -297,6 +304,19 @@ local function keys()
 		},
 	}
 
+	-- like hint_url but open in nvim/less
+	local hint_file = {
+		QuickSelectArgs = {
+			patterns = { [[\.?/[^ ]+]] }, -- there is proably a better regex
+			action = wezterm.action_callback(function(window, pane)
+				local url = window:get_selection_text_for_pane(pane)
+				window:perform_action(act.SpawnCommandInNewTab({ args = { "less", "-R", url } }), pane)
+			end),
+		},
+	}
+
+	-- spawn new tab adjacent to current one, with same cwd. this is most useful
+	-- for nvim
 	local function SpawnTabNext()
 		-- https://old.reddit.com/r/wezterm/comments/1d71ei3/how_to_make_spawntab_spawn_a_new_tab_next_to/l759axf/
 		local function active_tab_index(window)
@@ -307,10 +327,10 @@ local function keys()
 			end
 		end
 
-		return wezterm.action_callback(function(win, pane)
-			local prev_active_tab_index = active_tab_index(win)
-			win:perform_action(act.SpawnTab("CurrentPaneDomain"), pane)
-			win:perform_action(act.MoveTab(prev_active_tab_index + 1), pane)
+		return wezterm.action_callback(function(window, pane)
+			local idx = active_tab_index(window) -- important: determine where to position tab -before- spawning new tab
+			window:perform_action(act.SpawnTab("CurrentPaneDomain"), pane)
+			window:perform_action(act.MoveTab(idx + 1), pane)
 		end)
 	end
 
@@ -333,182 +353,174 @@ local function keys()
 		{ key = "t", mods = "CTRL", action = SpawnTabNext() },
 		{ key = "t", mods = leader, action = act.SpawnCommandInNewTab({ cwd = wezterm.home_dir }) },
 
-		{ key = "o", mods = leader, action = act.ShowTabNavigator },
+		-- ctrl-shift-i = tab
+		-- { key = "o", mods = leader, action = act.ShowTabNavigator },
+		{ key = "o", mods = leader, action = act.MoveTabRelative(1) },
+		{ key = "y", mods = leader, action = act.MoveTabRelative(-1) }, -- u reserved -- org.freedesktop.ibus.panel.emoji unicode-hotkey ['<Control><Shift>u']
 
 		{ key = "h", mods = leader, action = act.ActivateTabRelative(-1) },
 		{ key = "j", mods = leader, action = act.ScrollByPage(1) },
 		{ key = "k", mods = leader, action = act.ScrollByPage(-1) },
 		{ key = "l", mods = leader, action = act.ActivateTabRelative(1) },
 
+		-- { key = "r", mods = "CTRL", action = act.PromptInputLine(rename_tab) },
+		-- { key = "x", mods = leader, action = act.EmitEvent("view-history-in-pager") },
 		{ key = "g", mods = "CTRL", action = act(hint_url) },
-		{ key = "r", mods = "CTRL", action = act.PromptInputLine(rename_tab) },
+		{ key = "g", mods = leader, action = act(hint_file) },
 		{ key = "w", mods = leader, action = act.EmitEvent("watch") },
-		{ key = "x", mods = leader, action = act.EmitEvent("view-history-in-pager") },
 		{ key = "z", mods = "CTRL", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
 
 		{ key = "p", mods = leader, action = act.ActivateCommandPalette },
 	}
 
-	-- TODO: use weruio (?) instead of numbers (when the need arises)
-	for i = 0, 9 do
-		table.insert(_keys, { key = tostring(i), mods = leader, action = act.ActivateTab(i) })
-	end
+	-- local function get_active_pane(panes)
+	-- 	for i, p in ipairs(panes) do
+	-- 		-- log(i, p)
+	-- 		if p.is_active then
+	-- 			return i
+	-- 		end
+	-- 	end
+	-- end
 
-	local function get_active_pane(panes)
-		for i, p in ipairs(panes) do
-			-- log(i, p)
-			if p.is_active then
-				return i
-			end
-		end
-	end
+	-- local function resize(window, pane)
+	-- 	local tab = pane:tab()
+	-- 	local panes = tab:panes_with_info() -- https://wezfurlong.org/wezterm/config/lua/MuxTab/panes_with_info.html
+	--
+	-- 	-- force right panes to have equal height
+	-- 	local height = panes[1].height
+	-- 	local r_height = math.floor(height / (#panes - 1)) -- before recalc
+	--
+	-- 	for x = 2, #panes do
+	-- 		panes = tab:panes_with_info() -- recalc
+	-- 		-- log(panes[x])
+	-- 		local p = panes[x].pane
+	--
+	-- 		local diff = p:get_dimensions().viewport_rows - r_height
+	-- 		local dir = diff > 0
+	-- 				-- and x < #panes
+	-- 				and "Up"
+	-- 			or "Down"
+	--
+	-- 		log("pane", x, #panes, "has height", p:get_dimensions().viewport_rows, "need", r_height, dir, diff)
+	--
+	-- 		-- adjust Up on first split ignored
+	-- 		-- adjust Down on last split ignored
+	-- 		-- https://github.com/wez/wezterm/issues/4038
+	--
+	-- 		-- > lua: opening new split: 4
+	-- 		-- > lua: pane 2 4 has height 32 need 20 Up 12 (manual AdjustPaneSize call would have worked)
+	-- 		-- > lua: height is now 32
+	-- 		-- > lua: pane 3 4 has height 2 need 20 Down -18
+	-- 		-- > lua: height is now 20
+	-- 		-- > lua: pane 4 4 has height 8 need 20 Down -12
+	-- 		-- > lua: height is now 1
+	--
+	-- 		-- https://wezfurlong.org/wezterm/config/lua/pane/index.html
+	-- 		-- https://wezfurlong.org/wezterm/config/lua/keyassignment/AdjustPaneSize.html
+	--
+	-- 		if diff == 0 then
+	-- 			log("already ok")
+	-- 		else
+	-- 			window:perform_action(act.AdjustPaneSize({ dir, math.abs(diff) }), p)
+	-- 		end
+	--
+	-- 		log("height is now", tab:panes_with_info()[x].height)
+	-- 	end
+	-- end
 
-	local function resize(win, pane)
-		local tab = pane:tab()
-		local panes = tab:panes_with_info() -- https://wezfurlong.org/wezterm/config/lua/MuxTab/panes_with_info.html
+	-- local test_keys = {
+	-- 	-- https://github.com/nathanaelkane/dotfiles/blob/8b6c3f59157ccd85a51e20b580930f160d29e121/config/wezterm.lua#L163
+	-- 	-- https://github.com/uolot/dotfiles/blob/aa07dd01fddab8c7ffaa2230f298946671979e1a/wezterm/balance.lua#L108
+	--
+	-- 	{
+	-- 		mods = "SUPER",
+	-- 		key = "r",
+	-- 		action = wezterm.action_callback(function(win, pane)
+	-- 			resize(win, pane)
+	-- 		end),
+	-- 	},
+	--
+	-- 	{
+	-- 		mods = "SUPER",
+	-- 		key = "t",
+	-- 		action = wezterm.action_callback(function(win, pane)
+	-- 			local tab = pane:tab()
+	-- 			local panes = tab:panes_with_info() -- https://wezfurlong.org/wezterm/config/lua/MuxTab/panes_with_info.html
+	--
+	-- 			if #panes == 3 then -- need to get resize working first
+	-- 				return
+	-- 			end
+	--
+	-- 			local active_pane = panes[get_active_pane(panes)].pane
+	-- 			-- local active_pane = tab.active_pane
+	-- 			local cwd = active_pane:get_current_working_dir().file_path
+	--
+	-- 			if #panes == 1 then
+	-- 				log("first pane, splitting horiz (2)")
+	-- 				panes[1].pane:split({
+	-- 					direction = "Right",
+	-- 					size = 0.45,
+	-- 					cwd = cwd,
+	-- 				})
+	-- 				-- active_pane:activate()
+	-- 				return
+	-- 			end
+	--
+	-- 			log("opening new split:", #panes + 1)
+	-- 			panes[#panes].pane:split({
+	-- 				direction = "Bottom",
+	-- 				cwd = cwd,
+	-- 			})
+	-- 			-- resize(win, pane)
+	-- 			-- active_pane:activate()
+	-- 		end),
+	-- 	},
+	--
+	-- 	-- 'fullscreen' = pane:set_zoomed(true)
+	--
+	-- 	-- TODO: on closing left pane (pane 1), activate pane 2 and move it left
+	-- 	-- TODO: on closing any pane, resize all right panes
+	--
+	-- 	-- https://github.com/wez/wezterm/discussions/3331#discussioncomment-9477701 (swap)
+	-- 	-- https://github.com/wez/wezterm/issues/1975#issuecomment-1134817741 (tmux style select)
+	--
+	-- 	-- https://wezfurlong.org/wezterm/config/lua/keyassignment/RotatePanes.html
+	-- 	-- https://wezfurlong.org/wezterm/config/lua/keyassignment/PaneSelect.html
+	--
+	-- 	-- { key = "k", mods = leader, action = wezterm.action.AdjustPaneSize({ "Up", 12 }) },
+	--
+	-- 	{
+	-- 		key = "i",
+	-- 		mods = "SUPER",
+	-- 		-- action = act.RotatePanes("Clockwise"),
+	-- 		action = wezterm.action_callback(function(window, pane)
+	-- 			-- os.execute("notify-send hi")
+	-- 			-- local active = get_active_pane()
+	-- 			window:perform_action(act.RotatePanes("Clockwise"), pane)
+	-- 		end),
+	-- 	},
+	--
+	-- 	-- TODO: should only be reloaded when screen dimensions change
+	-- 	-- https://wezfurlong.org/wezterm/config/lua/wezterm/on.html
+	-- 	{
+	-- 		key = ",",
+	-- 		mods = "SUPER",
+	-- 		action = wezterm.action_callback(function()
+	-- 			wezterm.reload_configuration()
+	-- 		end),
+	-- 	},
+	--
+	-- 	-- note: disable ubuntu default keybinds first (< ~/.config/dconf/dconf.ini dconf load /)
+	-- 	{ key = "h", mods = "SUPER", action = act.ActivateTabRelative(-1) },
+	-- 	{ key = "j", mods = "SUPER", action = act.ActivatePaneDirection("Next") },
+	-- 	{ key = "k", mods = "SUPER", action = act.ActivatePaneDirection("Prev") },
+	-- 	{ key = "l", mods = "SUPER", action = act.ActivateTabRelative(1) },
+	-- }
 
-		-- force right panes to have equal height
-		local height = panes[1].height
-		local r_height = math.floor(height / (#panes - 1)) -- before recalc
-
-		for x = 2, #panes do
-			panes = tab:panes_with_info() -- recalc
-			-- log(panes[x])
-			local p = panes[x].pane
-
-			local diff = p:get_dimensions().viewport_rows - r_height
-			local dir = diff > 0
-					-- and x < #panes
-					and "Up"
-				or "Down"
-
-			log("pane", x, #panes, "has height", p:get_dimensions().viewport_rows, "need", r_height, dir, diff)
-
-			-- adjust Up on first split ignored
-			-- adjust Down on last split ignored
-			-- https://github.com/wez/wezterm/issues/4038
-
-			-- > lua: opening new split: 4
-			-- > lua: pane 2 4 has height 32 need 20 Up 12 (manual AdjustPaneSize call would have worked)
-			-- > lua: height is now 32
-			-- > lua: pane 3 4 has height 2 need 20 Down -18
-			-- > lua: height is now 20
-			-- > lua: pane 4 4 has height 8 need 20 Down -12
-			-- > lua: height is now 1
-
-			-- https://wezfurlong.org/wezterm/config/lua/pane/index.html
-			-- https://wezfurlong.org/wezterm/config/lua/keyassignment/AdjustPaneSize.html
-
-			if diff == 0 then
-				log("already ok")
-			else
-				-- win:perform_action({ AdjustPaneSize = { dir, math.abs(diff) } }, p)
-				win:perform_action(act.AdjustPaneSize({ dir, math.abs(diff) }), p)
-			end
-
-			log("height is now", tab:panes_with_info()[x].height)
-		end
-	end
-
-	local test_keys = {
-		-- https://github.com/nathanaelkane/dotfiles/blob/8b6c3f59157ccd85a51e20b580930f160d29e121/config/wezterm.lua#L163
-		-- https://github.com/uolot/dotfiles/blob/aa07dd01fddab8c7ffaa2230f298946671979e1a/wezterm/balance.lua#L108
-
-		{
-			mods = "SUPER",
-			key = "r",
-			action = wezterm.action_callback(function(win, pane)
-				resize(win, pane)
-			end),
-		},
-
-		{
-			mods = "SUPER",
-			key = "t",
-			action = wezterm.action_callback(function(win, pane)
-				local tab = pane:tab()
-				local panes = tab:panes_with_info() -- https://wezfurlong.org/wezterm/config/lua/MuxTab/panes_with_info.html
-
-				if #panes == 3 then -- need to get resize working first
-					return
-				end
-
-				local active_pane = panes[get_active_pane(panes)].pane
-				-- local active_pane = tab.active_pane
-				local cwd = active_pane:get_current_working_dir().file_path
-
-				if #panes == 1 then
-					log("first pane, splitting horiz (2)")
-					panes[1].pane:split({
-						direction = "Right",
-						size = 0.45,
-						cwd = cwd,
-					})
-					-- active_pane:activate()
-					return
-				end
-
-				log("opening new split:", #panes + 1)
-				panes[#panes].pane:split({
-					direction = "Bottom",
-					cwd = cwd,
-				})
-				-- resize(win, pane)
-				-- active_pane:activate()
-			end),
-		},
-
-		-- 'fullscreen' = pane:set_zoomed(true)
-
-		-- TODO: on closing left pane (pane 1), activate pane 2 and move it left
-		-- TODO: on closing any pane, resize all right panes
-
-		-- https://github.com/wez/wezterm/discussions/3331#discussioncomment-9477701 (swap)
-		-- https://github.com/wez/wezterm/issues/1975#issuecomment-1134817741 (tmux style select)
-
-		-- https://wezfurlong.org/wezterm/config/lua/keyassignment/RotatePanes.html
-		-- https://wezfurlong.org/wezterm/config/lua/keyassignment/PaneSelect.html
-
-		-- { key = "k", mods = leader, action = wezterm.action.AdjustPaneSize({ "Up", 12 }) },
-
-		{
-			key = "i",
-			mods = "SUPER",
-			-- action = act.RotatePanes("Clockwise"),
-			action = wezterm.action_callback(function(win, pane)
-				-- os.execute("notify-send hi")
-				-- local active = get_active_pane()
-				win:perform_action(act.RotatePanes("Clockwise"), pane)
-			end),
-		},
-
-		-- TODO: should only be reloaded when screen dimensions change
-		-- https://wezfurlong.org/wezterm/config/lua/wezterm/on.html
-		{
-			key = ",",
-			mods = "SUPER",
-			action = wezterm.action_callback(function()
-				wezterm.reload_configuration()
-			end),
-		},
-
-		-- note: disable ubuntu default keybinds first (< ~/.config/dconf/dconf.ini dconf load /)
-		{ key = "h", mods = "SUPER", action = act.ActivateTabRelative(-1) },
-		{ key = "j", mods = "SUPER", action = act.ActivatePaneDirection("Next") },
-		{ key = "k", mods = "SUPER", action = act.ActivatePaneDirection("Prev") },
-		{ key = "l", mods = "SUPER", action = act.ActivateTabRelative(1) },
-	}
-
-	local function extend(t1, t2)
-		for _, v in ipairs(t2) do
-			table.insert(t1, v)
-		end
-	end
-
-	-- note: dwm binds always override these
-	if is_ubuntu then
-		extend(_keys, test_keys)
-	end
+	-- -- note: dwm binds always override these
+	-- if is_ubuntu then
+	-- 	extend(_keys, test_keys)
+	-- end
 
 	return _keys
 end
@@ -553,56 +565,5 @@ config.keys = keys()
 -- }
 
 -- }}}
-
-local function basename(s)
-	return string.gsub(s, "(.*[/\\])(.*)", "%2")
-end
-
-local function get_title(tab)
-	local pane = tab.active_pane
-	local title = assert(pane.title) -- may be ""
-	local dir = assert(pane.current_working_dir.path)
-	local proc = basename(assert(pane.foreground_process_name))
-
-	local function get_dir()
-		-- os.execute("notify-send " .. dir)
-		return dir == os.getenv("HOME") and "~" or "> " .. basename(dir)
-	end
-
-	-- return table.concat({
-	-- 	proc,
-	-- 	basename(title),
-	-- 	basename(dir),
-	-- }, " ")
-
-	if proc == "bash" then
-		return get_dir()
-	elseif proc == "nvim" or title ~= "___" then
-		-- this is the only situation where we ever check the title. when nvim is
-		-- started from yazi (i.e. yazi -> nvim), proc still remains yazi, which
-		-- makes sense, because yazi does not (and should not) exec. if only proc
-		-- is checked, it would be impossible to react to yazi -> nvim.
-		--
-		-- to work around this, we force nvim to set title, which is caught in this
-		-- condition. on exit, nvim must then set title to some reserved string to
-		-- signal that we should proceed to the next condition.
-		return basename(title)
-	elseif proc == "yazi" then
-		return "📁 " .. basename(dir)
-	else
-		-- os.execute("notify-send unreachable!")
-		error("unreachable")
-	end
-
-	--
-end
-
-wezterm.on("format-window-title", function(tab, pane, tabs, panes, cfg)
-	return get_title(tab)
-end)
-
-wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
-	return string.format(" %s %s ", tostring(tab.tab_index + 1), get_title(tab))
-end)
 
 return config
