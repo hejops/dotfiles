@@ -153,8 +153,10 @@ vim.api.nvim_create_autocmd("FileType", {
 
 vim.api.nvim_create_autocmd("FileType", {
 	-- should i do this for go? hmm...
-	pattern = { "lua" },
+	pattern = { "lua", "javascript", "typescript" },
 	callback = function()
+		-- defaults: false, 8, 0, 8
+
 		vim.opt_local.expandtab = true
 		vim.opt_local.shiftwidth = 2
 		vim.opt_local.softtabstop = 2
