@@ -553,8 +553,8 @@ autocontain -s vimeo.com video
 " discogs
 
 " elements (?) in ublock have '##' prefix (no '.')
-command dark open javascript:(() => { document.querySelectorAll("p", "li", "div", "tr").forEach((elem) => { elem.style.background = "#121212"; elem.style.color = "#bfbfbf"; }); })();
-command darklarge open javascript:(() => { document.querySelectorAll("p", "li", "div", "tr").forEach((elem) => { elem.style.background = "#121212"; elem.style.color = "#bfbfbf"; elem.style.font = "500 24px/1.7em serif"; }); })();
+command dark open javascript:(() => { document.querySelectorAll("p,li,div,tr").forEach((elem) => { elem.style.background = "#121212"; elem.style.color = "#bfbfbf"; }); })();
+command darklarge open javascript:(() => { document.querySelectorAll("p,li,div,tr").forEach((elem) => { elem.style.background = "#121212"; elem.style.color = "#bfbfbf"; elem.style.font = "500 24px/1.7em serif"; }); })();
 
 command nonav open javascript:(function() { document.querySelectorAll('*').forEach(function(n) { var p = getComputedStyle(n).getPropertyValue('position'); if (p === 'fixed' || p === 'sticky') { n.style.cssText += ' ; position: absolute !important;'; } }); })();
 
