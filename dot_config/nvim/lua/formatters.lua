@@ -149,6 +149,7 @@ require("conform").setup({
 			-- extra/texlive-luatex
 			-- texlive-fontsrecommended
 			command = "/usr/bin/latexindent",
+			args = { "-g", "/dev/null" },
 		},
 	},
 

@@ -219,7 +219,14 @@ require("lazy").setup(
 					lualine_c = {
 						{
 							function()
-								return vim.o.columns > 170 and vim.fn.expand("%:p:h") or vim.fn.expand("%")
+								if vim.fn.expand("%") == "" then
+									return ""
+								end
+								return string.format(
+									"%s [%sL]",
+									vim.o.columns > 170 and vim.fn.expand("%:p:h") or vim.fn.expand("%"),
+									vim.fn.line("$")
+								)
 							end,
 						},
 
