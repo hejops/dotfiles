@@ -1679,13 +1679,33 @@ rt() {
 }
 
 epk() {
-	: check epub validity
+	: fix malformed epubs
+
+	# according to the spec, `mimetype` must be the first listed file. note
+	# that malformed epubs are still readable in zathura, so this is mainly
+	# to prevent yazi from treatting malformed epubs as zip.
+
+	tmpdir=tmp
+	tmpname=foo
+
 	for f in *.epub; do
-		if ! unzip -l "$f" > /dev/null 2> /dev/null; then
-			echo "$f"
-			rm "$f" > /dev/null
-		fi
-	done | sort >> failed
+
+		# https://github.com/ikrukov/epub/blob/c663821de66d57b3d138dc9125251f40ea755c2c/script/pack_epub#L25
+		# https://www.mobileread.com/forums/showthread.php?t=299415
+
+		unzip -l "$f" > /dev/null 2> /dev/null || continue # corrupt (unreadable)
+		file --mime-type "$f" | grep -q 'application/epub+zip' && continue
+
+		unzip "$f" -d $tmpdir
+		cd $tmpdir || :
+		echo 'application/epub+zip' > mimetype
+		zip -X -0 --quiet $tmpname mimetype
+		zip -X -9 --quiet --no-dir-entries --recurse-paths $tmpname META-INF OEBPS
+		cd ..
+		mv "$tmpdir/$tmpname.zip" "${f}"
+		\rm -rf "$tmpdir"
+
+	done
 }
 
 watchmem() {
