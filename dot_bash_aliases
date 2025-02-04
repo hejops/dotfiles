@@ -1027,21 +1027,45 @@ gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run
 # }}}
 # js {{{
 
-npmup() {
-	: upgrade npm package
-	# https://stackoverflow.com/a/47948461
-	pkg=$(< package.json jq -r '[.dependencies, .devDependencies] | add | keys[]')
-	c "https://www.npmjs.com/package/$1?activeTab=versions" |
-		grep -Po '\d+?\.\d+?\.\d+?</a></td><td class="downloads">[0-9,]+' |
-		sed -r 's|</a></td><td class="downloads">|\t|' |
-		sort -k2n
-	# yarn upgrade "$pkg@^$ver"
+# https://stackoverflow.com/a/47948461
+_js_pkg_ver() { < package.json jq -r "[.dependencies, .devDependencies] | add | .$1" | tr -d '^~'; }
+_js_pkgs() { < package.json jq -r '[.dependencies, .devDependencies] | add | keys[]'; }
+
+jx() {
+	pkgmgr() {
+		if [[ -f yarn.lock ]]; then
+			echo yarn
+		elif [[ -f pnpm-lock.yaml ]]; then
+			echo pnpm
+		else
+			echo npm
+		fi
+
+	}
+
+	cmd=$(< package.json jq -r .scripts | grep , | fzf --tac | cut -d'"' -f2)
+	$(pkgmgr) "$cmd"
 }
 
-npmupall() {
+jup() {
+	: upgrade npm package
+	pkg=$(_js_pkgs | fzf)
+	curr_ver=$(_js_pkg_ver "$pkg")
+	target_ver=$(c "https://www.npmjs.com/package/$pkg?activeTab=versions" |
+		grep -Po '\d+?\.\d+?\.\d+?</a></td><td class="downloads">[0-9,]+' |
+		sed -r 's|</a></td><td class="downloads">|\t|' |
+		sort -rV |
+		sed "/^$curr_ver/,\$d; /\t0$/d" | # filter to versions newer than current
+		sort -k2n |                       # sort by downloads
+		fzf --tac --prompt="$pkg (current: $curr_ver)" |
+		cut -f1)
+	# npm install (update?) / yarn upgrade
+	echo yarn upgrade "$pkg@^$target_ver"
+}
+
+jupall() {
 	: this is almost certainly a bad idea!
-	< package.json jq -r '[.dependencies, .devDependencies] | add | keys[]' |
-		xargs -n1 -I{} yarn upgrade {}@latest
+	_js_pkgs | xargs -n1 -I{} yarn upgrade {}@latest
 }
 
 perfnode() {
@@ -1060,18 +1084,6 @@ perfnode() {
 			stackvis perf > flamegraph.htm
 		chromium flamegraph.htm 2> /dev/null &
 	fi
-}
-
-nps() {
-	# vite is probaly the way to go...
-
-	# # xdg default browser always overrides BROWSER var
-	# # https://github.com/facebook/create-react-app/issues/9531#issuecomment-1022412062
-	# BROWSER=chromium npm start
-
-	# https://peter.sh/experiments/chromium-command-line-switches/#auto-open-devtools-for-tabs
-	chromium --auto-open-devtools-for-tabs http://localhost:3000 &
-	BROWSER=none npm start
 }
 
 # }}}
@@ -1280,8 +1292,6 @@ rgo() {
 	: useful when you know what to look for but dont want to open vim
 	# https://blog.burntsushi.net/ripgrep
 	# https://github.com/nvim-telescope/telescope.nvim/blob/7b5c5f56a21e82fdcfe5b250278b8dfc4b1cbab4/lua/telescope/config.lua#L646
-	# match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' "${1:-.}" |
-	# 	fzf -e)
 	# $1 = fzf query generally more useful than $1 = file
 	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' . |
 		fzf -e -q "${1:-}")
@@ -1489,6 +1499,9 @@ _unused() {
 		done
 }
 
+,pgrep() { \pgrep "$1" | xargs ps; } # ps for runtime
+pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill; }
+pkill1() { \pgrep "$1" | sed 1d | xargs kill; } # kill all procs except 1st
 rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
 ya() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
 yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '.title, .description, .webpage_url, .channel_url'; }
@@ -1611,10 +1624,6 @@ gev() {
 		sed -r 's/:/	/' |
 		column -s '	' -t
 }
-
-,pgrep() { \pgrep "$1" | xargs ps; }            # ps for runtime
-pkill1() { \pgrep "$1" | sed 1d | xargs kill; } # kill all procs except 1st
-pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill; }
 
 scan() {
 	cd ~/scores || return
