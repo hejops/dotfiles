@@ -325,18 +325,6 @@ alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permis
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
 alias r="fm" # --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
 
-# alias gD="git --no-pager diff --no-index" # default pager (not delta)
-# alias gdw="git diff --color-words"
-# alias gl="git log --stat --oneline"
-alias gC="git reset --soft HEAD~1" # un-commit
-alias ga="git add"
-alias gap="git add --patch"
-alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
-alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
-alias gdnw="git diff --color-words --no-index"
-alias gig="\$EDITOR .gitignore"
-alias gun="git checkout --" # discard all local changes ("undo"); git revert is the same, but also creates a commit
-
 if command -v pacman > /dev/null; then
 
 	alias get="sudo pacman --sync"
