@@ -700,15 +700,24 @@ gcon() {
 
 	# git diff --name-only --diff-filter=U --relative
 
-	if ! git status --porcelain | grep UU; then
+	has_conflicts() {
+		rg '^[<=>]{7}'
+		return $?
+	}
+
+	get_conflicts() {
+		# TODO: may not only be UU
+		git status --porcelain | grep UU
+	}
+
+	if ! conflicts=$(get_conflicts); then
 		echo "No conflicts detected"
+		return
 	fi
 
 	# all conflicts are due to lock files
-	if ! git status --porcelain | grep UU | grep -v yarn.lock; then
-		git status --porcelain |
-			grep UU |
-			cut -d' ' -f2- |
+	if ! <<< "$conflicts" grep -v yarn.lock; then
+		<<< "$conflicts" cut -c3- |
 			xargs dirname |
 			while read -r d; do
 				pushd "$d" || return
@@ -716,18 +725,17 @@ gcon() {
 				git add yarn.lock
 				popd || return
 			done
-		rg '^[<=>]{7}' && return
+		has_conflicts && return
 		git commit -v
 		return
 	fi
 
-	while rg '^[<=>]{7}'; do
+	while has_conflicts; do
 		echo "Unresolved conflicts remaining!"
-		# TODO: may not only be UU
-		git status --porcelain | grep UU | cut -d' ' -f2- | xargs nvim -p
+		get_conflicts | cut -c3- | xargs nvim -p
 	done
 
-	git status --porcelain | grep UU | cut -d' ' -f2 | xargs git add
+	get_conflicts | cut -c3- | xargs git add
 	git commit -v
 }
 
