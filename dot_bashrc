@@ -63,7 +63,6 @@ else
 fi
 export VISUAL=$EDITOR
 alias vim="\$EDITOR -p" # equivalent to -c ':tab ball'
-alias v="vim"
 
 # }}}
 # xdg {{{
@@ -302,6 +301,7 @@ fi
 
 # note: rsync trailing slash: https://unix.stackexchange.com/a/402556
 alias cp="cp -rv"
+alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
 alias grep="grep --color=auto"
 alias ln="ln -v"
 alias mkdir="mkdir -p"
@@ -312,24 +312,28 @@ alias rsync="rsync --partial --progress --recursive --archive --update" # all op
 alias xargs1="xargs --max-args=1"
 alias xargs="xargs --no-run-if-empty --verbose"
 
+# alias cget=cg
+alias ..="cd .."
 alias _exa="exa --all --long --links --dereference --color=always --git" # helper
 alias c="curl --silent --location --fail"
-alias cg=cget
-alias cget="wget --continue"
-alias cn="cargo new"
+alias cg="wget --continue"
 alias ftail="tail -f"
 alias gtime="env time --format \"\$GNUTIMEFORMAT\" -- echo" # aliasing time to gnu time will disable the builtin
-alias ls="_exa --group-directories-first --tree --level 2"  # note: --tree is slow in large dirs
+alias h="htop -u \$USER"
+alias ls="_exa --group-directories-first --tree --level 2" # note: --tree is slow in large dirs
 alias lsc="_exa --time-style=iso --sort created"
 alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permissions --no-user"
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
 alias r="fm" # --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
+alias rgl="rg --no-heading --with-filename"
+alias t="wezterm start --new-tab --cwd \$(realpath .)"
+alias tmp="cd \$(mktemp -d)"
 
 if command -v pacman > /dev/null; then
 
 	alias get="sudo pacman --sync"
 	alias lp="pacman --query --search"
-	alias pclean="paccache --remove && sudo pacman -Scc"
+	alias pclean="paccache --remove && sudo pacman -Scc --noconfirm"
 	alias pwhich="pacman -Qo"
 	alias rem="sudo pacman --remove --recursive" # --cascade
 	alias sp="pacman --sync --search"

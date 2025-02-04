@@ -8,7 +8,6 @@
 	< /tmp/verse.json jq -r '.votd | .reference, .content' |
 	sed -e 's/<[^>]*>//g' |
 		fold -w 65 -s
-# echo
 
 # }}}
 # aliases {{{
@@ -31,35 +30,29 @@ alias rag="exec yazi \"\$HDD/guitar\""
 alias ram="exec yazi \"\$MU\""
 alias rat="exec yazi \"\$HDD/torrent\" \"\$HDD/movies\""
 
+# alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
+# alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
 # alias md="\$EDITOR -c 'set ft=markdown'"
 # alias n="NO_COLOR=1 node --import=tsx"
-alias ..="cd .."
 alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit" # TODO: handle >1 video device (just increment n until file not exist)
 alias ci="chromium --incognito"
-alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
 alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
 alias cv="\$EDITOR ~/cv/src/index.tex"
 alias da="dc artist:"
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
-alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
-alias h="htop -u \$USER"
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
-alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out"
 alias pq="~/plaque/plaque"
-alias rgl="rg --no-heading --with-filename"
 alias synctime="sudo ntpd --quit --panicgate"
-alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tf="waitdie con; fix_tags"
-alias tmp="cd \$(mktemp -d)"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tx="tectonic -X"
 alias tz=trizen # if gpg fail, gpg --recv-keys <key>
-alias vf="\$EDITOR \$(fzf)"
+alias v="\$EDITOR \$(fzf)"
 alias y="bash ~/gripts/disq/ytm.sh"
 
 con() {
@@ -80,12 +73,93 @@ con() {
 }
 
 # }}}
+# frequent {{{
+
+cm() {
+
+	if [[ $# -eq 0 ]]; then
+		chezmoi cd
+	else
+		chezmoi "$@"
+	fi
+}
+
+bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
+
+replace() {
+	[[ -d ./.git ]] || git rev-parse --is-inside-work-tree > /dev/null 2>&1 || return
+
+	# check correct rep binary (not the lisp thing)
+	if ! command -v rep | grep -F .cargo; then
+		return
+	fi
+
+	search=$1
+	replace=$2
+	if ! rg -n -- "$search"; then
+		echo "Pattern not found"
+		return
+	fi
+	rg -n -- "$search" | rep -- "$search" "$replace"
+	read -r -p 'OK?' || return
+	rg -n -- "$search" | rep -w -- "$search" "$replace"
+	# if only rep allowed backreferencing the search pattern...
+	git diff
+	# git add -u
+	# git commit -v
+}
+
+sd() {
+	: shutdown
+	# uptime | grep hour || return/reboot
+
+	waitdie mpv pacman curl
+	killall firefox
+
+	# TODO: check for any running cron jobs (pstree, tail -f)
+	# not running:
+	# |-crond
+	# |-dbus-daemon
+
+	# pgrep -u $USER cron
+
+	if pgrep nicotine; then
+		pid=$(waitdie -s nicotine)
+		[[ -n $pid ]] && waitdie -w nicotine
+	fi
+	# pkill nicotine
+	# TODO: if new day (morning), just return
+	echo "Shutting down..."
+	sleep 3
+	# pulseaudio -k
+	shutdown now
+}
+
+rt() {
+	: pass an array of relative paths to tagfix
+	# note: dead symlinks are still displayed as if they exist
+
+	larr() {
+		# like xargs, but takes a single multi-line arg and turns it into an array
+		mapfile -t args < /dev/stdin
+		[[ -z ${args[*]} ]] && return # mimic xargs -r
+		exec "$1" "${args[@]}" < /dev/tty
+	}
+
+	fzf --multi --reverse --preview="ls \"$MU\"/{}" < ~/.config/mpv/library |
+		prepend "$MU/" |
+		larr fix_tags
+
+}
+
+# }}}
 
 # git {{{
 
+alias b=gB
 alias cr=cdr
 alias gC="git reset --soft HEAD~1"  # un-commit, but leave changes
-alias gCH="git reset --hard HEAD~1" # un-commit, and undo changes
+alias gCH="git reset --hard HEAD~1" # un-commit, and undo changes (destructive!)
 alias ga="git add"
 alias gap="git add --patch"
 alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
@@ -151,9 +225,7 @@ gb() {
 			git switch "$1" || return 1
 
 		elif git switch --create "$1"; then
-			# git switch --create does not produce output, for some
-			# reason (but git switch does)
-			echo "Switched to new branch $1"
+			:
 
 		else
 			# should be infallible?
@@ -169,6 +241,9 @@ gB() {
 	# --pretty=format:'%h%x09%an%x09%ad%x09%s' # no color
 	# TODO: include date/author, but preserve color
 	# TODO: handle master..master
+
+	git rev-parse --is-inside-work-tree > /dev/null 2>&1 || return
+
 	prv_cmd="echo {} | sed -r 's/^[ *]+//; s/^/master../' | xargs git log --oneline --color=always"
 	branch=$(git branch --sort=-committerdate |
 		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi |
@@ -819,6 +894,7 @@ pentmd() {
 # cargo +nightly udeps
 alias cb="cargo build"
 alias cbr="cargo build --release && cp target/release/\$(basename \$PWD) ."
+alias cn="cargo new"
 alias ct="cargo test"
 alias cwr="cargo watch -x run"                           # web servers only
 alias sqp='cargo sqlx prepare --workspace; ga .sqlx; gc' # postgres only
@@ -1403,7 +1479,7 @@ mw() {
 
 # }}}
 
-# ugly funcs that don't warrant a script yet
+# uncommon
 
 _unused() {
 	: list unused functions
@@ -1414,15 +1490,6 @@ _unused() {
 		done
 }
 
-cm() {
-	if [[ $# -eq 0 ]]; then
-		chezmoi cd
-	else
-		chezmoi "$@"
-	fi
-}
-
-bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
 rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
 ya() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
 yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '.title, .description, .webpage_url, .channel_url'; }
@@ -1455,102 +1522,35 @@ nico() {
 	done < "$1"
 }
 
-np() {
-	pgrep nicotine > /dev/null || return
-
-	while read -r id; do
-		# 12 because newline included? whatever
-		if [[ $(<<< "$id" wc -c) -eq 12 ]]; then
-			title=$(
-				echo "$id" |
-					prepend http://youtube.com/watch?v= |
-					xargs yt-dlp --dump-single-json --skip-download 2> /dev/null |
-					jq -r '.title' |
-					sed -r '
-						s|\([^)]+\)||g
-						s|\[[^]]+\]||g
-						s|[0-9]{4}.+||g
-						s|SW EXCL.+||g
-					'
-			)
-		else
-			title=$id
-		fi
-		echo "$title" | xclip -sel c
-		xdotool key super+8 ctrl+2 F6 ctrl+v F6 return
-		sleep 2
-	done < /tmp/foo
-	notify-send 'done'
-	rm -iv /tmp/foo
-
-}
-
-replace() {
-	# mostly for python module refactors
-	[[ -d ./.git ]] || git rev-parse --is-inside-work-tree > /dev/null 2>&1 || return
-
-	# check correct rep binary (not the lisp thing)
-	if ! command -v rep | grep -F .cargo; then
-		return
-	fi
-
-	search=$1
-	replace=$2
-	if ! rg -n -- "$search"; then
-		echo "Pattern not found"
-		return
-	fi
-	rg -n -- "$search" | rep -- "$search" "$replace"
-	read -r -p 'OK?' || return
-	rg -n -- "$search" | rep -w -- "$search" "$replace"
-	# if only rep allowed backreferencing the search pattern...
-	git diff
-	# git add -u
-	# git commit -v
-}
-
-sd() {
-	: shutdown
-	# uptime | grep hour || return/reboot
-
-	waitdie mpv pacman curl
-	killall firefox
-
-	# TODO: check for any running cron jobs (pstree, tail -f)
-	# not running:
-	# |-crond
-	# |-dbus-daemon
-
-	# pgrep -u $USER cron
-
-	if pgrep nicotine; then
-		pid=$(waitdie -s nicotine)
-		[[ -n $pid ]] && waitdie -w nicotine
-	fi
-	# pkill nicotine
-	# TODO: if new day (morning), just return
-	echo "Shutting down..."
-	sleep 3
-	# pulseaudio -k
-	shutdown now
-}
-
-rt() {
-	: pass an array of relative paths to tagfix
-	# note: dead symlinks are still displayed as if they exist
-
-	larr() {
-		# like xargs, but takes a single multi-line arg and turns it into an array
-		mapfile -t args < /dev/stdin
-		[[ -z ${args[*]} ]] && return # mimic xargs -r
-		exec "$1" "${args[@]}" < /dev/tty
-	}
-
-	fzf --multi --reverse --preview="ls \"$MU\"/{}" < ~/.config/mpv/library |
-		prepend "$MU/" |
-		larr fix_tags
-
-}
+# np() {
+# 	pgrep nicotine > /dev/null || return
+#
+# 	while read -r id; do
+# 		# 12 because newline included? whatever
+# 		if [[ $(<<< "$id" wc -c) -eq 12 ]]; then
+# 			title=$(
+# 				echo "$id" |
+# 					prepend http://youtube.com/watch?v= |
+# 					xargs yt-dlp --dump-single-json --skip-download 2> /dev/null |
+# 					jq -r '.title' |
+# 					sed -r '
+# 						s|\([^)]+\)||g
+# 						s|\[[^]]+\]||g
+# 						s|[0-9]{4}.+||g
+# 						s|SW EXCL.+||g
+# 					'
+# 			)
+# 		else
+# 			title=$id
+# 		fi
+# 		echo "$title" | xclip -sel c
+# 		xdotool key super+8 ctrl+2 F6 ctrl+v F6 return
+# 		sleep 2
+# 	done < /tmp/foo
+# 	notify-send 'done'
+# 	rm -iv /tmp/foo
+#
+# }
 
 epk() {
 	: fix malformed epubs
