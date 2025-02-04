@@ -87,7 +87,7 @@ cm() {
 bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
 
 replace() {
-	[[ -d ./.git ]] || git rev-parse --is-inside-work-tree > /dev/null 2>&1 || return
+	_in_git_repo || return
 
 	# check correct rep binary (not the lisp thing)
 	if ! command -v rep | grep -F .cargo; then
@@ -171,6 +171,7 @@ alias groot=_get_repo_root
 alias gun="git checkout --" # discard all local changes ("undo")
 
 _get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
+_in_git_repo() { git rev-parse --is-inside-work-tree > /dev/null 2> /dev/null; }
 
 _gmaster() {
 	: get default branch, e.g. master
@@ -183,7 +184,7 @@ _gmaster() {
 gls() { git ls-files "${1:-.}"; }
 
 cdr() {
-	if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+	if _in_git_repo; then
 		cd "$(_get_repo_root)" || :
 	elif [[ -n $REPO ]]; then
 		cd "$REPO" || :
@@ -242,7 +243,7 @@ gB() {
 	# TODO: include date/author, but preserve color
 	# TODO: handle master..master
 
-	git rev-parse --is-inside-work-tree > /dev/null 2>&1 || return
+	_in_git_repo || return
 
 	prv_cmd="echo {} | sed -r 's/^[ *]+//; s/^/master../' | xargs git log --oneline --color=always"
 	branch=$(git branch --sort=-committerdate |
@@ -467,11 +468,9 @@ gs() {
 	# (3)
 	# No commits staged.
 
+	_in_git_repo || return
+
 	if
-		! git rev-parse --is-inside-work-tree > /dev/null 2>&1
-	then
-		return
-	elif
 		# new repo
 		git status | grep -q 'No commits yet'
 	then
