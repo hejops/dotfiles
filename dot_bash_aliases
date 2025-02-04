@@ -28,17 +28,19 @@ alias xo=xdg-open
 alias rab="exec yazi \"\$HDD/books\""
 alias rad="exec yazi \"\$SLSK/complete\"" # TODO: investigate `ya pub`
 alias rag="exec yazi \"\$HDD/guitar\""
+alias ram="exec yazi \"\$MU\""
 alias rat="exec yazi \"\$HDD/torrent\" \"\$HDD/movies\""
 
+# alias md="\$EDITOR -c 'set ft=markdown'"
 # alias n="NO_COLOR=1 node --import=tsx"
 alias ..="cd .."
 alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit" # TODO: handle >1 video device (just increment n until file not exist)
 alias ci="chromium --incognito"
-alias con="convert_files && fix_genres --auto && fix_tags -a && fix_tags && fix_genres && ~/gripts/mover/mover" # && notify-send ok"
 alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
 alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
+alias cv="\$EDITOR ~/cv/src/index.tex"
 alias da="dc artist:"
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
@@ -46,9 +48,8 @@ alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-so
 alias h="htop -u \$USER"
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
 alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
-alias md="\$EDITOR -c 'set ft=markdown'"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
-alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && mpv --profile=bcx ./out && rm -rI ./out"
+alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out"
 alias pq="~/plaque/plaque"
 alias rgl="rg --no-heading --with-filename"
 alias synctime="sudo ntpd --quit --panicgate"
@@ -61,43 +62,65 @@ alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 alias vf="\$EDITOR \$(fzf)"
 alias y="bash ~/gripts/disq/ytm.sh"
 
+con() {
+	# set -euo pipefail
+	convert_files &&
+		fix_genres --auto &&
+		fix_tags -a &&
+		fix_tags &&
+		fix_genres &&
+		~/gripts/mover/mover -move |
+		grep "^$MU/" |
+			cut -d/ -f7-8 |
+			sort -u |
+			tee -a ~/.config/mpv/library ~/plaque/queue.txt
+	# find "$SLSK/complete" -type f | grep -iPv '\.(mp3|flac|ape|wav)$' | largs rm
+	find "$SLSK/complete" -name 'done' | largs dirname | largs rm -rfv
+	find "$SLSK/complete" -empty -delete
+}
+
 # }}}
 
 # git {{{
 
-# shellcheck disable=SC2120
-gls() { git ls-files "${1:-.}"; }
-get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
-alias groot=get_repo_root
-
-cdr() {
-	if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-		cd "$(get_repo_root)" || :
-	elif [[ -n $REPO ]]; then
-		cd "$REPO" || :
-	fi
-
-}
-
 alias cr=cdr
+alias gC="git reset --soft HEAD~1"  # un-commit, but leave changes
+alias gCH="git reset --hard HEAD~1" # un-commit, and undo changes
+alias ga="git add"
+alias gap="git add --patch"
+alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
+alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
+alias gdnw="git diff --color-words --no-index"
+alias gig="\$EDITOR .gitignore"
+alias gpl="git pull"
+alias groot=_get_repo_root
+alias gun="git checkout --" # discard all local changes ("undo")
 
-gmaster() {
+_get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
+
+_gmaster() {
 	: get default branch, e.g. master
 	# https://stackoverflow.com/a/44750379
 	# default_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's|^refs/remotes/origin/||')
 	git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4
 }
 
-gunb() {
-	gun .
-	gB
+# shellcheck disable=SC2120
+gls() { git ls-files "${1:-.}"; }
+
+cdr() {
+	if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+		cd "$(_get_repo_root)" || :
+	elif [[ -n $REPO ]]; then
+		cd "$REPO" || :
+	fi
 }
 
 gb() {
 	: switch to new branch, or existing branch
 
 	# no remote branches
-	default_local_branch=$(gmaster) || :
+	default_local_branch=$(_gmaster) || :
 	current_local_branch=$(git branch --show-current)
 
 	if [[ $# -eq 0 ]]; then
@@ -164,26 +187,26 @@ gbd() {
 		xargs -r git branch -D
 }
 
-gba() {
-	: show all branches with author
-	# https://stackoverflow.com/a/19135644
-	git for-each-ref --format='%(committerdate:iso)%09%(authorname)%09%(refname)' |
-		grep remotes |
-		sort |
-		column -t -s '	'
-}
+# gba() {
+# 	: show all branches with author
+# 	# https://stackoverflow.com/a/19135644
+# 	git for-each-ref --format='%(committerdate:iso)%09%(authorname)%09%(refname)' |
+# 		grep remotes |
+# 		sort |
+# 		column -t -s '	'
+# }
 
-gbcp() {
-	: cherry pick commit from other branch
-
-	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
-	sha=$(git log --branches --remotes --tags --oneline --decorate |
-		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
-		awk '{print $1}')
-
-	# https://stackoverflow.com/a/29788254
-	[[ -n $sha ]] && git show "$sha" | git apply -
-}
+# gbcp() {
+# 	: cherry pick commit from other branch
+#
+# 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
+# 	sha=$(git log --branches --remotes --tags --oneline --decorate |
+# 		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
+# 		awk '{print $1}')
+#
+# 	# https://stackoverflow.com/a/29788254
+# 	[[ -n $sha ]] && git show "$sha" | git apply -
+# }
 
 _() {
 
@@ -225,12 +248,12 @@ gld() {
 	_gld "$@" | awk '{print $1}' | xargs git show
 }
 
-gsdel() {
-	: show last state of a deleted file
-	# https://stackoverflow.com/a/19727752
-	f=$1
-	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
-}
+# gsdel() {
+# 	: show last state of a deleted file
+# 	# https://stackoverflow.com/a/19727752
+# 	f=$1
+# 	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
+# }
 
 gS() {
 	: like gs+gld, for files to stage/commit
@@ -255,27 +278,15 @@ gS() {
 	echo "$sel" | awk '{print $NF}' | xargs git commit -v
 }
 
-gac() {
-	: append ALL changes to most recent unpushed commit
-	git add "$@"
-	git commit --amend --no-edit
-}
+# gac() {
+# 	: append ALL changes to most recent unpushed commit
+# 	git add "$@"
+# 	git commit --amend --no-edit
+# }
 
 gapc() {
 	git add --patch "$@"
 	git commit --amend --no-edit
-}
-
-# delete and ignore file, without untracking. warning: the only way to recover
-# is to re-download from repo!
-# https://stackoverflow.com/a/45149731
-# git update-index --assume-unchanged <file>
-
-gL() {
-	: show commits \(hash+msg\) made in the last week
-	# TODO: allow file/dir $1
-	d=$(date --date="1 week ago")
-	git logline --since="$d" --no-merges | tac
 }
 
 gcf() {
@@ -325,7 +336,7 @@ gc() {
 		# 2a. file(s) that have been renamed/deleted
 		git status --porcelain | grep -Pq '^R.+ -> '
 	then
-		pushd "$(get_repo_root)" || return
+		pushd "$(_get_repo_root)" || return
 		git status --porcelain |
 			grep -P '^R' |
 			sed 's/^R[^ ]* //; s/->//' | # very iffy
@@ -339,8 +350,7 @@ gc() {
 		# 2b. file(s) that have been renamed/deleted
 		git status --porcelain | grep -Pq '^(R | D)'
 	then
-		git status --porcelain |
-			grep -P '^(R | D)' |
+		git status --porcelain | grep -P '^(R | D)' |
 			awk '{print $2}' | # iffy
 			xargs git commit -v
 
@@ -354,7 +364,7 @@ gc() {
 	else
 		# 4. all files that have changed in the current dir
 		git diff --name-only |
-			prepend "$(get_repo_root)/" |
+			prepend "$(_get_repo_root)/" |
 			grep "$PWD" |
 			xargs git commit -v
 
@@ -417,7 +427,7 @@ gs() {
 			grep '^A' |
 			awk '{print $NF}' |
 			# make paths absolute (default: relative to root)
-			prepend "$(get_repo_root)/" |
+			prepend "$(_get_repo_root)/" |
 			# then relativise to cwd
 			largs realpath --relative-to=. 2> /dev/null) &&
 			[[ -z $files ]]
@@ -477,64 +487,6 @@ gp() {
 
 	# shellcheck disable=SC2164
 	[[ $# -eq 1 ]] && popd
-
-}
-
-gpl() {
-	: pull
-
-	# [[ $# -eq 1 ]] && cd "$1"
-
-	# TODO: pull/update?
-	# git pull --recurse-submodules	# didn't seem to work (reverts to commit of parent)
-	# git submodule sync
-	# git submodule update --init --recursive
-	# git submodule update --remote --merge
-	# https://devconnected.com/how-to-add-and-update-git-submodules/#Pull_a_Git_Submodule
-	# https://stackoverflow.com/questions/10054011
-
-	if git branch -r | grep -q 'upstream/'; then
-		# pull from upstream
-		# git remote add upstream "$UP"
-		echo "Pulling from upstream"
-		git fetch upstream
-		git rebase upstream/main # or whatever
-		# merge as usual...
-	else
-
-		# git pull
-
-		git fetch
-
-		# set -x
-		if
-			# this is the closest builtin that comes close
-			# git diff --name-status master origin/master
-			pullresult=$(git merge 2>&1) # fail = exit 2
-			[[ $? -eq 2 ]] &&
-				conflicts=$(sed <<< "$pullresult" -rn 's|^\s+||p') &&
-				[[ -n $conflicts ]]
-		then
-			while read -r -u9 conflict; do
-				notify-send "Conflict" "$conflict"
-				git commit -v "$conflict"
-			done 9<<< "$conflicts"
-			git pull
-		else
-			echo "$pullresult"
-		fi
-		# set +x
-
-	fi
-
-	# git submodule foreach git pull origin master
-	# assumes all submodules at repo root
-	for sub in $(git submodule | cut -d' ' -f2-); do
-		cd "$sub" || continue
-		echo -e "\nUpdating submodule: $sub"
-		gpl
-		cd ..
-	done
 
 }
 
@@ -630,7 +582,7 @@ gnew() {
 
 }
 
-gssh() {
+_gssh() {
 	: init github ssh key
 	# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key
 	#
@@ -679,7 +631,7 @@ gdm() {
 	# branch as well as in a merge, both changes will be shown. for the
 	# purpose of fast diffing (i.e. without network), this is usually fine.
 
-	span="$(gmaster)...HEAD"
+	span="$(_gmaster)...HEAD"
 	git log --no-merges --first-parent --name-only --oneline --pretty= "$span" |
 		sort -u |
 		xargs git diff "$span"
@@ -772,29 +724,20 @@ gapat() {
 	# git reset -p
 }
 
-ggiturl() {
-	: replace http url with git
-	<<< "$1" sed 's|http://|git@|; s|/|:|; s/$/.git/'
-}
-
-gclone() {
-	ggiturl "$1" | xargs git clone
-}
-
-gUN() {
-	: undo and discard last committed commit, useful on master
-	# https://stackoverflow.com/a/6866485
-	git reset --hard HEAD~1
-}
-
-# $(git config --get remote.origin.url)/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
-
 guns() {
 	: revert file to its state in a previous commit
 	f=$1
 	sha=$(_gld "$1" | awk '{print $1}')
 	git checkout "$sha" -- "$f"
 }
+
+# gclone() {
+# 	ggiturl() { <<< "$1" sed 's|http://|git@|; s|/|:|; s/$/.git/'; }
+# 	ggiturl "$1" | xargs git clone
+# }
+
+# better to use glab probably
+# $(git config --get remote.origin.url)/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
 
 # }}}
 
@@ -837,10 +780,10 @@ pget() {
 		echo "not in python project"
 
 	elif < "$pyp" grep -Fq tool.poetry; then
-		poetry add "$1"
+		poetry add "$@"
 
 	elif command -v uv > /dev/null; then
-		uv add "$1"
+		uv add "$@"
 	fi
 }
 
@@ -851,10 +794,12 @@ pup() {
 		echo "not in python project"
 
 	elif < "$pyp" grep -Fq tool.poetry; then
-		poetry update "$1"
+		poetry update "$@"
 
 	elif command -v uv > /dev/null; then
-		uv lock --upgrade-package "$1"
+		# https://www.loopwerk.io/articles/2024/python-poetry-vs-uv/
+		# https://www.loopwerk.io/articles/2024/python-uv-revisited/
+		uv lock --upgrade-package "$@"
 	fi
 }
 
@@ -1069,7 +1014,7 @@ gorep() {
 gow() {
 	: watch code changes, trigger re-build, and kill process
 
-	cdr
+	# cdr
 	find . -name '*.go' | entr -cr go test ./...
 
 	# [[ ! -f go.mod ]] && return
@@ -1088,13 +1033,19 @@ gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run
 
 npmup() {
 	: upgrade npm package
-	pkg=$1
-	# TODO: list package.json
+	# https://stackoverflow.com/a/47948461
+	pkg=$(< package.json jq -r '[.dependencies, .devDependencies] | add | keys[]')
 	c "https://www.npmjs.com/package/$1?activeTab=versions" |
 		grep -Po '\d+?\.\d+?\.\d+?</a></td><td class="downloads">[0-9,]+' |
 		sed -r 's|</a></td><td class="downloads">|\t|' |
 		sort -k2n
 	# yarn upgrade "$pkg@^$ver"
+}
+
+npmupall() {
+	: this is almost certainly a bad idea!
+	< package.json jq -r '[.dependencies, .devDependencies] | add | keys[]' |
+		xargs -n1 -I{} yarn upgrade {}@latest
 }
 
 perfnode() {
@@ -1502,17 +1453,17 @@ pacmir() {
 
 }
 
-urltitle() {
-	wget -qO- "$1" |
-		perl -l -0777 -ne 'print $1 if /<title.*?>\s*(.*?)\s*<\/title/si'
-}
+# urltitle() {
+# 	wget -qO- "$1" |
+# 		perl -l -0777 -ne 'print $1 if /<title.*?>\s*(.*?)\s*<\/title/si'
+# }
 
-utm() {
-	: urltitle to markdown
-	title=$(timeout 3 urltitle "$1")
-	[[ -z $title ]] && title=$(awk <<< "$1" -F/ '{print $NF}')
-	echo "[$title]($1)"
-}
+# utm() {
+# 	: urltitle to markdown
+# 	title=$(timeout 3 urltitle "$1")
+# 	[[ -z $title ]] && title=$(awk <<< "$1" -F/ '{print $NF}')
+# 	echo "[$title]($1)"
+# }
 
 mw() {
 	cd ~/.mail/account.gmail || return
@@ -1532,6 +1483,15 @@ mw() {
 # }}}
 
 # ugly funcs that don't warrant a script yet
+
+_unused() {
+	: list unused functions
+	< ~/.bash_aliases grep -Po '^[a-z]\w+\(\)' |
+		tr -d '()' |
+		while read -r cmd; do
+			< ~/.bash_history grep -wq "$cmd" || echo "$cmd"
+		done
+}
 
 cm() {
 	if [[ $# -eq 0 ]]; then
@@ -1603,21 +1563,6 @@ np() {
 	rm -iv /tmp/foo
 
 }
-
-# nb() {
-# 	: download audio from rss feeds
-# 	sort -u -o ~/dita/dita/scrape/discogs.txt{,}
-# 	less ~/dita/dita/scrape/discogs.txt
-# 	rm ~/dita/dita/scrape/discogs.txt
-#
-# 	time fetch_rss &&
-# 		time ~/dita/ytdl &&
-# 		waitdie mpv
-# 	vol --auto
-# 	mpv --profile=bcx ~/testdir
-# 	rm -rI ~/testdir ~/.config/newsboat/cache.txt
-# 	np
-# }
 
 replace() {
 	# mostly for python module refactors
