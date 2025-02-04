@@ -356,8 +356,8 @@ gc() {
 
 	elif
 		# 3. all staged changes
-		staged=$(git diff --name-only --cached --diff-filter=AMD) &&
-			[[ -n $staged ]]
+		# [git diff] "exits with 1 if there were differences"
+		! git diff --staged --diff-filter=AMD --quiet
 	then
 		git commit -v
 
