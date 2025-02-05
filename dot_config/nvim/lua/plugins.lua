@@ -224,7 +224,7 @@ require("lazy").setup(
 								end
 								return string.format(
 									"%s [%sL]",
-									vim.o.columns > 170 and vim.fn.expand("%:p:h") or vim.fn.expand("%"),
+									vim.fn.expand("%" .. (vim.o.columns > 170 and ":p" or "")),
 									vim.fn.line("$")
 								)
 							end,
