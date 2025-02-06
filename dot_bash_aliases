@@ -50,6 +50,7 @@ alias md="\$EDITOR -c 'set ft=markdown'"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && mpv --profile=bcx ./out && rm -rI ./out"
 alias pq="~/plaque/plaque"
+alias rgf="rg --files-with-matches"
 alias rgl="rg --no-heading --with-filename"
 alias synctime="sudo ntpd --quit --panicgate"
 alias t="wezterm start --new-tab --cwd \$(realpath .)"
@@ -356,6 +357,7 @@ gc() {
 		git diff --name-only |
 			prepend "$(get_repo_root)/" |
 			grep "$PWD" |
+			grep -v .gitignore |
 			xargs git commit -v
 
 	fi
@@ -680,9 +682,19 @@ gdm() {
 	# purpose of fast diffing (i.e. without network), this is usually fine.
 
 	span="$(gmaster)...HEAD"
-	git log --no-merges --first-parent --name-only --oneline --pretty= "$span" |
+	git log --diff-filter=d --no-merges --first-parent --name-only --oneline --pretty= "$span" |
 		sort -u |
+		# HACK: --diff-filter excludes files deleted by us, but does
+		# not exclude files deleted during a merge
+		while read -r f; do
+			[[ -f $f ]] && echo "$f"
+		done |
 		xargs git diff "$span"
+
+	# TODO: current branch -> mr number
+	# curl -sL -H "Cookie:_gitlab_session=$GL_SESSION" "https://gitlab.novum-engineering.com/external-services/novum-cloud/-/merge_requests/$mr.diff"
+
+	# https://gitlab.com/gitlab-org/cli/-/issues/7704
 
 	# if command -v glab > /dev/null; then
 	# 	glab mr diff |
@@ -1078,6 +1090,18 @@ gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run
 # }}}
 # js {{{
 
+tsc() {
+	if [[ -f node_modules/.bin/tsc ]]; then
+		cmd=node_modules/.bin/tsc
+	elif cmd=$(which tsc); then
+		:
+	else
+		return
+	fi
+	$cmd --version
+	$cmd "$@"
+}
+
 npmup() {
 	: upgrade npm package
 	pkg=$1
@@ -1114,8 +1138,9 @@ nps() {
 	# # https://github.com/facebook/create-react-app/issues/9531#issuecomment-1022412062
 	# BROWSER=chromium npm start
 
-	# https://peter.sh/experiments/chromium-command-line-switches/#auto-open-devtools-for-tabs
+	# https://source.chromium.org/chromium/chromium/src/+/main:chrome/common/chrome_switches.cc?q=kAutoOpenDevToolsForTabs&ss=chromium
 	chromium --auto-open-devtools-for-tabs http://localhost:3000 &
+	# cd packages/react-scripts && node bin/react-scripts.js start
 	BROWSER=none npm start
 }
 
@@ -1524,6 +1549,8 @@ mw() {
 # }}}
 
 # ugly funcs that don't warrant a script yet
+
+# echo ${files[@]} | entr -cr $cmd
 
 cm() {
 	if [[ $# -eq 0 ]]; then
