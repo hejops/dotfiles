@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(realpath "$0" | xargs dirname)"
+
+exists() { wezterm ls-fonts --list-system | grep -q "$1"; }
+
+if ! exists NanumGothicCoding; then
+	curl -sJLO https://github.com/naver/nanumfont/releases/download/VER2.5/NanumGothicCoding-2.5.zip
+	unzip NanumGothicCoding-2.5.zip
+	rm -rf NanumGothicCoding-2.5.zip NanumGothicCoding-Bold.ttf __MACOSX
+fi
+
+exists Inter || curl -sJLO https://github.com/rsms/inter/raw/refs/heads/master/docs/font-files/InterVariable.ttf
+exists Source Code Pro || curl -sJLO https://github.com/adobe-fonts/source-code-pro/raw/refs/heads/release/OTF/SourceCodePro-Regular.otf
+exists Source Serif 4 || curl -sJLO https://github.com/adobe-fonts/source-serif/raw/refs/heads/release/OTF/SourceSerif4-Regular.otf

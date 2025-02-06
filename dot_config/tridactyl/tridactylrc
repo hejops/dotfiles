@@ -145,6 +145,8 @@ unbind >>
 unbind A
 unbind ZZ
 unbind gd
+unbind o
+unbind w
 
 " bind <key> <action> is syntactic sugar for
 " set nmaps.<key> <action> and
@@ -422,16 +424,19 @@ bindurl vid.puffyan.us R urlmodify -t vid.puffyan.us music.youtube.com
 
 " https://github.com/tridactyl/tridactyl/blob/5db0337349e57cafce041c3d7ab1d33fdac0b713/readme.md#bookmarks-and-quickmarks
 " https://github.com/tridactyl/tridactyl/blob/9d6fb1a0aeba7dd256422e73baf66d0dff1775bf/.tridactylrc#L138
+" https://myaccount.ask4.com/broadband.php
 " only one key allowed, so use these wisely!
 " open in new tab: gn<mark>
 
+" quickmark s	http://en.instr.scorser.com/SC/Piano/All/Popularity.html
 " quickmark t	https://github.com/tridactyl/tridactyl/issues?utf8=%E2%9C%93&q=sort%3Aupdated-desc+
 quickmark L	https://letterboxd.com/hejops
 quickmark a	https://www.aufladen.de/de/checkout/add-product/eplus-de-direct-15
 quickmark d	https://www.discogs.com/user/hejops/collection
 quickmark l	http://www.last.fm/user/hejops
 quickmark m	https://monkeytype.com/
-quickmark s	http://en.instr.scorser.com/SC/Piano/All/Popularity.html
+quickmark r	https://shop.rewe.de
+quickmark t	https://www.tk.de/service/app/2006218/postfach/postfach.app
 quickmark w	https://web.whatsapp.com
 
 " }}}
@@ -561,39 +566,36 @@ autocontain -s vimeo.com video
 command dark open javascript:(() => { document.querySelectorAll("p,li,div,tr").forEach((elem) => { elem.style.background = "#121212"; elem.style.color = "#bfbfbf"; }); })();
 command darklarge open javascript:(() => { document.querySelectorAll("p,li,div,tr").forEach((elem) => { elem.style.background = "#121212"; elem.style.color = "#bfbfbf"; elem.style.font = "500 24px/1.7em serif"; }); })();
 
+" for (const e in document.querySelectorAll("body *")) { if (["fixed", "sticky"].includes(getComputedStyle(e).position)) { e.remove(); } }
+
 command nonav open javascript:(function() { document.querySelectorAll('*').forEach(function(n) { var p = getComputedStyle(n).getPropertyValue('position'); if (p === 'fixed' || p === 'sticky') { n.style.cssText += ' ; position: absolute !important;'; } }); })();
 
-" bind E darklarge
-" bind I reader
-" bind \ darklarge
 bind I dark
 bind R reader
 bind i darklarge
 
 " DocLoad is more reliable (than DocStart) for pages that are slow to load
 " autocmd DocLoad bandcamp.com dark
-" autocmd DocLoad rust-lang.org/stable/book darklarge
-" autocmd DocStart google.com/search dark
+" autocmd DocLoad djangoproject.com darklarge
+" autocmd DocLoad duckdb.org darklarge
+" autocmd DocLoad internetingishard.netlify.app darklarge
+" autocmd DocLoad sorbet.org/docs darklarge
+autocmd DocLoad (docs|peps).python.org darklarge
 autocmd DocLoad 4chan.org darklarge
 autocmd DocLoad \.amazon\. dark
 autocmd DocLoad adventofcode.com darklarge
 autocmd DocLoad biblegateway.com darklarge
 autocmd DocLoad dhl.de dark
 autocmd DocLoad discogs.com dark
-autocmd DocLoad djangoproject.com darklarge
 autocmd DocLoad docs.gitlab.com dark
 autocmd DocLoad docs.influxdata.com darklarge
-autocmd DocLoad docs.python.org darklarge
 autocmd DocLoad docs.rs darklarge
-autocmd DocLoad duckdb.org darklarge
 autocmd DocLoad georust.org darklarge
-autocmd DocLoad git-scm.com/book darklarge
+autocmd DocLoad git-scm.com dark
 autocmd DocLoad htmx.org darklarge
-autocmd DocLoad internetingishard.netlify.app darklarge
 autocmd DocLoad last.fm dark
 autocmd DocLoad letterboxd.com/.+/reviews darklarge
 autocmd DocLoad libgen.is dark
-autocmd DocLoad magnetdl.com dark
 autocmd DocLoad musicbrainz.org darklarge
 autocmd DocLoad nesdev.org darklarge
 autocmd DocLoad nyaa.si dark
@@ -603,9 +605,8 @@ autocmd DocLoad rikai.com dark
 autocmd DocLoad serde.rs dark
 autocmd DocLoad shop.rewe.de dark
 autocmd DocLoad skyscanner.(net|de) dark
-autocmd DocLoad sorbet.org/docs darklarge
 autocmd DocLoad sourceforge.net dark
-autocmd DocLoad sqlite.org dark
+autocmd DocLoad sqlite.org darklarge
 autocmd DocLoad stackexchange.com dark
 autocmd DocLoad stackoverflow.com dark
 autocmd DocLoad tour.gleam.run darklarge
@@ -614,6 +615,7 @@ autocmd DocLoad vimcolorschemes.com dark
 autocmd DocLoad wiki.archlinux.org dark
 autocmd DocLoad yr.no dark
 autocmd DocLoad zig.guide dark
+autocmd DocStart neon.tech darklarge
 autocmd DocStart omdb.org dark
 autocmd DocStart overview.novum-engineering.com darklarge
 autocmd DocStart wikipedia.org darklarge

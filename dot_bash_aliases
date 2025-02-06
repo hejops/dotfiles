@@ -8,7 +8,6 @@
 	< /tmp/verse.json jq -r '.votd | .reference, .content' |
 	sed -e 's/<[^>]*>//g' |
 		fold -w 65 -s
-# echo
 
 # }}}
 # aliases {{{
@@ -28,77 +27,176 @@ alias xo=xdg-open
 alias rab="exec yazi \"\$HDD/books\""
 alias rad="exec yazi \"\$SLSK/complete\"" # TODO: investigate `ya pub`
 alias rag="exec yazi \"\$HDD/guitar\""
+alias ram="exec yazi \"\$MU\""
 alias rat="exec yazi \"\$HDD/torrent\" \"\$HDD/movies\""
 
+# alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
+# alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
+# alias md="\$EDITOR -c 'set ft=markdown'"
 # alias n="NO_COLOR=1 node --import=tsx"
-alias ..="cd .."
 alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit" # TODO: handle >1 video device (just increment n until file not exist)
 alias ci="chromium --incognito"
-alias con="convert_files && fix_genres --auto && fix_tags -a && fix_tags && fix_genres && ~/gripts/mover/mover" # && notify-send ok"
-alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
 alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
+alias cv="\$EDITOR ~/cv/src/index.tex"
 alias da="dc artist:"
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
-alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
-alias h="htop -u \$USER"
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
-alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
-alias md="\$EDITOR -c 'set ft=markdown'"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
-alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && mpv --profile=bcx ./out && rm -rI ./out"
+alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out"
 alias pq="~/plaque/plaque"
 alias rgf="rg --files-with-matches"
-alias rgl="rg --no-heading --with-filename"
 alias synctime="sudo ntpd --quit --panicgate"
-alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tf="waitdie con; fix_tags"
-alias tmp="cd \$(mktemp -d)"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tx="tectonic -X"
 alias tz=trizen # if gpg fail, gpg --recv-keys <key>
-alias vf="\$EDITOR \$(fzf)"
+alias v="\$EDITOR \$(fzf)"
 alias y="bash ~/gripts/disq/ytm.sh"
+
+con() {
+	# set -euo pipefail
+	convert_files &&
+		fix_genres --auto &&
+		fix_tags -a &&
+		fix_tags &&
+		fix_genres &&
+		~/gripts/mover/mover -move |
+		grep "^$MU/" |
+			cut -d/ -f7-8 |
+			sort -u |
+			tee -a ~/.config/mpv/library ~/plaque/queue.txt
+	# find "$SLSK/complete" -type f | grep -iPv '\.(mp3|flac|ape|wav)$' | largs rm
+	find "$SLSK/complete" -name 'done' | largs dirname | largs rm -rfv
+	find "$SLSK/complete" -empty -delete
+}
+
+# }}}
+# frequent {{{
+
+cm() {
+
+	if [[ $# -eq 0 ]]; then
+		chezmoi cd
+	else
+		chezmoi "$@"
+	fi
+}
+
+bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
+
+replace() {
+	_in_git_repo || return
+
+	# check correct rep binary (not the lisp thing)
+	if ! command -v rep | grep -F .cargo; then
+		return
+	fi
+
+	search=$1
+	replace=$2
+	if ! rg -n -- "$search"; then
+		echo "Pattern not found"
+		return
+	fi
+	rg -n -- "$search" | rep -- "$search" "$replace"
+	read -r -p 'OK?' || return
+	rg -n -- "$search" | rep -w -- "$search" "$replace"
+	# if only rep allowed backreferencing the search pattern...
+	git diff
+	# git add -u
+	# git commit -v
+}
+
+sd() {
+	: shutdown
+	# uptime | grep hour || return/reboot
+
+	waitdie mpv pacman curl
+	killall firefox
+
+	# TODO: check for any running cron jobs (pstree, tail -f)
+	# not running:
+	# |-crond
+	# |-dbus-daemon
+
+	# pgrep -u $USER cron
+
+	if pgrep nicotine; then
+		pid=$(waitdie -s nicotine)
+		[[ -n $pid ]] && waitdie -w nicotine
+	fi
+	# pkill nicotine
+	# TODO: if new day (morning), just return
+	echo "Shutting down..."
+	sleep 3
+	# pulseaudio -k
+	shutdown now
+}
+
+rt() {
+	: pass an array of relative paths to tagfix
+	# note: dead symlinks are still displayed as if they exist
+
+	larr() {
+		# like xargs, but takes a single multi-line arg and turns it into an array
+		mapfile -t args < /dev/stdin
+		[[ -z ${args[*]} ]] && return # mimic xargs -r
+		exec "$1" "${args[@]}" < /dev/tty
+	}
+
+	fzf --multi --reverse --preview="ls \"$MU\"/{}" < ~/.config/mpv/library |
+		prepend "$MU/" |
+		larr fix_tags
+
+}
 
 # }}}
 
 # git {{{
 
-# shellcheck disable=SC2120
-gls() { git ls-files "${1:-.}"; }
-get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
-alias groot=get_repo_root
-
-cdr() {
-	if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-		cd "$(get_repo_root)" || :
-	elif [[ -n $REPO ]]; then
-		cd "$REPO" || :
-	fi
-
-}
-
+alias b=gB
 alias cr=cdr
+alias gC="git reset --soft HEAD~1"  # un-commit, but leave changes
+alias gCH="git reset --hard HEAD~1" # un-commit, and undo changes (destructive!)
+alias ga="git add"
+alias gap="git add --patch"
+alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
+alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
+alias gdnw="git diff --color-words --no-index"
+alias gig="\$EDITOR .gitignore"
+alias gpl="git pull"
+alias groot=_get_repo_root
+alias gun="git checkout --" # discard all local changes ("undo")
 
-gmaster() {
+_get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
+_in_git_repo() { git rev-parse --is-inside-work-tree > /dev/null 2> /dev/null; }
+
+_gmaster() {
 	: get default branch, e.g. master
 	# https://stackoverflow.com/a/44750379
 	# default_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's|^refs/remotes/origin/||')
 	git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4
 }
 
-gunb() {
-	gun .
-	gB
+# shellcheck disable=SC2120
+gls() { git ls-files "${1:-.}"; }
+
+cdr() {
+	if _in_git_repo; then
+		cd "$(_get_repo_root)" || :
+	elif [[ -n $REPO ]]; then
+		cd "$REPO" || :
+	fi
 }
 
 gb() {
 	: switch to new branch, or existing branch
 
 	# no remote branches
-	default_local_branch=$(gmaster) || :
+	default_local_branch=$(_gmaster) || :
 	current_local_branch=$(git branch --show-current)
 
 	if [[ $# -eq 0 ]]; then
@@ -129,9 +227,7 @@ gb() {
 			git switch "$1" || return 1
 
 		elif git switch --create "$1"; then
-			# git switch --create does not produce output, for some
-			# reason (but git switch does)
-			echo "Switched to new branch $1"
+			:
 
 		else
 			# should be infallible?
@@ -147,6 +243,9 @@ gB() {
 	# --pretty=format:'%h%x09%an%x09%ad%x09%s' # no color
 	# TODO: include date/author, but preserve color
 	# TODO: handle master..master
+
+	_in_git_repo || return
+
 	prv_cmd="echo {} | sed -r 's/^[ *]+//; s/^/master../' | xargs git log --oneline --color=always"
 	branch=$(git branch --sort=-committerdate |
 		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi |
@@ -165,26 +264,26 @@ gbd() {
 		xargs -r git branch -D
 }
 
-gba() {
-	: show all branches with author
-	# https://stackoverflow.com/a/19135644
-	git for-each-ref --format='%(committerdate:iso)%09%(authorname)%09%(refname)' |
-		grep remotes |
-		sort |
-		column -t -s '	'
-}
+# gba() {
+# 	: show all branches with author
+# 	# https://stackoverflow.com/a/19135644
+# 	git for-each-ref --format='%(committerdate:iso)%09%(authorname)%09%(refname)' |
+# 		grep remotes |
+# 		sort |
+# 		column -t -s '	'
+# }
 
-gbcp() {
-	: cherry pick commit from other branch
-
-	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
-	sha=$(git log --branches --remotes --tags --oneline --decorate |
-		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
-		awk '{print $1}')
-
-	# https://stackoverflow.com/a/29788254
-	[[ -n $sha ]] && git show "$sha" | git apply -
-}
+# gbcp() {
+# 	: cherry pick commit from other branch
+#
+# 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
+# 	sha=$(git log --branches --remotes --tags --oneline --decorate |
+# 		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
+# 		awk '{print $1}')
+#
+# 	# https://stackoverflow.com/a/29788254
+# 	[[ -n $sha ]] && git show "$sha" | git apply -
+# }
 
 _() {
 
@@ -226,12 +325,12 @@ gld() {
 	_gld "$@" | awk '{print $1}' | xargs git show
 }
 
-gsdel() {
-	: show last state of a deleted file
-	# https://stackoverflow.com/a/19727752
-	f=$1
-	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
-}
+# gsdel() {
+# 	: show last state of a deleted file
+# 	# https://stackoverflow.com/a/19727752
+# 	f=$1
+# 	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
+# }
 
 gS() {
 	: like gs+gld, for files to stage/commit
@@ -256,27 +355,15 @@ gS() {
 	echo "$sel" | awk '{print $NF}' | xargs git commit -v
 }
 
-gac() {
-	: append ALL changes to most recent unpushed commit
-	git add "$@"
-	git commit --amend --no-edit
-}
+# gac() {
+# 	: append ALL changes to most recent unpushed commit
+# 	git add "$@"
+# 	git commit --amend --no-edit
+# }
 
 gapc() {
 	git add --patch "$@"
 	git commit --amend --no-edit
-}
-
-# delete and ignore file, without untracking. warning: the only way to recover
-# is to re-download from repo!
-# https://stackoverflow.com/a/45149731
-# git update-index --assume-unchanged <file>
-
-gL() {
-	: show commits \(hash+msg\) made in the last week
-	# TODO: allow file/dir $1
-	d=$(date --date="1 week ago")
-	git logline --since="$d" --no-merges | tac
 }
 
 gcf() {
@@ -326,7 +413,7 @@ gc() {
 		# 2a. file(s) that have been renamed/deleted
 		git status --porcelain | grep -Pq '^R.+ -> '
 	then
-		pushd "$(get_repo_root)" || return
+		pushd "$(_get_repo_root)" || return
 		git status --porcelain |
 			grep -P '^R' |
 			sed 's/^R[^ ]* //; s/->//' | # very iffy
@@ -340,22 +427,21 @@ gc() {
 		# 2b. file(s) that have been renamed/deleted
 		git status --porcelain | grep -Pq '^(R | D)'
 	then
-		git status --porcelain |
-			grep -P '^(R | D)' |
+		git status --porcelain | grep -P '^(R | D)' |
 			awk '{print $2}' | # iffy
 			xargs git commit -v
 
 	elif
 		# 3. all staged changes
-		staged=$(git diff --name-only --cached --diff-filter=AMD) &&
-			[[ -n $staged ]]
+		# [git diff] "exits with 1 if there were differences"
+		! git diff --staged --diff-filter=AMD --quiet
 	then
 		git commit -v
 
 	else
 		# 4. all files that have changed in the current dir
 		git diff --name-only |
-			prepend "$(get_repo_root)/" |
+			prepend "$(_get_repo_root)/" |
 			grep "$PWD" |
 			grep -v .gitignore |
 			xargs git commit -v
@@ -384,11 +470,9 @@ gs() {
 	# (3)
 	# No commits staged.
 
+	_in_git_repo || return
+
 	if
-		! git rev-parse --is-inside-work-tree > /dev/null 2>&1
-	then
-		return
-	elif
 		# new repo
 		git status | grep -q 'No commits yet'
 	then
@@ -419,7 +503,7 @@ gs() {
 			grep '^A' |
 			awk '{print $NF}' |
 			# make paths absolute (default: relative to root)
-			prepend "$(get_repo_root)/" |
+			prepend "$(_get_repo_root)/" |
 			# then relativise to cwd
 			largs realpath --relative-to=. 2> /dev/null) &&
 			[[ -z $files ]]
@@ -479,64 +563,6 @@ gp() {
 
 	# shellcheck disable=SC2164
 	[[ $# -eq 1 ]] && popd
-
-}
-
-gpl() {
-	: pull
-
-	# [[ $# -eq 1 ]] && cd "$1"
-
-	# TODO: pull/update?
-	# git pull --recurse-submodules	# didn't seem to work (reverts to commit of parent)
-	# git submodule sync
-	# git submodule update --init --recursive
-	# git submodule update --remote --merge
-	# https://devconnected.com/how-to-add-and-update-git-submodules/#Pull_a_Git_Submodule
-	# https://stackoverflow.com/questions/10054011
-
-	if git branch -r | grep -q 'upstream/'; then
-		# pull from upstream
-		# git remote add upstream "$UP"
-		echo "Pulling from upstream"
-		git fetch upstream
-		git rebase upstream/main # or whatever
-		# merge as usual...
-	else
-
-		# git pull
-
-		git fetch
-
-		# set -x
-		if
-			# this is the closest builtin that comes close
-			# git diff --name-status master origin/master
-			pullresult=$(git merge 2>&1) # fail = exit 2
-			[[ $? -eq 2 ]] &&
-				conflicts=$(sed <<< "$pullresult" -rn 's|^\s+||p') &&
-				[[ -n $conflicts ]]
-		then
-			while read -r -u9 conflict; do
-				notify-send "Conflict" "$conflict"
-				git commit -v "$conflict"
-			done 9<<< "$conflicts"
-			git pull
-		else
-			echo "$pullresult"
-		fi
-		# set +x
-
-	fi
-
-	# git submodule foreach git pull origin master
-	# assumes all submodules at repo root
-	for sub in $(git submodule | cut -d' ' -f2-); do
-		cd "$sub" || continue
-		echo -e "\nUpdating submodule: $sub"
-		gpl
-		cd ..
-	done
 
 }
 
@@ -632,7 +658,7 @@ gnew() {
 
 }
 
-gssh() {
+_gssh() {
 	: init github ssh key
 	# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key
 	#
@@ -681,7 +707,7 @@ gdm() {
 	# branch as well as in a merge, both changes will be shown. for the
 	# purpose of fast diffing (i.e. without network), this is usually fine.
 
-	span="$(gmaster)...HEAD"
+	span="$(_gmaster)...HEAD"
 	git log --diff-filter=d --no-merges --first-parent --name-only --oneline --pretty= "$span" |
 		sort -u |
 		# HACK: --diff-filter excludes files deleted by us, but does
@@ -712,15 +738,24 @@ gcon() {
 
 	# git diff --name-only --diff-filter=U --relative
 
-	if ! git status --porcelain | grep UU; then
+	has_conflicts() {
+		rg '^[<=>]{7}'
+		return $?
+	}
+
+	get_conflicts() {
+		# TODO: may not only be UU
+		git status --porcelain | grep UU
+	}
+
+	if ! conflicts=$(get_conflicts); then
 		echo "No conflicts detected"
+		return
 	fi
 
 	# all conflicts are due to lock files
-	if ! git status --porcelain | grep UU | grep -v yarn.lock; then
-		git status --porcelain |
-			grep UU |
-			cut -d' ' -f2- |
+	if ! <<< "$conflicts" grep -v yarn.lock; then
+		<<< "$conflicts" cut -c3- |
 			xargs dirname |
 			while read -r d; do
 				pushd "$d" || return
@@ -728,18 +763,17 @@ gcon() {
 				git add yarn.lock
 				popd || return
 			done
-		rg '^[<=>]{7}' && return
+		has_conflicts && return
 		git commit -v
 		return
 	fi
 
-	while rg '^[<=>]{7}'; do
+	while has_conflicts; do
 		echo "Unresolved conflicts remaining!"
-		# TODO: may not only be UU
-		git status --porcelain | grep UU | cut -d' ' -f2- | xargs nvim -p
+		get_conflicts | cut -c3- | xargs nvim -p
 	done
 
-	git status --porcelain | grep UU | cut -d' ' -f2 | xargs git add
+	get_conflicts | cut -c3- | xargs git add
 	git commit -v
 }
 
@@ -776,29 +810,20 @@ gapat() {
 	# git reset -p
 }
 
-ggiturl() {
-	: replace http url with git
-	<<< "$1" sed 's|http://|git@|; s|/|:|; s/$/.git/'
-}
-
-gclone() {
-	ggiturl "$1" | xargs git clone
-}
-
-gUN() {
-	: undo and discard last committed commit, useful on master
-	# https://stackoverflow.com/a/6866485
-	git reset --hard HEAD~1
-}
-
-# $(git config --get remote.origin.url)/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
-
 guns() {
 	: revert file to its state in a previous commit
 	f=$1
 	sha=$(_gld "$1" | awk '{print $1}')
 	git checkout "$sha" -- "$f"
 }
+
+# gclone() {
+# 	ggiturl() { <<< "$1" sed 's|http://|git@|; s|/|:|; s/$/.git/'; }
+# 	ggiturl "$1" | xargs git clone
+# }
+
+# better to use glab probably
+# $(git config --get remote.origin.url)/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
 
 # }}}
 
@@ -841,10 +866,10 @@ pget() {
 		echo "not in python project"
 
 	elif < "$pyp" grep -Fq tool.poetry; then
-		poetry add "$1"
+		poetry add "$@"
 
 	elif command -v uv > /dev/null; then
-		uv add "$1"
+		uv add "$@"
 	fi
 }
 
@@ -855,10 +880,12 @@ pup() {
 		echo "not in python project"
 
 	elif < "$pyp" grep -Fq tool.poetry; then
-		poetry update "$1"
+		poetry update "$@"
 
 	elif command -v uv > /dev/null; then
-		uv lock --upgrade-package "$1"
+		# https://www.loopwerk.io/articles/2024/python-poetry-vs-uv/
+		# https://www.loopwerk.io/articles/2024/python-uv-revisited/
+		uv lock --upgrade-package "$@"
 	fi
 }
 
@@ -873,90 +900,12 @@ pentmd() {
 }
 
 # }}}
-# django {{{
-
-alias djnew='django-admin startproject'
-alias djs='./manage.py runserver'
-
-djrmdb() {
-	# nuke db and rebuild
-	# https://simpleisbetterthancomplex.com/tutorial/2016/07/26/how-to-reset-migrations.html
-	# https://stackoverflow.com/questions/29253399/how-to-reset-migrations-in-django-1-7#comment67199335_29266821
-	find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
-	find . -path "*/migrations/*.pyc" -delete
-	rm ./db.sqlite3
-	./manage.py makemigrations "$1"
-	./manage.py migrate
-}
-
-djapp() {
-
-	[[ -d $1 ]] && return
-	app=$1
-
-	./manage.py startapp "$app"
-
-	# startapp doesn't create urls.py
-	cat << EOF > "$app"/urls.py
-from django.urls import path
-
-from . import views
-
-app_name = "$app"
-
-urlpatterns = [
-    # https://docs.djangoproject.com/en/5.0/ref/urls/#django.urls.path
-    path(
-        route="",
-        view=views.IndexView.as_view(),
-        name="index",
-    ),
-]
-EOF
-
-	mkdir -p "$app/templates/$app"
-	touch "$app/templates/$app/index.html"
-
-	cat << EOF >> "$app"/views.py
-from django.views import generic
-from django.shortcuts import get_object_or_404
-from django.db.models import F
-
-from $app.models import *
-
-
-class IndexView(generic.ListView):
-    template_name = "$app/index.html"  # default: <app name>/foo_list.html
-
-    context_object_name = "foo"
-
-    def get_queryset(self):
-        return Foo.objects.filter().order_by("pk")
-EOF
-
-	# {% load static %}
-	# <link rel="stylesheet" href="{% static '${app}s/style.css' %}" />
-	# {% if ${app}_list %}
-	#     <ul>
-	#         {% for ${app} in ${app}_list %}
-	#             <li>
-	#                 <!-- explicit namespacing `app_name` to be declared in ${app}s/urls.py -->
-	#                 <a href="{% url '${app}s:detail' ${app}.name %}">{{ ${app}.name }}</a>
-	#             </li>
-	#         {% endfor %}
-	#     </ul>
-	# {% else %}
-	#     <p>No ${app}s are available.</p>
-	# {% endif %}
-
-}
-
-# }}}
 # rust {{{
 
 # cargo +nightly udeps
 alias cb="cargo build"
 alias cbr="cargo build --release && cp target/release/\$(basename \$PWD) ."
+alias cn="cargo new"
 alias ct="cargo test"
 alias cwr="cargo watch -x run"                           # web servers only
 alias sqp='cargo sqlx prepare --workspace; ga .sqlx; gc' # postgres only
@@ -1073,7 +1022,7 @@ gorep() {
 gow() {
 	: watch code changes, trigger re-build, and kill process
 
-	cdr
+	# cdr
 	find . -name '*.go' | entr -cr go test ./...
 
 	# [[ ! -f go.mod ]] && return
@@ -1102,15 +1051,45 @@ tsc() {
 	$cmd "$@"
 }
 
-npmup() {
+# https://stackoverflow.com/a/47948461
+_js_pkg_ver() { < package.json jq -r "[.dependencies, .devDependencies] | add | .$1" | tr -d '^~'; }
+_js_pkgs() { < package.json jq -r '[.dependencies, .devDependencies] | add | keys[]'; }
+
+jx() {
+	pkgmgr() {
+		if [[ -f yarn.lock ]]; then
+			echo yarn
+		elif [[ -f pnpm-lock.yaml ]]; then
+			echo pnpm
+		else
+			echo npm
+		fi
+
+	}
+
+	cmd=$(< package.json jq -r .scripts | grep , | fzf --tac | cut -d'"' -f2)
+	$(pkgmgr) "$cmd"
+}
+
+jup() {
 	: upgrade npm package
-	pkg=$1
-	# TODO: list package.json
-	c "https://www.npmjs.com/package/$1?activeTab=versions" |
+	pkg=$(_js_pkgs | fzf)
+	curr_ver=$(_js_pkg_ver "$pkg")
+	target_ver=$(c "https://www.npmjs.com/package/$pkg?activeTab=versions" |
 		grep -Po '\d+?\.\d+?\.\d+?</a></td><td class="downloads">[0-9,]+' |
 		sed -r 's|</a></td><td class="downloads">|\t|' |
-		sort -k2n
-	# yarn upgrade "$pkg@^$ver"
+		sort -rV |
+		sed "/^$curr_ver/,\$d; /\t0$/d" | # filter to versions newer than current
+		sort -k2n |                       # sort by downloads
+		fzf --tac --prompt="$pkg (current: $curr_ver)" |
+		cut -f1)
+	# npm install (update?) / yarn upgrade
+	echo yarn upgrade "$pkg@^$target_ver"
+}
+
+jupall() {
+	: this is almost certainly a bad idea!
+	_js_pkgs | xargs -n1 -I{} yarn upgrade {}@latest
 }
 
 perfnode() {
@@ -1129,19 +1108,6 @@ perfnode() {
 			stackvis perf > flamegraph.htm
 		chromium flamegraph.htm 2> /dev/null &
 	fi
-}
-
-nps() {
-	# vite is probaly the way to go...
-
-	# # xdg default browser always overrides BROWSER var
-	# # https://github.com/facebook/create-react-app/issues/9531#issuecomment-1022412062
-	# BROWSER=chromium npm start
-
-	# https://source.chromium.org/chromium/chromium/src/+/main:chrome/common/chrome_switches.cc?q=kAutoOpenDevToolsForTabs&ss=chromium
-	chromium --auto-open-devtools-for-tabs http://localhost:3000 &
-	# cd packages/react-scripts && node bin/react-scripts.js start
-	BROWSER=none npm start
 }
 
 # }}}
@@ -1350,8 +1316,6 @@ rgo() {
 	: useful when you know what to look for but dont want to open vim
 	# https://blog.burntsushi.net/ripgrep
 	# https://github.com/nvim-telescope/telescope.nvim/blob/7b5c5f56a21e82fdcfe5b250278b8dfc4b1cbab4/lua/telescope/config.lua#L646
-	# match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' "${1:-.}" |
-	# 	fzf -e)
 	# $1 = fzf query generally more useful than $1 = file
 	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' . |
 		fzf -e -q "${1:-}")
@@ -1519,17 +1483,17 @@ pacmir() {
 
 }
 
-urltitle() {
-	wget -qO- "$1" |
-		perl -l -0777 -ne 'print $1 if /<title.*?>\s*(.*?)\s*<\/title/si'
-}
+# urltitle() {
+# 	wget -qO- "$1" |
+# 		perl -l -0777 -ne 'print $1 if /<title.*?>\s*(.*?)\s*<\/title/si'
+# }
 
-utm() {
-	: urltitle to markdown
-	title=$(timeout 3 urltitle "$1")
-	[[ -z $title ]] && title=$(awk <<< "$1" -F/ '{print $NF}')
-	echo "[$title]($1)"
-}
+# utm() {
+# 	: urltitle to markdown
+# 	title=$(timeout 3 urltitle "$1")
+# 	[[ -z $title ]] && title=$(awk <<< "$1" -F/ '{print $NF}')
+# 	echo "[$title]($1)"
+# }
 
 mw() {
 	cd ~/.mail/account.gmail || return
@@ -1548,19 +1512,22 @@ mw() {
 
 # }}}
 
-# ugly funcs that don't warrant a script yet
+# uncommon
 
 # echo ${files[@]} | entr -cr $cmd
 
-cm() {
-	if [[ $# -eq 0 ]]; then
-		chezmoi cd
-	else
-		chezmoi "$@"
-	fi
+_unused() {
+	: list unused functions
+	< ~/.bash_aliases grep -Po '^[a-z]\w+\(\)' |
+		tr -d '()' |
+		while read -r cmd; do
+			< ~/.bash_history grep -wq "$cmd" || echo "$cmd"
+		done
 }
 
-bx() { [[ $# -gt 0 ]] && bash -x "$@"; }
+,pgrep() { \pgrep "$1" | xargs ps; } # ps for runtime
+pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill; }
+pkill1() { \pgrep "$1" | sed 1d | xargs kill; } # kill all procs except 1st
 rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
 ya() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
 yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '.title, .description, .webpage_url, .channel_url'; }
@@ -1593,126 +1560,64 @@ nico() {
 	done < "$1"
 }
 
-np() {
-	pgrep nicotine > /dev/null || return
-
-	while read -r id; do
-		# 12 because newline included? whatever
-		if [[ $(<<< "$id" wc -c) -eq 12 ]]; then
-			title=$(
-				echo "$id" |
-					prepend http://youtube.com/watch?v= |
-					xargs yt-dlp --dump-single-json --skip-download 2> /dev/null |
-					jq -r '.title' |
-					sed -r '
-						s|\([^)]+\)||g
-						s|\[[^]]+\]||g
-						s|[0-9]{4}.+||g
-						s|SW EXCL.+||g
-					'
-			)
-		else
-			title=$id
-		fi
-		echo "$title" | xclip -sel c
-		xdotool key super+8 ctrl+2 F6 ctrl+v F6 return
-		sleep 2
-	done < /tmp/foo
-	notify-send 'done'
-	rm -iv /tmp/foo
-
-}
-
-# nb() {
-# 	: download audio from rss feeds
-# 	sort -u -o ~/dita/dita/scrape/discogs.txt{,}
-# 	less ~/dita/dita/scrape/discogs.txt
-# 	rm ~/dita/dita/scrape/discogs.txt
+# np() {
+# 	pgrep nicotine > /dev/null || return
 #
-# 	time fetch_rss &&
-# 		time ~/dita/ytdl &&
-# 		waitdie mpv
-# 	vol --auto
-# 	mpv --profile=bcx ~/testdir
-# 	rm -rI ~/testdir ~/.config/newsboat/cache.txt
-# 	np
+# 	while read -r id; do
+# 		# 12 because newline included? whatever
+# 		if [[ $(<<< "$id" wc -c) -eq 12 ]]; then
+# 			title=$(
+# 				echo "$id" |
+# 					prepend http://youtube.com/watch?v= |
+# 					xargs yt-dlp --dump-single-json --skip-download 2> /dev/null |
+# 					jq -r '.title' |
+# 					sed -r '
+# 						s|\([^)]+\)||g
+# 						s|\[[^]]+\]||g
+# 						s|[0-9]{4}.+||g
+# 						s|SW EXCL.+||g
+# 					'
+# 			)
+# 		else
+# 			title=$id
+# 		fi
+# 		echo "$title" | xclip -sel c
+# 		xdotool key super+8 ctrl+2 F6 ctrl+v F6 return
+# 		sleep 2
+# 	done < /tmp/foo
+# 	notify-send 'done'
+# 	rm -iv /tmp/foo
+#
 # }
 
-replace() {
-	# mostly for python module refactors
-	[[ -d ./.git ]] || git rev-parse --is-inside-work-tree > /dev/null 2>&1 || return
-
-	# check correct rep binary (not the lisp thing)
-	if ! command -v rep | grep -F .cargo; then
-		return
-	fi
-
-	search=$1
-	replace=$2
-	if ! rg -n -- "$search"; then
-		echo "Pattern not found"
-		return
-	fi
-	rg -n -- "$search" | rep -- "$search" "$replace"
-	read -r -p 'OK?' || return
-	rg -n -- "$search" | rep -w -- "$search" "$replace"
-	# if only rep allowed backreferencing the search pattern...
-	git diff
-	# git add -u
-	# git commit -v
-}
-
-sd() {
-	: shutdown
-	# uptime | grep hour || return/reboot
-
-	waitdie mpv pacman curl
-	killall firefox
-
-	# TODO: check for any running cron jobs (pstree, tail -f)
-	# not running:
-	# |-crond
-	# |-dbus-daemon
-
-	# pgrep -u $USER cron
-
-	if pgrep nicotine; then
-		pid=$(waitdie -s nicotine)
-		[[ -n $pid ]] && waitdie -w nicotine
-	fi
-	# pkill nicotine
-	# TODO: if new day (morning), just return
-	echo "Shutting down..."
-	sleep 3
-	# pulseaudio -k
-	shutdown now
-}
-
-rt() {
-	: pass an array of relative paths to tagfix
-	# note: dead symlinks are still displayed as if they exist
-
-	larr() {
-		# like xargs, but takes a single multi-line arg and turns it into an array
-		mapfile -t args < /dev/stdin
-		[[ -z ${args[*]} ]] && return # mimic xargs -r
-		exec "$1" "${args[@]}" < /dev/tty
-	}
-
-	fzf --multi --reverse --preview="ls \"$MU\"/{}" < ~/.config/mpv/library |
-		prepend "$MU/" |
-		larr fix_tags
-
-}
-
 epk() {
-	: check epub validity
+	: fix malformed epubs
+
+	# according to the spec, `mimetype` must be the first listed file. note
+	# that malformed epubs are still readable in zathura, so this is mainly
+	# to prevent yazi from treatting malformed epubs as zip.
+
+	tmpdir=tmp
+	tmpname=foo
+
 	for f in *.epub; do
-		if ! unzip -l "$f" > /dev/null 2> /dev/null; then
-			echo "$f"
-			rm "$f" > /dev/null
-		fi
-	done | sort >> failed
+
+		# https://github.com/ikrukov/epub/blob/c663821de66d57b3d138dc9125251f40ea755c2c/script/pack_epub#L25
+		# https://www.mobileread.com/forums/showthread.php?t=299415
+
+		unzip -l "$f" > /dev/null 2> /dev/null || continue # corrupt (unreadable)
+		file --mime-type "$f" | grep -q 'application/epub+zip' && continue
+
+		unzip "$f" -d $tmpdir
+		cd $tmpdir || :
+		echo 'application/epub+zip' > mimetype
+		zip -X -0 --quiet $tmpname mimetype
+		zip -X -9 --quiet --no-dir-entries --recurse-paths $tmpname META-INF OEBPS
+		cd ..
+		mv "$tmpdir/$tmpname.zip" "${f}"
+		\rm -rf "$tmpdir"
+
+	done
 }
 
 watchmem() {
@@ -1745,10 +1650,6 @@ gev() {
 		sed -r 's/:/	/' |
 		column -s '	' -t
 }
-
-,pgrep() { \pgrep "$1" | xargs ps; }            # ps for runtime
-pkill1() { \pgrep "$1" | sed 1d | xargs kill; } # kill all procs except 1st
-pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill; }
 
 scan() {
 	cd ~/scores || return
