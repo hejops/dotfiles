@@ -55,23 +55,6 @@ alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 alias v="\$EDITOR \$(fzf)"
 alias y="bash ~/gripts/disq/ytm.sh"
 
-con() {
-	# set -euo pipefail
-	convert_files &&
-		fix_genres --auto &&
-		fix_tags -a &&
-		fix_tags &&
-		fix_genres &&
-		~/gripts/mover/mover -move |
-		grep "^$MU/" |
-			cut -d/ -f7-8 |
-			sort -u |
-			tee -a ~/.config/mpv/library ~/plaque/queue.txt
-	# find "$SLSK/complete" -type f | grep -iPv '\.(mp3|flac|ape|wav)$' | largs rm
-	find "$SLSK/complete" -name 'done' | largs dirname | largs rm -rfv
-	find "$SLSK/complete" -empty -delete
-}
-
 # }}}
 # frequent {{{
 
@@ -150,6 +133,27 @@ rt() {
 		prepend "$MU/" |
 		larr fix_tags
 
+}
+
+con() {
+	# set -euo pipefail
+	convert_files &&
+		fix_genres --auto &&
+		fix_tags -a &&
+		fix_tags &&
+		fix_genres && {
+
+		~/gripts/mover/mover -move |
+			grep "^$MU/" |
+			cut -d/ -f7-8 |
+			sort -u |
+			tee -a ~/.config/mpv/library ~/plaque/queue.txt
+		find "$SLSK/complete" -name 'done' | largs dirname | largs rm -rf #-v
+		find "$SLSK/complete" -empty -delete
+		ram
+		vim +G ~/plaque/queue.txt
+
+	}
 }
 
 # }}}
@@ -815,6 +819,12 @@ guns() {
 
 # }}}
 
+# jj
+# jj git init --colocate
+# jj describe
+# non-starter until jj describe has a verbose option
+# https://github.com/jj-vcs/jj/issues/1946#issuecomment-2561045057
+
 # python {{{
 
 # i haven't worked in python in a while, so this may be cleaned up
@@ -1226,47 +1236,13 @@ f() {
 	esac
 }
 
-fm() {
-	: open file manager with arbitrary args
-
-	if command -v yazi > /dev/null; then
-		yazi "$@"
-		return
-	fi
-
-	# TODO: if glob specified, use that as filter
-	# set -x
-	_dirs=()
-	for x in "$@"; do
-		# ranger crashes if a file is passed
-		if [[ -d $x ]]; then
-			_dirs+=("$x")
-		elif [[ -f $x ]]; then
-			_dirs+=("$(dirname "$x")")
-		fi
-	done
-
-	if [[ ${#_dirs[@]} -eq 0 ]]; then
-		# echo "No valid paths specified"
-		_dirs=(.)
-	fi
-
-	if [[ ${#_dirs[@]} -eq 1 ]] && command -v lf > /dev/null; then
-		# lf only allows up to 1 arg, but can smartly position cursor
-		# on a file; i haven't used lf in forever
-		lf "${_dirs[0]}"
-	else
-		ranger "${_dirs[@]}"
-	fi
-
-}
-
 mcd() {
 	: mkdir any number of paths, cd to last
 	# it is uncommon for >1 arg to be passed, so this is more for cd
 	# [[ $# -eq 0 ]] && return
 	local p
 	for p in "$@"; do mkdir -p "$p" || :; done
+	# shellcheck disable=SC2164
 	[[ -d $p ]] && cd "$p"
 }
 
@@ -1579,8 +1555,8 @@ epk() {
 		# https://github.com/ikrukov/epub/blob/c663821de66d57b3d138dc9125251f40ea755c2c/script/pack_epub#L25
 		# https://www.mobileread.com/forums/showthread.php?t=299415
 
-		unzip -l "$f" > /dev/null 2> /dev/null || continue # corrupt (unreadable)
-		file --mime-type "$f" | grep -q 'application/epub+zip' && continue
+		unzip -l "$f" > /dev/null 2> /dev/null || continue                 # corrupt (unreadable)
+		file --mime-type "$f" | grep -q 'application/epub+zip' && continue # ok
 
 		unzip "$f" -d $tmpdir
 		cd $tmpdir || :
@@ -1588,7 +1564,7 @@ epk() {
 		zip -X -0 --quiet $tmpname mimetype
 		zip -X -9 --quiet --no-dir-entries --recurse-paths $tmpname META-INF OEBPS
 		cd ..
-		mv "$tmpdir/$tmpname.zip" "${f}"
+		mv "$tmpdir/$tmpname.zip" "$f"
 		\rm -rf "$tmpdir"
 
 	done
