@@ -47,6 +47,7 @@ alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out"
 alias pq="~/plaque/plaque"
+alias rgf="rg --files-with-matches"
 alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
@@ -446,6 +447,7 @@ gc() {
 		git diff --name-only |
 			prepend "$(_get_repo_root)/" |
 			grep "$PWD" |
+			grep -v .gitignore |
 			xargs git commit -v
 
 	fi
@@ -710,9 +712,19 @@ gdm() {
 	# purpose of fast diffing (i.e. without network), this is usually fine.
 
 	span="$(_gmaster)...HEAD"
-	git log --no-merges --first-parent --name-only --oneline --pretty= "$span" |
+	git log --diff-filter=d --no-merges --first-parent --name-only --oneline --pretty= "$span" |
 		sort -u |
+		# HACK: --diff-filter excludes files deleted by us, but does
+		# not exclude files deleted during a merge
+		while read -r f; do
+			[[ -f $f ]] && echo "$f"
+		done |
 		xargs git diff "$span"
+
+	# TODO: current branch -> mr number
+	# curl -sL -H "Cookie:_gitlab_session=$GL_SESSION" "https://gitlab.novum-engineering.com/external-services/novum-cloud/-/merge_requests/$mr.diff"
+
+	# https://gitlab.com/gitlab-org/cli/-/issues/7704
 
 	# if command -v glab > /dev/null; then
 	# 	glab mr diff |
@@ -1036,6 +1048,18 @@ gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run
 
 # }}}
 # js {{{
+
+tsc() {
+	if [[ -f node_modules/.bin/tsc ]]; then
+		cmd=node_modules/.bin/tsc
+	elif cmd=$(which tsc); then
+		:
+	else
+		return
+	fi
+	$cmd --version
+	$cmd "$@"
+}
 
 # https://stackoverflow.com/a/47948461
 _js_pkg_ver() { < package.json jq -r "[.dependencies, .devDependencies] | add | .$1" | tr -d '^~'; }
@@ -1465,6 +1489,8 @@ mw() {
 # }}}
 
 # uncommon
+
+# echo ${files[@]} | entr -cr $cmd
 
 _unused() {
 	: list unused functions
