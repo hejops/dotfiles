@@ -385,6 +385,10 @@ bindurl library.lol a composite get_current_url | js -p tri.excmds.shellescape(J
 bindurl localhost:85 i composite get_current_url | shellescape | exclaim_quiet chromium --incognito
 bindurl wikipedia.org D composite get_current_url | shellescape | exclaim_quiet $TERMINAL wkbk
 
+" command gldiff js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('$TERMINAL bash -ic "curl -sL -H "Cookie:_gitlab_session=$GL_SESSION" "'+url+'.diff" | delta"'))
+command gldiff js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('gldiff ' + url))
+bindurl gitlab.+merge_requests/[0-9]+$ D composite get_current_url | gldiff
+
 " default binding is ;M
 bindurl \.(webp|jpe?g|png) i composite hint -pipe img src | jsb -p tri.excmds.tabopen('images.google.com/searchbyimage?image_url=' + JS_ARG)
 
@@ -438,6 +442,7 @@ quickmark w	https://web.whatsapp.com
 " bindurl odysee.com f composite hint -Jcpipe .claim-preview href | mpvyt
 " bindurl vid.puffyan.us f composite hint -Jcpipe .h-box>[href^="/watch"] href | mpvyt
 autocmd DocStart github.+readme-ov-file js tri.excmds.urlmodify("-Q", "tab")
+autocmd DocStart gitlab.+ref_type js tri.excmds.urlmodify("-Q", "ref_type")
 autocmd DocStart rust-lang.github.io/.+%E2%94%82 js tri.excmds.urlmodify("-t","%E2%94%82","")
 autocmd DocStart www.youtube.com js tri.excmds.urlmodify("-t","www.youtube.com","vid.puffyan.us")
 autocmd DocStart www.youtube.com/feeds/videos.xml js tri.excmds.urlmodify("-t","feeds/videos.xml?channel_id=","channel/")
@@ -576,11 +581,13 @@ autocmd DocLoad biblegateway.com darklarge
 autocmd DocLoad dhl.de dark
 autocmd DocLoad discogs.com dark
 autocmd DocLoad djangoproject.com darklarge
+autocmd DocLoad docs.gitlab.com dark
 autocmd DocLoad docs.influxdata.com darklarge
 autocmd DocLoad docs.python.org darklarge
 autocmd DocLoad docs.rs darklarge
 autocmd DocLoad duckdb.org darklarge
 autocmd DocLoad georust.org darklarge
+autocmd DocLoad git-scm.com/book darklarge
 autocmd DocLoad htmx.org darklarge
 autocmd DocLoad internetingishard.netlify.app darklarge
 autocmd DocLoad last.fm dark
