@@ -596,30 +596,56 @@ local function c_compiler_cmd()
 	-- 	return "tcc"
 	-- end
 
-	return table.concat({
-		-- allegedly, gcc/g++ prioritises fast runtime (slow compile time),
-		-- clang(++) prioritises fast compile time (slow runtime).
-		-- https://github.com/nordlow/compiler-benchmark
-		--
-		-- however, with my limited testing, this is not true; gcc compile time is
-		-- about 65% that of clang. in doubt, profile compile times on your
-		-- machine.
+	-- allegedly, gcc/g++ prioritises fast runtime (slow compile time), clang(++)
+	-- prioritises fast compile time (slow runtime).
+	-- https://github.com/nordlow/compiler-benchmark
+	--
+	-- however, with my limited testing, this is not true; gcc compile time is
+	-- about 65% that of clang. in doubt, profile compile times on your machine.
 
-		-- "clang",
-		"gcc",
+	local cmds = {
+		clang = {
+			-- https://clang.llvm.org/docs/index.html
+			-- https://clang.llvm.org/docs/ClangCommandLineReference.html#target-independent-compilation-options
 
-		-- https://clang.llvm.org/docs/ClangCommandLineReference.html#target-independent-compilation-options
-		-- https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+			"-fsanitize="
+				.. table.concat({
+					"undefined", -- https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html#ubsan-checks
+					"leak", -- included in address https://clang.llvm.org/docs/LeakSanitizer.html
 
-		"-fno-omit-frame-pointer",
-		"-fsanitize=address,undefined,leak",
-		"-ftrivial-auto-var-init=zero",
-		-- "-O0",
-		-- "-coverage",
-		-- "-fdiagnostics-format=vi", -- clang and gcc have different options
-		-- "-ferror-limit=0", -- clang-only
-		-- "-ggdb",
-	}, " ")
+					-- clang does not specify whether sanitizers are incompatible.
+					-- however, they do provide estimates of expected slowdown
+
+					-- "address", -- 2x https://clang.llvm.org/docs/AddressSanitizer.html
+					-- "memory", -- 3x https://clang.llvm.org/docs/MemorySanitizer.html
+					-- "realtime", -- not general purpose
+					-- "thread", -- 5x https://clang.llvm.org/docs/ThreadSanitizer.html
+					-- "type", -- experimental https://clang.llvm.org/docs/TypeSanitizer.html
+				}, ","),
+		},
+
+		gcc = {
+
+			-- "-O0",
+			-- "-coverage",
+			-- "-fdiagnostics-format=vi", -- clang and gcc have different options
+			-- "-ferror-limit=0", -- clang-only
+			-- "-ggdb",
+
+			-- https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+
+			"-fno-omit-frame-pointer",
+			"-ftrivial-auto-var-init=zero",
+
+			-- https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html#index-fsanitize_003daddress
+			-- several sanitizers are incompatible with each other (e.g. address and leak)
+
+			"-fsanitize=address,leak,pointer-compare,undefined",
+		},
+	}
+
+	local cmd = "gcc"
+	return cmd .. " " .. table.concat(cmds[cmd], " ")
 end -- }}}
 
 local function ts_is_compiled(js, ts)
