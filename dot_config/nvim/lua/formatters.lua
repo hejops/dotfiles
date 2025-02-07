@@ -1,6 +1,12 @@
 require("conform").setup({
 	-- :h conform-formatters
 	formatters = {
+		golines = {
+			args = {
+				"--base-formatter=gofmt", -- https://github.com/segmentio/golines/issues/115#issuecomment-1824651357
+			},
+		},
+
 		-- python {{{
 		black = {
 			-- https://black.readthedocs.io/en/stable/the_black_code_style/future_style.html#preview-style
