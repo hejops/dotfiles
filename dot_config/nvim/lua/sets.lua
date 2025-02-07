@@ -20,6 +20,7 @@ local titlestring = "%f" -- path to file, relative to cwd
 -- vim.g.netrw_browse_split=4	-- open in vsplit
 -- vim.o.spellsuggest = 5 -- show less suggestions
 vim.g.c_syntax_for_h = true
+vim.g.editorconfig = false
 vim.g.ftplugin_sql_omni_key = "<C-j>" -- default <C-c> is annoying
 vim.g.lasttab = 1
 vim.g.netrw_altv = 1
