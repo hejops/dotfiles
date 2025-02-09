@@ -205,7 +205,7 @@ function M:in_git_repo()
 	-- https://www.reddit.com/r/neovim/comments/y2t9rt/comment/is4wjmb/
 	-- https://www.reddit.com/r/neovim/comments/vkckjb/comment/idosy7m/
 	-- maybe use this cond to lazy-start gitsigns
-	return M:command_ok("git rev-parse --is-inside-work-tree 2>/dev/null")
+	return M:command_ok("git rev-parse --is-inside-work-tree >/dev/null 2>/dev/null")
 end
 
 -- get git repo root, ignoring all possible child directories
