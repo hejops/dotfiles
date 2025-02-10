@@ -56,23 +56,6 @@ alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 alias v="\$EDITOR \$(fzf)"
 alias y="bash ~/gripts/disq/ytm.sh"
 
-con() {
-	# set -euo pipefail
-	convert_files &&
-		fix_genres --auto &&
-		fix_tags -a &&
-		fix_tags &&
-		fix_genres &&
-		~/gripts/mover/mover -move |
-		grep "^$MU/" |
-			cut -d/ -f7-8 |
-			sort -u |
-			tee -a ~/.config/mpv/library ~/plaque/queue.txt
-	# find "$SLSK/complete" -type f | grep -iPv '\.(mp3|flac|ape|wav)$' | largs rm
-	find "$SLSK/complete" -name 'done' | largs dirname | largs rm -rfv
-	find "$SLSK/complete" -empty -delete
-}
-
 # }}}
 # frequent {{{
 
@@ -153,22 +136,53 @@ rt() {
 
 }
 
+con() {
+	# set -euo pipefail
+	convert_files &&
+		fix_genres --auto &&
+		fix_tags -a &&
+		fix_tags &&
+		fix_genres && {
+
+		~/gripts/mover/mover -move |
+			grep "^$MU/" |
+			cut -d/ -f7-8 |
+			sort -u |
+			tee -a ~/.config/mpv/library ~/plaque/queue.txt
+		find "$SLSK/complete" -name 'done' | largs dirname | largs rm -rf #-v
+		find "$SLSK/complete" -empty -delete
+		ram
+		vim +G ~/plaque/queue.txt
+
+	}
+}
+
 # }}}
 
 # git {{{
 
-alias b=gB
-alias cr=cdr
+alias b=git_branch # i could <leader>gB, but changing branch means context switching and probably closing vim anyway
+alias cr=git_root
+alias s=git_status # could be ported to vim maybe
+
+alias gb=git_branch
+alias gl=git_log
+alias gr=git_root
+alias gs=git_status
+
+# alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
+# alias gdnw="git diff --color-words --no-index"
+alias g,=gpl
+alias g.=gp
 alias gC="git reset --soft HEAD~1"  # un-commit, but leave changes
 alias gCH="git reset --hard HEAD~1" # un-commit, and undo changes (destructive!)
 alias ga="git add"
-alias gap="git add --patch"
-alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
-alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
-alias gdnw="git diff --color-words --no-index"
-alias gig="\$EDITOR .gitignore"
+alias gap="git add --patch"     # i need to figure out how to do this in vim, because going backwards is hell
+alias gdn="git diff --no-index" # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
+alias gig="\$EDITOR \$(_get_repo_root)/.gitignore"
+alias gp="git push"
 alias gpl="git pull"
-alias groot=_get_repo_root
+alias gu=gun
 alias gun="git checkout --" # discard all local changes ("undo")
 
 _get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
@@ -184,12 +198,22 @@ _gmaster() {
 # shellcheck disable=SC2120
 gls() { git ls-files "${1:-.}"; }
 
-cdr() {
+git_root() {
 	if _in_git_repo; then
 		cd "$(_get_repo_root)" || :
 	elif [[ -n $REPO ]]; then
 		cd "$REPO" || :
 	fi
+}
+
+gA() {
+	: un-add, unstage
+	# not sure which command i run more often
+	set -x
+	git restore --staged "$@" \
+		2> /dev/null || # committed; without --staged, changes are discarded!
+		git reset "$@"  # not committed yet
+	set +x
 }
 
 gb() {
@@ -238,20 +262,32 @@ gb() {
 
 }
 
-gB() {
+git_branch() {
 	# https://stackoverflow.com/a/1441062
 	# --pretty=format:'%h%x09%an%x09%ad%x09%s' # no color
 	# TODO: include date/author, but preserve color
-	# TODO: handle master..master
 
 	_in_git_repo || return
+	if [[ $(git branch | wc -l) -eq 1 ]]; then
+		echo "No other branches; create one with gb <branch>"
+		return
+	fi
 
+	# TODO: handle master..master?
 	prv_cmd="echo {} | sed -r 's/^[ *]+//; s/^/master../' | xargs git log --oneline --color=always"
 	branch=$(git branch --sort=-committerdate |
 		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi |
 		sed -r 's/^[ *]+//')
 	[[ -z $branch ]] && return
 	gb "$branch"
+
+	# list most recently edited files, and open them
+	git ls-files |
+		xargs -d '\n' ls -1t |
+		head |
+		# ensure cursor is positioned at most recently edited file, and
+		# that entries are listed newest to oldest
+		fzf --height=~100% --reverse
 }
 
 gbd() {
@@ -264,16 +300,7 @@ gbd() {
 		xargs -r git branch -D
 }
 
-# gba() {
-# 	: show all branches with author
-# 	# https://stackoverflow.com/a/19135644
-# 	git for-each-ref --format='%(committerdate:iso)%09%(authorname)%09%(refname)' |
-# 		grep remotes |
-# 		sort |
-# 		column -t -s '	'
-# }
-
-# gbcp() {
+# gpick() {
 # 	: cherry pick commit from other branch
 #
 # 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
@@ -285,30 +312,8 @@ gbd() {
 # 	[[ -n $sha ]] && git show "$sha" | git apply -
 # }
 
-_() {
-
-	# https://nitaym.github.io/ourstheirs/
-
-	# # merge: attempt to apply (bring in) changes from feature, then master
-	# git checkout master
-	# git merge $feature_branch
-	# git checkout --ours $conflict_file   # to select the changes done in master
-	# git checkout --theirs $conflict_file # to select the changes done in $feature_branch
-	# git add $conflict_file
-	# git merge --continue
-
-	# # rebase: attempt to apply changes from master, then from feature
-	# git checkout $feature_branch
-	# git rebase master
-	# git checkout --ours $conflict_file   # to select the changes done in master
-	# git checkout --theirs $conflict_file # to select the changes done in $feature_branch
-	# git add $conflict_file
-	# git rebase --continue
-
-	:
-}
-
-_gld() {
+_git_log_fzf() {
+	_in_git_repo || return
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
 	{
 		if [[ -f $1 ]] || [[ -d $1 ]]; then
@@ -320,9 +325,9 @@ _gld() {
 		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
-gld() {
+git_log() {
 	: browse git log, showing each commit\'s diff in fzf preview
-	_gld "$@" | awk '{print $1}' | xargs git show
+	_git_log_fzf "$@" | awk '{print $1}' | xargs git show
 }
 
 # gsdel() {
@@ -333,7 +338,7 @@ gld() {
 # }
 
 gS() {
-	: like gs+gld, for files to stage/commit
+	: like gs+gl, for files to stage/commit
 
 	# # porcelain v1 is -always- relative to repo root, which makes parsing harder
 	# files=$(git status --porcelain)
@@ -370,7 +375,7 @@ gcf() {
 	: make a new commit to be squashed with an earlier one
 
 	# https://jordanelver.co.uk/blog/2020/06/04/fixing-commits-with-git-commit-fixup-and-git-rebase-autosquash/
-	sha=$(_gld . | cut -d' ' -f1)
+	sha=$(_git_log_fzf . | cut -d' ' -f1)
 	[[ -z $sha ]] && return
 
 	# --fixup associates a new commit with an existing commit so that when
@@ -385,13 +390,6 @@ gcf() {
 	# losing work, git rebase --abort immediately)
 	# is -i necessary?
 	git rebase -i --autosquash || gC
-}
-
-gA() {
-	: un-add, unstage
-	git restore --staged "$@" \
-		2> /dev/null || # committed; without --staged, changes are discarded!
-		git reset "$@"  # not committed yet
 }
 
 gc() {
@@ -450,7 +448,7 @@ gc() {
 
 }
 
-gs() {
+git_status() {
 	# 1. changed files (twice: porcelain, then diff stat)
 	# 2. untracked files
 	# 3. current number of staged commits
@@ -538,33 +536,33 @@ gs() {
 	popd > /dev/null 2> /dev/null || :
 }
 
-gp() {
-	: push current branch
-
-	# shellcheck disable=SC2164
-	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1"
-
-	if ! git config --get remote.origin.url > /dev/null; then
-		echo 'no remote; try gnew'
-		return
-	fi
-
-	if ! git log > /dev/null; then
-		echo 'no commits yet; try gc'
-		return
-	fi
-
-	gpl
-
-	# --set-upstream[-to]: sets the default remote branch for the current
-	# local branch
-
-	git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"
-
-	# shellcheck disable=SC2164
-	[[ $# -eq 1 ]] && popd
-
-}
+# gp() {
+# 	: push current branch
+#
+# 	# shellcheck disable=SC2164
+# 	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1"
+#
+# 	if ! git config --get remote.origin.url > /dev/null; then
+# 		echo 'no remote; try gnew'
+# 		return
+# 	fi
+#
+# 	if ! git log > /dev/null; then
+# 		echo 'no commits yet; try gc'
+# 		return
+# 	fi
+#
+# 	gpl
+#
+# 	# --set-upstream[-to]: sets the default remote branch for the current
+# 	# local branch
+#
+# 	git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"
+#
+# 	# shellcheck disable=SC2164
+# 	[[ $# -eq 1 ]] && popd
+#
+# }
 
 gmm() {
 	: merge master into dev branch
@@ -734,7 +732,9 @@ gdm() {
 }
 
 gcon() {
-	: resolved conflicts, if any, and merge
+	# https://nitaym.github.io/ourstheirs/
+
+	: resolve conflicts, if any, and merge
 
 	# git diff --name-only --diff-filter=U --relative
 
@@ -813,7 +813,7 @@ gapat() {
 guns() {
 	: revert file to its state in a previous commit
 	f=$1
-	sha=$(_gld "$1" | awk '{print $1}')
+	sha=$(_git_log_fzf "$1" | awk '{print $1}')
 	git checkout "$sha" -- "$f"
 }
 
@@ -826,6 +826,12 @@ guns() {
 # $(git config --get remote.origin.url)/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
 
 # }}}
+
+# jj
+# jj git init --colocate
+# jj describe
+# non-starter until jj describe has a verbose option
+# https://github.com/jj-vcs/jj/issues/1946#issuecomment-2561045057
 
 # python {{{
 
@@ -860,7 +866,7 @@ EOF
 alias pt='gls | grep 'test_.\*py' | xargs pytest -x -vv --disable-warnings'
 
 pget() {
-	pyp=$(groot)/pyproject.toml
+	pyp=$(_get_repo_root)/pyproject.toml
 
 	if [[ -f $pyp ]]; then
 		echo "not in python project"
@@ -874,7 +880,7 @@ pget() {
 }
 
 pup() {
-	pyp=$(groot)/pyproject.toml
+	pyp=$(_get_repo_root)/pyproject.toml
 
 	if [[ -f $pyp ]]; then
 		echo "not in python project"
@@ -1022,7 +1028,7 @@ gorep() {
 gow() {
 	: watch code changes, trigger re-build, and kill process
 
-	# cdr
+	# cr
 	find . -name '*.go' | entr -cr go test ./...
 
 	# [[ ! -f go.mod ]] && return
@@ -1250,47 +1256,13 @@ f() {
 	esac
 }
 
-fm() {
-	: open file manager with arbitrary args
-
-	if command -v yazi > /dev/null; then
-		yazi "$@"
-		return
-	fi
-
-	# TODO: if glob specified, use that as filter
-	# set -x
-	_dirs=()
-	for x in "$@"; do
-		# ranger crashes if a file is passed
-		if [[ -d $x ]]; then
-			_dirs+=("$x")
-		elif [[ -f $x ]]; then
-			_dirs+=("$(dirname "$x")")
-		fi
-	done
-
-	if [[ ${#_dirs[@]} -eq 0 ]]; then
-		# echo "No valid paths specified"
-		_dirs=(.)
-	fi
-
-	if [[ ${#_dirs[@]} -eq 1 ]] && command -v lf > /dev/null; then
-		# lf only allows up to 1 arg, but can smartly position cursor
-		# on a file; i haven't used lf in forever
-		lf "${_dirs[0]}"
-	else
-		ranger "${_dirs[@]}"
-	fi
-
-}
-
 mcd() {
 	: mkdir any number of paths, cd to last
 	# it is uncommon for >1 arg to be passed, so this is more for cd
 	# [[ $# -eq 0 ]] && return
 	local p
 	for p in "$@"; do mkdir -p "$p" || :; done
+	# shellcheck disable=SC2164
 	[[ -d $p ]] && cd "$p"
 }
 
@@ -1605,8 +1577,8 @@ epk() {
 		# https://github.com/ikrukov/epub/blob/c663821de66d57b3d138dc9125251f40ea755c2c/script/pack_epub#L25
 		# https://www.mobileread.com/forums/showthread.php?t=299415
 
-		unzip -l "$f" > /dev/null 2> /dev/null || continue # corrupt (unreadable)
-		file --mime-type "$f" | grep -q 'application/epub+zip' && continue
+		unzip -l "$f" > /dev/null 2> /dev/null || continue                 # corrupt (unreadable)
+		file --mime-type "$f" | grep -q 'application/epub+zip' && continue # ok
 
 		unzip "$f" -d $tmpdir
 		cd $tmpdir || :
@@ -1614,7 +1586,7 @@ epk() {
 		zip -X -0 --quiet $tmpname mimetype
 		zip -X -9 --quiet --no-dir-entries --recurse-paths $tmpname META-INF OEBPS
 		cd ..
-		mv "$tmpdir/$tmpname.zip" "${f}"
+		mv "$tmpdir/$tmpname.zip" "$f"
 		\rm -rf "$tmpdir"
 
 	done

@@ -687,7 +687,7 @@ require("lazy").setup(
 
 			"nvim-treesitter/nvim-treesitter",
 			build = ":TSUpdate", -- update parsers when updating plugin
-			lazy = false,
+			lazy = false, -- causes all dependencies to be loaded
 
 			dependencies = {
 
@@ -706,7 +706,6 @@ require("lazy").setup(
 					end,
 				},
 
-				"joosepalviste/nvim-ts-context-commentstring", -- TS-aware commentstring (slow)
 				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
 				{ "danymat/neogen", opts = {} }, -- docs generator
 			},
@@ -851,6 +850,22 @@ require("lazy").setup(
 				-- vim.keymap.set({ "n", "x", "o" }, "T", ts_repeat_move.builtin_T)
 				-- vim.keymap.set({ "n", "x", "o" }, "f", ts_repeat_move.builtin_f)
 				-- vim.keymap.set({ "n", "x", "o" }, "t", ts_repeat_move.builtin_t)
+			end,
+		},
+		{
+			-- TS-aware commentstring (slow)
+			"joosepalviste/nvim-ts-context-commentstring",
+			ft = {
+				"javascript",
+				"javascriptreact",
+				-- "typescript",
+				"typescriptreact",
+			},
+			config = function()
+				-- https://github.com/JoosepAlviste/nvim-ts-context-commentstring/wiki/Integrations#commentnvim
+				require("ts_context_commentstring").setup({ enable_autocmd = false })
+				local h = require("ts_context_commentstring.integrations.comment_nvim").create_pre_hook()
+				require("Comment").setup({ pre_hook = h })
 			end,
 		}, -- }}}
 		-- colorschemes {{{
