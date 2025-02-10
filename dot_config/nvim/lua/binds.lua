@@ -203,7 +203,6 @@ vim.keymap.set("n", "<leader>gd", function()
 	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
 end, { desc = "diff current HEAD against master" })
 
--- TODO: set mark and return to it (mz...z"ap)
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
 vim.keymap.set("n", "<leader>I", [[:lua print(vim.inspect())<left><left>]])
@@ -235,9 +234,10 @@ local function get_c_doc()
 	vim.keymap.set("n", "K", "{zz", { buffer = true })
 end -- }}}
 
+-- note: this will fail the first time (after startup) selection a made, for
+-- unknown reasons
 local function surround_selection(left, right)
 	-- {{{
-	-- TODO: will fail first time
 	local line_start = vim.fn.getpos("'<")[2]
 	local line_end = vim.fn.getpos("'>")[2]
 	if line_start == 0 then
@@ -298,8 +298,6 @@ local ft_binds = { -- {{{
 	},
 
 	gitcommit = {
-		-- { "n", "J", "}zz" },
-		-- { "n", "K", "{zz" },
 		{
 			"n",
 			"J",
@@ -352,6 +350,7 @@ local ft_binds = { -- {{{
 			")",
 			function()
 				if require("dbee").is_open() then
+					-- TODO: wrap page
 					require("dbee").api.ui.result_page_next()
 				end
 			end,
@@ -383,21 +382,22 @@ local ft_binds = { -- {{{
 		{ "n", "<leader>a", ":!npm install " }, -- TODO: yarn.lock -> yarn
 		{ "n", "<leader>d", "O/**  */<left><left><left>" }, -- neogen always documents class, not field
 
-		-- replace != and ==; probably better via find+sed
+		-- replace != and ==; probably better via find+sed, or better still, biome auto fix
 		{ "n", "<leader>=", [[:%s/\v ([=!])\= / \1== /g|w<cr><c-o>]] },
 
 		{
 			"n",
 			"<leader>X",
 			function()
-				-- turn inline comments into jsdoc
+				-- turn inline comment (of current line) into jsdoc
 				-- https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
 				-- for large scale changes, consider doing this in sed:
 				-- rg -t typescript '^(  [^: ]+:.+) // (.+)' .
 				-- /** \2 */\n\1
 				local line = vim.fn.getline(".")
 				local stmt, comment = line:match("(.+) // (.+)")
-				local lnum = vim.fn.getpos(".")[2]
+				-- local lnum = vim.fn.getpos(".")[2]
+				local lnum = vim.fn.line(".")
 				vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, false, {
 					string.format("/** %s */", comment),
 					stmt,
@@ -405,14 +405,19 @@ local ft_binds = { -- {{{
 			end,
 		},
 
-		-- %s/\vt\.true([^;]+)/expect\1.toBe(true)/g
+		-- %s/\vt\.(true|false)([^;]+)/expect\2.toBe(\1)/g
 		-- %s/\vt\.is\(([^,]+), ([^)]+)\)/expect\(\1).toBe(\2)/g
 
+		-- arrow methods -> regular methods (use with caution)
+		-- %s/\v^  (\w+) \= (async )?(.+)\=\>/\2\1\3/g
+
 		{
-			"v",
-			"a",
+			"x",
+			"A",
 			function()
-				surround_selection("(async () => {", "})();")
+				if vim.fn.mode() == "V" then
+					surround_selection("(async () => {", "})();")
+				end
 			end,
 		},
 	},
