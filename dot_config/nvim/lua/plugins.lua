@@ -3,6 +3,8 @@
 
 -- :Lazy profile, filter > 10 ms
 
+local columns = 120 -- lualine, git-blame
+
 -- https://github.com/folke/lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
@@ -241,13 +243,18 @@ require("lazy").setup(
 						{
 							function()
 								if vim.fn.expand("%") == "" then
+									return "new file"
+								end
+								return vim.fn.expand("%" .. (vim.o.columns > columns and ":p" or ""))
+							end,
+						},
+
+						{
+							function()
+								if vim.fn.expand("%") == "" then
 									return ""
 								end
-								return string.format(
-									"%s [%sL]",
-									vim.fn.expand("%" .. (vim.o.columns > 170 and ":p" or "")),
-									vim.fn.line("$")
-								)
+								return string.format("%sL", vim.fn.line("$"))
 							end,
 						},
 
@@ -278,12 +285,7 @@ require("lazy").setup(
 						function() -- "0.04 n"
 							local current_line = vim.fn.line(".")
 							local total_line = vim.fn.line("$")
-							return string.format(
-								"%.2f %s",
-								current_line / total_line,
-								-- total_line,
-								vim.fn.mode()
-							)
+							return string.format("%.2f %s", current_line / total_line, vim.fn.mode())
 							-- return vim.fn.mode()
 						end,
 					},
@@ -480,7 +482,7 @@ require("lazy").setup(
 				-- highlight_group = "Question",
 				date_format = "%Y-%m-%d %H:%M",
 				delay = 0,
-				enabled = vim.o.columns > 170,
+				enabled = vim.o.columns > columns,
 				message_template = "<author>: <summary> (<sha> <date>)",
 				message_when_not_committed = "-",
 				use_blame_commit_file_urls = true,

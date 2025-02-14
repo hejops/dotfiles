@@ -22,6 +22,7 @@ local titlestring = "%f" -- path to file, relative to cwd
 -- vim.o.spellsuggest = 5 -- show less suggestions
 -- vim.o.titleold = vim.fn.getcwd() -- set title on exit; if empty, title remains unchanged
 vim.g.c_syntax_for_h = true
+vim.g.editorconfig = false
 vim.g.lasttab = 1
 vim.g.netrw_altv = 1
 vim.g.netrw_banner = 0
