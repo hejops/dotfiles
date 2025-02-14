@@ -739,7 +739,7 @@ gcon() {
 	# git diff --name-only --diff-filter=U --relative
 
 	has_conflicts() {
-		rg '^[<=>]{7}'
+		rg --hidden '^[<=>]{7}'
 		return $?
 	}
 
