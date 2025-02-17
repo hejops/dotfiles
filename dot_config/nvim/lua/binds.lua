@@ -293,11 +293,11 @@ local ft_binds = { -- {{{
 
 	git = {
 		{ "n", "<cr>", ":q<cr>" },
-		{ "n", "j", "J", { remap = true } }, -- https://github.com/tpope/vim-fugitive/blob/320b18fba2a4f2fe3c8225c778c687e0d2620384/autoload/fugitive.vim#L8019
+		{ "n", "j", "J", { remap = true } }, -- https://github.com/tpope/vim-fugitive/blob/320b18fba/autoload/fugitive.vim#L8019
 		{ "n", "k", "K", { remap = true } },
 	},
 
-	gitcommit = {
+	["gitcommit,diff"] = {
 		{
 			"n",
 			"J",
@@ -311,6 +311,22 @@ local ft_binds = { -- {{{
 			"K",
 			function()
 				vim.fn.search("^@@", "Wb")
+				vim.cmd.norm("zt")
+			end,
+		},
+		{
+			"n",
+			"{",
+			function()
+				vim.fn.search("^diff", "Wb")
+				vim.cmd.norm("zt")
+			end,
+		},
+		{
+			"n",
+			"}",
+			function()
+				vim.fn.search("^diff", "W")
 				vim.cmd.norm("zt")
 			end,
 		},
@@ -411,21 +427,44 @@ local ft_binds = { -- {{{
 			end,
 		},
 
-		-- %s/\vt\.(true|false)([^;]+)/expect\2.toBe(\1)/g
-		-- %s/\vt\.is\(([^,]+), ([^)]+)\)/expect\(\1).toBe(\2)/g
+		{
+			"n",
+			"<leader>at",
+			function() -- ava -> vitest
+				local subs = {
+					--
+
+					-- %s/\v.+t\.throwsAsync\((.+)\);/await expect(async () => { await \1 }).rejects.toThrowError();/g
+					-- { pat = [[]], rep = [[]] },
+					{ pat = [[\(t\)]], rep = [[()]] },
+					{ pat = [[\.serial]], rep = [[]] },
+					{ pat = [[t\.(true|false)([^;]+)]], rep = [[expect\2.toBe(\1)]] },
+					{ pat = [[t\.is\(([^,]+), ([^)]+)\)]], rep = [[expect\(\1).toBe(\2)]] },
+					{ pat = [[t\.not\(([^,]+), ([^)]+)\)]], rep = [[expect\(\1).not.toBe(\2)]] },
+
+					{ pat = [[ !\= null(, [^)]+)?\).toBe\(true\)]], rep = [[\1).toBeTruthy()]] },
+				}
+
+				for _, sub in pairs(subs) do
+					pcall(function() -- ignore all errors
+						vim.cmd("%" .. string.format("s/\\v%s/%s/g", sub.pat, sub.rep))
+					end)
+				end
+			end,
+		},
 
 		-- arrow methods -> regular methods (use with caution)
 		-- %s/\v^  (\w+) \= (async )?(.+)\=\>/\2\1\3/g
 
-		{
-			"x",
-			"A",
-			function()
-				if vim.fn.mode() == "V" then
-					surround_selection("(async () => {", "})();")
-				end
-			end,
-		},
+		-- {
+		-- 	"x",
+		-- 	"A",
+		-- 	function()
+		-- 		if vim.fn.mode() == "V" then
+		-- 			surround_selection("(async () => {", "})();")
+		-- 		end
+		-- 	end,
+		-- },
 	},
 
 	rust = {
@@ -496,6 +535,14 @@ local ft_binds = { -- {{{
 
 	-- TODO: also include gomod
 	go = {
+
+		-- go-logging -> slog
+		-- %s/\v(log\.\w+)f\(("[^"]+"), ([^)]+)/\1(\2, "\3", \3/g
+
+		-- camel -> snake
+		-- https://stackoverflow.com/a/28795550
+		-- sed -i -r '/^\t+".*[A-Z]/ s/([a-z0-9])([A-Z])/\1_\L\2/g; s/"([A-Z])/"\L\1/g' file.go
+
 		{ "n", "<leader>E", "oif err!=nil{panic(err)}<esc>:w<cr>o" }, -- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
 
 		{

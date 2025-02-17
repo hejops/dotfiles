@@ -53,7 +53,7 @@ alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tx="tectonic -X"
-alias v="\$EDITOR \$(fzf)"
+alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 alias y="bash ~/gripts/disq/ytm.sh"
 
 # cd ~/gripts/oar || :
@@ -148,6 +148,7 @@ alias s=git_status # could be ported to vim maybe
 # discouraged due to double index keypresses: gt gf gb
 
 # alias gb=git_branch
+# alias gb=git_branch
 # alias gr=git_root
 alias gl=git_log
 alias gs=git_status
@@ -175,6 +176,14 @@ _gmaster() {
 	# https://stackoverflow.com/a/44750379
 	# default_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's|^refs/remotes/origin/||')
 	git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4
+}
+
+# alias v="\$EDITOR \$(fzf)"
+v() {
+	git ls-files |
+		\xargs -d '\n' ls -1t |
+		fzf -m --prompt="$(git branch --show-current): " --height=~100% --reverse |
+		xargs nvim -p
 }
 
 # shellcheck disable=SC2120
@@ -256,20 +265,12 @@ git_branch() {
 	fi
 
 	# TODO: handle master..master?
-	prv_cmd="echo {} | sed -r 's/^[ *]+//; s/^/master../' | xargs git log --oneline --color=always"
+	prv_cmd="echo {} | sed -r 's/^[ *]+//; s/^/$(_gmaster)../' | xargs git log --oneline --color=always"
 	branch=$(git branch --sort=-committerdate |
 		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi |
 		sed -r 's/^[ *]+//')
 	[[ -z $branch ]] && return
 	gb "$branch"
-
-	# list most recently edited files, and open them
-	git ls-files |
-		xargs -d '\n' ls -1t |
-		head |
-		# ensure cursor is positioned at most recently edited file, and
-		# that entries are listed newest to oldest
-		fzf --height=~100% --reverse
 }
 
 gbd() {
@@ -301,15 +302,19 @@ _git_log_fzf() {
 		if [[ -f $1 ]] || [[ -d $1 ]]; then
 			git log --oneline "$@"
 		else
-			git log --oneline
+			git log --oneline "$(_gmaster)...HEAD"
 		fi
 	} |
-		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
 git_log() {
 	: browse git log, showing each commit\'s diff in fzf preview
 	_git_log_fzf "$@" | awk '{print $1}' | xargs git show
+}
+
+grev() {
+	_git_log_fzf "$@" | awk '{print $1}' | xargs git revert
 }
 
 # gsdel() {
@@ -550,8 +555,33 @@ gmm() {
 	: merge master into dev branch
 	# https://stackoverflow.com/a/20103414
 	git fetch origin # gets you up to date with origin
-	git merge origin/master
 	# TODO: for forks, need to sync fork (in gh), then git pull
+	git merge "origin/$(_gmaster)"
+}
+
+grbr() {
+	: rebase to remote, discarding all local changes that conflict with remote
+	# use case:
+	# - our branch was started at the same time as another branch
+	# - rewriting is simpler than resolving conflicts
+	# - the other branch is much larger
+	# - the other branch has been merged to master
+
+	cr
+
+	# first preserve files that were only added to in our branch
+	# (this is a looser definition than just 'new files')
+	git diff --numstat master...HEAD |
+		grep -P '^\d+\t0\t' |
+		cut -f3 |
+		xargs git diff master...HEAD > tmp.diff
+
+	# equivalent to `git rebase origin/master; git rebase --skip (repeatedly)`
+	git rebase --strategy-option=theirs "origin/$(_gmaster)"
+
+	git apply tmp.diff
+
+	# git push -f
 }
 
 gh() {
@@ -629,11 +659,11 @@ gnew() {
 
 	# no remote yet
 	if ! git config --get remote.origin.url; then
-		git branch -M master
+		git branch -M "$(_gmaster)"
 		xdg-open https://github.com/new &
 		read -rp 'Repo name (not URL!): ' repo
 		git remote add origin "https://github.com/hejops/$repo"
-		git push -u origin master
+		git push -u origin "$(_gmaster)"
 		git status
 	fi
 
@@ -722,7 +752,7 @@ gcon() {
 	# git diff --name-only --diff-filter=U --relative
 
 	has_conflicts() {
-		rg '^[<=>]{7}'
+		rg --hidden '^[<=>]{7}'
 		return $?
 	}
 
@@ -752,6 +782,10 @@ gcon() {
 	fi
 
 	while has_conflicts; do
+		if [[ -f .abort ]]; then
+			git merge --abort
+			return
+		fi
 		echo "Unresolved conflicts remaining!"
 		get_conflicts | cut -c3- | xargs nvim -p
 	done
