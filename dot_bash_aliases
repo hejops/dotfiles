@@ -5,6 +5,7 @@
 # autostart {{{
 
 [[ -f /tmp/verse.json ]] && [[ -s /tmp/verse.json ]] &&
+	ps --pid $PPID | grep -Fq wezterm &&
 	< /tmp/verse.json jq -r '.votd | .reference, .content' |
 	sed -e 's/<[^>]*>//g' |
 		fold -w 65 -s
@@ -12,7 +13,6 @@
 # }}}
 # aliases {{{
 
-# alias ws=wallset
 alias dr=discogs_rate
 alias ex=extract
 alias gm=getmail
@@ -22,6 +22,7 @@ alias met=metronome
 alias ns=notify-send
 alias trk=trackratings.py
 alias tt=taptempo
+alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 alias xo=xdg-open
 
 alias rab="exec yazi \"\$HDD/books\""
@@ -43,24 +44,29 @@ alias cv="\$EDITOR ~/cv/src/index.tex"
 alias da="dc artist:"
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
+alias fzh="fzf --height=~33% --reverse" # - and ~ are not equivalent
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out"
 alias pq="~/plaque/plaque"
-alias rgf="rg --files-with-matches"
 alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tx="tectonic -X"
-alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 alias v="\$EDITOR \$(fzf)"
 alias y="bash ~/gripts/disq/ytm.sh"
+
+# cd ~/gripts/oar || :
+# [[ ! -d ./out ]] && time ./oar
+# waitdie mpv
+# vol --auto
+# mpv --profile=bcx ./out
+# rm -rI ./out
 
 # }}}
 # frequent {{{
 
 cm() {
-
 	if [[ $# -eq 0 ]]; then
 		chezmoi cd
 	else
@@ -74,23 +80,23 @@ replace() {
 	_in_git_repo || return
 
 	# check correct rep binary (not the lisp thing)
-	if ! command -v rep | grep -F .cargo; then
+	if ! command -v rep | grep -Fq .cargo; then
 		return
 	fi
 
 	search=$1
 	replace=$2
-	if ! rg -n -- "$search"; then
+	if ! rg -q -- "$search"; then
 		echo "Pattern not found"
 		return
 	fi
-	rg -n -- "$search" | rep -- "$search" "$replace"
+
+	# note: backreferences use $1, not \1
+	rg --line-number -- "$search" | rep -- "$search" "$replace"
 	read -r -p 'OK?' || return
-	rg -n -- "$search" | rep -w -- "$search" "$replace"
-	# if only rep allowed backreferencing the search pattern...
+	rg --line-number -- "$search" | rep --write -- "$search" "$replace"
+
 	git diff
-	# git add -u
-	# git commit -v
 }
 
 sd() {
@@ -99,11 +105,6 @@ sd() {
 
 	waitdie mpv pacman curl
 	killall firefox
-
-	# TODO: check for any running cron jobs (pstree, tail -f)
-	# not running:
-	# |-crond
-	# |-dbus-daemon
 
 	# pgrep -u $USER cron
 
@@ -136,27 +137,6 @@ rt() {
 
 }
 
-con() {
-	# set -euo pipefail
-	convert_files &&
-		fix_genres --auto &&
-		fix_tags -a &&
-		fix_tags &&
-		fix_genres && {
-
-		~/gripts/mover/mover -move |
-			grep "^$MU/" |
-			cut -d/ -f7-8 |
-			sort -u |
-			tee -a ~/.config/mpv/library ~/plaque/queue.txt
-		find "$SLSK/complete" -name 'done' | largs dirname | largs rm -rf #-v
-		find "$SLSK/complete" -empty -delete
-		ram
-		vim +G ~/plaque/queue.txt
-
-	}
-}
-
 # }}}
 
 # git {{{
@@ -165,14 +145,16 @@ alias b=git_branch # i could <leader>gB, but changing branch means context switc
 alias cr=git_root
 alias s=git_status # could be ported to vim maybe
 
-alias gb=git_branch
+# discouraged due to double index keypresses: gt gf gb
+
+# alias gb=git_branch
+# alias gr=git_root
 alias gl=git_log
-alias gr=git_root
 alias gs=git_status
 
 # alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
 # alias gdnw="git diff --color-words --no-index"
-alias g,=gpl
+alias g,=gpl # gpl is horrific to type
 alias g.=gp
 alias gC="git reset --soft HEAD~1"  # un-commit, but leave changes
 alias gCH="git reset --hard HEAD~1" # un-commit, and undo changes (destructive!)
@@ -569,6 +551,7 @@ gmm() {
 	# https://stackoverflow.com/a/20103414
 	git fetch origin # gets you up to date with origin
 	git merge origin/master
+	# TODO: for forks, need to sync fork (in gh), then git pull
 }
 
 gh() {
@@ -863,7 +846,7 @@ EOF
 
 }
 
-alias pt='gls | grep 'test_.\*py' | xargs pytest -x -vv --disable-warnings'
+alias pt='gls | grep test_.*py | xargs pytest -x -vv --disable-warnings'
 
 pget() {
 	pyp=$(_get_repo_root)/pyproject.toml
@@ -1542,6 +1525,7 @@ ys() { # read youtube subs in less
 
 nico() {
 	# set -x
+	[[ ! -f $1 ]] && return
 	xdotool key super+8
 	# ensure window is focused!
 	while read -r line; do
@@ -1550,36 +1534,6 @@ nico() {
 		sleep 2
 	done < "$1"
 }
-
-# np() {
-# 	pgrep nicotine > /dev/null || return
-#
-# 	while read -r id; do
-# 		# 12 because newline included? whatever
-# 		if [[ $(<<< "$id" wc -c) -eq 12 ]]; then
-# 			title=$(
-# 				echo "$id" |
-# 					prepend http://youtube.com/watch?v= |
-# 					xargs yt-dlp --dump-single-json --skip-download 2> /dev/null |
-# 					jq -r '.title' |
-# 					sed -r '
-# 						s|\([^)]+\)||g
-# 						s|\[[^]]+\]||g
-# 						s|[0-9]{4}.+||g
-# 						s|SW EXCL.+||g
-# 					'
-# 			)
-# 		else
-# 			title=$id
-# 		fi
-# 		echo "$title" | xclip -sel c
-# 		xdotool key super+8 ctrl+2 F6 ctrl+v F6 return
-# 		sleep 2
-# 	done < /tmp/foo
-# 	notify-send 'done'
-# 	rm -iv /tmp/foo
-#
-# }
 
 epk() {
 	: fix malformed epubs
