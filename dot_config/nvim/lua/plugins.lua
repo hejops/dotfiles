@@ -38,6 +38,8 @@ require("lazy").setup(
 
 		-- }}}
 
+		"martineausimon/nvim-lilypond-suite",
+
 		{ "ecridge/vim-kinesis", ft = "kinesis" }, -- KA2, *_qwerty.txt
 		{ "jbyuki/quickmath.nvim", cmd = { "Quickmath" } },
 		{ "johnelliott/vim-kinesis-kb900", ft = "kb900" }, -- KA FP (and 360?), layout*.txt
@@ -48,6 +50,27 @@ require("lazy").setup(
 		{ "tpope/vim-dotenv", cmd = { "Dotenv" } },
 		{ "tridactyl/vim-tridactyl", ft = "tridactyl" }, -- syntax highlighting
 		{ "wansmer/treesj", opts = {}, cmd = { "TSJToggle", "TSJSplit", "TSJJoin" } }, -- very slow
+
+		{
+			"norcalli/nvim-colorizer.lua",
+			config = function()
+				require("colorizer").setup()
+			end,
+		},
+
+		{
+			"devkvlt/go-tags.nvim",
+			ft = "go",
+			enabled = vim.fn.executable("gomodifytags"),
+			config = function()
+				require("go-tags").setup({
+					commands = {
+						["GoTagsAddJSON"] = { "-add-tags", "json" },
+						["GoTagsRemoveJSON"] = { "-remove-tags", "json" },
+					},
+				})
+			end,
+		},
 
 		{
 			"jinh0/eyeliner.nvim", -- replaces quick-scope
@@ -201,7 +224,6 @@ require("lazy").setup(
 			"nvim-lualine/lualine.nvim",
 
 			opts = function(_, opts)
-				local navic = require("nvim-navic")
 				-- local gitblame = require("gitblame")
 
 				opts.sections = {
@@ -260,10 +282,11 @@ require("lazy").setup(
 					lualine_z = {
 						-- "progress",
 						-- "location",
-						function()
+						function() -- "0.04 n"
 							local current_line = vim.fn.line(".")
 							local total_line = vim.fn.line("$")
 							return string.format("%.2f %s", current_line / total_line, vim.fn.mode())
+							-- return vim.fn.mode()
 						end,
 					},
 				}
@@ -272,10 +295,10 @@ require("lazy").setup(
 					lualine_c = {
 						{
 							function()
-								return navic.get_location()
+								return require("nvim-navic").get_location()
 							end,
 							cond = function()
-								return navic.is_available()
+								return require("nvim-navic").is_available()
 							end,
 						},
 					},
@@ -301,11 +324,7 @@ require("lazy").setup(
 							end,
 							mode = 2, -- tab_nr + tab_name
 
-							-- 0: just shows the filename
-							-- 1: shows the relative path and shorten $HOME to ~
-							-- 2: shows the full path
-							-- 3: shows the full path and shorten $HOME to ~
-							path = 0,
+							path = 0, -- only basename
 
 							use_mode_colors = false,
 
@@ -596,7 +615,8 @@ require("lazy").setup(
 		{ -- nvim-dbee {{{
 			-- "kndndrj/nvim-dbee",
 			"hejops/nvim-dbee",
-			commit = "4562e67",
+			-- commit = "4562e67",
+			branch = "focus-result",
 
 			-- + api is quite hackable
 			-- + implements pagination (good for large queries)
@@ -657,6 +677,7 @@ require("lazy").setup(
 					}),
 				})
 
+				-- TODO: connect to db specified in config.yml
 				local c = require("dbee").api.core.get_current_connection()
 				print(string.format("Connected to database %s (%s)", c.name, c.url))
 			end,
@@ -888,7 +909,7 @@ require("lazy").setup(
 		"ingsme/nvim-smyck.nvim", -- 'hybrid', italic comments
 		"uncleten276/dark_flat.nvim", -- italic comments
 		{ "iagorrr/noctis-high-contrast.nvim", lazy = true }, -- italic comments/types
-		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets, lol)
+		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets) -- TODO: https://stackoverflow.com/a/42021818
 		{ "tomasr/molokai", lazy = true }, -- italic types/funcs, bold keywords
 
 		-- "abstract-ide/abstract-cs", -- unreadable comments
@@ -896,6 +917,8 @@ require("lazy").setup(
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "danilo-augusto/vim-afterglow", -- mono tabline
 		-- "dasupradyumna/midnight.nvim", -- mono tabline
+		-- "dgox16/oldworld.nvim", -- inactive tab too dim
+		-- "everblush/nvim", -- comments too dim
 		-- "fenetikm/falcon", -- mono tabline
 		-- "gosukiwi/vim-atom-dark", -- bad lualine
 		-- "hachy/eva01.vim", -- don't like the low contrast one
@@ -903,6 +926,7 @@ require("lazy").setup(
 		-- "kvrohit/rasmus.nvim", -- mono tabline
 		-- "lighthaus-theme/vim-lighthaus", -- mono tabline
 		-- "martinsione/darkplus.nvim", -- tab/lualine too bright
+		-- "mellow-theme/mellow.nvim", -- everything is purple
 		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
 		-- "nvimdev/oceanic-material", -- mono tabline
 		-- "oxfist/night-owl.nvim", -- mono tabline

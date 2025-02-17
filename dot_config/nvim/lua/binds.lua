@@ -368,6 +368,9 @@ local ft_binds = { -- {{{
 				if require("dbee").is_open() then
 					-- TODO: wrap page
 					require("dbee").api.ui.result_page_next()
+				else
+					-- api.nvim_input and cmd.norm are recursive (cmd.norm at least errors noisily)
+					vim.api.nvim_feedkeys(")", "n", false)
 				end
 			end,
 		},
@@ -377,11 +380,14 @@ local ft_binds = { -- {{{
 			function()
 				if require("dbee").is_open() then
 					require("dbee").api.ui.result_page_prev()
+				else
+					vim.api.nvim_feedkeys("(", "n", false)
 				end
 			end,
 		},
 
 		{ "n", "<leader>H", require("pickers").devdocs },
+		{ "n", "<leader>dc", require("pickers").dbee_connections },
 	},
 
 	["qf,help,man,lspinfo,startuptime,Trouble,lazy"] = {

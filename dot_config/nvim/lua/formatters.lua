@@ -1,4 +1,11 @@
+local js_formatters = {
+	"biome",
+	"prettier",
+	stop_after_first = true,
+}
+
 require("conform").setup({
+	-- :h conform-options
 	-- :h conform-formatters
 	formatters = {
 		golines = {
@@ -49,6 +56,9 @@ require("conform").setup({
 			-- important: at work, use top-level biome.json
 			-- note: cwd must be a func, not a string
 			cwd = require("util").root_directory,
+			condition = function()
+				return not vim.loop.fs_stat(".prettierrc.json")
+			end,
 			args = vim.loop.fs_stat(require("util"):root_directory() .. "/biome.json") -- if biome.json exists, leave args unchanged
 					and { "format", "--stdin-file-path", "$FILENAME" }
 				or {
@@ -72,8 +82,9 @@ require("conform").setup({
 		-- }}}
 		-- sql {{{
 		sqruff = {
+			-- waiting https://github.com/quarylabs/sqruff/issues/1183
 			command = "sqruff",
-			args = { "fix", "-" },
+			args = { "fix", "-" }, -- dialect can only be specified via .sqruff
 			stdin = true,
 			exit_codes = { 0, 1 }, -- lol https://github.com/quarylabs/sqruff/issues/1134
 		},
@@ -164,6 +175,7 @@ require("conform").setup({
 		-- Conform will run multiple formatters sequentially
 		-- all formatters will be run non-async
 
+		-- ocaml = { "ocamlformat" },
 		["_"] = { "trim_whitespace", "trim_newlines" },
 		bash = { "shfmt" },
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
@@ -176,8 +188,7 @@ require("conform").setup({
 		htmldjango = { "djlint" },
 		lua = { "stylua" },
 		markdown = { "mdslw", "prettier" },
-		ocaml = { "ocamlformat" },
-		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- pyproject.toml: [tool.ruff.isort] force-single-line = true
+		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },
 		scss = { "prettier" },
 		sh = { "shfmt" },
@@ -185,14 +196,14 @@ require("conform").setup({
 		tex = { "latexindent" },
 		toml = { "taplo" },
 		xml = { "xmlformat" },
-		yaml = { "prettier" },
+		yaml = { "prettier" }, -- TODO: no .clangd parser
 
-		javascript = { "biome", "prettier", stop_after_first = true },
-		javascriptreact = { "biome", "prettier", stop_after_first = true },
-		json = { "biome", "prettier", stop_after_first = true },
-		jsonc = { "biome", "prettier", stop_after_first = true },
-		typescript = { "biome", "prettier", stop_after_first = true },
-		typescriptreact = { "biome", "prettier", stop_after_first = true },
+		javascript = js_formatters,
+		javascriptreact = js_formatters,
+		json = js_formatters,
+		jsonc = js_formatters,
+		typescript = js_formatters,
+		typescriptreact = js_formatters,
 
 		go = {
 			-- https://github.com/SingularisArt/Singularis/blob/856a938fc8554fcf47aa2a4068200bc49cad2182/aspects/nvim/files/.config/nvim/lua/modules/lsp/lsp_config.lua#L50
