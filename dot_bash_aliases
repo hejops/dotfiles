@@ -1077,6 +1077,25 @@ jx() {
 	[[ -n $cmd ]] && $(pkgmgr) "$cmd"
 }
 
+jmake() {
+	: convert scripts to Makefile
+
+	keys=$(< package.json jq -r '.scripts | keys[]')
+
+	cmds=$(echo "$keys" |
+		while read -r cmd; do
+			echo "${cmd//:/-}:" # make targets cannot contain :
+			< package.json jq -r ".scripts.\"$cmd\"" |
+				sed 's/&& /\n/g; s/\"/"/g' |
+				prepend '\t'
+		done)
+
+	cat << EOF | tee Makefile
+.PHONY: $(echo "$keys" | tr : - | xargs)
+$cmds
+EOF
+}
+
 jup() {
 	: upgrade npm package
 	pkg=$(_js_pkgs | fzf)
