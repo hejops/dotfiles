@@ -315,13 +315,18 @@ gbd() {
 _git_log_fzf() {
 	_in_git_repo || return
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
-	{
-		if [[ -f $1 ]] || [[ -d $1 ]]; then
-			git log --oneline "$@"
-		else
-			git log --oneline "$(_gmaster)...HEAD"
-		fi
-	} |
+
+	args=()
+
+	if [[ $(git branch --show-current) == $(_gmaster) ]]; then
+		:
+	elif [[ -f $1 ]] || [[ -d $1 ]]; then
+		args+=("$@")
+	else # dev branch
+		args+=("$(_gmaster)...HEAD")
+	fi
+
+	git log --oneline "${args[@]}" |
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
