@@ -170,15 +170,15 @@ alias gl=git_log
 alias gr=git_root
 alias gs=git_status
 
-# alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
 # alias gdnw="git diff --color-words --no-index"
 alias g,=gpl
 alias g.=gp
 alias gC="git reset --soft HEAD~1"  # un-commit, but leave changes
 alias gCH="git reset --hard HEAD~1" # un-commit, and undo changes (destructive!)
 alias ga="git add"
-alias gap="git add --patch"     # i need to figure out how to do this in vim, because going backwards is hell
-alias gdn="git diff --no-index" # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
+alias gap="git add --patch"                      # i need to figure out how to do this in vim, because going backwards is hell
+alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
+alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
 alias gig="\$EDITOR \$(_get_repo_root)/.gitignore"
 alias gp="git push"
 alias gpl="git pull"
