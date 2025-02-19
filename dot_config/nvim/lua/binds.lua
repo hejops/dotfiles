@@ -695,6 +695,10 @@ local function c_compiler_cmd()
 			"-fno-omit-frame-pointer",
 			"-ftrivial-auto-var-init=zero",
 
+			-- https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html#index-fstrict-aliasing
+			-- https://danso.ca/blog/strict-aliasing/
+			"-fstrict-aliasing",
+
 			-- https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html#index-fsanitize_003daddress
 			-- several sanitizers are incompatible with each other (e.g. address and leak)
 
