@@ -86,15 +86,15 @@ replace() {
 
 	search=$1
 	replace=$2
-	if ! rg -q -- "$search"; then
+	if ! rg -q --hidden -- "$search"; then
 		echo "Pattern not found"
 		return
 	fi
 
 	# note: backreferences use $1, not \1
-	rg --line-number -- "$search" | rep -- "$search" "$replace"
+	rg --hidden --line-number -- "$search" | rep -- "$search" "$replace"
 	read -r -p 'OK?' || return
-	rg --line-number -- "$search" | rep --write -- "$search" "$replace"
+	rg --hidden --line-number -- "$search" | rep --write -- "$search" "$replace"
 
 	git diff
 }
