@@ -659,12 +659,13 @@ gnew() {
 
 	# no remote yet
 	if ! git config --get remote.origin.url; then
-		git branch -M "$(_gmaster)"
+		git branch -M master # don't call _gmaster!
 		xdg-open https://github.com/new &
 		read -rp 'Repo name (not URL!): ' repo
 		git remote add origin "https://github.com/hejops/$repo"
-		git push -u origin "$(_gmaster)"
+		git push -u origin master
 		git status
+		git remote set-head origin --auto
 	fi
 
 }
