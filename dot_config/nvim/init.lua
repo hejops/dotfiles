@@ -111,6 +111,15 @@ vim.api.nvim_create_autocmd({ "VimEnter" }, {
 })
 
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+	pattern = { "*.sql" },
+	callback = function()
+		if vim.loop.fs_stat("sqlc.yaml") then
+			vim.cmd("Dispatch sqlc vet && sqlc generate")
+		end
+	end,
+})
+
+vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 	pattern = { "*.ly" },
 	callback = function()
 		require("util"):close_unnamed_splits()
