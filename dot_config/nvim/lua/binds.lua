@@ -222,6 +222,18 @@ local function toggle_diagnostics()
 	end
 end
 
+-- subs = { { pat = str, rep = str } }
+--
+-- substitutions are applied in sequential order
+local function apply_substitutions(subs)
+	for _, sub in pairs(subs) do
+		pcall(function() -- ignore all errors
+			vim.cmd("%" .. string.format("s/\\v%s/%s/g", sub.pat, sub.rep))
+			-- vim.api.
+		end)
+	end
+end
+
 local function get_c_doc()
 	-- {{{
 	-- requires man-pages (c) and cppman (cpp)
@@ -430,9 +442,9 @@ local ft_binds = { -- {{{
 		{
 			"n",
 			"<leader>at",
-			function() -- ava -> vitest
-				local subs = {
-					--
+			function()
+				apply_substitutions({
+					-- ava -> vitest
 
 					-- %s/\v.+t\.throwsAsync\((.+)\);/await expect(async () => { await \1 }).rejects.toThrowError();/g
 					-- { pat = [[]], rep = [[]] },
@@ -443,13 +455,7 @@ local ft_binds = { -- {{{
 					{ pat = [[t\.not\(([^,]+), ([^)]+)\)]], rep = [[expect\(\1).not.toBe(\2)]] },
 
 					{ pat = [[ !\= null(, [^)]+)?\).toBe\(true\)]], rep = [[\1).toBeTruthy()]] },
-				}
-
-				for _, sub in pairs(subs) do
-					pcall(function() -- ignore all errors
-						vim.cmd("%" .. string.format("s/\\v%s/%s/g", sub.pat, sub.rep))
-					end)
-				end
+				})
 			end,
 		},
 
@@ -597,6 +603,18 @@ local ft_binds = { -- {{{
 					python = #require("lint").linters_by_ft.python > 0 and {} or { "ruff" },
 				}
 				require("lint").try_lint()
+			end,
+		},
+
+		{
+			"n",
+			"<leader>P",
+			function()
+				apply_substitutions({ -- os -> Path
+					{ pat = [[os.remove\((.+)\)]], rep = [[Path(\1).unlink()]] },
+					-- os.path.isdir\((.+)\)/Path(\1).is_dir()
+					-- os.path.isfile\((.+)\)/Path(\1).is_file()
+				})
 			end,
 		},
 	},
@@ -873,6 +891,7 @@ local function exec()
 		gleam = "gleam run",
 		rust = "RUST_BACKTRACE=1 cargo run", -- TODO: if vim.fn.line(".") >= line num of first match of '#[cfg(test)]', run 'cargo test' instead
 
+		-- jq = string.format("jq -f %s %s", curr_file, curr_file:gsub(".jq", ".json")),
 		-- the normal langs
 		dhall = "dhall-to-json --file " .. curr_file,
 		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
