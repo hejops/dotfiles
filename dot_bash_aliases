@@ -301,8 +301,10 @@ _git_log_fzf() {
 	{
 		if [[ -f $1 ]] || [[ -d $1 ]]; then
 			git log --oneline "$@"
-		else
-			git log --oneline "$(_gmaster)...HEAD"
+		elif m=$(_gmaster) && [[ -n $m ]]; then
+			git log --oneline "$m...HEAD"
+		else # no remote yet
+			git log --oneline
 		fi
 	} |
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
