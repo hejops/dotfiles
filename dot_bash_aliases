@@ -5,7 +5,7 @@
 # autostart {{{
 
 [[ -f /tmp/verse.json ]] && [[ -s /tmp/verse.json ]] &&
-	ps --pid $PPID | grep -Fq wezterm &&
+	ps --pid "$PPID" | grep -Fq wezterm &&
 	< /tmp/verse.json jq -r '.votd | .reference, .content' |
 	sed -e 's/<[^>]*>//g' |
 		fold -w 65 -s
@@ -608,7 +608,7 @@ gh() {
 		# i.e. realpath - repo_root
 
 		# view file at its most recent commit
-		hash=$(git log -n 1 --pretty=format:%h -- "$1")
+		hash=$(git log --max-count=1 --pretty=format:%h -- "$1")
 		URL="$repo/blob/$hash/$1"
 
 	elif [[ -n $1 ]]; then # view repo at specific commit
@@ -853,6 +853,16 @@ guns() {
 # better to use glab probably
 # $(git config --get remote.origin.url)/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
 
+gcoup() {
+	: for a given file, show which files changed together
+	# https://adamtornhill.com/articles/crimescene/codeascrimescene.htm
+	git log --pretty=%h "$1" |
+		xargs git show --name-only --pretty= |
+		sort |
+		uniq -c |
+		sort -n
+}
+
 # }}}
 
 # jj
@@ -1081,8 +1091,8 @@ tsc() {
 	else
 		return
 	fi
-	$cmd --version
-	$cmd "$@"
+	"$cmd" --version
+	"$cmd" "$@"
 }
 
 # https://stackoverflow.com/a/47948461
@@ -1102,7 +1112,7 @@ jx() {
 	}
 
 	cmd=$(< package.json jq -r .scripts | grep : | fzh | cut -d'"' -f2)
-	[[ -n $cmd ]] && $(pkgmgr) "$cmd"
+	[[ -n $cmd ]] && "$(pkgmgr)" "$cmd"
 }
 
 jmake() {
@@ -1119,7 +1129,7 @@ jmake() {
 		done)
 
 	cat << EOF | tee Makefile
-.PHONY: $(echo "$keys" | tr : - | xargs)
+.PHONY: $(<<< "$keys" tr : - | xargs)
 $cmds
 EOF
 }
@@ -1324,7 +1334,7 @@ import sys
 if \"$MU\" in {x.rstrip('/') for x in sys.argv}:
     print('FATAL')
     raise Exception
-" $*
+" "$@"
 		fi
 
 		command rm -v "$@"
@@ -1352,7 +1362,7 @@ rgo() {
 	} >> ~/.bash_history
 
 	# note: this won't go into history (only rgo will)
-	$EDITOR +"${array[1]}" "${array[0]}"
+	"$EDITOR" +"${array[1]}" "${array[0]}"
 
 }
 
@@ -1369,7 +1379,7 @@ j() {
 		awk '!seen[$0]++' |
 		fzf --tac)
 	[[ -z $sel ]] && return
-	$EDITOR "$sel"
+	"$EDITOR" "$sel"
 }
 
 # }}}
@@ -1480,7 +1490,7 @@ nt() {
 			int=5
 			SECONDS=0
 		fi
-		sleep $int
+		sleep "$int"
 	done
 }
 
@@ -1535,6 +1545,16 @@ mw() {
 
 # echo ${files[@]} | entr -cr $cmd
 
+# {
+# 	find "$HDD/movies" -type f
+# 	cat ~/to_watch
+# } | fzf
+
+files() {
+	: list files in use by a process
+	pidof "$1" | xargs -n1 lsof -p | grep -Po '/[a-z].+' | sort -u
+}
+
 _unused() {
 	: list unused functions
 	< ~/.bash_aliases grep -Po '^[a-z]\w+\(\)' |
@@ -1544,10 +1564,11 @@ _unused() {
 		done
 }
 
+# rng() { for _ in "$(seq "${2:-1}")"; do echo $((1 + RANDOM % ${1:-100})); done; }
 ,pgrep() { \pgrep "$1" | xargs ps; } # ps for runtime
 pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill; }
-pkill1() { \pgrep "$1" | sed 1d | xargs kill; } # kill all procs except 1st
-rng() { for _ in $(seq "${2:-1}"); do echo $((1 + RANDOM % ${1:-100})); done; }
+pkill1() { \pgrep "$1" | sed 1d | xargs kill; }                                            # kill all procs except 1st
+rng() { while read -r _; do echo $((1 + RANDOM % ${1:-100})); done < "$(seq "${2:-1}")"; } # shellharden
 ya() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
 yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '.title, .description, .webpage_url, .channel_url'; }
 yt() { mpv --force-window "ytdl://ytsearch10:\'$*\'"; }
@@ -1573,11 +1594,21 @@ nico() {
 	[[ ! -f $1 ]] && return
 	xdotool key super+8
 	# ensure window is focused!
+	i=0
 	while read -r line; do
+		[[ -z $line ]] && break
+
+		# slsk blocks all searches after a while
+		((i++))
+		[[ $i -ge 68 ]] && break
+
+		echo "$i: $line"
 		echo "$line" | xclip -sel c
 		xdotool key ctrl+2 F6 ctrl+v enter
-		sleep 2
+		sleep 3
 	done < "$1"
+
+	notify-send 'done'
 }
 
 epk() {
@@ -1598,14 +1629,15 @@ epk() {
 		unzip -l "$f" > /dev/null 2> /dev/null || continue                 # corrupt (unreadable)
 		file --mime-type "$f" | grep -q 'application/epub+zip' && continue # ok
 
-		unzip "$f" -d $tmpdir
-		cd $tmpdir || :
+		unzip "$f" -d "$tmpdir"
+		cd "$tmpdir" || :
 		echo 'application/epub+zip' > mimetype
-		zip -X -0 --quiet $tmpname mimetype
-		zip -X -9 --quiet --no-dir-entries --recurse-paths $tmpname META-INF OEBPS
+		zip -X -0 --quiet "$tmpname" mimetype
+		zip -X -9 --quiet --no-dir-entries --recurse-paths "$tmpname" META-INF OEBPS
 		cd ..
 		mv "$tmpdir/$tmpname.zip" "$f"
 		\rm -rf "$tmpdir"
+		echo "fixed $f"
 
 	done
 }
@@ -1653,11 +1685,11 @@ scan() {
 		[[ $ans == x ]] && break
 		# 600: 30 sec, 4.4 MB
 		# 2400: 8 min, 48 MB
-		scanimage --format=pdf --progress --resolution=$res \
+		scanimage --format=pdf --progress --resolution="$res" \
 			--output-file "$f-$n-$res.pdf"
 		((n++))
 	done
-	pdfunite $(\ls "$f"-* | sort -V) "$f.pdf"
+	pdfunite "$(\ls "$f"-* | sort -V)" "$f.pdf"
 	rm -I "$f"-*
 }
 
