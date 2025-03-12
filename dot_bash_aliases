@@ -442,20 +442,14 @@ git_status() {
 	# 2. untracked files
 	# 3. current number of staged commits
 
-	# (1)
-	#  M discogs.go
-	#  M discogs_test.go
-	#  M main.go
+	# Nothing staged. Current stat:
 	#
-	#  discogs.go      |  2 +-
-	#  main.go         |  2 +-
-	#  discogs_test.go |  6 +++---
+	#  sqlc/artists.sql.go | 1 +
+	#  schema.sql          | 2 +-
+	#  queries/artists.sql | 4 ++--
+	#  main.go             | 5 +++++
 	#
-	# (2)
-	# util_test.go
-	#
-	# (3)
-	# No commits staged.
+	# Your branch is ahead of 'origin/master' by 2 commits.
 
 	_in_git_repo || return
 
@@ -474,34 +468,44 @@ git_status() {
 
 	# note: colors are lost when piping, but sort is more useful than color
 	if
+		# git diff only diffs unstaged files
 		diffs=$(
-			git diff --stat ./ | # generally, i only want to see the diff stat for current dir
-				grep -F '|' |       # ignore summary line
-				sort -n -k3         # most changes last (more useful in short terminals)
+			git diff --stat . | # generally, i only want to see the diff stat for current dir
+				grep -F '|' |      # ignore summary line
+				sort -n -k3        # most changes last (more useful in short terminals)
 		)
 		[[ -n $diffs ]]
 	then
-		{ git status --porcelain | grep -Fv '??'; } 2> /dev/null
+		: no changes staged yet
+		# { git status --porcelain | grep -Fv '??'; } 2> /dev/null
+		echo "Nothing staged. Current stat:"
 		echo
 		echo "$diffs"
+
 	elif
-		# newly staged files are -not- included in git diff
 		files=$(git status --porcelain |
-			grep '^A' |
+			# grep '^A' | # only added files!
+			grep -Fv '??' |
 			awk '{print $NF}' |
 			# make paths absolute (default: relative to root)
 			prepend "$(_get_repo_root)/" |
 			# then relativise to cwd
-			largs realpath --relative-to=. 2> /dev/null) &&
-			[[ -z $files ]]
+			largs realpath --relative-to=. 2> /dev/null) #&&
+		[[ -n $files ]]
 	then
-		: no files added
+		: diffing staged files
+
+		echo "Staged:"
+		echo
+		<<< "$files" \xargs git diff --stat --staged |
+			grep -F '|' | # ignore summary line
+			sort -n -k3
+
 	else
-		echo "$files" | column -t | while read -r f; do
-			lines=$(< "$f" wc -l)
-			echo "./$f | $lines +"
-		done <<< "$files" | column -t
+		: no files staged
+
 	fi
+
 	echo
 
 	# 2
@@ -520,7 +524,11 @@ git_status() {
 
 	# 3
 
-	git status | grep -P '\d+ commits?' || echo 'No commits staged.'
+	if ! git status | grep -q 'Your branch'; then
+		echo "No remote yet."
+	elif ! git status | grep -P '\d+ commits?'; then
+		echo 'No commits staged.'
+	fi
 
 	popd > /dev/null 2> /dev/null || :
 }
