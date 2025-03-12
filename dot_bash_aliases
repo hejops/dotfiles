@@ -1215,6 +1215,18 @@ sq() {
 
 # docker {{{
 
+# alias dps='docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.ID}}\t{{.RunningFor}}" | sort'
+
+dps() {
+	# docker ps adds too much padding, and cannot truncate long values
+	docker ps -a --format=json |
+		# note: ID is usually just visual noise, but placing it any
+		# later in the seq will make it hard to extract (with cut/awk)
+		jq -r '[.Names[0:40], .State, .ID, .Status, .RunningFor] | @tsv' |
+		sort |
+		column -t -s $'\t' # https://unix.stackexchange.com/a/57235
+}
+
 doslow() {
 	: list slowest steps in a docker log
 
