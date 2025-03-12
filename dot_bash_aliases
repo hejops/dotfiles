@@ -86,15 +86,15 @@ replace() {
 
 	search=$1
 	replace=$2
-	if ! rg -q -- "$search"; then
+	if ! rg -q --hidden -- "$search"; then
 		echo "Pattern not found"
 		return
 	fi
 
 	# note: backreferences use $1, not \1
-	rg --line-number -- "$search" | rep -- "$search" "$replace"
+	rg --hidden --line-number -- "$search" | rep -- "$search" "$replace"
 	read -r -p 'OK?' || return
-	rg --line-number -- "$search" | rep --write -- "$search" "$replace"
+	rg --hidden --line-number -- "$search" | rep --write -- "$search" "$replace"
 
 	git diff
 }
@@ -153,15 +153,15 @@ alias s=git_status # could be ported to vim maybe
 alias gl=git_log
 alias gs=git_status
 
-# alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
 # alias gdnw="git diff --color-words --no-index"
 alias g,=gpl # gpl is horrific to type
 alias g.=gp
 alias gC="git reset --soft HEAD~1"  # un-commit, but leave changes
 alias gCH="git reset --hard HEAD~1" # un-commit, and undo changes (destructive!)
 alias ga="git add"
-alias gap="git add --patch"     # i need to figure out how to do this in vim, because going backwards is hell
-alias gdn="git diff --no-index" # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
+alias gap="git add --patch"                      # i need to figure out how to do this in vim, because going backwards is hell
+alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
+alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
 alias gig="\$EDITOR \$(_get_repo_root)/.gitignore"
 alias gp="git push"
 alias gpl="git pull"
@@ -298,15 +298,21 @@ gbd() {
 _git_log_fzf() {
 	_in_git_repo || return
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
-	{
-		if [[ -f $1 ]] || [[ -d $1 ]]; then
-			git log --oneline "$@"
-		elif m=$(_gmaster) && [[ -n $m ]]; then
-			git log --oneline "$m...HEAD"
-		else # no remote yet
-			git log --oneline
-		fi
-	} |
+
+	args=()
+
+	m=$(_gmaster)
+	if [[ $(git branch --show-current) == $m ]]; then
+		:
+	elif [[ -f $1 ]] || [[ -d $1 ]]; then
+		args+=("$@")
+	elif [[ -n $m ]]; then # dev branch
+		args+=("$m...HEAD")
+	else
+		: no remote yet
+	fi
+
+	git log --oneline "${args[@]}" |
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 

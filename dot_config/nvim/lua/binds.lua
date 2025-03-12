@@ -914,7 +914,8 @@ local function exec()
 		-- note that :new brings us to repo root (verify with :new|pwd), so we need
 		-- to not only know where we used to be, but also run the basename.go
 		-- correctly
-		go = string.format([[ cd %s; go run ./*.go ]], cwd),
+		-- inexplicably, go 1.24 (?) may no longer write to stdout from within nvim shell
+		go = string.format([[ cd %s; go run ./*.go | sponge /dev/stdout ]], cwd),
 		-- .. "ls *.go | " -- import functions from same package; https://stackoverflow.com/a/43953582
 		-- .. "grep -v _test | " -- ignore test files (ugh)
 		-- .. "xargs go run",
