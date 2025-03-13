@@ -226,12 +226,33 @@ vim.keymap.set("n", "<leader>gh", ":Gitsigns stage_hunk<cr>") -- more ergonomic 
 vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>")
 vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
-vim.keymap.set("n", "<leader>gb", function()
-	-- vim.cmd("GitBlameOpenCommitURL") -- GitBlameOpenFileURL may produce bogus URLs (usually when files are moved), and going to the commit provides better context anyway
+vim.keymap.set("n", "<leader>go", function()
+	-- GitBlameOpenFileURL may produce bogus URLs, usually when files are moved.
+	-- in such cases, GitBlameOpenCommitURL may be better
 	-- https://github.com/f-person/git-blame.nvim/issues/103
-	-- ubuntu xdg-open doesn't work
-	vim.cmd("GitBlameCopyCommitURL")
-	vim.fn.jobstart([[sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"]])
+	-- vim.cmd("GitBlameOpenFileURL")
+
+	-- GitBlameOpenFileURL always opens the file at the commit of the current
+	-- line. sometimes it is better to just construct url with latest commit of
+	-- current branch
+	local base = require("util")
+		:get_command_output("git config --get remote.origin.url", true)
+		:gsub("git@", "https://")
+		:gsub("com:", "com/")
+		:gsub(".git$", "")
+	local branch = require("util"):get_command_output("git branch --show-current", true)
+	local path = require("util"):get_command_output("git ls-files --full-name " .. vim.fn.expand("%:p"), true)
+
+	local url = string.format("%s/-/blob/%s/%s", base, branch, path)
+	vim.fn.jobstart("xdg-open " .. url)
+
+	-- $url/-/blob/$branch/$path
+
+	-- vim.cmd("GitBlameOpenCommitURL")
+
+	-- -- ubuntu xdg-open may not work
+	-- vim.cmd("GitBlameCopyCommitURL")
+	-- vim.fn.jobstart([[sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"]])
 end, { desc = "view commit of current line (in browser)" })
 
 -- https://github.com/ThePrimeagen/refactoring.nvim#configuration-for-refactoring-operations

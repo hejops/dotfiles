@@ -6,19 +6,19 @@ vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 -- restore last cursor position
 vim.api.nvim_create_autocmd("BufReadPost", {
 	callback = function()
-		vim.cmd.norm([[g'"]]) -- :h '", :h last-position-jump
+		local curr = vim.fn.line([['"]])
+		if 1 < curr and curr <= vim.fn.line("$") then
+			vim.cmd.norm([[g'"]]) -- :h '", :h last-position-jump
+		end
 		vim.cmd.norm("zz")
 	end,
 })
 
 -- highlight yanked text
--- local highlight_group = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
 vim.api.nvim_create_autocmd("TextYankPost", {
 	callback = function()
 		vim.highlight.on_yank()
 	end,
-	-- group = highlight_group,
-	-- pattern = "*",
 })
 
 -- prevent cursor movement when yanking
@@ -81,10 +81,10 @@ vim.api.nvim_create_autocmd("CursorHold", {
 				"BufLeave",
 				"CursorMoved",
 				"CursorMovedI",
-				"FocusLost",
 				"InsertCharPre",
 				"InsertEnter",
 				"WinLeave",
+				-- "FocusLost",
 			},
 		})
 	end,
@@ -118,7 +118,6 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 })
 
 vim.api.nvim_create_autocmd({ "WinEnter" }, {
-	-- group = vim.api.nvim_create_augroup("colorcolumn", { clear = true }),
 	callback = function(event)
 		local cc_filetypes = {
 			-- default is 80
@@ -130,69 +129,6 @@ vim.api.nvim_create_autocmd({ "WinEnter" }, {
 			vim.wo.colorcolumn = cc_filetypes[filetype]
 		else
 			-- vim.wo.colorcolumn = ""
-		end
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "text,mail,rst" },
-	callback = function()
-		vim.opt_local.spell = true
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "json" },
-	callback = function()
-		vim.opt_local.commentstring = "// %s"
-		-- if vim.fn.executable("jq") == 1 then
-		-- vim.opt_local.formatprg = "jq ." -- doesn't prettier take care of formatting?
-		-- end
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	-- should i do this for go? hmm...
-	pattern = { "lua", "javascript", "typescript" },
-	callback = function()
-		-- defaults: false, 8, 0, 8
-
-		vim.opt_local.expandtab = true
-		vim.opt_local.shiftwidth = 2
-		vim.opt_local.softtabstop = 2
-		vim.opt_local.tabstop = 2
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "html" },
-	callback = function()
-		if not require("util"):buf_contains("htmx.org", 20) then
-			return
-		end
-
-		if
-			-- TODO: project node_modules might make more sense?
-			not vim.loop.fs_stat(
-				vim.fn.stdpath("data") .. "/mason/packages/markuplint/node_modules/@markuplint/htmx-parser"
-			)
-		then
-			os.execute([[
-				cd ~/.local/share/nvim/mason/packages/markuplint
-				npm install -D @markuplint/htmx-parser
-			]])
-			print("installed htmx-parser")
-		end
-
-		if not vim.loop.fs_stat(".markuplintrc.json") then
-			os.execute([[
-				echo '{
-					"extends": ["markuplint:recommended"],
-					"parser": {"\\.html$": "@markuplint/htmx-parser"},
-					"specs": {"\\.html$": "@markuplint/htmx-parser/spec"}
-				}' > .markuplintrc.json
-			]])
-			print("generated .markuplintrc.json")
 		end
 	end,
 })
@@ -209,23 +145,25 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 		local t = require("conform").formatters_by_ft.cpp
 		table.insert(t, "clang-tidy")
 		require("conform").format({ async = true })
-		table.remove(t, #require("conform").formatters_by_ft.cpp)
+		table.remove(t) -- removes last element by default
 	end,
 })
 
--- vim.api.nvim_create_autocmd({ "FileType" }, {
--- 	pattern = "mail",
--- 	callback = function()
--- 		local name = os.getenv("USER")
--- 		name = (name:gsub("^%l", string.upper))
--- 		vim.cmd(string.format("norm }oBest regards,\r%s\r", name))
--- 		vim.cmd("norm {o")
--- 		vim.cmd("norm O")
--- 		vim.cmd("norm O")
--- 		vim.cmd("norm ODear")
--- 		vim.cmd("startinsert!")
--- 	end,
--- })
+vim.api.nvim_create_autocmd("BufNewFile", {
+	callback = function()
+		local parent = vim.fn.expand("%:p:h")
+		if vim.loop.fs_stat(parent) then
+			return
+		end
+
+		local prompt = string.format("Directory %s does not exist. Create? ", parent)
+		vim.ui.input({ prompt = prompt }, function(choice)
+			if choice == "y" then
+				os.execute("mkdir -p " .. vim.fn.shellescape(parent))
+			end
+		end)
+	end,
+})
 
 -- https://github.com/artart222/CodeArt/blob/3a419066140bc094aa170ac456daa704aa2e88a7/lua/maps.lua#L28
 -- https://github.com/kutsan/dotfiles/blob/a1a608768c61c7aadf1fb160166d59a0214f80a6/.config/nvim/plugin/autocmds.lua#L8
@@ -267,6 +205,101 @@ vim.api.nvim_create_autocmd("TermOpen", {
 -- 	end,
 -- })
 
+-- FileType {{{
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "text", "mail", "rst" },
+	callback = function()
+		vim.opt_local.spell = true
+	end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "json" },
+	callback = function()
+		-- note: if the file is not jsonc, comments are a syntax error anyway, so
+		-- this is not terribly useful
+		vim.opt_local.commentstring = "// %s"
+		-- if vim.fn.executable("jq") == 1 then
+		-- vim.opt_local.formatprg = "jq ." -- doesn't prettier take care of formatting?
+		-- end
+	end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+	-- should i do this for go? hmm...
+	pattern = { "lua", "javascript", "typescript" },
+	callback = function()
+		-- defaults: false, 8, 0, 8
+		-- note that these settings only affect how vim displays the text. the
+		-- formatter still determines what text the file actually contains
+		-- TODO: bash files may set their own values somehow, must be some plugin
+
+		vim.opt_local.expandtab = true
+		vim.opt_local.shiftwidth = 2
+		vim.opt_local.softtabstop = 2
+		vim.opt_local.tabstop = 2
+	end,
+})
+
+-- vim.api.nvim_create_autocmd("FileType", {
+-- 	pattern = { "sh" },
+-- 	callback = function()
+-- 		print("hi")
+-- 		vim.opt_local.expandtab = false
+-- 		vim.opt_local.shiftwidth = 8
+-- 		vim.opt_local.softtabstop = 0
+-- 		vim.opt_local.tabstop = 8
+-- 	end,
+-- })
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "html" },
+	callback = function()
+		if not require("util"):buf_contains("htmx.org", 20) then
+			return
+		end
+
+		if
+			-- TODO: project node_modules might make more sense?
+			not vim.loop.fs_stat(
+				vim.fn.stdpath("data") .. "/mason/packages/markuplint/node_modules/@markuplint/htmx-parser"
+			)
+		then
+			os.execute([[
+				cd ~/.local/share/nvim/mason/packages/markuplint
+				npm install -D @markuplint/htmx-parser
+			]])
+			print("installed htmx-parser")
+		end
+
+		if not vim.loop.fs_stat(".markuplintrc.json") then
+			os.execute([[
+				echo '{
+					"extends": ["markuplint:recommended"],
+					"parser": {"\\.html$": "@markuplint/htmx-parser"},
+					"specs": {"\\.html$": "@markuplint/htmx-parser/spec"}
+				}' > .markuplintrc.json
+			]])
+			print("generated .markuplintrc.json")
+		end
+	end,
+})
+
+-- vim.api.nvim_create_autocmd({ "FileType" }, {
+-- 	pattern = "mail",
+-- 	callback = function()
+-- 		local name = os.getenv("USER")
+-- 		name = (name:gsub("^%l", string.upper))
+-- 		vim.cmd(string.format("norm }oBest regards,\r%s\r", name))
+-- 		vim.cmd("norm {o")
+-- 		vim.cmd("norm O")
+-- 		vim.cmd("norm O")
+-- 		vim.cmd("norm ODear")
+-- 		vim.cmd("startinsert!")
+-- 	end,
+-- })
+
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "c" },
 	callback = function()
@@ -297,27 +330,24 @@ vim.api.nvim_create_autocmd("FileType", {
 
 		-- may need nightly install https://github.com/quarylabs/sqruff?tab=readme-ov-file#for-other-platforms
 		print("installing sqruff...")
-		local cmd =
-			[[curl -fsSL https://raw.githubusercontent.com/quarylabs/sqruff/main/install.sh | sed -r '/INSTALL_DIR/ s|/usr/local/bin|$HOME/.local/bin|; s/sudo mv/mv -v/' | bash -x]]
-		os.execute(cmd)
-	end,
-})
-
-vim.api.nvim_create_autocmd("BufNewFile", {
-	callback = function()
-		local parent = vim.fn.expand("%:p:h")
-		if vim.loop.fs_stat(parent) then
-			return
+		-- v0.25.5 is the last version that has an asset (lol)
+		-- https://github.com/quarylabs/sqruff/issues/1369
+		--sponge /dev/stdout |
+		local sed =
+			"/INSTALL_DIR/ s|/usr/local/bin|$HOME/.local/bin|; s/sudo mv/mv -v/; s|/latest||; s#\\| grep -o#| sponge /dev/stdout | grep -om1#"
+		local cmd = string.format(
+			[[curl -fsSL https://raw.githubusercontent.com/quarylabs/sqruff/main/install.sh | sed -r '%s' | bash -x]],
+			sed
+		)
+		if os.execute(cmd) / 256 == 0 then
+			print("installed sqruff")
+		else
+			print("error when installing sqruff")
 		end
-
-		local prompt = string.format("Directory %s does not exist. Create? ", parent)
-		vim.ui.input({ prompt = prompt }, function(choice)
-			if choice == "y" then
-				os.execute("mkdir -p " .. vim.fn.shellescape(parent))
-			end
-		end)
 	end,
 })
+
+-- }}}
 
 vim.api.nvim_create_autocmd("VimLeave", {
 	command = "Lazy clean",

@@ -39,6 +39,7 @@ alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit" # TODO: handle >1 video device (just increment n until file not exist)
 alias ci="chromium --incognito"
+alias cpu="top -b -n1 -o %CPU | grep -m10 \$USER"
 alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
 alias cv="\$EDITOR ~/cv/src/index.tex"
 alias da="dc artist:"
@@ -86,15 +87,20 @@ replace() {
 
 	search=$1
 	replace=$2
-	if ! rg -q --hidden -- "$search"; then
+	_rg() {
+		# --hidden will cause .git to be included!
+		rg --hidden --glob='!.git/**' "$@"
+	}
+
+	if ! _rg -q -- "$search"; then
 		echo "Pattern not found"
 		return
 	fi
 
 	# note: backreferences use $1, not \1
-	rg --hidden --line-number -- "$search" | rep -- "$search" "$replace"
+	_rg --line-number -- "$search" | rep -- "$search" "$replace"
 	read -r -p 'OK?' || return
-	rg --hidden --line-number -- "$search" | rep --write -- "$search" "$replace"
+	_rg --line-number -- "$search" | rep --write -- "$search" "$replace"
 
 	git diff
 }
@@ -142,13 +148,12 @@ rt() {
 # git {{{
 
 alias b=git_branch # i could <leader>gB, but changing branch means context switching and probably closing vim anyway
+alias bb=gb
 alias cr=git_root
 alias s=git_status # could be ported to vim maybe
 
 # discouraged due to double index keypresses: gt gf gb
 
-# alias gb=git_branch
-# alias gb=git_branch
 # alias gr=git_root
 alias gl=git_log
 alias gs=git_status
@@ -178,11 +183,11 @@ _gmaster() {
 	git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4
 }
 
-# alias v="\$EDITOR \$(fzf)"
 v() {
-	git ls-files |
+	git ls-files . |
 		\xargs -d '\n' ls -1t |
-		fzf -m --prompt="$(git branch --show-current): " --height=~100% --reverse |
+		fzf -m --prompt="$(git branch --show-current): " \
+			--height=~100% --reverse --preview-window='right,50%,border' |
 		xargs nvim -p
 }
 
@@ -539,34 +544,6 @@ git_status() {
 	popd > /dev/null 2> /dev/null || :
 }
 
-# gp() {
-# 	: push current branch
-#
-# 	# shellcheck disable=SC2164
-# 	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1"
-#
-# 	if ! git config --get remote.origin.url > /dev/null; then
-# 		echo 'no remote; try gnew'
-# 		return
-# 	fi
-#
-# 	if ! git log > /dev/null; then
-# 		echo 'no commits yet; try gc'
-# 		return
-# 	fi
-#
-# 	gpl
-#
-# 	# --set-upstream[-to]: sets the default remote branch for the current
-# 	# local branch
-#
-# 	git push --set-upstream origin "$(git rev-parse --abbrev-ref HEAD)"
-#
-# 	# shellcheck disable=SC2164
-# 	[[ $# -eq 1 ]] && popd
-#
-# }
-
 gmm() {
 	: merge master into dev branch
 	# https://stackoverflow.com/a/20103414
@@ -600,6 +577,16 @@ grbr() {
 	# git push -f
 }
 
+_git_http() {
+	url=$1
+	if [[ $url == http* ]]; then
+		echo "$url"
+	else
+		tr <<< "$url" : / | sed -r 's|git@|https://|; s|.git$||'
+	fi
+
+}
+
 gh() {
 	: open remote url
 
@@ -615,28 +602,25 @@ gh() {
 
 		# view file at its most recent commit
 		hash=$(git log --max-count=1 --pretty=format:%h -- "$1")
-		URL="$repo/blob/$hash/$1"
+		url="$repo/blob/$hash/$1"
 
 	elif [[ -n $1 ]]; then # view repo at specific commit
 		# TODO: git log oneline -> fzf
 		h=$(git rev-parse --short --verify HEAD)
-		URL="$repo/commit/$h"
-
-		# URL="$repo/tree/$1"
+		url="$repo/commit/$h"
 
 	else
-		URL="$repo"
+		url="$repo"
+
 	fi
 
-	# URL=$(sed -r 's/[^/]+@//' <<< "$URL")
+	url=$(_git_http "$url")
 
-	[[ $URL != http* ]] && URL=$(tr <<< "$URL" : / | sed -r 's|git@|https://|')
-
-	echo "$URL"
+	echo "$url"
 	# ubuntu is a pita:
 	# gio: ...: Failed to find default application for content type ‘text/html’
-	xdg-open "$URL" ||
-		firefox "$URL"
+	xdg-open "$url" ||
+		firefox "$url"
 }
 
 gnew() {
@@ -713,11 +697,10 @@ gd() {
 	if [[ $# -eq 0 ]]; then
 		git diff
 	elif
-		# no local changes, check against last commit
-		[[ $# -eq 1 ]] &&
-			git diff --exit-code "$1" > /dev/null
+		# file with no local changes (or hash?)
+		[[ $# -eq 1 ]] && git diff --exit-code "$1" > /dev/null
 	then
-		git diff HEAD^^ "$1"
+		git diff HEAD^^ "$1" # check against last commit
 	else
 		git diff "$@"
 	fi
@@ -744,9 +727,6 @@ gdm() {
 			[[ -f $f ]] && echo "$f"
 		done |
 		xargs git diff "$span"
-
-	# TODO: current branch -> mr number
-	# curl -sL -H "Cookie:_gitlab_session=$GL_SESSION" "https://gitlab.novum-engineering.com/external-services/novum-cloud/-/merge_requests/$mr.diff"
 
 	# https://gitlab.com/gitlab-org/cli/-/issues/7704
 
@@ -856,8 +836,60 @@ guns() {
 # 	ggiturl "$1" | xargs git clone
 # }
 
-# better to use glab probably
-# $(git config --get remote.origin.url)/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch
+# }}}
+# gitlab {{{
+
+gmr() {
+	branch=$(git branch --show-current)
+	url=$(git config --get remote.origin.url)
+	url=$(_git_http "$url")
+
+	if
+		n=$(glab mr list --source-branch "$branch" |
+			grep '^!' |
+			awk '{print $1}' |
+			tr -d '!')
+	then
+		echo "Opening MR $n"
+		url="$url/-/merge_requests/$n"
+	else
+		echo "Creating new MR"
+		url="$url/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch"
+	fi
+
+	xdg-open "$url" 2> /dev/null
+}
+
+gldiff() {
+
+	# note: for current branch, just use gdm
+	if [[ $# -eq 0 ]]; then
+		# TODO: sort by updated date?
+		n=$(glab mr list | #--reviewer=@me |
+			awk '{ $2=""; print $0 }' |
+			grep '^!' |
+			fzh |
+			awk '{print $1}' |
+			tr -d '!')
+		[[ -z $n ]] && return
+	else
+		n=$1
+	fi
+
+	url=$(git config --get remote.origin.url)
+	url=$(_git_http "$url")
+	url="$url/-/merge_requests/$n.diff"
+
+	# cannot use glab mr diff because diff is malformed
+	src=$(curl -sL -H "Cookie:_gitlab_session=$GL_SESSION" "$url")
+	if <<< "$src" grep -q "Sign in"; then
+		echo "GL_SESSION expired"
+		return
+	fi
+	echo "$src" | delta
+}
+
+gci() { watch -n 30 'glab ci list -P 10 | grep -P "^\(" | column -t'; }
 
 gcoup() {
 	: for a given file, show which files changed together
@@ -870,6 +902,14 @@ gcoup() {
 }
 
 # }}}
+
+# git diff blame
+# https://gist.github.com/maxrothman/d27bbc36f7c150924de6c6e54965de4d py
+# https://github.com/eantoranz/difflame py
+# https://github.com/dmnd/git-diff-blame pl
+
+# GitBlameOpenFileURL
+# $url/-/blob/$branch/$path
 
 # jj
 # jj git init --colocate
@@ -1237,6 +1277,19 @@ sq() {
 
 # docker {{{
 
+# alias dps='docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.ID}}\t{{.RunningFor}}" | sort'
+
+dps() {
+	# docker ps adds too much padding, and cannot truncate long values
+	docker ps -a --format=json |
+		# note: ID is usually just visual noise, but placing it any
+		# later in the seq will make it hard to extract (with cut/awk)
+		jq -r '[.Names[0:40], .State, .ID, .Status, .RunningFor] | @tsv' |
+		# jq -r '[.Names[0:40], .State, .ID, .Ports, .Status, .RunningFor] | @tsv' |
+		sort |
+		column -t -s $'\t' # https://unix.stackexchange.com/a/57235
+}
+
 doslow() {
 	: list slowest steps in a docker log
 
@@ -1530,22 +1583,29 @@ pacmir() {
 # 	echo "[$title]($1)"
 # }
 
-mw() {
-	cd ~/.mail/account.gmail || return
-	while true; do
-		# note: deleting empty dirs will almost certainly break sync
-		gmi pull
-		new=$(notmuch count tag:inbox and tag:unread and date:today)
-		if [[ $new -gt 0 ]]; then
-			notify-send -u critical "$new new mail"
-			# TODO: neomutt -F? use symlink? (neomuttrc -> neomuttrc_work)
-			neomutt
-		fi
-		sleep 15m
-	done
-}
+# mw() {
+# 	cd ~/.mail/account.gmail || return
+# 	while true; do
+# 		# note: deleting empty dirs will almost certainly break sync
+# 		gmi pull
+# 		new=$(notmuch count tag:inbox and tag:unread and date:today)
+# 		if [[ $new -gt 0 ]]; then
+# 			notify-send -u critical "$new new mail"
+# 			neomutt
+# 		fi
+# 		sleep 15m
+# 	done
+# }
 
 # }}}
+
+rge() {
+	: edit files matching pattern
+	rg --files-with-matches "$@" | sort -u | xargs nvim -p
+}
+
+# rg -U --multiline-dotall '^import.+?;'
+# similar for go; difficult for python if not one-per-line
 
 # uncommon
 

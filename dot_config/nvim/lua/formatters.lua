@@ -92,6 +92,7 @@ require("conform").setup({
 			args = { "fix", "-" }, -- dialect can only be specified via .sqruff
 			stdin = true,
 			exit_codes = { 0, 1 }, -- lol https://github.com/quarylabs/sqruff/issues/1134
+			cwd = require("util").root_directory, -- lol
 		},
 
 		sqlfluff = {
@@ -100,6 +101,7 @@ require("conform").setup({
 			-- in either case, no `dialect` usually leads to timeout
 			args = {
 				"format",
+				"--dialect=postgres",
 				"--processes=32", -- lol
 				"--exclude-rules",
 				"layout.long_lines",
@@ -220,13 +222,18 @@ require("conform").setup({
 			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party); TODO: investigate why this breaks in some dirs (e.g. linkedin)
 		},
 
-		sql = {
-			"sqruff", -- broken (again)
-			-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
-			-- do people rewrite in rust without feature parity?
-			"trim_newlines",
-			-- "sqlfluff",
-			-- stop_after_first = true,
-		},
+		-- -- broken again, disabled until further notice
+		-- sql = {
+		-- 	"sqruff",
+		-- 	-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
+		-- 	-- do people rewrite in rust without feature parity?
+		-- 	"trim_newlines",
+		-- 	-- "sqlfluff",
+		-- 	-- stop_after_first = true,
+		-- },
+
+		-- sql = {
+		-- 	"sqlfluff",
+		-- },
 	},
 })
