@@ -866,8 +866,10 @@ gldiff() {
 	if [[ $# -eq 0 ]]; then
 		# TODO: sort by updated date?
 		n=$(glab mr list | #--reviewer=@me |
-			awk '{ $2=""; print $0 }' |
+			sed -r 's/  +/\t/g' |
+			cut -d$'\t' -f1,3- |
 			grep '^!' |
+			column -t -s $'\t' |
 			fzh |
 			awk '{print $1}' |
 			tr -d '!')
