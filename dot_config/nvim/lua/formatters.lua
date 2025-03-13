@@ -59,14 +59,19 @@ require("conform").setup({
 			condition = function()
 				return not vim.loop.fs_stat(".prettierrc.json")
 			end,
-			args = vim.loop.fs_stat(require("util"):root_directory() .. "/biome.json") -- if biome.json exists, leave args unchanged
-					and { "format", "--stdin-file-path", "$FILENAME" }
-				or {
-					"format",
-					"--indent-style=space",
-					"--stdin-file-path",
-					"$FILENAME",
-				},
+			-- if biome.json exists at root, use it and leave args unchanged
+			args = require("util"):root_directory() and vim.loop.fs_stat(
+				require("util"):root_directory() .. "/biome.json"
+			) and {
+				"format",
+				"--stdin-file-path",
+				"$FILENAME",
+			} or {
+				"format",
+				"--indent-style=space",
+				"--stdin-file-path",
+				"$FILENAME",
+			},
 		},
 
 		-- note: for <script> to be formatted properly, type= is required
@@ -166,7 +171,7 @@ require("conform").setup({
 			-- extra/texlive-luatex
 			-- texlive-fontsrecommended
 			command = "/usr/bin/latexindent",
-			args = { "-g", "/dev/null" },
+			args = { "--logfile=/dev/null" },
 		},
 	},
 
@@ -175,10 +180,10 @@ require("conform").setup({
 		-- Conform will run multiple formatters sequentially
 		-- all formatters will be run non-async
 
-		-- bash = { "shfmt" }, -- bash is not a filetype!
 		-- jq = { "jq" }, -- jq only formats json (duh)
 		-- ocaml = { "ocamlformat" },
 		["_"] = { "trim_whitespace", "trim_newlines" },
+		bash = { "shfmt", "shellharden" }, -- bash ft is only via modeline (?)
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
 		css = { "prettier" },
@@ -202,7 +207,7 @@ require("conform").setup({
 		javascript = js_formatters,
 		javascriptreact = js_formatters,
 		json = js_formatters,
-		jsonc = js_formatters,
+		jsonc = js_formatters, -- TODO: biome selects parser based on file ext if it is not "special" (e.g. tsconfig.json)
 		typescript = js_formatters,
 		typescriptreact = js_formatters,
 
@@ -211,12 +216,12 @@ require("conform").setup({
 
 			"gofumpt", -- https://github.com/mvdan/gofumpt?tab=readme-ov-file#added-rules
 			"golines", -- https://github.com/segmentio/golines#motivation https://github.com/segmentio/golines?tab=readme-ov-file#struct-tag-reformatting
+			"goimports", -- required for autoimport (null_ls), but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party); TODO: investigate why this breaks in some dirs (e.g. linkedin)
-			-- "goimports", -- required for autoimport (null_ls), but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 		},
 
 		sql = {
-			"sqruff",
+			"sqruff", -- broken (again)
 			-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
 			-- do people rewrite in rust without feature parity?
 			"trim_newlines",
