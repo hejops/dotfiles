@@ -87,6 +87,7 @@ require("conform").setup({
 			args = { "fix", "-" }, -- dialect can only be specified via .sqruff
 			stdin = true,
 			exit_codes = { 0, 1 }, -- lol https://github.com/quarylabs/sqruff/issues/1134
+			cwd = require("util").root_directory, -- lol
 		},
 
 		sqlfluff = {
@@ -95,6 +96,7 @@ require("conform").setup({
 			-- in either case, no `dialect` usually leads to timeout
 			args = {
 				"format",
+				"--dialect=postgres",
 				"--processes=32", -- lol
 				"--exclude-rules",
 				"layout.long_lines",
@@ -211,16 +213,20 @@ require("conform").setup({
 			"gofumpt", -- https://github.com/mvdan/gofumpt?tab=readme-ov-file#added-rules
 			"golines", -- https://github.com/segmentio/golines#motivation https://github.com/segmentio/golines?tab=readme-ov-file#struct-tag-reformatting
 			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party); TODO: investigate why this breaks in some dirs (e.g. linkedin)
-			-- "goimports", -- required for autoimport (null_ls), but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
+			"goimports", -- required for autoimport (null_ls), but not for formatting -- https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 		},
 
-		sql = {
-			"sqruff",
-			-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
-			-- do people rewrite in rust without feature parity?
-			"trim_newlines",
-			-- "sqlfluff",
-			-- stop_after_first = true,
-		},
+		-- sql = {
+		-- 	"sqruff",
+		-- 	-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
+		-- 	-- do people rewrite in rust without feature parity?
+		-- 	"trim_newlines",
+		-- 	-- "sqlfluff",
+		-- 	-- stop_after_first = true,
+		-- },
+
+		-- sql = {
+		-- 	"sqlfluff",
+		-- },
 	},
 })
