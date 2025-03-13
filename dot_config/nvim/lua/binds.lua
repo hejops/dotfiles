@@ -105,17 +105,25 @@ vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
 -- commands
 -- vim.keymap.set("n", "<c-s>", ":keepjumps normal! mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
 -- vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
+-- vim.keymap.set("n", "<leader>T", ":tabe " .. vim.fn.expand("%:p:h")) -- expanded only once!
 vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true }) -- vim's sort n is not at all like !sort -V
 vim.keymap.set("n", "<f10>", ":colo<cr>")
 vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 vim.keymap.set("n", "<leader>D", [[:g/\v/d<Left><Left>]])
-vim.keymap.set("n", "<leader>T", ":tabe " .. vim.fn.expand("%:p:h")) -- pwd for explicitness
 vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- remove all undos -- https://stackoverflow.com/a/47524696
 vim.keymap.set("n", "<leader>n", [[:%g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("n", "<leader>r", [[:%s/\v/g<Left><Left>]]) -- TODO: % -> g/PATT/
 vim.keymap.set("v", "D", [[:g/\v/d<Left><Left>]]) -- delete lines
 vim.keymap.set("v", "n", [[:g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
+
+vim.keymap.set("n", "<leader>T", function()
+	vim.api.nvim_feedkeys(
+		":tabe " .. vim.fn.expand("%:p:h"), -- .. "/",
+		"n",
+		false
+	)
+end)
 
 -- context dependent binds
 -- https://github.com/neovim/neovim/blob/012cfced9b5/runtime/doc/lua-guide.txt#L450
@@ -287,6 +295,48 @@ local function serde_value_to_struct()
 	vim.api.nvim_paste(new .. "\n", false, -1)
 end -- }}}
 
+local function debug_print(cmd)
+	-- {{{
+	local filetypes = {
+
+		c = "printf(@);",
+		elixir = "IO.puts(@)",
+		gleam = "io.debug(@)",
+		go = "fmt.Println(@)", -- fmt.Printf("%+v\n", @)
+		javascript = "console.log(@);",
+		javascriptreact = "console.log(@);",
+		lua = "print(@)", -- print(vim.inspect(@))
+		python = "print(@)",
+		rust = 'println!("{:?}", @);', -- println!("{:#?}", @);
+		sh = 'echo "$@"',
+		typescript = "console.log(@);",
+		typescriptreact = "console.log(@);",
+		zig = [[std.debug.print("{any}\n", .{@});]],
+	}
+
+	local ft = vim.bo.filetype
+	cmd = cmd or filetypes[ft]
+	if cmd == nil then
+		print("No printer configured for " .. ft)
+		return
+	end
+
+	local cmd_split = {}
+	for s in string.gmatch(cmd, "([^@]+)") do
+		-- print(s)
+		table.insert(cmd_split, s)
+	end
+
+	local left = cmd_split[1]
+	local right = cmd_split[2]
+
+	vim.cmd.norm("o" .. left .. right)
+	if string.len(right) > 1 then
+		vim.cmd.norm(string.len(right) - 1 .. "h")
+	end
+	vim.cmd.startinsert()
+end -- }}}
+
 -- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
 ---@type {[string]: { mode: string, lhs: string, rhs: string|function, opts: table? }[]}
 local ft_binds = { -- {{{
@@ -335,6 +385,25 @@ local ft_binds = { -- {{{
 	man = {
 		{ "n", "J", "<c-f>zz" },
 		{ "n", "K", "<c-b>zz" },
+	},
+
+	yaml = {
+		{
+			"n",
+			")",
+			function()
+				vim.fn.search([[^\S\+:]], "W")
+				vim.cmd.norm("zt")
+			end,
+		},
+		{
+			"n",
+			"(",
+			function()
+				vim.fn.search([[^\S\+:]], "Wb")
+				vim.cmd.norm("zt")
+			end,
+		},
 	},
 
 	sql = {
@@ -398,6 +467,7 @@ local ft_binds = { -- {{{
 
 	["sh,bash"] = {
 		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>" },
+		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
 	},
 
 	["typescript,javascript,typescriptreact,javascriptreact"] = {
@@ -455,6 +525,14 @@ local ft_binds = { -- {{{
 
 		-- arrow methods -> regular methods (use with caution)
 		-- %s/\v^  (\w+) \= (async )?(.+)\=\>/\2\1\3/g
+
+		{
+			"n",
+			"<leader>)", -- leader A = code action
+			function()
+				debug_print("(async () => {@})();")
+			end,
+		},
 
 		-- {
 		-- 	"x",
@@ -748,9 +826,14 @@ local function get_ts_runner(file)
 	vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
 	file = vim.fn.expand("%:.") -- relative to child dir
 
-	if vim.loop.fs_stat(".env") and vim.fn.executable("node23") then
-		return "node23 --no-warnings --import=tsx --env-file=.env " .. file
-	elseif node_version >= "v22.7.0" then -- 2x faster than tsx, but not guaranteed to work
+	-- if vim.loop.fs_stat(".env") and vim.fn.executable("node23") then
+	-- 	return "node23 --no-warnings --import=tsx --env-file=.env " .. file
+
+	-- TODO: must use tsx if any file imports are needed; node imports must
+	-- specify file ext (fixable at top-level imports, but not at subsequent
+	-- imports)
+
+	if node_version >= "v22.7.0" then -- 2x faster than tsx, but not guaranteed to work
 		-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
 		return "node --experimental-strip-types --experimental-transform-types " .. file
 	elseif node_version >= "v22.6.0" then
@@ -896,7 +979,7 @@ local function exec()
 		-- to not only know where we used to be, but also run the basename.go
 		-- correctly
 		-- inexplicably, go 1.24 (?) may no longer write to stdout from within nvim shell
-		go = string.format([[ cd %s; go run ./*.go | sponge /dev/stdout ]], cwd),
+		go = string.format([[ cd %s; go run ./*.go 2>&1 | sponge /dev/stdout ]], cwd),
 		-- .. "ls *.go | " -- import functions from same package; https://stackoverflow.com/a/43953582
 		-- .. "grep -v _test | " -- ignore test files (ugh)
 		-- .. "xargs go run",
@@ -966,47 +1049,6 @@ local function exec()
 end -- }}}
 vim.keymap.set("n", "<leader>x", exec, { silent = true })
 
-local function debug_print()
-	-- {{{
-	local filetypes = {
-
-		c = "printf(@);",
-		elixir = "IO.puts(@)",
-		gleam = "io.debug(@)",
-		go = "fmt.Println(@)", -- fmt.Printf("%+v\n", @)
-		javascript = "console.log(@);",
-		javascriptreact = "console.log(@);",
-		lua = "print(@)", -- print(vim.inspect(@))
-		python = "print(@)",
-		rust = 'println!("{:?}", @);', -- println!("{:#?}", @);
-		sh = 'echo "$@"',
-		typescript = "console.log(@);",
-		typescriptreact = "console.log(@);",
-		zig = [[std.debug.print("{any}\n", .{@});]],
-	}
-
-	local ft = vim.bo.filetype
-	local cmd = filetypes[ft]
-	if cmd == nil then
-		print("No printer configured for " .. ft)
-		return
-	end
-
-	local cmd_split = {}
-	for s in string.gmatch(cmd, "([^@]+)") do
-		-- print(s)
-		table.insert(cmd_split, s)
-	end
-
-	local left = cmd_split[1]
-	local right = cmd_split[2]
-
-	vim.cmd.norm("o" .. left .. right)
-	if string.len(right) > 1 then
-		vim.cmd.norm(string.len(right) - 1 .. "h")
-	end
-	vim.cmd.startinsert()
-end -- }}}
 vim.keymap.set("n", "<leader>p", debug_print, { silent = true })
 
 local function yank_path()
