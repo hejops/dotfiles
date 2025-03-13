@@ -1558,7 +1558,11 @@ mw() {
 
 files() {
 	: list files in use by a process
-	pidof "$1" | xargs -n1 lsof -p | grep -Po '/[a-z].+' | sort -u
+	pidof "$1" |
+		xargs -n1 lsof -p |
+		grep -Po '/[a-z].+' |
+		sort -u |
+		grep -P --color=never '^/(home|run)'
 }
 
 _unused() {
