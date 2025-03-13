@@ -222,8 +222,6 @@ vim.api.nvim_create_autocmd("TermOpen", {
 -- 	end,
 -- })
 
-vim.api.nvim_create_autocmd("VimLeave", { command = "Lazy clean" })
-
 -- FileType {{{
 
 vim.api.nvim_create_autocmd("FileType", {
@@ -367,3 +365,18 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 -- }}}
+
+vim.api.nvim_create_autocmd("VimLeave", {
+	command = "Lazy clean",
+	-- callback = function()
+	-- 	vim.cmd("Lazy clean")
+	-- 	os.execute("notify-send bye")
+	-- end,
+})
+
+vim.api.nvim_create_autocmd("VimLeave", {
+	pattern = { "*.tex" },
+	callback = function()
+		os.execute("pkill zathura")
+	end,
+})

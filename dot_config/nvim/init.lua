@@ -85,57 +85,36 @@ vim.api.nvim_create_autocmd({
 	end,
 })
 
--- tectonic integration in vimtex is pretty poor
-
--- if vim.loop.fs_stat("Tectonic.toml") then
--- 	-- https://github.com/IndianBoy42/LunarVim/blob/170df925da72f617d70326b28e558502a67f1003/lua/lv-vimtex/init.lua#L12
--- 	vim.g.vimtex_compiler_tectonic = {
--- 		["options"] = { "--synctex", "--keep-logs" },
--- 	}
--- 	vim.g.vimtex_compiler_generic = { cmd = "watchexec -e tex -- tectonic --synctex --keep-logs *.tex" }
--- 	vim.g.vimtex_compiler_method = "tectonic"
--- 	-- vim.g.vimtex_view_method = "skim"
--- end
-
 -- hacked together from exec
 local function tectonic_build() -- {{{
+	if not vim.loop.fs_stat("Tectonic.toml") then
+		return
+	end
+
 	require("util"):close_unnamed_splits()
 
-	-- tectonic build is slow, and should always be started in background
+	vim.cmd("Make build") -- or Dispatch?
+
 	vim.fn.jobstart([[
-tectonic -X build 2>&1 > ./src/tectonic.log ;
 lsof ./build/default/default.pdf > /dev/null 2> /dev/null || zathura ./build/default/default.pdf 2> /dev/null &
 ]])
-
-	-- TODO: ensure file reloaded after build finish (currently, loads only log
-	-- of previous build due to async jobstart)
-	require("util"):open_split("./src/tectonic.log")
 end -- }}}
 
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 	pattern = { "*.tex" },
-	callback = function()
-		-- relies on correct project path
-		if vim.loop.fs_stat("Tectonic.toml") then
-			tectonic_build()
-			-- elseif in_tex() then
-			-- 	vim.cmd("VimtexCompile")
-			-- 	vim.cmd("VimtexClean")
-		end
-	end,
+	callback = tectonic_build,
 })
 
 vim.api.nvim_create_autocmd({ "VimEnter" }, {
-	pattern = {
-		"*.tex",
-		-- "*.cls",
-	},
+	pattern = { "*.tex" },
+	callback = tectonic_build,
+})
+
+vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+	pattern = { "*.sql" },
 	callback = function()
-		if vim.loop.fs_stat("Tectonic.toml") then
-			tectonic_build()
-			-- elseif in_tex() then
-			-- 	vim.cmd("VimtexCompile")
-			-- 	vim.cmd("VimtexClean")
+		if vim.loop.fs_stat("sqlc.yaml") then
+			vim.cmd("Dispatch sqlc vet && sqlc generate")
 		end
 	end,
 })

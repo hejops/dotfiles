@@ -177,9 +177,10 @@ require("conform").setup({
 		-- Conform will run multiple formatters sequentially
 		-- all formatters will be run non-async
 
+		-- bash = { "shfmt" }, -- bash is not a filetype!
+		-- jq = { "jq" }, -- jq only formats json (duh)
 		-- ocaml = { "ocamlformat" },
 		["_"] = { "trim_whitespace", "trim_newlines" },
-		bash = { "shfmt" },
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
 		css = { "prettier" },
@@ -193,7 +194,7 @@ require("conform").setup({
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },
 		scss = { "prettier" },
-		sh = { "shfmt" },
+		sh = { "shfmt", "shellharden" },
 		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
