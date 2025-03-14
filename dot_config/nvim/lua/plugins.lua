@@ -613,10 +613,7 @@ require("lazy").setup(
 			end,
 		}, -- }}}
 		{ -- nvim-dbee {{{
-			-- "kndndrj/nvim-dbee",
-			"hejops/nvim-dbee",
-			-- commit = "4562e67",
-			branch = "focus-result",
+			"kndndrj/nvim-dbee",
 
 			-- + api is quite hackable
 			-- + implements pagination (good for large queries)
