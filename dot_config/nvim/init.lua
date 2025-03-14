@@ -39,7 +39,9 @@ vim.api.nvim_create_autocmd({ "BufReadPost" }, {
 			print("No config.yml found, sqls will not be started")
 		end
 
-		-- somehow this works, even though we haven't `require`d formatters yet
+		-- somehow this works, even though we haven't `require`d formatters yet.
+		-- specifically, the option is set after buffer is loaded (so we can get
+		-- the lines), and (possibly) before conform:format is called
 		local d = require("util"):sql_dialect()
 		table.insert(require("conform").formatters.sqlfluff.args, 2, "--dialect=" .. d)
 		table.insert(require("lint").linters.sqlfluff.args, 2, "--dialect=" .. d)
@@ -92,6 +94,11 @@ local function tectonic_build() -- {{{
 	end
 
 	require("util"):close_unnamed_splits()
+
+	-- .PHONY: build
+	--
+	-- build:
+	-- 	tectonic -X build
 
 	vim.cmd("Make build") -- or Dispatch?
 
@@ -318,7 +325,7 @@ end)
 vim.keymap.set("n", "<leader>ng", require("neogen").generate, { noremap = true, silent = true })
 
 -- }}}
--- navigator: telescope {{{
+-- telescope {{{
 
 -- must be declared after loading plugins
 local telescope = require("telescope")
@@ -491,7 +498,7 @@ require("formatters")
 -- completer: nvim-cmp + luasnip {{{
 local cmp = require("cmp")
 local luasnip = require("luasnip")
-require("luasnip.loaders.from_vscode").load({
+require("luasnip.loaders.from_vscode").load({ -- `from_vscode` is a misleading name; this is for friendly-snippets
 	include = {
 		-- i only need snippets for languages without an lsp (e.g. htmldjango)
 
@@ -557,9 +564,6 @@ cmp.setup({
 		-- { name = "gitcommit" }, -- dunno how this is supposed to work -- https://github.com/Cassin01/cmp-gitcommit#usage
 	},
 })
--- cmp.setup.filetype({ "sql" }, {
--- 	sources = { { name = "vim-dadbod-completion" } },
--- })
 
 require("cmp-gitcommit").setup({}) -- i don't really use this
 
