@@ -275,4 +275,31 @@ function M:sql_dialect()
 	return default
 end
 
+local function pg_connection_ok(conn)
+	return conn and M:command_ok(string.format([[psql %s -c '\dt']], conn))
+end
+
+---@return { name: string, type: string, url: string }[]
+function M:dbee_connections()
+	-- TODO: connect to db specified in config.yml?
+
+	local connections = {}
+
+	local f = vim.env.HOME .. "/gripts/disq/collection2.db"
+	if vim.loop.fs_stat(f) then
+		table.insert(connections, { name = "foo", type = "sqlite", url = f })
+	end
+
+	local rental = "postgres://postgres:postgres@localhost:5432/dvdrental?sslmode=disable"
+	if pg_connection_ok(rental) then
+		table.insert(connections, { name = "neon", type = "postgres", url = rental })
+	end
+
+	if pg_connection_ok(vim.env.POSTGRES_URL) then
+		table.insert(connections, { name = "work", type = "postgres", url = vim.env.POSTGRES_URL })
+	end
+
+	return connections
+end
+
 return M

@@ -638,20 +638,9 @@ require("lazy").setup(
 				require("dbee").setup({
 
 					sources = {
-						require("dbee.sources").MemorySource:new({
-							{
-								name = "foo",
-								type = "sqlite",
-								url = os.getenv("HOME") .. "/gripts/disq/collection2.db",
-							},
-							{
-								name = "neon",
-								type = "postgres",
-								url = "postgres://postgres:postgres@localhost:5432/dvdrental?sslmode=disable",
-							},
-						}),
-						require("dbee.sources").EnvSource:new("DBEE_CONNECTIONS"),
-						require("dbee.sources").FileSource:new(vim.fn.stdpath("cache") .. "/dbee/persistence.json"),
+						require("dbee.sources").MemorySource:new(require("util"):dbee_connections()),
+						-- require("dbee.sources").EnvSource:new("DBEE_CONNECTIONS"),
+						-- require("dbee.sources").FileSource:new(vim.fn.stdpath("cache") .. "/dbee/persistence.json"),
 					},
 
 					editor = {
@@ -677,9 +666,12 @@ require("lazy").setup(
 					}),
 				})
 
-				-- TODO: connect to db specified in config.yml
 				local c = require("dbee").api.core.get_current_connection()
-				print(string.format("Connected to database %s (%s)", c.name, c.url))
+				if c then
+					print(string.format("dbee: connected to database %s (%s)", c.name, c.url))
+				else
+					print("dbee: no connection")
+				end
 			end,
 		}, -- }}}
 
