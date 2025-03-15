@@ -276,7 +276,8 @@ function M:sql_dialect()
 end
 
 local function pg_connection_ok(conn)
-	return conn and M:command_ok(string.format([[psql %s -c '\dt']], conn))
+	-- pipe to cat to avoid pager
+	return conn and M:command_ok(string.format([[psql %s -c '\dt' | cat]], conn))
 end
 
 ---@return { name: string, type: string, url: string }[]
