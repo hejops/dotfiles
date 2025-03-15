@@ -92,7 +92,8 @@ require("conform").setup({
 			args = { "fix", "-" }, -- dialect can only be specified via .sqruff
 			stdin = true,
 			exit_codes = { 0, 1 }, -- lol https://github.com/quarylabs/sqruff/issues/1134
-			cwd = require("util").root_directory, -- lol
+			-- cwd = require("util").root_directory,
+			cwd = require("lspconfig").util.root_pattern(".sqruff"),
 		},
 
 		sqlfluff = {
