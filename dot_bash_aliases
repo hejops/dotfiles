@@ -1275,6 +1275,17 @@ sq() {
 	# echo "Not a file: $1"
 }
 
+sqbrk() {
+	# sqruff fix -f=json --force gripts/disq/queries/*.sql |
+	sqruff fix -f=json --force "$@" |
+		jq -r 'to_entries[] | .value=.value[].range.start.line | [.key, .value|tostring] | join("\t")' |
+		while read -r f lnum; do
+			# TODO: nothing can be done about url comments that are
+			# too long (other than removing them)
+			line=$(sed "${lnum}q;d" "$f")
+		done
+}
+
 # }}}
 
 # docker {{{
