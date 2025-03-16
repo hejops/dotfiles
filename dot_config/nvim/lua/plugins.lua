@@ -894,12 +894,17 @@ require("lazy").setup(
 			end,
 		},
 
-		"bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
-		"ingsme/nvim-smyck.nvim", -- 'hybrid', italic comments
-		"uncleten276/dark_flat.nvim", -- italic comments
+		{ "bluz71/vim-moonfly-colors", lazy = true }, -- pub and fn same color
 		{ "iagorrr/noctis-high-contrast.nvim", lazy = true }, -- italic comments/types
-		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets) -- TODO: https://stackoverflow.com/a/42021818
+		{ "ingsme/nvim-smyck.nvim", lazy = true }, -- 'hybrid', italic comments
 		{ "tomasr/molokai", lazy = true }, -- italic types/funcs, bold keywords
+		{ "uncleten276/dark_flat.nvim", lazy = true }, -- italic comments
+
+		{
+			"judaew/ronny.nvim",
+			lazy = true,
+			enabled = vim.fn.executable("git-lfs"), --  TODO: https://stackoverflow.com/a/42021818
+		},
 
 		-- "abstract-ide/abstract-cs", -- unreadable comments
 		-- "ajmwagar/vim-deus", -- mono tabline
