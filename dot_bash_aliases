@@ -1614,7 +1614,12 @@ pacmir() {
 
 rge() {
 	: edit files matching pattern
-	rg --files-with-matches "$@" | sort -u | xargs nvim -p
+	files=$(rg --files-with-matches "$@" | sort -u)
+	if [[ $(<<< "$files" wc -l) -gt 10 ]]; then
+		echo "More than 10 files found"
+		return
+	fi
+	echo "$files" | xargs nvim -p
 }
 
 # rg -U --multiline-dotall '^import.+?;'
