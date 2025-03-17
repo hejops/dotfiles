@@ -307,11 +307,12 @@ _git_log_fzf() {
 	args=()
 
 	m=$(_gmaster)
-	if [[ $(git branch --show-current) == $m ]]; then
+	if [[ $(git branch --show-current) == "$m" ]]; then
 		:
 	elif [[ -f $1 ]] || [[ -d $1 ]]; then
 		args+=("$@")
-	elif [[ -n $m ]]; then # dev branch
+		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
+	elif [[ -n $m ]]; then                                                        # dev branch
 		args+=("$m...HEAD")
 	else
 		: no remote yet
