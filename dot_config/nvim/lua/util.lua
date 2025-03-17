@@ -75,23 +75,6 @@ function M:buf_loaded(fname)
 	return false
 end
 
-function M:open_split(file)
-	if not M:buf_loaded(vim.fs.basename(file)) then
-		local h = vim.o.lines * 0.2
-		local cmd = h .. " new " .. file
-		vim.cmd(cmd)
-		vim.cmd.wincmd("k")
-	end
-end
-
-function M:close_unnamed_splits()
-	for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_get_name(bufnr) == "" then
-			vim.api.nvim_buf_delete(bufnr, { force = true })
-		end
-	end
-end
-
 -- }}}
 
 -- ui {{{
@@ -128,6 +111,30 @@ function M:get_layout_strategy()
 		return "horizontal"
 	end
 end
+
+function M:open_split(file)
+	if not M:buf_loaded(vim.fs.basename(file)) then
+		local h = vim.o.lines * 0.2
+		local cmd = h .. " new " .. file
+		vim.cmd(cmd)
+		vim.cmd.wincmd("k")
+	end
+end
+
+function M:close_unnamed_splits()
+	for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_get_name(bufnr) == "" then
+			vim.api.nvim_buf_delete(bufnr, { force = true })
+		end
+	end
+end
+
+function M:open_float(lines)
+	-- https://github.com/neovim/neovim/blob/51ccd12b3db/runtime/lua/vim/lsp/buf.lua#L133
+	vim.lsp.util.open_floating_preview(lines, "text")
+end
+
+-- vim.keymap.set("n", "<leader>X", , { silent = true })
 
 function M:random_colorscheme() -- {{{
 	-- sliced and diced from tssm/nvim-random-colors
@@ -216,12 +223,14 @@ function M:in_git_repo()
 	return M:command_ok("git rev-parse --is-inside-work-tree >/dev/null 2>/dev/null")
 end
 
--- get git repo root, ignoring all possible child directories
+-- attempt to get git repo root, ignoring all possible child directories
+---@return string|nil
 function M:root_directory()
 	local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
 	local toplevel = vim.fn.system(cmd)
 	if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
-		return vim.fn.getcwd()
+		-- return vim.fn.getcwd()
+		return nil
 	end
 	return toplevel:sub(0, -2)
 end
@@ -275,7 +284,8 @@ function M:sql_dialect()
 end
 
 local function pg_connection_ok(conn)
-	return conn and M:command_ok(string.format([[psql %s -c '\dt']], conn))
+	-- pipe to cat to avoid pager
+	return conn and M:command_ok(string.format([[psql %s -c '\dt' | cat]], conn))
 end
 
 ---@return { name: string, type: string, url: string }[]
