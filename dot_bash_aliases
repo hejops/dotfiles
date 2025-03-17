@@ -320,7 +320,8 @@ _git_log_fzf() {
 		: no remote yet
 	fi
 
-	git log --oneline "${args[@]}" |
+	# there is nothing to see in merge commits
+	git log --oneline --no-merges "${args[@]}" |
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
