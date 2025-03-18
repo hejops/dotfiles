@@ -999,6 +999,7 @@ local function exec()
 		["javascript.mongo"] = string.format(
 			-- -f FILE requires FILE to be mongosh (not js)
 			[[mongosh %s --authenticationDatabase admin --quiet --eval < %s | sed -r 's/^\S+>[ .]*//g']],
+			-- .. [[ | node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq]],
 			vim.env.MONGO_URL,
 			curr_file
 		),
