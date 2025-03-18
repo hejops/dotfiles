@@ -908,7 +908,9 @@ end -- }}}
 local function exec()
 	-- {{{
 	-- running tests is better left to the terminal itself (e.g. wezterm)
-	local curr_file = vim.fn.expand("%") -- relative to cwd
+
+	-- relative to cwd
+	local curr_file = vim.fn.expand("%")
 	local ft = vim.bo.filetype
 
 	if vim.bo.filetype == "nofile" then
@@ -995,7 +997,8 @@ local function exec()
 		typescript = get_ts_runner, --(curr_file),
 
 		["javascript.mongo"] = string.format(
-			"mongosh %s --authenticationDatabase admin --eval < %s",
+			-- -f FILE requires FILE to be mongosh (not js)
+			[[mongosh %s --authenticationDatabase admin --quiet --eval < %s | sed -r 's/^\S+>[ .]*//g']],
 			vim.env.MONGO_URL,
 			curr_file
 		),
