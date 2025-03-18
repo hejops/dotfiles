@@ -16,6 +16,7 @@ vim.filetype.add({
 		[".env"] = "dotenv",
 		["Dockerfile"] = "dockerfile",
 		["docker-compose.yml"] = "yaml.docker-compose",
+		["mongo.js"] = "javascript.mongo",
 		["yarn.lock"] = "text", -- default is yaml for some reason
 	},
 })

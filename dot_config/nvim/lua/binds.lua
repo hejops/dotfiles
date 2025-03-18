@@ -994,6 +994,12 @@ local function exec()
 		-- sql = get_sql_cmd, --(curr_file),
 		typescript = get_ts_runner, --(curr_file),
 
+		["javascript.mongo"] = string.format(
+			"mongosh %s --authenticationDatabase admin --eval < %s",
+			vim.env.MONGO_URL,
+			curr_file
+		),
+
 		-- note that :new brings us to repo root (verify with :new|pwd), so we need
 		-- to not only know where we used to be, but also run the basename.go
 		-- correctly
