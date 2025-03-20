@@ -39,6 +39,7 @@ alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit" # TODO: handle >1 video device (just increment n until file not exist)
 alias ci="chromium --incognito"
+alias colt="column -t -s$'\t'" # align tab-containing output
 alias cpu="top -b -n1 -o %CPU | grep -m10 \$USER"
 alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
 alias cv="\$EDITOR ~/cv/src/index.tex"
@@ -1270,6 +1271,10 @@ mch() {
 # }}}
 # sql {{{
 
+if [[ -n $POSTGRES_URL ]]; then
+	alias psql="psql \$POSTGRES_URL"
+fi
+
 sq() {
 
 	# TODO: sqlite in prod
@@ -1301,9 +1306,69 @@ sqbrk() {
 		done
 }
 
+psqlj() {
+	: convert psql output to jq
+	# useful for times when it is easier to write jq than sql
+	# https://www.pgcasts.com/episodes/generating-json-from-sql
+	psql "$POSTGRES_URL" -c "select row_to_json(t) from ($1) t" |
+		grep -Po '\{.+' |
+		jq
+}
+
+# }}}
+# jq {{{
+
+alias jqc="jq -c" # basically just colors output
+
+jqk() {
+
+	: https://gist.github.com/pedroxs/f0ee8c515eea0dbce2e23eea7c048e10#file-jq-filters-sh-L2
+	jq < /dev/stdin -r '.. | objects | with_entries(select(.key | contains("'"$1"'"))) | select(. != {}) | .'"$1"
+}
+
+jqt() {
+
+	: select jq fields and format as tsv with alignment
+	fields=()
+	for x in "$@"; do
+		fields+=(".$x")
+	done
+	query="$(ajoin "${fields[@]}")" # .foo,.bar,.baz
+
+	# query="[$(echo "$@" | sjoin ,)]"
+
+	jq -r "[$query] | @tsv" | colt
+
+}
+
 # }}}
 
 # docker {{{
+
+alias dolf='docker logs --tail=1 -f'
+
+dolc() {
+	: clear logs of docker image without restart
+	# https://stackoverflow.com/a/42510314
+	[[ $# -eq 0 ]] && return
+	name=$1
+	json="$(docker inspect --format='{{.LogPath}}' "$name")"
+	# [[ ! -f $json ]] && return
+	sudo ls "$json" > /dev/null || return
+	# doesn't work for go binary? file -is- cleared, but `docker logs` still produces old output
+	: | sudo tee "$json"
+	sudo du "$json"
+	echo "cleared $name $json"
+
+	# remove lines with null bytes
+	# https://stackoverflow.com/a/77907885
+	sudo grep -r -l -a -P '\x00' /var/lib/docker/containers/ |
+		while read -r f; do
+			sudo perl -pi -e 's/\x00//g' "$f"
+		done
+
+	# dolf "$name"
+}
 
 # alias dps='docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.ID}}\t{{.RunningFor}}" | sort'
 
@@ -1312,7 +1377,7 @@ dps() {
 	docker ps -a --format=json |
 		# note: ID is usually just visual noise, but placing it any
 		# later in the seq will make it hard to extract (with cut/awk)
-		jq -r '[.Names[0:40], .State, .ID, .Status, .RunningFor] | @tsv' |
+		jqt 'Names[0:40]' State ID Status RunningFor |
 		# jq -r '[.Names[0:40], .State, .ID, .Ports, .Status, .RunningFor] | @tsv' |
 		sort |
 		column -t -s $'\t' # https://unix.stackexchange.com/a/57235
@@ -1469,37 +1534,72 @@ j() {
 	"$EDITOR" "$sel"
 }
 
+files() {
+	: list files in use by a process
+	pidof "$1" |
+		xargs -n1 lsof -p |
+		grep -Po '/[a-z].+' |
+		sort -u |
+		grep -P --color=never '^/(home|run)'
+}
+
 # }}}
 # stdout manipulation {{{
 
-append() { < /dev/stdin awk '{print $0 "'"$1"'"}'; }
+append() { < /dev/stdin awk "{print \$0 \"$1\"}"; }
+desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; }            # for ease of filtering logs
 largs() { < /dev/stdin xargs --no-run-if-empty --delimiter='\n' "$@"; } # split xargs by newline instead of space
-prepend() { < /dev/stdin awk '{print "'"$1"'" $0}'; }
+ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; }                      # lines to comma-delimited str
+paren() { < /dev/stdin prepend '(' | append ')'; }
+prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
 sum() { < /dev/stdin paste -sd+ | bc; }
+surround() { < /dev/stdin awk "{print \"$1\" \$0 \"$1\"}"; }
+tojson() { node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq; }
+line() { < /dev/stdin sed -n "${1}p"; }
 
-jqk() {
-	: https://gist.github.com/pedroxs/f0ee8c515eea0dbce2e23eea7c048e10#file-jq-filters-sh-L2
-	jq < /dev/stdin -r '.. | objects | with_entries(select(.key | contains("'"$1"'"))) | select(. != {}) | .'"$1"
+ajoin() {
+	: join space-delimited array
+	# # https://stackoverflow.com/a/9429887
+
+	# stdin=$(< /dev/stdin)
+	# if [[ -n $stdin ]]; then
+	# 	# mapfile -t input < /dev/stdin
+	# 	mapfile -t input < <(echo "$stdin" | \xargs -n1) # bruh
+	# else
+	# 	input=("$@")
+	# fi
+
+	input=("$@")
+	IFS=,
+	echo "${input[*]}"
 }
 
 dehtml() {
 	# https://stackoverflow.com/a/19878198
-	sed < /dev/stdin -e 's/<br[^>]*>/\n/g; s/<[^>]*>//g' |
+	< /dev/stdin sed -e 's/<br[^>]*>/\n/g; s/<[^>]*>//g' |
 		# recode xml..utf8 |
 		# https://stackoverflow.com/a/13161719
 		perl -MHTML::Entities -pe 'decode_entities($_);'
 }
 
-yti() {
-	: get info for currently playing file with youtube id
-	# www-watch?v=bMEfWLA-V00.mp3
-	pactl list sink-inputs |
-		grep media.name |
-		cut -d= -f3 |
-		cut -d. -f1 |
-		prepend 'https://youtube.com/watch?v=' |
-		xargs yt-dlp -j 2> /dev/null |
-		jq -r .title
+plot() {
+	: plot latency from json logs
+	script=$(
+		# https://unix.stackexchange.com/a/754698
+		# https://superuser.com/a/108380
+		cat <<- EOF
+			set ylabel 'ms';
+			set xdata time;
+			set timefmt '%Y-%m-%dT%H:%M';
+			plot '-' using 1:(\$2/1000000)
+		EOF
+	)
+	# echo "$script"
+	< "$1" grep latency |
+		grep -Fv -e null -e '={' | # remove invalid nested json
+		# tail -n10000 |
+		jqt time[0:16] latency |
+		gnuplot -p -e "$script"
 }
 
 # }}}
@@ -1628,6 +1728,7 @@ pacmir() {
 # }}}
 
 rge() {
+
 	: edit files matching pattern
 	rg --files-with-matches "$@" | sort -u | xargs nvim -p
 }
@@ -1643,15 +1744,6 @@ rge() {
 # 	find "$HDD/movies" -type f
 # 	cat ~/to_watch
 # } | fzf
-
-files() {
-	: list files in use by a process
-	pidof "$1" |
-		xargs -n1 lsof -p |
-		grep -Po '/[a-z].+' |
-		sort -u |
-		grep -P --color=never '^/(home|run)'
-}
 
 _unused() {
 	: list unused functions
@@ -1685,6 +1777,18 @@ ys() { # read youtube subs in less
 		tr '\n' ' ' |
 		fold --spaces |
 		less
+}
+
+yti() {
+	: get info for currently playing file with youtube id
+	# www-watch?v=bMEfWLA-V00.mp3
+	pactl list sink-inputs |
+		grep media.name |
+		cut -d= -f3 |
+		cut -d. -f1 |
+		prepend 'https://youtube.com/watch?v=' |
+		xargs yt-dlp -j 2> /dev/null |
+		jq -r .title
 }
 
 nico() {
