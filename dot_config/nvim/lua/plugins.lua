@@ -39,6 +39,7 @@ require("lazy").setup(
 		-- }}}
 
 		"martineausimon/nvim-lilypond-suite",
+		"yochem/jq-playground.nvim",
 
 		{ "ecridge/vim-kinesis", ft = "kinesis" }, -- KA2, *_qwerty.txt
 		{ "jbyuki/quickmath.nvim", cmd = { "Quickmath" } },
@@ -908,14 +909,17 @@ require("lazy").setup(
 
 		-- "abstract-ide/abstract-cs", -- unreadable comments
 		-- "ajmwagar/vim-deus", -- mono tabline
+		-- "chriskempson/vim-tomorrow-theme", -- mono tabline
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "danilo-augusto/vim-afterglow", -- mono tabline
 		-- "dasupradyumna/midnight.nvim", -- mono tabline
 		-- "dgox16/oldworld.nvim", -- inactive tab too dim
+		-- "ellisonleao/gruvbox.nvim", -- mid contrast
 		-- "everblush/nvim", -- comments too dim
 		-- "fenetikm/falcon", -- mono tabline
 		-- "gosukiwi/vim-atom-dark", -- bad lualine
 		-- "hachy/eva01.vim", -- don't like the low contrast one
+		-- "honamduong/hybrid.nvim", -- mid contrast (name conflicts with nvim-smyck)
 		-- "jaredgorski/spacecamp", -- bad lualine
 		-- "kvrohit/rasmus.nvim", -- mono tabline
 		-- "lighthaus-theme/vim-lighthaus", -- mono tabline
