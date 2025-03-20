@@ -204,7 +204,7 @@ require("lazy").setup(
 					"goimports-reviser",
 					"golines",
 					"mdslw",
-					"prettier",
+					"prettier", -- for html/yaml, iirc?
 					"shfmt",
 					"stylua",
 
@@ -214,7 +214,7 @@ require("lazy").setup(
 					"golangci-lint",
 					"markdownlint",
 					"ruff",
-					"shellcheck",
+					-- "shellcheck",
 				},
 
 				--
@@ -244,7 +244,7 @@ require("lazy").setup(
 						{
 							function()
 								if vim.fn.expand("%") == "" then
-									return "new file"
+									return "[new file]"
 								end
 								return vim.fn.expand("%" .. (vim.o.columns > columns and ":p" or ""))
 							end,

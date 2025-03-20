@@ -908,7 +908,9 @@ end -- }}}
 local function exec()
 	-- {{{
 	-- running tests is better left to the terminal itself (e.g. wezterm)
-	local curr_file = vim.fn.expand("%") -- relative to cwd
+
+	-- relative to cwd
+	local curr_file = vim.fn.expand("%")
 	local ft = vim.bo.filetype
 
 	if vim.bo.filetype == "nofile" then
@@ -993,6 +995,14 @@ local function exec()
 		-- typescript = "NO_COLOR=1 deno run --check=all " .. curr_file,
 		-- sql = get_sql_cmd, --(curr_file),
 		typescript = get_ts_runner, --(curr_file),
+
+		["javascript.mongo"] = string.format(
+			-- -f FILE requires FILE to be mongosh (not js)
+			[[mongosh %s --authenticationDatabase admin --quiet --eval < %s | sed -r 's/^\S+>[ .]*//g']],
+			-- .. [[ | node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq]],
+			vim.env.MONGO_URL,
+			curr_file
+		),
 
 		-- note that :new brings us to repo root (verify with :new|pwd), so we need
 		-- to not only know where we used to be, but also run the basename.go

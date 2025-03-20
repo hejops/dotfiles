@@ -46,6 +46,7 @@ alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / 
 alias cv="\$EDITOR ~/cv/src/index.tex"
 alias dA="dc artist:"
 alias da="~/disq/disq -artist"
+alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
 alias fzh="fzf --height=~33% --reverse" # - and ~ are not equivalent
@@ -309,18 +310,22 @@ _git_log_fzf() {
 
 	args=()
 
-	m=$(_gmaster)
-	if [[ $(git branch --show-current) == $m ]]; then
-		:
-	elif [[ -f $1 ]] || [[ -d $1 ]]; then
+	if [[ -f $1 ]] || [[ -d $1 ]]; then
 		args+=("$@")
+		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
+	elif
+		m=$(_gmaster) &&
+			[[ $(git branch --show-current) == "$m" ]]
+	then
+		: on master
 	elif [[ -n $m ]]; then # dev branch
 		args+=("$m...HEAD")
 	else
 		: no remote yet
 	fi
 
-	git log --oneline "${args[@]}" |
+	# there is nothing to see in merge commits
+	git log --oneline --no-merges "${args[@]}" |
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
@@ -550,6 +555,14 @@ git_status() {
 }
 
 gmm() {
+
+	# in case of submodule conflict:
+	# cd $submodule
+	# gun .
+	# git merge $hash (git should tell you which hash -- how to script?)
+	# git add $submodule
+	# git commit
+
 	: merge master into dev branch
 	# https://stackoverflow.com/a/20103414
 	git fetch origin # gets you up to date with origin
@@ -759,8 +772,10 @@ gcon() {
 	}
 
 	get_conflicts() {
-		# TODO: may not only be UU
-		git status --porcelain | grep UU
+		git status --porcelain |
+			# grep -P '^(UU|AA)'
+			# grep -P '^[^ ?]{2} '
+			grep -P '^([^ ?])\1 '
 	}
 
 	if ! conflicts=$(get_conflicts); then

@@ -10,6 +10,8 @@ M = {}
 -- function M:bar -> require('foo'):bar(baz) = bar(self, baz) = self:bar(baz)
 -- function M:bar -> require('foo').bar(baz) = bar(baz) = baz:bar()
 
+-- https://luals.github.io/wiki/annotations
+
 -- vim.tbl_keys is non-deterministic
 function M:keys(t)
 	local _keys = {}
@@ -203,9 +205,15 @@ end
 
 M.is_ubuntu = M:command_ok("grep -q Ubuntu /etc/*-release")
 
-function M:get_command_output(cmd)
+---@return string
+function M:get_command_output(cmd, strip_newline)
 	assert(cmd)
-	return assert(io.popen(cmd)):read("*all")
+	---@type string
+	local out, _ = assert(io.popen(cmd)):read("*all")
+	if strip_newline then
+		out = out:gsub("\n", "")
+	end
+	return out
 end
 
 function M:in_git_repo()
