@@ -871,7 +871,11 @@ gau() {
 # }}}
 # gitlab {{{
 
+# apt 1.36
+# snap 1.43/1.54, but cannot read config file (lol)
+
 gmr() {
+	: create or open mr in browser
 	branch=$(git branch --show-current)
 	url=$(git config --get remote.origin.url)
 	url=$(_git_http "$url")
@@ -908,11 +912,14 @@ gldiff() {
 		# json output requires v1.37 (apt is 1.36 smh)
 		# https://gitlab.com/gitlab-org/cli/-/commit/893f5c945a50cb8a6d674eb05923f87e46fa6150
 
+		prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
+
 		n=$(glab mr list -F json --not-draft |
 			jq '.[:10][]' |
-			jqt updated_at iid title assignee.username |
+			jqt updated_at iid title assignee.username source_branch |
 			sort -r |
-			fzh |
+			fzh --preview="$prv_cmd" |
+			# fzf --preview="$prv_cmd" |
 			awk '{print $2}')
 
 		[[ -z $n ]] && return
@@ -1354,7 +1361,7 @@ jqk() {
 
 jqt() {
 
-	: select jq fields and format as tsv with alignment
+	: select jq fields from a flat sequence of objects and format as tsv with alignment
 	fields=()
 	for x in "$@"; do
 		fields+=(".$x")
@@ -1363,7 +1370,8 @@ jqt() {
 
 	# query="[$(echo "$@" | sjoin ,)]"
 
-	jq -r "[$query] | @tsv" | colt
+	# note: jq knows how to if read from stdin if no file passed
+	< /dev/stdin jq -r "[$query] | @tsv" | colt
 
 }
 
@@ -1614,6 +1622,7 @@ plot() {
 		# https://unix.stackexchange.com/a/754698
 		# https://superuser.com/a/108380
 		cat <<- EOF
+			show terminal;
 			set ylabel 'ms';
 			set xdata time;
 			set timefmt '%Y-%m-%dT%H:%M';
@@ -1624,8 +1633,8 @@ plot() {
 	< "$1" grep latency |
 		grep -Fv -e null -e '={' | # remove invalid nested json
 		# tail -n10000 |
-		jqt time[0:16] latency |
-		gnuplot -p -e "$script"
+		jqt time[0:19] latency |
+		time gnuplot --persist -e "$script"
 }
 
 # }}}
