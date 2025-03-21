@@ -23,6 +23,7 @@ alias ns=notify-send
 alias trk=trackratings.py
 alias tt=taptempo
 alias tz=trizen # if gpg fail, gpg --recv-keys <key>
+alias wd=waitdie
 alias xo=xdg-open
 
 alias rab="exec yazi \"\$HDD/books\""
@@ -38,19 +39,21 @@ alias rat="exec yazi \"\$HDD/torrent\" \"\$HDD/movies\""
 alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit" # TODO: handle >1 video device (just increment n until file not exist)
+alias cdnp="cd \"\$(files mpv | grep mp3 | largs dirname)\""
 alias ci="chromium --incognito"
 alias colt="column -t -s$'\t'" # align tab-containing output
 alias cpu="top -b -n1 -o %CPU | grep -m10 \$USER"
 alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
 alias cv="\$EDITOR ~/cv/src/index.tex"
-alias da="dc artist:"
+alias dA="dc artist:"
+alias da="~/disq/disq -artist"
 alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
 alias fzh="fzf --height=~33% --reverse" # - and ~ are not equivalent
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
-alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out"
+alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out ; kp"
 alias pq="~/plaque/plaque"
 alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
@@ -479,9 +482,11 @@ git_status() {
 
 	if
 		# new repo
-		git status | grep -q 'No commits yet'
+		git status | grep 'No commits yet'
 	then
-		git status
+		echo "Files:"
+		echo
+		git ls-files --others --exclude-standard
 		return
 	fi
 
@@ -1422,11 +1427,9 @@ doslow() {
 
 	# set -eu
 	if
-		steps=$(
-			< "$1" grep -P '^#\d+ DONE' |
-				# sort -k3nr | head -n$n # n slowest steps
-				sort -Vu | awk '!a[$1]++' # steps >= 100 secs
-		) && [[ -n $steps ]]
+		steps=$(< "$1" grep -P '^#\d+ DONE' |
+			sort -Vu |
+			awk '!a[$1]++') && [[ -n $steps ]]
 	then
 		paste <(echo "$steps") <(
 			<<< "$steps" cut -d' ' -f1 |
@@ -1734,18 +1737,6 @@ pacmir() {
 
 }
 
-# urltitle() {
-# 	wget -qO- "$1" |
-# 		perl -l -0777 -ne 'print $1 if /<title.*?>\s*(.*?)\s*<\/title/si'
-# }
-
-# utm() {
-# 	: urltitle to markdown
-# 	title=$(timeout 3 urltitle "$1")
-# 	[[ -z $title ]] && title=$(awk <<< "$1" -F/ '{print $NF}')
-# 	echo "[$title]($1)"
-# }
-
 # mw() {
 # 	cd ~/.mail/account.gmail || return
 # 	while true; do
@@ -1762,10 +1753,33 @@ pacmir() {
 
 # }}}
 
+kp() {
+	# urldecode() {
+	# 	local i="${*//+/ }"
+	# 	echo -e "${i//%/\\x}"
+	# }
+	url='https://www.discogs.com/search/?style_exact=K-pop&sort=hot%2Cdesc&ev=gs_ms'
+	curl -sL "$url" -H 'User-Agent: M' | # lol
+		grep -Po '/release/\d+-[^"]+' |
+		cut -d'-' -f2- |
+		tr '-' ' ' |
+		# TODO: percent decode
+		sort -u |
+		while read -r rel; do
+			echo "$rel"
+			ya "$rel"
+		done
+}
+
 rge() {
 
 	: edit files matching pattern
-	rg --files-with-matches "$@" | sort -u | xargs nvim -p
+	files=$(rg --files-with-matches "$@" | sort -u)
+	if [[ $(<<< "$files" wc -l) -gt 10 ]]; then
+		echo "More than 10 files found"
+		return
+	fi
+	echo "$files" | xargs nvim -p
 }
 
 # rg -U --multiline-dotall '^import.+?;'

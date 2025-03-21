@@ -39,6 +39,7 @@ require("lazy").setup(
 		-- }}}
 
 		"martineausimon/nvim-lilypond-suite",
+		"yochem/jq-playground.nvim",
 
 		{ "ecridge/vim-kinesis", ft = "kinesis" }, -- KA2, *_qwerty.txt
 		{ "jbyuki/quickmath.nvim", cmd = { "Quickmath" } },
@@ -894,23 +895,31 @@ require("lazy").setup(
 			end,
 		},
 
-		"bluz71/vim-moonfly-colors", -- mid contrast, pub and fn same color
-		"ingsme/nvim-smyck.nvim", -- 'hybrid', italic comments
-		"uncleten276/dark_flat.nvim", -- italic comments
+		{ "bluz71/vim-moonfly-colors", lazy = true }, -- pub and fn same color
 		{ "iagorrr/noctis-high-contrast.nvim", lazy = true }, -- italic comments/types
-		{ "judaew/ronny.nvim", lazy = true }, -- requires git-lfs (only for assets) -- TODO: https://stackoverflow.com/a/42021818
+		{ "ingsme/nvim-smyck.nvim", lazy = true }, -- 'hybrid', italic comments
 		{ "tomasr/molokai", lazy = true }, -- italic types/funcs, bold keywords
+		{ "uncleten276/dark_flat.nvim", lazy = true }, -- italic comments
+
+		{
+			"judaew/ronny.nvim",
+			lazy = true,
+			enabled = vim.fn.executable("git-lfs"), --  TODO: https://stackoverflow.com/a/42021818
+		},
 
 		-- "abstract-ide/abstract-cs", -- unreadable comments
 		-- "ajmwagar/vim-deus", -- mono tabline
+		-- "chriskempson/vim-tomorrow-theme", -- mono tabline
 		-- "crusoexia/vim-monokai", -- mid contrast
 		-- "danilo-augusto/vim-afterglow", -- mono tabline
 		-- "dasupradyumna/midnight.nvim", -- mono tabline
 		-- "dgox16/oldworld.nvim", -- inactive tab too dim
+		-- "ellisonleao/gruvbox.nvim", -- mid contrast
 		-- "everblush/nvim", -- comments too dim
 		-- "fenetikm/falcon", -- mono tabline
 		-- "gosukiwi/vim-atom-dark", -- bad lualine
 		-- "hachy/eva01.vim", -- don't like the low contrast one
+		-- "honamduong/hybrid.nvim", -- mid contrast (name conflicts with nvim-smyck)
 		-- "jaredgorski/spacecamp", -- bad lualine
 		-- "kvrohit/rasmus.nvim", -- mono tabline
 		-- "lighthaus-theme/vim-lighthaus", -- mono tabline
