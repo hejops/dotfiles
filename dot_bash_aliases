@@ -880,15 +880,25 @@ gldiff() {
 
 	# note: for current branch, just use gdm
 	if [[ $# -eq 0 ]]; then
-		# TODO: sort by updated date?
-		n=$(glab mr list | #--reviewer=@me |
-			sed -r 's/  +/\t/g' |
-			cut -d$'\t' -f1,3- |
-			grep '^!' |
-			column -t -s $'\t' |
+		# n=$(glab mr list |     #--reviewer=@me |
+		# 	sed -r 's/  +/\t/g' | # force tab delimiter
+		# 	cut -d$'\t' -f1,3- |  # remove useless column
+		# 	grep '^!' |           # remove useless lines
+		# 	colt |
+		# 	fzh |
+		# 	awk '{print $1}' |
+		# 	tr -d '!')
+
+		# json output requires v1.37 (apt is 1.36 smh)
+		# https://gitlab.com/gitlab-org/cli/-/commit/893f5c945a50cb8a6d674eb05923f87e46fa6150
+
+		n=$(glab mr list -F json --not-draft |
+			jq '.[:10][]' |
+			jqt updated_at iid title assignee.username |
+			sort -r |
 			fzh |
-			awk '{print $1}' |
-			tr -d '!')
+			awk '{print $2}')
+
 		[[ -z $n ]] && return
 	else
 		n=$1
