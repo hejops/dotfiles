@@ -916,30 +916,15 @@ local function exec()
 	if vim.bo.filetype == "nofile" then
 		return
 	elseif vim.bo.filetype == "sql" then
-		local script = curr_file:gsub("%.sql$", "")
-		if vim.loop.fs_stat(script) then
-			-- local function get_sql_cmd(file)
-			-- 	local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)
-			-- 	local db = string.gsub(first_line[1], "^-- ", "")
-			-- 	-- TODO: check file exists
-			--
-			-- 	-- litecli has nicer (tabular) output, but some ill-placed comments will
-			-- 	-- cause syntax error
-			-- 	local cmd = string.format("cat %s | litecli -t %s", file, db)
-			-- 	-- local cmd = string.format("cat %s | sqlite3 %s", file, db)
-			-- 	-- print(cmd)
-			-- 	return cmd
-			-- end
-
-			curr_file = curr_file:gsub("%.sql$", "")
-			ft = "sh"
-		elseif require("dbee").is_open() then
+		-- local script = curr_file:gsub("%.sql$", "")
+		if require("dbee").is_open() then
 			require("dbee").api.ui.editor_do_action("run_file")
-			return
+		elseif require("util"):buf_contains("-- name: ") then
+			print("cannot exec sqlc file")
 		else
 			start_dbee()
-			return
 		end
+		return
 	end
 
 	-- TODO: async (Dispatch)
