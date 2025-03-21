@@ -312,6 +312,13 @@ _git_log_fzf() {
 		args+=("$@")
 		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
 	elif
+		# other dev branch
+		[[ $# -eq 1 ]] &&
+			git branch --remote | grep -P "^  origin/$1$"
+	then
+		git pull
+		args+=("origin/$1")
+	elif
 		m=$(_gmaster) &&
 			[[ $(git branch --show-current) == "$m" ]]
 	then
