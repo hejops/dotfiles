@@ -859,6 +859,15 @@ guns() {
 # 	ggiturl "$1" | xargs git clone
 # }
 
+gau() {
+	: show authorship of file
+	git blame --line-porcelain "$1" |
+		sed -rn 's/^author (.+)/\1/p' |
+		sort |
+		uniq -c |
+		sort -n
+}
+
 # }}}
 # gitlab {{{
 
