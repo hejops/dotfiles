@@ -314,9 +314,9 @@ _git_log_fzf() {
 	elif
 		# other dev branch
 		[[ $# -eq 1 ]] &&
-			git branch --remote | grep -P "^  origin/$1$"
+			git branch --remote | grep -Pq "^  origin/$1$"
 	then
-		git pull
+		git pull > /dev/null 2> /dev/null
 		args+=("origin/$1")
 	elif
 		m=$(_gmaster) &&
