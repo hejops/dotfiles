@@ -33,6 +33,7 @@ alias ram="exec yazi \"\$MU\""
 alias rat="exec yazi \"\$HDD/torrent\" \"\$HDD/movies\""
 
 # alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
+# alias da="~/disq/disq -artist"
 # alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
 # alias md="\$EDITOR -c 'set ft=markdown'"
 # alias n="NO_COLOR=1 node --import=tsx"
@@ -45,7 +46,6 @@ alias cpu="top -b -n1 -o %CPU | grep -m10 \$USER"
 alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
 alias cv="\$EDITOR ~/cv/src/index.tex"
 alias dA="dc artist:"
-alias da="~/disq/disq -artist"
 alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
@@ -70,6 +70,14 @@ alias y="bash ~/gripts/disq/ytm.sh"
 
 # }}}
 # frequent {{{
+
+da() {
+	if [[ $# -eq 1 ]]; then
+		~/disq/disq -artist "$1"
+	else
+		~/disq/disq
+	fi
+}
 
 cm() {
 	if [[ $# -eq 0 ]]; then
