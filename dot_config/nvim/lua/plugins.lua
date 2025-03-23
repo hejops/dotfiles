@@ -41,12 +41,12 @@ require("lazy").setup(
 		"martineausimon/nvim-lilypond-suite",
 		"yochem/jq-playground.nvim",
 
+		-- { "tadmccorkle/markdown.nvim", ft = "markdown", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
 		{ "ecridge/vim-kinesis", ft = "kinesis" }, -- KA2, *_qwerty.txt
 		{ "jbyuki/quickmath.nvim", cmd = { "Quickmath" } },
 		{ "johnelliott/vim-kinesis-kb900", ft = "kb900" }, -- KA FP (and 360?), layout*.txt
 		{ "mbbill/undotree", cmd = { "UndoTreeToggle" } },
 		{ "rhysd/vim-go-impl", ft = "go" }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
-		{ "tadmccorkle/markdown.nvim", ft = "markdown", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
 		{ "tpope/vim-dispatch", cmd = { "Dispatch", "Make" } }, -- run async processes
 		{ "tpope/vim-dotenv", cmd = { "Dotenv" } },
 		{ "tridactyl/vim-tridactyl", ft = "tridactyl" }, -- syntax highlighting

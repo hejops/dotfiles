@@ -701,20 +701,27 @@ local ft_binds = { -- {{{
 		-- TODO: if checkbox item (`- [ ]`), toggle check
 		-- https://github.com/tadmccorkle/markdown.nvim#lists
 
-		-- local function mn()
-		-- 	require("markdown.nav").next_heading()
-		-- 	vim.cmd.norm("zz")
-		-- end
-		-- local function mp()
-		-- 	require("markdown.nav").prev_heading()
-		-- 	vim.cmd.norm("zz")
-		-- end
+		{
+			"n",
+			"(",
+			function()
+				-- require("markdown.nav").next_heading() -- tadmccorkle/markdown.nvim
+				vim.fn.search("^#", "Wb")
+				vim.cmd.norm("zz")
+			end,
+			{ remap = true },
+		},
 
-		-- {"n", "J", mn, { remap = true }},
-		-- {"n", "K", mp, { remap = true }}, -- TS hover
-		-- {"n", "[[", mp, { remap = true }},
-		-- {"n", "]]", mn, { remap = true }},
-		-- {"n", "gk", require("markdown.nav").prev_heading, { remap = true }},
+		{
+			"n",
+			")", -- K will override this
+			function()
+				vim.fn.search("^#", "W")
+				vim.cmd.norm("zz")
+			end,
+			{ remap = true },
+		},
+
 		{ "n", "<c-k>", "ysiw]Ea()<esc>Pgqq", { remap = true } }, -- wrap in hyperlink
 		{ "n", "<leader>d", toggle_diagnostics },
 		{
