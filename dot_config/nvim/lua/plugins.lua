@@ -93,14 +93,15 @@ require("lazy").setup(
 			-- end,
 		},
 
-		{
-			-- cd to repo root (else autochdir), most useful for go
-			-- note: opts={} is not always equivalent to config=function()require'foo'.setup({})end, apparently
-			"ahmedkhalf/project.nvim",
-			config = function()
-				require("project_nvim").setup({})
-			end,
-		},
+		-- -- uses deprecated vim.lsp.buf_get_clients
+		-- {
+		-- 	-- cd to repo root (else autochdir), most useful for go
+		-- 	-- note: opts={} is not always equivalent to config=function()require'foo'.setup({})end, apparently
+		-- 	"ahmedkhalf/project.nvim",
+		-- 	config = function()
+		-- 		require("project_nvim").setup({})
+		-- 	end,
+		-- },
 
 		{
 			"lervag/vimtex",
@@ -192,7 +193,10 @@ require("lazy").setup(
 			-- https://github.com/jjangsangy/Dotfiles/blob/a96a66b1b3db191a848daed2f3f2ff498a1e96ad/astro_nvim/plugins/mason.lua#L15
 			"jay-babu/mason-null-ls.nvim",
 			-- overrides `require("mason-null-ls").setup(...)`
-			dependencies = { "jose-elias-alvarez/null-ls.nvim" },
+			dependencies = {
+				-- "jose-elias-alvarez/null-ls.nvim", -- uses deprecated vim.tbl_add_reverse_lookup
+				"nvimtools/none-ls.nvim",
+			},
 			opts = {
 				ensure_installed = {
 
