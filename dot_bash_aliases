@@ -1030,7 +1030,7 @@ pget() {
 pup() {
 	pyp=$(_get_repo_root)/pyproject.toml
 
-	if [[ -f $pyp ]]; then
+	if [[ ! -f $pyp ]]; then
 		echo "not in python project"
 
 	elif < "$pyp" grep -Fq tool.poetry; then
