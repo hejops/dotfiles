@@ -164,7 +164,7 @@ bind <c-g> tab #
 bind c jsb tri.excmds.tabprev() //
 bind d jsb tri.excmds.tabclose() //
 bind gD composite tabduplicate | tabdetach
-bind s composite tabsort --url ; tabsort --containers
+bind s tabsort (tab1, tab2) => tab1.cookieStoreId + tab1.url > tab2.cookieStoreId + tab2.url
 bind x tabmove -1
 bind z tab #
 
