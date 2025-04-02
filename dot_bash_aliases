@@ -95,6 +95,7 @@ replace() {
 
 	# check correct rep binary (not the lisp thing)
 	if ! command -v rep | grep -Fq .cargo; then
+		cargo install rep-grep
 		return
 	fi
 
@@ -115,7 +116,8 @@ replace() {
 	read -r -p 'OK?' || return
 	_rg --line-number -- "$search" | rep --write -- "$search" "$replace"
 
-	git diff
+	# git diff
+	gapat "$replace"
 }
 
 sd() {
@@ -200,7 +202,9 @@ v() {
 	git ls-files . |
 		\xargs -d '\n' ls -1t |
 		fzf -m --prompt="$(git branch --show-current): " \
-			--height=~100% --reverse --preview-window='right,50%,border' |
+			--height=~100% --reverse --preview-window='right,50%,border' \
+			--preview="cat {}" | # pygmentize very slow (60x slower than cat)
+		# yazi uses syntect under the hood
 		xargs nvim -p
 }
 
@@ -399,21 +403,23 @@ gcf() {
 	: make a new commit to be squashed with an earlier one
 
 	# https://jordanelver.co.uk/blog/2020/06/04/fixing-commits-with-git-commit-fixup-and-git-rebase-autosquash/
-	sha=$(_git_log_fzf . | cut -d' ' -f1)
-	[[ -z $sha ]] && return
+	old_sha=$(_git_log_fzf . | cut -d' ' -f1)
+	[[ -z $old_sha ]] && return
+
+	new_sha=$(_git_log_fzf . | cut -d' ' -f1)
+	[[ -z $new_sha ]] && return
 
 	# --fixup associates a new commit with an existing commit so that when
 	# you do an interactive rebase, you don't have to re-order any commits
 	# in order to squash them. And you don't have to change any commit
 	# messages
-	git commit --fixup "$sha" "$@"
-
-	# TODO: not sure what to do yet when unstaged changes are present
+	git commit --fixup "$old_sha" "$new_sha"
 
 	# with no arg, defaults to curr branch (NEVER use gmaster; to avoid
 	# losing work, git rebase --abort immediately)
-	# is -i necessary?
-	git rebase -i --autosquash || gC
+	# --autostash required to avoid 'unstaged changes present'
+	# TODO: is -i necessary?
+	git rebase -i --autosquash --autostash || gC
 }
 
 gc() {
@@ -752,7 +758,11 @@ gdm() {
 	# branch as well as in a merge, both changes will be shown. for the
 	# purpose of fast diffing (i.e. without network), this is usually fine.
 
+	# TODO: only works in repo root
+	pushd "$(_get_repo_root)" || return
+
 	span="$(_gmaster)...HEAD"
+	# root=$(_get_repo_root)
 	git log --diff-filter=d --no-merges --first-parent --name-only --oneline --pretty= "$span" |
 		sort -u |
 		# HACK: --diff-filter excludes files deleted by us, but does
@@ -761,6 +771,8 @@ gdm() {
 			[[ -f $f ]] && echo "$f"
 		done |
 		xargs git diff "$span"
+
+	popd || return
 
 	# https://gitlab.com/gitlab-org/cli/-/issues/7704
 
@@ -791,7 +803,8 @@ gcon() {
 		git status --porcelain |
 			# grep -P '^(UU|AA)'
 			# grep -P '^[^ ?]{2} '
-			grep -P '^([^ ?])\1 '
+			grep -P '^([^ ?])\1 ' |
+			sort -u
 	}
 
 	if ! conflicts=$(get_conflicts); then
