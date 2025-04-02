@@ -11,7 +11,7 @@ vim.keymap.set("c", "<c-k>", "<up>")
 vim.keymap.set("c", "<c-l>", "<s-right>")
 vim.keymap.set("c", "<c-o>", "<s-tab>")
 vim.keymap.set("i", "<c-c>", "<esc>", { remap = true, silent = true }) -- <c-c> kills cursorline
-vim.keymap.set("i", "<c-h>", "<s-left>")
+vim.keymap.set("i", "<c-h>", "<s-left>") -- TODO: would be good to be able to switch tabs
 vim.keymap.set("i", "<c-j>", "<c-o>$<c-j>")
 vim.keymap.set("i", "<c-l>", "<s-right>")
 vim.keymap.set("n", "!", ":!")
@@ -170,7 +170,7 @@ local function commit_staged()
 		print("not in git repo")
 	elseif -- any changes have been staged (taken from gc)
 		-- commit currently staged chunk(s)
-		require("util"):get_command_output("git diff --name-only --cached --diff-filter=M | grep .") ~= ""
+		require("util"):get_command_output("git diff --name-only --cached --diff-filter=AM | grep .") ~= ""
 	then
 		vim.cmd("Git commit --quiet -v")
 	elseif -- current file has changes
@@ -526,6 +526,8 @@ local ft_binds = { -- {{{
 					{ pat = [[t\.not\(([^,]+), ([^)]+)\)]], rep = [[expect\(\1).not.toBe(\2)]] },
 
 					{ pat = [[ !\= null(, [^)]+)?\).toBe\(true\)]], rep = [[\1).toBeTruthy()]] },
+
+					-- %s/\vexpect\((.+) instanceof ([^)]+)\)\.toBe\(true\)/expectTypeOf(\1).toBe\2()/g
 				})
 			end,
 		},
@@ -671,6 +673,19 @@ local ft_binds = { -- {{{
 		-- 	-- 2. add import statement (_ "github.com/..."), save
 		-- 	-- 3. go mod tidy
 		-- { "n", "<leader>a", ":lua GoGet''<left>" },
+	},
+
+	["go.sqlc"] = {
+		{
+			"n",
+			"<leader>t",
+			function()
+				local base = vim.fn.expand("%:t:r")
+				local sql = require("util"):get_command_output(string.format("git ls-files | grep -m1 /%s$"), base)
+				-- tabdrop (see c header switch?)
+				print(sql)
+			end,
+		},
 	},
 
 	python = {

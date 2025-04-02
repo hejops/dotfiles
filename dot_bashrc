@@ -419,7 +419,9 @@ GIT_PROMPT() {
 	local prompt
 	prompt=''
 
-	if [[ $(git branch | wc -l) -ne 1 ]]; then
+	if [[ -z $CURRENT_LOCAL_BRANCH ]]; then
+		prompt+="<detached:$(git rev-parse --short HEAD 2> /dev/null)> " || return
+	elif [[ $(git branch | wc -l) -ne 1 ]]; then
 		# rev-parse fails if no remote yet
 		prompt+="<$CURRENT_LOCAL_BRANCH:$(git rev-parse --short HEAD 2> /dev/null)> " || return
 	fi
@@ -431,20 +433,20 @@ GIT_PROMPT() {
 	if
 		[[ $REMOTE_BRANCHES == *upstream* ]] # repo is a fork
 	then
-		REM_BRANCH=$(grep <<< "$REMOTE_BRANCHES" -m1 upstream | xargs)
+		MASTER=$(grep <<< "$REMOTE_BRANCHES" -m1 upstream | xargs)
 
 	else
-		REM_BRANCH=$(
+		MASTER=$(
 			# refs/remotes/origin/master (or main)
 			git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null |
 				cut -d/ -f4
 			# cut -d/ -f3-
 		)
 
-		if [[ -z $REM_BRANCH ]]; then
+		if [[ -z $MASTER ]]; then
 			>&2 echo 'empty remote branch found; fixing...'
 			git remote set-head origin --auto > /dev/null
-			REM_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4)
+			MASTER=$(git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4)
 		fi
 
 	fi
@@ -453,11 +455,11 @@ GIT_PROMPT() {
 	# ahead of local HEAD
 	state=$(
 		git rev-list --left-right --count \
-			"origin/$REM_BRANCH...$CURRENT_LOCAL_BRANCH" 2> /dev/null |
+			"origin/$MASTER...HEAD" 2> /dev/null |
 			\xargs
 	)
 	if [[ $state == '0 0' ]]; then
-		: up to date with master
+		: up to date with master - regardless of branch
 		state=""
 	else
 		# state=$(<<< "$state" tr -s '\t' :)
@@ -467,8 +469,14 @@ GIT_PROMPT() {
 			s/^0 //g			# not behind master
 			s/ / commits behind, /g
 		')
-		state+=" commits ahead of $REM_BRANCH"
+		state+=" commits ahead of $MASTER"
 
+	fi
+
+	dev_ahead=$(git rev-list --left-right --count "origin/$CURRENT_LOCAL_BRANCH...HEAD" | cut -f2)
+	if [[ $dev_ahead -gt 0 ]]; then
+		# state+=" ($dev_ahead commits ahead of dev)"
+		state+=" ($dev_ahead unpushed commits)"
 	fi
 
 	# list number of dead local branches
