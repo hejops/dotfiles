@@ -473,8 +473,11 @@ GIT_PROMPT() {
 
 	fi
 
-	dev_ahead=$(git rev-list --left-right --count "origin/$CURRENT_LOCAL_BRANCH...HEAD" | cut -f2)
-	if [[ $dev_ahead -gt 0 ]]; then
+	if
+		[[ $CURRENT_LOCAL_BRANCH != "$MASTER" ]] &&
+			dev_ahead=$(git rev-list --left-right --count "origin/$CURRENT_LOCAL_BRANCH...HEAD" | cut -f2) &&
+			[[ $dev_ahead -gt 0 ]]
+	then
 		# state+=" ($dev_ahead commits ahead of dev)"
 		state+=" ($dev_ahead unpushed commits)"
 	fi
