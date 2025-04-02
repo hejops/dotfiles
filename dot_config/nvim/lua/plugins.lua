@@ -41,12 +41,12 @@ require("lazy").setup(
 		"martineausimon/nvim-lilypond-suite",
 		"yochem/jq-playground.nvim",
 
+		-- { "tadmccorkle/markdown.nvim", ft = "markdown", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
 		{ "ecridge/vim-kinesis", ft = "kinesis" }, -- KA2, *_qwerty.txt
 		{ "jbyuki/quickmath.nvim", cmd = { "Quickmath" } },
 		{ "johnelliott/vim-kinesis-kb900", ft = "kb900" }, -- KA FP (and 360?), layout*.txt
 		{ "mbbill/undotree", cmd = { "UndoTreeToggle" } },
 		{ "rhysd/vim-go-impl", ft = "go" }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
-		{ "tadmccorkle/markdown.nvim", ft = "markdown", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
 		{ "tpope/vim-dispatch", cmd = { "Dispatch", "Make" } }, -- run async processes
 		{ "tpope/vim-dotenv", cmd = { "Dotenv" } },
 		{ "tridactyl/vim-tridactyl", ft = "tridactyl" }, -- syntax highlighting
@@ -93,14 +93,15 @@ require("lazy").setup(
 			-- end,
 		},
 
-		{
-			-- cd to repo root (else autochdir), most useful for go
-			-- note: opts={} is not always equivalent to config=function()require'foo'.setup({})end, apparently
-			"ahmedkhalf/project.nvim",
-			config = function()
-				require("project_nvim").setup({})
-			end,
-		},
+		-- -- uses deprecated vim.lsp.buf_get_clients
+		-- {
+		-- 	-- cd to repo root (else autochdir), most useful for go
+		-- 	-- note: opts={} is not always equivalent to config=function()require'foo'.setup({})end, apparently
+		-- 	"ahmedkhalf/project.nvim",
+		-- 	config = function()
+		-- 		require("project_nvim").setup({})
+		-- 	end,
+		-- },
 
 		{
 			"lervag/vimtex",
@@ -192,7 +193,10 @@ require("lazy").setup(
 			-- https://github.com/jjangsangy/Dotfiles/blob/a96a66b1b3db191a848daed2f3f2ff498a1e96ad/astro_nvim/plugins/mason.lua#L15
 			"jay-babu/mason-null-ls.nvim",
 			-- overrides `require("mason-null-ls").setup(...)`
-			dependencies = { "jose-elias-alvarez/null-ls.nvim" },
+			dependencies = {
+				-- "jose-elias-alvarez/null-ls.nvim", -- uses deprecated vim.tbl_add_reverse_lookup
+				"nvimtools/none-ls.nvim",
+			},
 			opts = {
 				ensure_installed = {
 

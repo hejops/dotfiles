@@ -285,7 +285,7 @@ end
 
 local function pg_connection_ok(conn)
 	-- pipe to cat to avoid pager
-	return conn and M:command_ok(string.format([[psql %s -c '\dt' | cat]], conn))
+	return conn and M:command_ok(string.format([[psql %s -c '\dt' 2>/dev/null | cat >/dev/null]], conn))
 end
 
 ---@return { name: string, type: string, url: string }[]

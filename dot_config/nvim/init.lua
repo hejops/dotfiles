@@ -202,6 +202,7 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
 		vim.schedule(function()
 			require("chezmoi.commands.__edit").watch(ev.buf)
 		end)
+		vim.api.nvim_set_current_dir(os.getenv("HOME") .. "/.local/share/chezmoi")
 		-- print("chezmoi watching")
 	end,
 })
