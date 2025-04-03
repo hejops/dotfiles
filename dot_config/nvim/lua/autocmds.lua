@@ -347,6 +347,15 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
+-- golangci-lint is picky about where it can be run; this is trivial to expand
+-- to other langs if needed
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "go" },
+	callback = function()
+		vim.fn.chdir(vim.fs.root(0, { "go.mod" }))
+	end,
+})
+
 -- }}}
 
 vim.api.nvim_create_autocmd("VimLeave", {
