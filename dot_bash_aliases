@@ -224,8 +224,11 @@ _gmaster() {
 }
 
 v() {
-	git ls-files . |
-		\xargs -d '\n' ls -1t |
+
+	# git ls-files . |
+	git diff --numstat master...HEAD |
+		cut -f3 |
+		largs ls -1t |
 		fzf -m --prompt="$(git branch --show-current): " \
 			--height=~100% --reverse --preview-window='right,50%,border' \
 			--preview="cat {}" | # pygmentize very slow (60x slower than cat)
@@ -783,21 +786,17 @@ gdm() {
 	# branch as well as in a merge, both changes will be shown. for the
 	# purpose of fast diffing (i.e. without network), this is usually fine.
 
-	# TODO: only works in repo root
-	pushd "$(_get_repo_root)" || return
-
 	span="$(_gmaster)...HEAD"
-	# root=$(_get_repo_root)
+	root=$(_get_repo_root)
 	git log --diff-filter=d --no-merges --first-parent --name-only --oneline --pretty= "$span" |
 		sort -u |
 		# HACK: --diff-filter excludes files deleted by us, but does
 		# not exclude files deleted during a merge
 		while read -r f; do
-			[[ -f $f ]] && echo "$f"
+			[[ -f "$root/$f" ]] && echo "$f"
 		done |
-		xargs git diff "$span"
-
-	popd || return
+		# TODO: xargs: git: terminated by signal 13
+		xargs git diff "$span" 2> /dev/null
 
 	# https://gitlab.com/gitlab-org/cli/-/issues/7704
 

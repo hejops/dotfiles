@@ -82,7 +82,7 @@ export XDG_STATE_HOME=$HOME/.local/state
 # user: dict, cron
 export INPUTRC=$XDG_CONFIG_HOME/readline/inputrc
 export NMBGIT=$XDG_DATA_HOME/notmuch/nmbug
-export NOTMUCH_CONFIG=$XDG_CONFIG_HOME/notmuch/config # these also need to be set in systemd
+export NOTMUCH_CONFIG=$XDG_CONFIG_HOME/notmuch/config
 
 # i have a feeling these must be in xinitrc
 export XCOMPOSECACHE=$XDG_CACHE_HOME/X11/XCompose
@@ -324,6 +324,7 @@ alias mkdir="mkdir -p"
 alias mv="mv -v"
 alias pgrep="pgrep --list-full --exact"
 alias python=python3
+alias reset="reset; exec \$SHELL"                                       # reset undoes C-w; bind -f doesn't fix it
 alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
 alias tar="tar -vf"
 alias xargs1="xargs --max-args=1"
@@ -360,6 +361,7 @@ if command -v pacman > /dev/null; then
 elif command -v apt > /dev/null; then
 
 	alias get="sudo apt install" # || snap
+	alias lp="apt list --installed 2>/dev/null | grep"
 	alias rem="sudo apt --purge autoremove"
 
 elif command -v port > /dev/null; then
@@ -481,11 +483,12 @@ GIT_PROMPT() {
 
 	if
 		[[ $CURRENT_LOCAL_BRANCH != "$MASTER" ]] &&
-			dev_ahead=$(git rev-list --left-right --count "origin/$CURRENT_LOCAL_BRANCH...HEAD" | cut -f2) &&
+			# dev_ahead=$(git rev-list --left-right --count "origin/$CURRENT_LOCAL_BRANCH...HEAD" | cut -f2) &&
+			dev_ahead=$(git log --oneline --first-parent "origin/$CURRENT_LOCAL_BRANCH...HEAD" | wc -l) &&
 			[[ $dev_ahead -gt 0 ]]
 	then
 		# state+=" ($dev_ahead commits ahead of dev)"
-		state+=" ($dev_ahead unpushed commits)"
+		state+=" ($dev_ahead unpushed)"
 	fi
 
 	# list number of dead local branches
@@ -508,9 +511,10 @@ GIT_PROMPT() {
 # https://stackoverflow.com/a/23879264
 # PS1='[\A] \W/ $(GIT_PROMPT)> '
 PS1=''
-PS1+='\n'                                   # newline
-ps --pid "$PPID" | grep -q yazi && PS1+="📁" # current shell was spawned from within file manager
-PS1+='[\A] '                                # time
+PS1+='\n' # newline
+# ps --pid $PPID | grep -q yazi && PS1+="📁" # current shell was spawned from within file manager
+ps --pid $PPID | grep -Pq '\ssh$' && PS1+="📁" # current shell was spawned from within file manager
+PS1+='[\A] '                                  # time
 PS1+='$(GIT_PROMPT)'
 PS1+='\n'  # newline
 PS1+='\W/' # cwd with trailing slash -- TODO: relativise to project root

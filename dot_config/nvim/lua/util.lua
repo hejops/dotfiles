@@ -288,8 +288,8 @@ function M:sql_dialect()
 end
 
 local function pg_connection_ok(conn)
-	-- pipe to cat to avoid pager
-	return conn and M:command_ok(string.format([[psql %s -c '\dt' 2>/dev/null | cat >/dev/null]], conn))
+	local cmd = [[psql '%s' -c 'select 1' 2>/dev/null | grep .]]
+	return conn and M:command_ok(string.format(cmd, conn))
 end
 
 ---@return { name: string, type: string, url: string }[]
