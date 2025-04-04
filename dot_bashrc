@@ -82,7 +82,7 @@ export XDG_STATE_HOME=$HOME/.local/state
 # user: dict, cron
 export INPUTRC=$XDG_CONFIG_HOME/readline/inputrc
 export NMBGIT=$XDG_DATA_HOME/notmuch/nmbug
-export NOTMUCH_CONFIG=$XDG_CONFIG_HOME/notmuch/config # these also need to be set in systemd
+export NOTMUCH_CONFIG=$XDG_CONFIG_HOME/notmuch/config
 
 # i have a feeling these must be in xinitrc
 export XCOMPOSECACHE=$XDG_CACHE_HOME/X11/XCompose
@@ -308,6 +308,7 @@ alias mkdir="mkdir -p"
 alias mv="mv -v"
 alias pgrep="pgrep --list-full --exact"
 alias python=python3
+alias reset="reset; exec \$SHELL"                                       # reset undoes C-w; bind -f doesn't fix it
 alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
 alias xargs1="xargs --max-args=1"
 alias xargs="xargs --no-run-if-empty --verbose"
@@ -324,7 +325,7 @@ alias ls="_exa --group-directories-first --tree --level 2" # note: --tree is slo
 alias lsc="_exa --time-style=iso --sort created"
 alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permissions --no-user"
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
-alias r="fm" # --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
+alias r="yazi" # --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
 alias rgl="rg --no-heading --with-filename"
 alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tmp="cd \$(mktemp -d)"
@@ -341,6 +342,7 @@ if command -v pacman > /dev/null; then
 elif command -v apt > /dev/null; then
 
 	alias get="sudo apt install" # || snap
+	alias lp="apt list --installed 2>/dev/null | grep"
 	alias rem="sudo apt --purge autoremove"
 
 elif command -v port > /dev/null; then
@@ -484,9 +486,10 @@ GIT_PROMPT() {
 # https://stackoverflow.com/a/23879264
 # PS1='[\A] \W/ $(GIT_PROMPT)> '
 PS1=''
-PS1+='\n'                                 # newline
-ps --pid $PPID | grep -q yazi && PS1+="📁" # current shell was spawned from within file manager
-PS1+='[\A] '                              # time
+PS1+='\n' # newline
+# ps --pid $PPID | grep -q yazi && PS1+="📁" # current shell was spawned from within file manager
+ps --pid $PPID | grep -Pq '\ssh$' && PS1+="📁" # current shell was spawned from within file manager
+PS1+='[\A] '                                  # time
 PS1+='$(GIT_PROMPT)'
 PS1+='\n'  # newline
 PS1+='\W/' # cwd with trailing slash -- TODO: relativise to project root
