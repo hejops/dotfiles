@@ -368,6 +368,12 @@ elif command -v port > /dev/null; then
 
 fi
 
+remsafe() {
+	: remove pacman package recursively, but reinstall optional deps
+	pkgs=("$(rem "$1" | grep requires | cut -d' ' -f5 | tr -d : | sort -u | xargs)")
+	get "${pkgs[@]}"
+}
+
 # }}}
 # history {{{
 PROMPT_COMMAND='history -a' # save commands immediately after execution
