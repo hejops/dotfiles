@@ -84,5 +84,6 @@ vim.o.updatetime = 300 -- faster prompts (default 4000)
 vim.o.whichwrap = "h,l" -- hl can cross lines
 vim.o.wildignore = table.concat({ "*/.git/*", "*/.DS_Store", "*.o", "*~", "*.pyc" }, ",")
 vim.o.wildmenu = true -- show suggestions above cmdline
+vim.o.winborder = "single" -- https://github.com/neovim/neovim/pull/31074/files; vim.inspect(vim.version().minor >= 11)
 vim.o.wrap = true
 vim.o.wrapmargin = 0

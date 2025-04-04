@@ -4,6 +4,7 @@ vim.g.mapleader = " " -- must be declared before declaring lazy plugins (citatio
 vim.g.maplocalleader = " "
 
 -- essentials
+-- vim.keymap.set("n", "?>", ":wqa<cr>")
 vim.keymap.set("c", "<c-h>", "<s-left>")
 vim.keymap.set("c", "<c-j>", "<down>") -- defaults do nothing
 vim.keymap.set("c", "<c-k>", "<up>")
@@ -92,15 +93,15 @@ vim.keymap.set("n", "zL", "zR")
 vim.keymap.set("n", "zh", "zm") -- fold
 vim.keymap.set("n", "zl", "zr") -- expand
 
--- https://stackoverflow.com/a/2439848
--- https://vim.fandom.com/wiki/Moving_lines_up_or_down
--- i very rarely use alt nowadays
-vim.keymap.set("i", "<a-j>", "<esc>:m .+1<cr>==gi")
-vim.keymap.set("i", "<a-k>", "<esc>:m .-2<cr>==gi")
-vim.keymap.set("n", "<a-j>", ":m .+1<cr>==")
-vim.keymap.set("n", "<a-k>", ":m .-2<cr>==")
-vim.keymap.set("v", "<a-j>", ":m '>+1<cr>gv=gv")
-vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
+-- -- https://stackoverflow.com/a/2439848
+-- -- https://vim.fandom.com/wiki/Moving_lines_up_or_down
+-- -- i very rarely use alt nowadays
+-- vim.keymap.set("i", "<a-j>", "<esc>:m .+1<cr>==gi")
+-- vim.keymap.set("i", "<a-k>", "<esc>:m .-2<cr>==gi")
+-- vim.keymap.set("n", "<a-j>", ":m .+1<cr>==")
+-- vim.keymap.set("n", "<a-k>", ":m .-2<cr>==")
+-- vim.keymap.set("v", "<a-j>", ":m '>+1<cr>gv=gv")
+-- vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
 
 -- commands
 -- vim.keymap.set("n", "<c-s>", ":keepjumps normal! mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
@@ -117,12 +118,11 @@ vim.keymap.set("v", "D", [[:g/\v/d<Left><Left>]]) -- delete lines
 vim.keymap.set("v", "n", [[:g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
 
+-- vim.keymap.set("n", "<leader>T", ":tabe " .. vim.fn.expand("%:p:h")) -- expands only to first opened file!
+
 vim.keymap.set("n", "<leader>T", function()
-	vim.api.nvim_feedkeys(
-		":tabe " .. vim.fn.expand("%:p:h"), -- .. "/",
-		"n",
-		false
-	)
+	-- return ":tabe " .. vim.fn.expand("%:p:h") -- doesn't do anything
+	require("util"):literal_keys(":tabe " .. vim.fn.expand("%:p:h"))
 end)
 
 -- context dependent binds
@@ -349,6 +349,7 @@ local function debug_print(cmd)
 	vim.cmd.startinsert()
 end -- }}}
 
+-- TODO: move out to separate file (almost 400 lines!)
 -- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
 ---@type {[string]: { mode: string, lhs: string, rhs: string|function, opts: table? }[]}
 local ft_binds = { -- {{{
@@ -629,6 +630,7 @@ local ft_binds = { -- {{{
 		-- https://stackoverflow.com/a/28795550
 		-- sed -i -r '/^\t+".*[A-Z]/ s/([a-z0-9])([A-Z])/\1_\L\2/g; s/"([A-Z])/"\L\1/g' file.go
 
+		{ "n", "<leader>B", ":!go build -x<cr>" }, -- could be a BufWritePost Dispatch
 		{ "n", "<leader>E", "oif err!=nil{panic(err)}<esc>:w<cr>o" }, -- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
 
 		{
@@ -743,7 +745,7 @@ local ft_binds = { -- {{{
 			"n",
 			"<leader>s",
 			function()
-				-- 'plain' require('foo').func requires 'foo' to be available
+				-- 'plain' require('foo').func requires 'foo' to be available at definition time
 				require("telescope").extensions.heading.heading()
 			end,
 		},
@@ -970,7 +972,9 @@ local function exec()
 		if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
 			-- ~/.cache/uv
 			return "uv run "
-		elseif vim.loop.fs_stat(cwd .. "/pyproject.toml") then
+		elseif vim.loop.fs_stat(require("util"):root_directory() .. "/pyproject.toml") then
+			-- vim.loop.fs_stat(require("util"):root_directory() .. ".venv")
+			-- poetry install -vv
 			return "poetry run python3 "
 		else
 			return "python3 "

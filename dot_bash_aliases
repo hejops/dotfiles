@@ -72,6 +72,10 @@ alias y="bash ~/gripts/disq/ytm.sh"
 # }}}
 # frequent {{{
 
+# < ~/.config/mpv/library fzf |
+# 	prepend "$MU"/ |
+# 	largs mpv
+
 da() {
 	if [[ $# -eq 1 ]]; then
 		~/disq/disq -artist "$1"
@@ -125,14 +129,24 @@ sd() {
 	# uptime | grep hour || return/reboot
 
 	waitdie mpv pacman curl
+
+	while files firefox | grep "$HDD"; do
+		sleep 1m
+	done
+
 	killall firefox
 
 	# pgrep -u $USER cron
 
-	if pgrep nicotine; then
-		pid=$(waitdie -s nicotine)
-		[[ -n $pid ]] && waitdie -w nicotine
-	fi
+	# if pgrep nicotine; then
+	# 	pid=$(waitdie -s nicotine)
+	# 	[[ -n $pid ]] && waitdie -w nicotine
+	# fi
+
+	while files python | grep "$MU"; do
+		sleep 10m
+	done
+
 	# pkill nicotine
 	# TODO: if new day (morning), just return
 	echo "Shutting down..."
@@ -149,12 +163,23 @@ rt() {
 		# like xargs, but takes a single multi-line arg and turns it into an array
 		mapfile -t args < /dev/stdin
 		[[ -z ${args[*]} ]] && return # mimic xargs -r
-		exec "$1" "${args[@]}" < /dev/tty
+		for a in "${args[@]}"; do
+			files mpv | grep "$MU/$a" && waitdie mpv
+		done
+		"$1" "${args[@]}" < /dev/tty
 	}
 
-	fzf --multi --reverse --preview="ls \"$MU\"/{}" < ~/.config/mpv/library |
+	< ~/.config/mpv/library fzf --multi --reverse --preview="ls \"$MU\"/{}" |
 		prepend "$MU/" |
 		larr fix_tags
+
+	# 	while read -r d; do
+	# 		if files mpv | grep -F "$MU/$d"; then
+	# 			waitdie mpv
+	# 		fi
+	# 		# note: passing arbitrary num of args will probably be deprecated
+	# 		fix_tags "$MU/$d" < /dev/tty
+	# 	done
 
 }
 
@@ -1039,6 +1064,10 @@ pget() {
 	fi
 }
 
+# why can't they output json like sane people
+# what does ! even mean??
+# poetry show --outdated | grep -F '!' | awk '{print $1}'
+
 pup() {
 	pyp=$(_get_repo_root)/pyproject.toml
 
@@ -1594,7 +1623,7 @@ j() {
 files() {
 	: list files in use by a process
 	pidof "$1" |
-		xargs -n1 lsof -p |
+		\xargs -n1 --no-run-if-empty lsof -p |
 		grep -Po '/[a-z].+' |
 		sort -u |
 		grep -P --color=never '^/(home|run)'
@@ -1606,13 +1635,16 @@ files() {
 append() { < /dev/stdin awk "{print \$0 \"$1\"}"; }
 desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; }            # for ease of filtering logs
 largs() { < /dev/stdin xargs --no-run-if-empty --delimiter='\n' "$@"; } # split xargs by newline instead of space
-ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; }                      # lines to comma-delimited str
+line() { < /dev/stdin sed -n "${1}p"; }
+ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; } # lines to comma-delimited str
 paren() { < /dev/stdin prepend '(' | append ')'; }
 prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
 sum() { < /dev/stdin paste -sd+ | bc; }
 surround() { < /dev/stdin awk "{print \"$1\" \$0 \"$1\"}"; }
 tojson() { node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq; }
-line() { < /dev/stdin sed -n "${1}p"; }
+
+# highlight query, but output the entire file
+# grep "$query\|$"
 
 ajoin() {
 	: join space-delimited array
@@ -1773,6 +1805,26 @@ pacmir() {
 
 # }}}
 
+rema() {
+	rem "$(lp "$1" | grep -Po '^\S+')"
+}
+
+# clickhouse-local --file "$1" --query "$2 FORMAT PrettyCompact"
+
+tvll() {
+	: truncate vim lsp.log
+	i=90
+	while
+		[[ $i -ge 60 ]] &&
+			d=$(date --date="$i days ago" -I) &&
+			! < ~/.local/state/nvim/lsp.log grep -q "$d"
+	do
+		((i--))
+	done
+	echo "$d"
+	sed -i -r "1,/$d/d" ~/.local/state/nvim/lsp.log
+}
+
 kp() {
 	# urldecode() {
 	# 	local i="${*//+/ }"
@@ -1821,6 +1873,19 @@ _unused() {
 		while read -r cmd; do
 			< ~/.bash_history grep -wq "$cmd" || echo "$cmd"
 		done
+
+	echo
+	echo "# recently used scripts"
+	{
+		# # scripts explicitly called from cli
+		# \ls ~/scripts | while read -r f; do
+		# 	history | grep -wq "$f" && [ -x ~/scripts/"$f" ] && echo "$f"
+		# done
+
+		# scripts accessed within the last 4 days (don't ask me why 4)
+		find ~/scripts -maxdepth 1 -type f -atime -4 | \xargs -n1 basename
+	} | sort -u
+
 }
 
 # rng() { for _ in "$(seq "${2:-1}")"; do echo $((1 + RANDOM % ${1:-100})); done; }
@@ -1860,6 +1925,50 @@ yti() {
 		jq -r .title
 }
 
+ytm() {
+	# queries=()
+
+	# while true; do
+	# 	read -r line
+	# 	[[ -z $line ]] && break
+	# 	queries+=("$line")
+	# done
+
+	f=$(mktemp)
+	vim "$f"
+
+	waitdie mpv
+
+	while read -r query; do
+		# for query in "${queries[@]}"; do
+		echo "$query"
+		curl -sL 'https://music.youtube.com/youtubei/v1/search' -H 'Content-Type: application/json' \
+			--data-raw '{"context":{"client":{"clientName":"WEB_REMIX","clientVersion":"1.20240904.01.01"}},"query":"'"$query"'","params":"EgWKAQIIAWoSEAMQBBAJEA4QChAFEBEQEBAV"}' |
+			jq '
+		.contents |
+		.tabbedSearchResultsRenderer |
+		.tabs[] |
+		.tabRenderer |
+		.content |
+		.sectionListRenderer |
+		# .contents[] | # TODO: filter null
+		.contents[1] |
+		.musicShelfRenderer |
+		.contents[] |
+		.musicResponsiveListItemRenderer |
+		.flexColumns[] |
+		.musicResponsiveListItemFlexColumnRenderer |
+		.text |
+		.runs[]
+	' |
+			grep videoId |
+			cut -d'"' -f4 |
+			prepend 'https://youtube.com/watch?v=' |
+			xargs mpv --video=no
+	done < "$f"
+
+}
+
 nico() {
 	# set -x
 	[[ ! -f $1 ]] && return
@@ -1870,6 +1979,7 @@ nico() {
 		[[ -z $line ]] && break
 
 		# slsk blocks all searches after a while
+		# TODO: where are logs written to?
 		((i++))
 		[[ $i -ge 68 ]] && break
 

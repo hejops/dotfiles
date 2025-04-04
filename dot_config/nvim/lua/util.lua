@@ -21,6 +21,10 @@ function M:keys(t)
 	return _keys
 end
 
+function M:literal_keys(s)
+	vim.api.nvim_feedkeys(s, "n", false) -- .. '/'
+end
+
 -- buffers {{{
 
 function M:get_bufnr(fname)

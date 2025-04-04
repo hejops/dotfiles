@@ -170,11 +170,13 @@ export WORK_DIRS=(
 	# ~/rust/discoll
 	# ~/rust/fours
 	# ~/rust/search
+	~/disq
 	~/dita
 	~/gone
 	~/gripts
 	~/ibb
 	~/kilo
+	~/leaf
 	~/monkey
 	~/mpv-search
 	~/pg-neon
@@ -244,8 +246,20 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 
 	cat /tmp/updates
 
-	< /tmp/updates grep '^python ' && echo -e "Beware: new Python\n"
-	# TODO: after major python update, update globally installed pips (scrobblerh)
+	if
+		< /tmp/updates grep -q '^python ' &&
+			! < /tmp/updates grep -P 'python (3\.\d+)\S+ -> \1'
+	then
+		echo -e "WARNING: major Python update\n"
+		# TODO: update globally installed pips (scrobblerh)
+	fi
+
+	if
+		< /tmp/updates grep -q '^postgresql ' &&
+			! < /tmp/updates grep -P 'postgresql (\d+)\S+ -> \1'
+	then
+		echo -e "WARNING: major postgresql update\n"
+	fi
 
 	if sudo pacman -Syu; then
 		rm /tmp/updates
@@ -302,6 +316,8 @@ fi
 # note: rsync trailing slash: https://unix.stackexchange.com/a/402556
 alias cp="cp -rv"
 alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
+alias fehm="feh --sort mtime"
+alias fehr="feh --randomize"
 alias grep="grep --color=auto"
 alias ln="ln -v"
 alias mkdir="mkdir -p"
@@ -310,6 +326,7 @@ alias pgrep="pgrep --list-full --exact"
 alias python=python3
 alias reset="reset; exec \$SHELL"                                       # reset undoes C-w; bind -f doesn't fix it
 alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
+alias tar="tar -vf"
 alias xargs1="xargs --max-args=1"
 alias xargs="xargs --no-run-if-empty --verbose"
 
@@ -325,16 +342,18 @@ alias ls="_exa --group-directories-first --tree --level 2" # note: --tree is slo
 alias lsc="_exa --time-style=iso --sort created"
 alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permissions --no-user"
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
-alias r="yazi" # --cmd=\"sort ctime\" --cmd=\"set sort_directories_first false\""
+alias r="yazi"
+alias rgf="rg --files-with-matches"
 alias rgl="rg --no-heading --with-filename"
 alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tmp="cd \$(mktemp -d)"
 
 if command -v pacman > /dev/null; then
 
+	# alias pclean="paccache --remove && sudo pacman -Scc --noconfirm"
 	alias get="sudo pacman --sync"
 	alias lp="pacman --query --search"
-	alias pclean="paccache --remove && sudo pacman -Scc --noconfirm"
+	alias pclean="paccache --remove && yes | sudo pacman -Scc"
 	alias pwhich="pacman -Qo"
 	alias rem="sudo pacman --remove --recursive" # --cascade
 	alias sp="pacman --sync --search"
@@ -457,10 +476,10 @@ GIT_PROMPT() {
 	fi
 
 	if
-		[[ $CURRENT_LOCAL_BRANCH != "$MASTER" ]]
-		# dev_ahead=$(git rev-list --left-right --count "origin/$CURRENT_LOCAL_BRANCH...HEAD" | cut -f2)
-		dev_ahead=$(git log --oneline --first-parent "origin/$CURRENT_LOCAL_BRANCH...HEAD" | wc -l)
-		[[ $dev_ahead -gt 0 ]]
+		[[ $CURRENT_LOCAL_BRANCH != "$MASTER" ]] &&
+			# dev_ahead=$(git rev-list --left-right --count "origin/$CURRENT_LOCAL_BRANCH...HEAD" | cut -f2) &&
+			dev_ahead=$(git log --oneline --first-parent "origin/$CURRENT_LOCAL_BRANCH...HEAD" | wc -l) &&
+			[[ $dev_ahead -gt 0 ]]
 	then
 		# state+=" ($dev_ahead commits ahead of dev)"
 		state+=" ($dev_ahead unpushed)"
