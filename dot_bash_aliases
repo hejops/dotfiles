@@ -1727,12 +1727,14 @@ print(codecs.decode(s, "unicode-escape"))
 
 alias C=,,c
 
-upload() { # upload file to catbox.moe, copy link to clipboard
+upload() {
+	: upload file to catbox.moe, copy link to clipboard
 
 	# https://github.com/Allypost/bash-scripts/blob/fa4b1006a1c022484c3d48a05ec0ff1c94b9a541/catbox#L116
 	# https://github.com/mananapr/dotfiles/blob/9dc9196224c2c84e4265e517dc36af1c79637eb7/bin/catbox
 	# https://github.com/search?type=code&q=curl+catbox.moe+language%3AShell+fileupload
 
+	[[ ! -f $1 ]] && return
 	link=$(
 		curl -s --form "reqtype=fileupload" \
 			--form "fileToUpload=@$1" \
