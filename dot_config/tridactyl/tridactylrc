@@ -342,13 +342,19 @@ bindurl duckduckgo.com f hint .EKtkFWMYpwzMKOYr0GYm, .Bl3t3iYRHX9BeMH_V52u.JhFQA
 bindurl github Y composite js "git clone " + document.location.href.replace(/https?:\/\//,"git@").replace("/",":").replace(/$/,".git") | clipboard yank
 bindurl github.+ov-file y composite js document.location.href.replace("?tab=readme-ov-file","") | clipboard yank
 bindurl github.com/.*/blob/ f hint -c .blob-num,a
-bindurl letterboxd.com f hint -Jc a.tooltip.text-slug, .prettify, .all-link, .has-menu.frame, .js-reveal.reveal, .next, .add-this-film, .rateit-range, .-director.-contributor.search-result > .content > p.film-metadata > a.text-slug
+bindurl immobilienscout24.de h hint -Jc .slick-prev
+bindurl immobilienscout24.de l hint -Jc .slick-next
+bindurl imslp.org/images f hint -Jc [href^="/wiki/Special:IMSLPDisclaimerAccept"], [href^="https"]
+bindurl imslp.org/wiki/File: f hint -Jc [src^="//"]
+bindurl imslp.org/wiki/Special:IMSLPImageHandler f hint -Jc [href^="https"]
+bindurl letterboxd.com f hint -Jc a.tooltip.text-slug, .prettify, .all-link, .has-menu.frame, .reveal, .next, .add-this-film, .rateit-range, .-director.-contributor.search-result > .content > p.film-metadata > a.text-slug
 bindurl letterboxd.com/(director|studio)/.+release-earliest i download
 bindurl libgen.is f hint -Jc [href^="http://library.lol"]
+bindurl libgen.li f hint -Jc [href^="/ads"]
 bindurl movieparadise.org F hint -Jcb .clicklogin2
 bindurl movieparadise.org f hint -Jc [href^="https://1fichier.com"], .wpf-field-wrap > input, .clicklogin2, .submit
 bindurl movieparadise.org/sign-in f hint
-bindurl music.youtube.com <space> hint -Jc #play-pause-button
+bindurl music.youtube.com <space> hint -Jc #play-pause-button, ytmusic-play-button-renderer.ytmusic-responsive-header-renderer.style-scope > .ytmusic-play-button-renderer.style-scope.content-wrapper
 bindurl music.youtube.com f hint -Jc a.yt-formatted-string.style-scope.yt-simple-endpoint, .ytmusic-menu-renderer.style-scope.watch-button
 bindurl music.youtube.com h hint -Jc .ytmusic-player-bar.style-scope.previous-button
 bindurl music.youtube.com l hint -Jc .ytmusic-player-bar.style-scope.next-button
@@ -362,6 +368,8 @@ bindurl rutracker.org/forum/tracker.php f hint -Jc .bold.hl-tags.ts-text.tLink.m
 bindurl rutracker.org/forum/viewtopic.php f hint .magnet-link.med
 bindurl sci-hub f composite hint -Jcpipe li>[href] href | download
 bindurl shop.rewe.de f hint -Jc .hls-qa-login-link, .qa-login-confirmation-login, .btn-checkout--cta
+bindurl wikipedia.org/wiki/.+/media/(File|Fichier): h hint -Jc .mw-mmv-prev-image
+bindurl wikipedia.org/wiki/.+/media/(File|Fichier): l hint -Jc .mw-mmv-next-image
 
 " TODO: discogs.com/artist -> credits -> mpvweb
 " https://github.com/tridactyl/tridactyl/issues/3259#issuecomment-765682631
