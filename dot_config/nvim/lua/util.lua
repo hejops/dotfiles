@@ -287,29 +287,26 @@ function M:sql_dialect()
 	return default
 end
 
-local function pg_connection_ok(conn)
-	local cmd = [[psql '%s' -c 'select 1' 2>/dev/null | grep .]]
-	return conn and M:command_ok(string.format(cmd, conn))
-end
+-- ---@return { name: string, type: string, url: string }[]
 
----@return { name: string, type: string, url: string }[]
-function M:dbee_connections()
-	-- TODO: connect to db specified in config.yml?
+function M:sql_connections()
+	local function pg_connection_ok(conn)
+		local cmd = [[psql '%s' -c 'select 1' 2>/dev/null | grep .]]
+		return conn and M:command_ok(string.format(cmd, conn))
+	end
 
 	local connections = {}
 
-	local f = vim.env.HOME .. "/gripts/disq/collection2.db"
-	if vim.loop.fs_stat(f) then
-		table.insert(connections, { name = "foo", type = "sqlite", url = f })
-	end
+	for name, conn in pairs({
+		-- TODO: check ./config.yml (sqls), postgrestools.jsonc
 
-	local rental = "postgres://postgres:postgres@localhost:5432/dvdrental?sslmode=disable"
-	if pg_connection_ok(rental) then
-		table.insert(connections, { name = "neon", type = "postgres", url = rental })
-	end
-
-	if pg_connection_ok(vim.env.POSTGRES_URL) then
-		table.insert(connections, { name = "work", type = "postgres", url = vim.env.POSTGRES_URL })
+		foo = vim.env.HOME .. "/gripts/disq/collection2.db",
+		neon = "postgres://postgres:postgres@localhost:5432/dvdrental?sslmode=disable",
+		work = vim.env.POSTGRES_URL,
+	}) do
+		if vim.loop.fs_stat(conn) or pg_connection_ok(conn) then
+			connections[name] = conn
+		end
 	end
 
 	return connections

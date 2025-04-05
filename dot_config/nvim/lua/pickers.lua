@@ -80,55 +80,6 @@ function M:devdocs(opts) -- {{{
 		:find()
 end -- }}}
 
-function M:dbee_connections(opts) -- {{{
-	local action_state = require("telescope.actions.state")
-	local actions = require("telescope.actions")
-	local conf = require("telescope.config").values
-	local finders = require("telescope.finders")
-	local pickers = require("telescope.pickers")
-
-	opts = opts or {}
-
-	local names = {}
-
-	-- find first table with key 'conns'
-	local conns
-	for _, s in pairs(require("dbee").api.core.get_sources()) do
-		if s.conns then
-			conns = s.conns
-			break
-		end
-	end
-
-	if not conns then
-		print("No connections found")
-		return
-	end
-
-	for _, c in pairs(conns) do
-		names[c.name] = c.id
-	end
-
-	pickers
-		.new(opts, {
-			prompt_title = "dbee connections",
-			finder = finders.new_table({ results = require("util"):keys(names) }),
-
-			sorter = conf.generic_sorter(opts),
-
-			attach_mappings = function(prompt_bufnr, _)
-				actions[default_action]:replace(function()
-					actions.close(prompt_bufnr)
-					local choice = action_state.get_selected_entry()[1]
-					require("dbee").api.core.set_current_connection(names[choice])
-					print("Connected to", choice)
-				end)
-				return true
-			end,
-		})
-		:find()
-end -- }}}
-
 return M
 
 -- vim.keymap.set("n", "<leader>H", devdocs)
