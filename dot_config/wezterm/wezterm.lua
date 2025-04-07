@@ -229,8 +229,7 @@ local function get_title(tab)
 	local dir = assert(pane.current_working_dir.path)
 	local proc = basename(assert(pane.foreground_process_name))
 
-	local function get_dir()
-		-- os.execute("notify-send " .. dir)
+	local function get_bash_dir()
 		return dir == os.getenv("HOME") and "~" or "> " .. basename(dir)
 	end
 
@@ -241,7 +240,9 @@ local function get_title(tab)
 	-- }, " ")
 
 	if proc == "bash" then
-		return get_dir()
+		return get_bash_dir()
+	elseif proc == "ssh" then
+		return string.match(title, "@[^:]+") or proc
 	elseif proc == "nvim" or title ~= "___" then
 		-- TODO: long-lived processes invoked from bash (e.g. yarn, sleep) may get this
 
@@ -252,10 +253,14 @@ local function get_title(tab)
 		--
 		-- to work around this, we force nvim to set title, which is caught in this
 		-- condition. on exit, nvim must then set title to some reserved string to
-		-- signal that we should proceed to the next condition.
-		return basename(title)
+		-- signal that we should fallthrough to the next condition.
+		return "f: " .. basename(title):sub(1, 20)
 	elseif proc == "yazi" then
-		return "📁 " .. basename(dir)
+		-- return basename(dir)
+
+		-- yazi always executes commands from ~
+		local branch = get_output(string.format("git -C %s branch --show-current", dir))
+		return string.format("d: %s [%s]", basename(dir), branch)
 	else
 		-- os.execute("notify-send unreachable!")
 		error("unreachable")
