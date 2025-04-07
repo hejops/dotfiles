@@ -55,6 +55,7 @@ alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken
 alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out ; kp"
 alias pq="~/plaque/plaque"
+alias pss="ps -e --format=lstart,pid,cmd --sort=start_time | grep -Fv -e '[' -e '('"
 alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
@@ -225,9 +226,15 @@ _gmaster() {
 
 v() {
 
+	_in_git_repo || return
+
 	# git ls-files . |
-	git diff --numstat master...HEAD |
-		cut -f3 |
+	files=$(git diff --numstat master...HEAD)
+	if [[ -z $files ]]; then
+		files=$(git ls-files .)
+	fi
+
+	<<< "$files" cut -f3 |
 		largs ls -1t |
 		fzf -m --prompt="$(git branch --show-current): " \
 			--height=~100% --reverse --preview-window='right,50%,border' \
@@ -1629,6 +1636,11 @@ files() {
 		sort -u |
 		grep -P --color=never '^/(home|run)'
 }
+
+# TODO: firefox xcb problem
+# pidof firefox | tr ' ' , | \xargs lsof -p | grep --color=auto -Po '/[a-z].+' | sort -u | grep xcb
+# ls /snap/firefox/current/gnome-platform/*
+# "/snap/firefox/current/gnome-platform/*": No such file or directory (os error 2)
 
 # }}}
 # stdout manipulation {{{
