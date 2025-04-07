@@ -421,55 +421,33 @@ local ft_binds = { -- {{{
 
 	sql = {
 
-		-- -- not very useful, hover is still more informative
 		-- {
 		-- 	"n",
-		-- 	"?",
-		-- 	function() -- view table schema
-		-- 		local t = vim.fn.expand("<cword>")
-		-- 		-- TODO: suppress connection_get_columns error
-		-- 		local cols = require("dbee").api.core.connection_get_columns(
-		-- 			require("dbee").api.core.get_current_connection().id,
-		-- 			{ table = t, schema = "public", materialization = "table" }
-		-- 		)
-		-- 		-- only one print statement (the last) can be displayed, so use
-		-- 		-- vim.notify to display multiline string
-		-- 		local s = {}
-		-- 		for _, col in pairs(cols) do
-		-- 			table.insert(s, string.format("%s: %s", col.name, col.type))
+		-- 	")",
+		-- 	function()
+		-- 		if require("dbee").is_open() then
+		-- 			-- TODO: wrap page
+		-- 			require("dbee").api.ui.result_page_next()
+		-- 		else
+		-- 			-- api.nvim_input and cmd.norm are recursive (cmd.norm at least errors noisily)
+		-- 			vim.api.nvim_feedkeys(")", "n", false)
 		-- 		end
-		-- 		-- TODO: display in float window
-		-- 		vim.notify(table.concat(s, "\n"))
 		-- 	end,
 		-- },
-
-		{
-			"n",
-			")",
-			function()
-				if require("dbee").is_open() then
-					-- TODO: wrap page
-					require("dbee").api.ui.result_page_next()
-				else
-					-- api.nvim_input and cmd.norm are recursive (cmd.norm at least errors noisily)
-					vim.api.nvim_feedkeys(")", "n", false)
-				end
-			end,
-		},
-		{
-			"n",
-			"(",
-			function()
-				if require("dbee").is_open() then
-					require("dbee").api.ui.result_page_prev()
-				else
-					vim.api.nvim_feedkeys("(", "n", false)
-				end
-			end,
-		},
+		-- {
+		-- 	"n",
+		-- 	"(",
+		-- 	function()
+		-- 		if require("dbee").is_open() then
+		-- 			require("dbee").api.ui.result_page_prev()
+		-- 		else
+		-- 			vim.api.nvim_feedkeys("(", "n", false)
+		-- 		end
+		-- 	end,
+		-- },
+		-- { "n", "<leader>dc", require("pickers").dbee_connections },
 
 		{ "n", "<leader>H", require("pickers").devdocs },
-		{ "n", "<leader>dc", require("pickers").dbee_connections },
 	},
 
 	["qf,help,man,lspinfo,startuptime,Trouble,lazy"] = {
@@ -800,6 +778,8 @@ local function c_compiler_cmd()
 					-- "thread", -- 5x https://clang.llvm.org/docs/ThreadSanitizer.html
 					-- "type", -- experimental https://clang.llvm.org/docs/TypeSanitizer.html
 				}, ","),
+			"-ftime-trace", -- dump compilation profile to <file>.json (https://github.com/aras-p/ClangBuildAnalyzer, ninjatracing)
+			-- "-fbounds-safety", -- 21.0: https://clang.llvm.org/docs/BoundsSafetyAdoptionGuide.html
 		},
 
 		gcc = {
@@ -823,6 +803,7 @@ local function c_compiler_cmd()
 			-- several sanitizers are incompatible with each other (e.g. address and leak)
 
 			"-fsanitize=address,leak,pointer-compare,undefined",
+			-- "-ftime-report", -- not as good as -ftime-trace https://stackoverflow.com/a/77319664
 		},
 	}
 
@@ -906,28 +887,6 @@ local function get_ts_runner(file)
 	end
 end -- }}}
 
-local function start_dbee()
-	-- {{{
-	local dbee = require("dbee")
-	local scratch_dir = os.getenv("HOME") .. "/.local/state/nvim/dbee/notes/memory_source_memory1"
-	local scratch_path = scratch_dir .. "/" .. vim.fn.expand("%:t")
-
-	-- ensure note is synced to the file
-	local cmd = string.format([[ln -sf %s %s/]], vim.fn.expand("%:p"), scratch_dir)
-	os.execute(cmd)
-
-	-- file -> note -> id
-	local id = require("dbee").api.ui.editor_search_note_with_file(scratch_path).id
-	dbee.api.ui.editor_set_current_note(id)
-
-	local function buffer_to_string()
-		local content = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
-		return table.concat(content, "\n")
-	end
-	dbee.execute(buffer_to_string())
-	vim.cmd.wincmd("|") -- hide drawer+call log (hacky)
-end -- }}}
-
 -- run current file and dump stdout to scratch buffer
 local function exec()
 	-- {{{
@@ -938,16 +897,6 @@ local function exec()
 	local ft = vim.bo.filetype
 
 	if vim.bo.filetype == "nofile" then
-		return
-	elseif vim.bo.filetype == "sql" then
-		-- local script = curr_file:gsub("%.sql$", "")
-		if require("dbee").is_open() then
-			require("dbee").api.ui.editor_do_action("run_file")
-		elseif require("util"):buf_contains("-- name: ") then
-			print("cannot exec sqlc file")
-		else
-			start_dbee()
-		end
 		return
 	end
 
@@ -969,10 +918,11 @@ local function exec()
 	local cwd = vim.fn.getcwd()
 
 	local function get_py_runner()
+		local root = require("util"):root_directory()
 		if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
 			-- ~/.cache/uv
 			return "uv run "
-		elseif vim.loop.fs_stat(require("util"):root_directory() .. "/pyproject.toml") then
+		elseif root and vim.loop.fs_stat(root .. "/pyproject.toml") then
 			-- vim.loop.fs_stat(require("util"):root_directory() .. ".venv")
 			-- poetry install -vv
 			return "poetry run python3 "
@@ -1000,6 +950,7 @@ local function exec()
 		python = get_py_runner() .. curr_file,
 		ruby = "ruby " .. curr_file,
 		sh = "env bash " .. curr_file,
+		sql = string.format([[psql %s -f '%s']], require("util"):sql_connections().neon, curr_file),
 		zig = "zig run " .. curr_file,
 
 		-- the iffy langs

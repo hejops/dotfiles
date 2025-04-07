@@ -38,8 +38,8 @@ require("lazy").setup(
 
 		-- }}}
 
-		"martineausimon/nvim-lilypond-suite",
 		"yochem/jq-playground.nvim",
+		-- "martineausimon/nvim-lilypond-suite",
 
 		-- { "tadmccorkle/markdown.nvim", ft = "markdown", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
 		{ "ecridge/vim-kinesis", ft = "kinesis" }, -- KA2, *_qwerty.txt
@@ -237,25 +237,25 @@ require("lazy").setup(
 					-- https://github.com/nvim-lualine/lualine.nvim#component-specific-options
 
 					lualine_a = {
-						-- "branch",
-						function()
-							local f = function(cmd)
-								return require("util"):get_command_output(cmd, true)
-							end
-
-							local branch = f("git branch --show-current")
-							local ahead_m = f([[git rev-list --left-right --count "origin/master...HEAD" | cut -f2]])
-							local ahead_b =
-								f(string.format([[git rev-list --left-right --count "%s...HEAD" | cut -f2]], branch))
-
-							if ahead_m == "0" then
-								return branch
-							elseif ahead_b == "0" then
-								return branch .. string.format("[m+%s]", ahead_m)
-							else
-								return branch .. string.format("[m+%s|b+%s]", ahead_m, ahead_b)
-							end
-						end,
+						"branch",
+						-- function()
+						-- 	local f = function(cmd)
+						-- 		return require("util"):get_command_output(cmd, true)
+						-- 	end
+						--
+						-- 	local branch = f("git branch --show-current")
+						-- 	local ahead_m = f([[git rev-list --left-right --count "origin/master...HEAD" | cut -f2]])
+						-- 	local ahead_b =
+						-- 		f(string.format([[git rev-list --left-right --count "%s...HEAD" | cut -f2]], branch))
+						--
+						-- 	if ahead_m == "0" then
+						-- 		return branch
+						-- 	elseif ahead_b == "0" then
+						-- 		return branch .. string.format("[m+%s]", ahead_m)
+						-- 	else
+						-- 		return branch .. string.format("[m+%s|b+%s]", ahead_m, ahead_b)
+						-- 	end
+						-- end,
 					},
 
 					lualine_b = {
@@ -633,65 +633,6 @@ require("lazy").setup(
 					virt_text_pos = "eol", -- inline is very hard to read
 					-- note: current value will always be placed at the initial declaration
 				})
-			end,
-		}, -- }}}
-		{ -- nvim-dbee {{{
-			"kndndrj/nvim-dbee",
-
-			-- + api is quite hackable
-			-- + implements pagination (good for large queries)
-			-- + query execution is async
-			-- + query history
-			-- + query results are copied as json
-			-- - BB is a silly default binding to execute query (fixable?)
-			-- - executing a query always focuses the result pane (see PR)
-			-- - i dislike the 4-pane gui
-			-- - table schema cannot really be viewed? (sqlite)
-
-			ft = { "sql" },
-			dependencies = { "MunifTanjim/nui.nvim" },
-			build = function()
-				require("dbee").install()
-			end,
-			config = function()
-				-- https://github.com/kndndrj/nvim-dbee/blob/master/doc/dbee.txt#L136
-				require("dbee").setup({
-
-					sources = {
-						require("dbee.sources").MemorySource:new(require("util"):dbee_connections()),
-						-- require("dbee.sources").EnvSource:new("DBEE_CONNECTIONS"),
-						-- require("dbee.sources").FileSource:new(vim.fn.stdpath("cache") .. "/dbee/persistence.json"),
-					},
-
-					editor = {
-						mappings = { { key = "BB", mode = "", action = "" } },
-					},
-
-					result = {
-						focus_result = false,
-						page_size = 10,
-						mappings = { { key = "<c-c>", mode = "", action = "cancel_call" } },
-					},
-
-					-- -- https://github.com/MishimaPorte/asu-dotfiles/blob/09f5280e/.config/nvim/lua/plgs/dbee.lua#L148
-					-- ui = {
-					-- 	window_open_order = { "editor", "result", "drawer" },
-					-- },
-
-					-- https://github.com/kndndrj/nvim-dbee/blob/21d2cc08/lua/dbee/layouts/init.lua#L44
-					window_layout = require("dbee.layouts").Default:new({
-						result_height = 11, -- not dynamic!
-						call_log_height = 0,
-						drawer_width = 0,
-					}),
-				})
-
-				local c = require("dbee").api.core.get_current_connection()
-				if c then
-					print(string.format("dbee: connected to database %s (%s)", c.name, c.url))
-				else
-					print("dbee: no connection")
-				end
 			end,
 		}, -- }}}
 

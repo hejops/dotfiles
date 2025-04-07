@@ -168,14 +168,7 @@ require("conform").setup({
 
 		dhall = { command = "dhall", args = { "format" } },
 
-		latexindent = {
-			-- extra/perl-yaml-tiny
-			-- extra/perl-file-homedir
-			-- extra/texlive-luatex
-			-- texlive-fontsrecommended
-			command = "/usr/bin/latexindent",
-			args = { "--logfile=/dev/null" },
-		},
+		latexindent = { args = { "--logfile=/dev/null" } },
 	},
 
 	formatters_by_ft = {

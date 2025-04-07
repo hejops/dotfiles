@@ -244,7 +244,10 @@ vim.keymap.set("n", "<leader>go", function()
 	local branch = require("util"):get_command_output("git branch --show-current", true)
 	local path = require("util"):get_command_output("git ls-files --full-name " .. vim.fn.expand("%:p"), true)
 
-	local url = string.format("%s/-/blob/%s/%s", base, branch, path)
+	local url = string.format("%s/blob/%s/%s", base, branch, path)
+	if base:match("gitlab") then
+		url = url:gsub("/blob/", "/-/blob/")
+	end
 	vim.fn.jobstart("xdg-open " .. url)
 
 	-- $url/-/blob/$branch/$path
