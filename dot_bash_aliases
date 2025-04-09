@@ -174,15 +174,14 @@ rt() {
 
 	< ~/.config/mpv/library fzf --multi --reverse --preview="ls \"$MU\"/{}" |
 		prepend "$MU/" |
-		larr fix_tags
-
-	# 	while read -r d; do
-	# 		if files mpv | grep -F "$MU/$d"; then
-	# 			waitdie mpv
-	# 		fi
-	# 		# note: passing arbitrary num of args will probably be deprecated
-	# 		fix_tags "$MU/$d" < /dev/tty
-	# 	done
+		# larr fix_tags
+		while read -r d; do
+			if files mpv | grep -F "$d"; then
+				waitdie mpv
+			fi
+			# note: passing arbitrary num of args will probably be deprecated
+			fix_tags "$d" < /dev/tty
+		done
 
 }
 
@@ -202,8 +201,9 @@ alias gl=git_log
 alias gs=git_status
 
 # alias gdnw="git diff --color-words --no-index"
-alias g,=gpl # gpl is horrific to type
-alias g.=gp
+# alias gun="git checkout --" # discard all local changes ("undo")
+alias g,="git pull"
+alias g.="git push"
 alias gC="git show HEAD | cat; git reset --soft HEAD~1" # un-commit, but leave changes
 alias gCH="git reset --hard HEAD~1"                     # un-commit, and undo changes (destructive!)
 alias ga="git add"
@@ -211,12 +211,10 @@ alias gap="git add --patch"                      # i need to figure out how to d
 alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
 alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
 alias gig="\$EDITOR \$(_get_repo_root)/.gitignore"
-alias gp="git push"
-alias gpl="git pull"
 alias gu=gun
-alias gun="git checkout --" # discard all local changes ("undo")
 
 _get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
+_git_current_branch() { git branch --show-current; }
 _in_git_repo() { git rev-parse --is-inside-work-tree > /dev/null 2> /dev/null; }
 
 _gmaster() {
@@ -238,7 +236,7 @@ v() {
 
 	<<< "$files" cut -f3 |
 		largs ls -1t |
-		fzf -m --prompt="$(git branch --show-current): " \
+		fzf -m --prompt="$(_git_current_branch): " \
 			--height=~100% --reverse --preview-window='right,50%,border' \
 			--preview="cat {}" | # pygmentize very slow (60x slower than cat)
 		# yazi uses syntect under the hood
@@ -266,12 +264,19 @@ gA() {
 	set +x
 }
 
+gun() {
+	if [[ $(_git_current_branch) == $(_gmaster) ]]; then
+		return
+	fi
+	git checkout -- "$@"
+}
+
 gb() {
 	: switch to new branch, or existing branch
 
 	# no remote branches
-	default_local_branch=$(_gmaster) || :
-	current_local_branch=$(git branch --show-current)
+	default_local_branch=$(_gmaster) #|| :
+	current_local_branch=$(_git_current_branch)
 
 	if [[ $# -eq 0 ]]; then
 		if [[ $default_local_branch == "$current_local_branch" ]]; then
@@ -372,7 +377,7 @@ _git_log_fzf() {
 		args+=("origin/$1")
 	elif
 		m=$(_gmaster) &&
-			[[ $(git branch --show-current) == "$m" ]]
+			[[ $(_git_current_branch) == "$m" ]]
 	then
 		: on master
 	elif [[ -n $m ]]; then # dev branch
@@ -460,19 +465,28 @@ gcf() {
 }
 
 gc() {
+	: commit
 
 	if [[ $# -gt 0 ]]; then
 
 		# 1. specified files, but excluding untracked files
 		# note: this loop commits renamed files, but does not commit
 		# their old names
-		arr=()
+
+		# arr=()
+		# for f in "$@"; do
+		# 	[[ ! -f $f ]] && continue
+		# 	realpath "$f" | xargs git ls-files | grep -q . && arr+=("$f")
+		# done
+		# git commit -v "${arr[@]}"
+
 		for f in "$@"; do
 			[[ ! -f $f ]] && continue
-			git ls-files | grep -q "$(basename "$f")" && arr+=("$f")
-		done
-
-		git commit -v "${arr[@]}"
+			realpath "$f" |
+				xargs git ls-files |
+				grep -q . && echo "$f"
+		done |
+			largs git commit -v
 
 	elif
 		# 2a. file(s) that have been renamed/deleted
@@ -492,6 +506,7 @@ gc() {
 		# 2b. file(s) that have been renamed/deleted
 		git status --porcelain | grep -Pq '^(R | D)'
 	then
+		notify-send 'should be unreachable'
 		git status --porcelain | grep -P '^(R | D)' |
 			awk '{print $2}' | # iffy
 			xargs git commit -v
@@ -935,7 +950,7 @@ gau() {
 
 gmr() {
 	: create or open mr in browser
-	branch=$(git branch --show-current)
+	branch=$(_git_current_branch)
 	url=$(git config --get remote.origin.url)
 	url=$(_git_http "$url")
 
@@ -1774,7 +1789,7 @@ nt() {
 	while true; do
 		# result=$(timeout 1 ping -c 1 google.com 2> /dev/null)
 		# if [[ $? -eq 0 ]]; then
-		if ! result=$(timeout 1 ping -c 1 google.com 2> /dev/null); then
+		if ! _result=$(timeout 1 ping -c 1 google.com 2> /dev/null); then
 			echo -en "\r\e[Kalive $SECONDS"
 			notify-send alive
 			[[ $int -lt 80 ]] && ((int *= 2))
@@ -1900,8 +1915,10 @@ _unused() {
 		# done
 
 		# scripts accessed within the last 4 days (don't ask me why 4)
-		find ~/scripts -maxdepth 1 -type f -atime -4 | \xargs -n1 basename
-	} | sort -u
+		find ~/scripts -maxdepth 1 -type f -atime -4
+	} |
+		largs basename |
+		sort -u
 
 }
 
@@ -1952,7 +1969,7 @@ ytm() {
 	# done
 
 	f=$(mktemp)
-	vim "$f"
+	"$EDITOR" +startinsert "$f"
 
 	waitdie mpv
 
@@ -2087,7 +2104,7 @@ scan() {
 			--output-file "$f-$n-$res.pdf"
 		((n++))
 	done
-	pdfunite "$(\ls "$f"-* | sort -V)" "$f.pdf"
+	pdfunite "$(find . -name "$f-*" | sort -V)" "$f.pdf"
 	rm -I "$f"-*
 }
 
