@@ -20,7 +20,7 @@ local linters = {
 	javascriptreact = { "biomejs" },
 	make = { "checkmake" },
 	python = { "ruff" }, -- may have duplicate with ruff lsp
-	-- sql = { "sqlfluff" }, -- slow lint is fine, since async
+	sql = { "sqlfluff", "squawk" }, -- slow lint is fine, since async
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
 
@@ -153,6 +153,42 @@ require("lint").linters.clangtidy.args = { -- {{{
 			-- "misc-*",
 			-- "portability-*",
 		}, ","),
+} -- }}}
+
+require("lint").linters.squawk = { -- {{{
+	cmd = "squawk",
+	args = { "--reporter", "Json" },
+	stdin = false,
+
+	parser = function(output, _)
+		local items = {}
+
+		local severities = {
+			Warning = vim.diagnostic.severity.WARN,
+		}
+
+		if output == "" then
+			return items
+		end
+
+		local decoded = vim.json.decode(output) or {}
+		local bufpath = vim.fn.expand("%:p")
+
+		for _, diag in ipairs(decoded) do
+			if diag.file == bufpath then
+				table.insert(items, {
+					source = "squawk",
+					lnum = diag.line, -- squawk tends to misreport lnum, and does not report end_lnum
+					col = 0,
+					end_col = 999,
+					message = diag.messages[1].Note .. "\n\n" .. diag.messages[2].Help,
+					severity = assert(severities[diag.level], "missing mapping for severity " .. diag.level),
+				})
+			end
+		end
+
+		return items
+	end,
 } -- }}}
 
 -- linters cannot be conditionally disabled at config time. they can only be

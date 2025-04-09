@@ -85,16 +85,6 @@ require("conform").setup({
 			end,
 		},
 		-- }}}
-		-- sql {{{
-		sqruff = {
-			-- waiting https://github.com/quarylabs/sqruff/issues/1183
-			command = "sqruff",
-			args = { "fix", "-" }, -- dialect can only be specified via .sqruff
-			stdin = true,
-			exit_codes = { 0, 1 }, -- lol https://github.com/quarylabs/sqruff/issues/1134
-			-- cwd = require("util").root_directory,
-			cwd = require("lspconfig").util.root_pattern(".sqruff"),
-		},
 
 		sqlfluff = {
 			-- format: more reliable; will format if no violations found
@@ -111,7 +101,6 @@ require("conform").setup({
 			stdin = true,
 			require_cwd = false, -- else requires local .sqlfluff
 		},
-		-- }}}
 
 		shfmt = {
 			prepend_args = {
@@ -169,6 +158,12 @@ require("conform").setup({
 		dhall = { command = "dhall", args = { "format" } },
 
 		latexindent = { args = { "--logfile=/dev/null" } },
+
+		dockerfmt = {
+			command = "dockerfmt",
+			args = { "-w", "$FILENAME" },
+			stdin = false,
+		},
 	},
 
 	formatters_by_ft = {
@@ -184,6 +179,7 @@ require("conform").setup({
 		cpp = { "clang-format" }, -- clang-tidy is slow!
 		css = { "prettier" },
 		dhall = { "dhall" },
+		dockerfile = { "dockerfmt" },
 		elixir = { "mix" }, -- slow (just like elixir)
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" },
@@ -216,15 +212,15 @@ require("conform").setup({
 			"goimports-reviser", -- better default behaviour (lists 1st party after 3rd party); TODO: investigate why this breaks in some dirs (e.g. linkedin)
 		},
 
-		-- -- broken again, disabled until further notice
-		-- sql = {
-		-- 	"sqruff",
-		-- 	-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
-		-- 	-- do people rewrite in rust without feature parity?
-		-- 	"trim_newlines",
-		-- 	-- "sqlfluff",
-		-- 	-- stop_after_first = true,
-		-- },
+		sql = {
+			-- "pg_format", -- default formatting violates sqlfluff
+			"sqruff", -- relies on .sqruff
+			-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
+			-- do people rewrite in rust without feature parity?
+			"trim_newlines",
+			-- "sqlfluff",
+			-- stop_after_first = true,
+		},
 
 		-- sql = {
 		-- 	"sqlfluff",
