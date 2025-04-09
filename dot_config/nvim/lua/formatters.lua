@@ -158,6 +158,12 @@ require("conform").setup({
 		dhall = { command = "dhall", args = { "format" } },
 
 		latexindent = { args = { "--logfile=/dev/null" } },
+
+		dockerfmt = {
+			command = "dockerfmt",
+			args = { "-w", "$FILENAME" },
+			stdin = false,
+		},
 	},
 
 	formatters_by_ft = {
@@ -173,6 +179,7 @@ require("conform").setup({
 		cpp = { "clang-format" }, -- clang-tidy is slow!
 		css = { "prettier" },
 		dhall = { "dhall" },
+		dockerfile = { "dockerfmt" },
 		elixir = { "mix" }, -- slow (just like elixir)
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" },
