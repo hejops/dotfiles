@@ -265,10 +265,16 @@ gA() {
 }
 
 gun() {
-	if [[ $(_git_current_branch) == $(_gmaster) ]] && [[ $1 == . ]]; then
+	if
+		[[ $# -eq 0 ]] ||
+			[[ $(_git_current_branch) == $(_gmaster) ]] && [[ $1 == . ]]
+	then
 		return
 	fi
+
+	git diff "$@" | cat
 	git checkout -- "$@"
+	echo "undid ${#@} files"
 }
 
 gb() {
