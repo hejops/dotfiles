@@ -3,12 +3,12 @@
 local linters = {
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 
+	-- bash = { "shellcheck" }, -- now in bashls
 	-- elixir = { "credo" }, -- where da binary at
 	-- lua = { "selene" }, -- disabled until i can get condition to work
 	-- ruby = { "rubocop" },
 	-- rust = { "clippy" }, -- part of the lsp
 	["yaml.github"] = { "zizmor" },
-	bash = { "shellcheck" },
 	c = { "clangtidy" },
 	cpp = { "clangtidy" },
 	dockerfile = { "hadolint" }, -- can be quite noisy
@@ -20,7 +20,7 @@ local linters = {
 	javascriptreact = { "biomejs" },
 	make = { "checkmake" },
 	python = { "ruff" }, -- may have duplicate with ruff lsp
-	sql = { "sqlfluff" }, -- slow lint is fine, since async
+	-- sql = { "sqlfluff" }, -- slow lint is fine, since async
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
 
@@ -44,17 +44,6 @@ require("lint").linters_by_ft = linters
 -- importas, lll, nestif, nilnil, nlreturn, nolintlint, nonamedreturns,
 -- tagalign, usestdlibvars, unconvert, unparam, unused, varnamelen, whitespace
 -- require("lint").linters.golangci.args = {}
-
-local custom_gcl = vim.fn.globpath(
-	-- note: on startup, starts in cwd. path is only adjusted to project root
-	-- later
-	-- ".",
-	require("util"):root_directory(),
-	"custom-gcl"
-)
-if custom_gcl ~= "" then
-	require("lint").linters.golangcilint.cmd = custom_gcl
-end
 
 require("lint").linters.markdownlint.args = {
 	"--disable",
@@ -129,7 +118,7 @@ require("lint").linters.clangtidy.args = { -- {{{
 	-- echo '#include <iostream>' > foo.cpp ; time clang-tidy --checks='-*,cppcoreguidelines-*' foo.cpp
 	-- 2895 warnings generated.
 	-- Suppressed 2895 warnings (2895 in non-user code).
-	-- real    0m1.030s
+	-- real    0m0.483s
 
 	-- https://discourse.llvm.org/t/how-to-specify-clang-tidy-to-completely-not-check-non-user-files/70381
 	-- https://discourse.llvm.org/t/rfc-exclude-issues-from-system-headers-as-early-as-posible/68483
@@ -139,13 +128,16 @@ require("lint").linters.clangtidy.args = { -- {{{
 
 			-- WARN: large number of checks will lead to slowdown
 
+			-- echo '#include <stdio.h>' > foo.c ; clang-tidy --checks='-*,misc-include-cleaner' foo.c
+			-- works in cli, but not in vim, possibly because it traverses ast?
+			-- https://clang.llvm.org/extra/clang-tidy/checks/misc/include-cleaner.html
 			"misc-include-cleaner",
 
 			-- modernize-use-designated-initializers is relatively new (Feb 2024).
 			-- arch seem to be conservative with updating clang/llvm
 			-- https://github.com/llvm/llvm-project/pull/80541
 
-			"bugprone-*",
+			"bugprone-*", -- https://clang.llvm.org/extra/clang-tidy/checks/bugprone/argument-comment.html
 			"cppcoreguidelines-*",
 			"modernize-*",
 			"performance-*",
