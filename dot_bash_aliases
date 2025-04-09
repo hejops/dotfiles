@@ -45,7 +45,7 @@ alias ci="chromium --incognito"
 alias colt="column -t -s$'\t'" # align tab-containing output
 alias cpu="top -b -n1 -o %CPU | grep -m10 \$USER"
 alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
-alias cv="\$EDITOR ~/cv/src/index.tex"
+alias cv="exec \$EDITOR ~/cv/src/index.tex"
 alias dA="dc artist:"
 alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias dc="discogs_collection filter"
@@ -366,6 +366,10 @@ _git_log_fzf() {
 	if [[ -f $1 ]] || [[ -d $1 ]]; then
 		args+=("$@")
 		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
+	elif
+		[[ $# -gt 1 ]] # probably arbitrary options
+	then
+		args+=("$@")
 	elif
 		# other dev branch
 		[[ $# -eq 1 ]] &&
@@ -1972,7 +1976,6 @@ ytm() {
 	waitdie mpv
 
 	while read -r query; do
-		# for query in "${queries[@]}"; do
 		echo "$query"
 		curl -sL 'https://music.youtube.com/youtubei/v1/search' -H 'Content-Type: application/json' \
 			--data-raw '{"context":{"client":{"clientName":"WEB_REMIX","clientVersion":"1.20240904.01.01"}},"query":"'"$query"'","params":"EgWKAQIIAWoSEAMQBBAJEA4QChAFEBEQEBAV"}' |
