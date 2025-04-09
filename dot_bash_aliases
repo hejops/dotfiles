@@ -234,12 +234,22 @@ v() {
 		files=$(git ls-files .)
 	fi
 
+	# bat can keep up with rapid renders; pygmentize can't
+	#
+	# chezmoi/ > time cat dot_config/nvim/init.lua >/dev/null
+	# real    0m0.001s
+	#
+	# chezmoi/ > time bat --color=always --style=auto --paging=never dot_config/nvim/init.lua >/dev/null
+	# real    0m0.028s
+	#
+	# chezmoi/ > time pygmentize dot_config/nvim/init.lua >/dev/null
+	# real    0m0.118s
+
 	<<< "$files" cut -f3 |
 		largs ls -1t |
 		fzf -m --prompt="$(_git_current_branch): " \
 			--height=~100% --reverse --preview-window='right,50%,border' \
-			--preview="cat {}" | # pygmentize very slow (60x slower than cat)
-		# yazi uses syntect under the hood
+			--preview="bat --color always --style=auto {}" |
 		xargs nvim -p
 }
 
