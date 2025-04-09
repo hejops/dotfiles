@@ -414,23 +414,34 @@ grev() {
 gS() {
 	: like gs+gl, for files to stage/commit
 
-	# # porcelain v1 is -always- relative to repo root, which makes parsing harder
+	# # porcelain v1 is -always- relative to repo root, which makes
+	# # relativising to cwd needlessly tedious (this would probably involve
+	# # splitting each line, prepending repo root to the latter part,
+	# # relativising, and then rejoining!)
 	# files=$(git status --porcelain)
 
-	# https://git-scm.com/docs/git-status#_changed_tracked_entries
-	# $2 is more useful for tracked files (since it more closely maps to v1
-	# labels), but for untracked files this duplicates the file path, so we
-	# stick to $1
-	# HACK: i have no idea how to 'return' multiple columns inside a
-	# ternary, so concat with a space as an ugly workaround
-	files=$(git status --porcelain=2 | awk '{print ($1=="?") ? $1" "$NF : $2" "$NF}')
 	# note: untracked files have no diff
 	prv_cmd="echo {} | awk '{print \$NF}' | xargs git diff --color=always"
-	sel=$(<<< "$files" fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
-	echo "$sel" |
-		grep -P '^\?' | # add untracked files first
-		awk '{print $NF}' |
-		xargs git add
+
+	sel=$(git status --porcelain=2 |
+		# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
+		#   $2					       $NF
+		# ? README.md
+		#
+		# $2 is more useful for tracked files (since it more closely maps to v1
+		# labels), but for untracked files this duplicates the file path, so we
+		# stick to $1
+		#
+		# https://git-scm.com/docs/git-status#_changed_tracked_entries
+		#
+		# HACK: i have no idea how to 'return' multiple columns inside
+		# a ternary, so concat with a space as an ugly workaround
+		awk '{print ($1=="?") ? $0 : $2" "$NF}' |
+		fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
+	# fzh --multi --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
+
+	# add untracked files first
+	echo "$sel" | grep -P '^\?' | awk '{print $NF}' | xargs git add
 	echo "$sel" | awk '{print $NF}' | xargs git commit -v
 }
 
