@@ -287,11 +287,10 @@ function M:sql_dialect()
 	return default
 end
 
--- ---@return { name: string, type: string, url: string }[]
-
+---@return { name: string, type: string, url: string }[]
 function M:sql_connections()
 	local function pg_connection_ok(conn)
-		local cmd = [[psql '%s' -c 'select 1' 2>/dev/null | grep .]]
+		local cmd = [[psql '%s' -c 'select 1' 2>/dev/null | grep -q .]]
 		return conn and M:command_ok(string.format(cmd, conn))
 	end
 
