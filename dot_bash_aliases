@@ -131,22 +131,24 @@ sd() {
 
 	waitdie mpv pacman curl
 
-	while files firefox | grep "$HDD"; do
-		sleep 1m
-	done
+	if [[ -n $HDD ]]; then
+		while files firefox | grep "$HDD"; do
+			sleep 1m
+		done
 
-	killall firefox
+		killall firefox
 
-	# pgrep -u $USER cron
+		# pgrep -u $USER cron
 
-	# if pgrep nicotine; then
-	# 	pid=$(waitdie -s nicotine)
-	# 	[[ -n $pid ]] && waitdie -w nicotine
-	# fi
+		# if pgrep nicotine; then
+		# 	pid=$(waitdie -s nicotine)
+		# 	[[ -n $pid ]] && waitdie -w nicotine
+		# fi
 
-	while files python | grep "$MU"; do
-		sleep 10m
-	done
+		while files python | grep "$MU"; do
+			sleep 10m
+		done
+	fi
 
 	# pkill nicotine
 	# TODO: if new day (morning), just return
@@ -202,8 +204,8 @@ alias gs=git_status
 # alias gdnw="git diff --color-words --no-index"
 alias g,=gpl # gpl is horrific to type
 alias g.=gp
-alias gC="git reset --soft HEAD~1"  # un-commit, but leave changes
-alias gCH="git reset --hard HEAD~1" # un-commit, and undo changes (destructive!)
+alias gC="git show HEAD | cat; git reset --soft HEAD~1" # un-commit, but leave changes
+alias gCH="git reset --hard HEAD~1"                     # un-commit, and undo changes (destructive!)
 alias ga="git add"
 alias gap="git add --patch"                      # i need to figure out how to do this in vim, because going backwards is hell
 alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
