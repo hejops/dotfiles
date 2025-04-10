@@ -26,33 +26,30 @@ alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 alias wd=waitdie
 alias xo=xdg-open
 
-alias rab="exec yazi \"\$HDD/books\""
-alias rad="exec yazi \"\$SLSK/complete\"" # TODO: investigate `ya pub`
-alias rag="exec yazi \"\$HDD/guitar\""
-alias ram="exec yazi \"\$MU\""
-alias rat="exec yazi \"\$HDD/torrent\" \"\$HDD/movies\""
+alias rab='exec yazi "$HDD/books"'
+alias rad='exec yazi "$SLSK/complete"' # TODO: investigate `ya pub`
+alias rag='exec yazi "$HDD/guitar"'
+alias ram='exec yazi "$MU"'
+alias rat='exec yazi "$HDD/torrent" "$HDD/movies"'
 
-# alias csv="python -c 'import sys; import pandas; print(pandas.read_csv(sys.argv[1]))'"
-# alias da="~/disq/disq -artist"
 # alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
-# alias md="\$EDITOR -c 'set ft=markdown'"
 # alias n="NO_COLOR=1 node --import=tsx"
 alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit" # TODO: handle >1 video device (just increment n until file not exist)
-alias cdnp="cd \"\$(files mpv | grep mp3 | largs dirname)\""
+alias cdnp='cd "$(files mpv | grep mp3 | largs dirname)"'
 alias ci="chromium --incognito"
 alias colt="column -t -s$'\t'" # align tab-containing output
-alias cpu="top -b -n1 -o %CPU | grep -m10 \$USER"
-alias ctz="sudo timedatectl set-timezone \$(timedatectl list-timezones | grep / | fzf)" # TODO: geolocate
-alias cv="exec \$EDITOR ~/cv/src/index.tex"
+alias cpu='top -b -n1 -o %CPU | grep -m10 $USER'
+alias ctz='sudo timedatectl set-timezone $(timedatectl list-timezones | grep / | fzf)' # TODO: geolocate
+alias cv='exec $EDITOR ~/cv/src/index.tex'
 alias dA="dc artist:"
 alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
 alias fzh="fzf --height=~33% --reverse" # - and ~ are not equivalent
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
-alias mem="top -b -n1 -o %MEM | grep -m10 \$USER"
+alias mem='top -b -n1 -o %MEM | grep -m10 $USER'
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out ; kp"
 alias pq="~/plaque/plaque"
 alias pss="ps -e --format=lstart,pid,cmd --sort=start_time | grep -Fv -e '[' -e '('"
@@ -213,8 +210,9 @@ alias ga="git add"
 alias gap="git add --patch"                      # i need to figure out how to do this in vim, because going backwards is hell
 alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
 alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
-alias gig="\$EDITOR \$(_get_repo_root)/.gitignore"
+alias gig='$EDITOR $(_get_repo_root)/.gitignore'
 alias gu=gun
+alias gx='git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S' # TODO: colt would be nice, but then it can't be an alias anymore
 
 _get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
 _git_current_branch() { git branch --show-current; }
@@ -1157,7 +1155,7 @@ pentmd() {
 
 # cargo +nightly udeps
 alias cb="cargo build"
-alias cbr="cargo build --release && cp target/release/\$(basename \$PWD) ."
+alias cbr='cargo build --release && cp target/release/$(basename $PWD) .'
 alias cn="cargo new"
 alias ct="cargo test"
 alias cwr="cargo watch -x run"                           # web servers only
@@ -1332,7 +1330,7 @@ jmake() {
 	cmds=$(echo "$keys" |
 		while read -r cmd; do
 			echo "${cmd//:/-}:" # make targets cannot contain :
-			< package.json jq -r ".scripts.\"$cmd\"" |
+			< package.json jq -r '.scripts."'"$cmd"'"' |
 				sed 's/&& /\n/g; s/\"/"/g' |
 				prepend '\t'
 		done)
@@ -1417,7 +1415,7 @@ mch() {
 # sql {{{
 
 if [[ -n $POSTGRES_URL ]]; then
-	alias psql="psql \$POSTGRES_URL"
+	alias psql='psql $POSTGRES_URL'
 fi
 
 sq() {

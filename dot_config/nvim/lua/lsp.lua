@@ -395,7 +395,11 @@ mason_lspconfig.setup_handlers({
 
 require("lspconfig").digestif.setup({}) -- requires luarocks; autocomplete is wonky
 require("lspconfig").gleam.setup({}) -- not on mason, must be installed globally
-require("lspconfig").postgres_lsp.setup({}) -- postgrestools init/check
+require("lspconfig").postgres_lsp.setup({
+	-- works without active connection, but parser is unusable (agonisingly slow
+	-- and doesn't recognise some basic syntax (e.g. ON CONFLICT DO))
+	autostart = vim.fs.root(0, "postgrestools.jsonc") ~= nil,
+}) -- postgrestools init/check
 
 local diagnostics_signs = { Error = "💀", Warn = "🤔", Hint = "🤓", Info = "ⓘ" }
 for type, icon in pairs(diagnostics_signs) do
