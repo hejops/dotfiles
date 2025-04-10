@@ -179,9 +179,11 @@ rt() {
 			if files mpv | grep -F "$d"; then
 				waitdie mpv
 			fi
-			# note: passing arbitrary num of args will probably be deprecated
-			fix_tags "$d" < /dev/tty
-		done
+			# note: passing arbitrary num of args will probably be
+			# deprecated? but this is still needed for v/a fixing
+			# fix_tags "$d" < /dev/tty
+		done |
+		largs fix_tags
 
 }
 
@@ -189,6 +191,7 @@ rt() {
 
 # git {{{
 
+alias S=gS
 alias b=git_branch # i could <leader>gB, but changing branch means context switching and probably closing vim anyway
 alias bb=gb
 alias cr=git_root
@@ -1939,16 +1942,14 @@ _unused() {
 
 	echo
 	echo "# recently used scripts"
-	{
-		# # scripts explicitly called from cli
-		# \ls ~/scripts | while read -r f; do
-		# 	history | grep -wq "$f" && [ -x ~/scripts/"$f" ] && echo "$f"
-		# done
 
-		# scripts accessed within the last 4 days (don't ask me why 4)
-		find ~/scripts -maxdepth 1 -type f -atime -4
-	} |
-		largs basename |
+	# # scripts explicitly called from cli
+	# \ls ~/scripts | while read -r f; do
+	# 	history | grep -wq "$f" && [ -x ~/scripts/"$f" ] && echo "$f"
+	# done
+
+	# scripts accessed within the last 3 days (don't ask me why 3)
+	find ~/scripts -maxdepth 1 -type f -atime -3 -exec basename {} \; |
 		sort -u
 
 }
