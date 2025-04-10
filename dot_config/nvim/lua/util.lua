@@ -230,13 +230,14 @@ end
 -- attempt to get git repo root, ignoring all possible child directories
 ---@return string|nil
 function M:root_directory()
-	local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
-	local toplevel = vim.fn.system(cmd)
-	if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
-		-- return vim.fn.getcwd()
-		return nil
-	end
-	return toplevel:sub(0, -2)
+	return vim.fs.root(0, ".git")
+	-- local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
+	-- local toplevel = vim.fn.system(cmd)
+	-- if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
+	-- 	-- return vim.fn.getcwd()
+	-- 	return nil
+	-- end
+	-- return toplevel:sub(0, -2)
 end
 
 -- }}}
@@ -287,11 +288,10 @@ function M:sql_dialect()
 	return default
 end
 
--- ---@return { name: string, type: string, url: string }[]
-
+---@return { [string]: string }
 function M:sql_connections()
 	local function pg_connection_ok(conn)
-		local cmd = [[psql '%s' -c 'select 1' 2>/dev/null | grep .]]
+		local cmd = [[psql '%s' -c 'select 1' 2>/dev/null | grep -q .]]
 		return conn and M:command_ok(string.format(cmd, conn))
 	end
 

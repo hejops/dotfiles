@@ -42,7 +42,7 @@ alias ci="chromium --incognito"
 alias colt="column -t -s$'\t'" # align tab-containing output
 alias cpu='top -b -n1 -o %CPU | grep -m10 $USER'
 alias ctz='sudo timedatectl set-timezone $(timedatectl list-timezones | grep / | fzf)' # TODO: geolocate
-alias cv='$EDITOR ~/cv/src/index.tex'
+alias cv='exec $EDITOR ~/cv/src/index.tex'
 alias dA="dc artist:"
 alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias dc="discogs_collection filter"
@@ -232,12 +232,22 @@ v() {
 		files=$(git ls-files .)
 	fi
 
+	# bat can keep up with rapid renders; pygmentize can't
+	#
+	# chezmoi/ > time cat dot_config/nvim/init.lua >/dev/null
+	# real    0m0.001s
+	#
+	# chezmoi/ > time bat --color=always --style=auto --paging=never dot_config/nvim/init.lua >/dev/null
+	# real    0m0.028s
+	#
+	# chezmoi/ > time pygmentize dot_config/nvim/init.lua >/dev/null
+	# real    0m0.118s
+
 	<<< "$files" cut -f3 |
 		largs ls -1t |
 		fzf -m --prompt="$(_git_current_branch): " \
 			--height=~100% --reverse --preview-window='right,50%,border' \
-			--preview="cat {}" | # pygmentize very slow (60x slower than cat)
-		# yazi uses syntect under the hood
+			--preview="bat --color always --style=auto {}" |
 		xargs nvim -p
 }
 
@@ -263,10 +273,16 @@ gA() {
 }
 
 gun() {
-	if [[ $(_git_current_branch) == $(_gmaster) ]]; then
+	if
+		[[ $# -eq 0 ]] ||
+			[[ $(_git_current_branch) == $(_gmaster) ]] && [[ $1 == . ]]
+	then
 		return
 	fi
+
+	git diff "$@" | cat
 	git checkout -- "$@"
+	echo "undid ${#@} files"
 }
 
 gb() {
@@ -367,6 +383,10 @@ _git_log_fzf() {
 		args+=("$@")
 		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
 	elif
+		[[ $# -gt 1 ]] # probably arbitrary options
+	then
+		args+=("$@")
+	elif
 		# other dev branch
 		[[ $# -eq 1 ]] &&
 			git branch --remote | grep -Pq "^  origin/$1$"
@@ -408,23 +428,34 @@ grev() {
 gS() {
 	: like gs+gl, for files to stage/commit
 
-	# # porcelain v1 is -always- relative to repo root, which makes parsing harder
+	# # porcelain v1 is -always- relative to repo root, which makes
+	# # relativising to cwd needlessly tedious (this would probably involve
+	# # splitting each line, prepending repo root to the latter part,
+	# # relativising, and then rejoining!)
 	# files=$(git status --porcelain)
 
-	# https://git-scm.com/docs/git-status#_changed_tracked_entries
-	# $2 is more useful for tracked files (since it more closely maps to v1
-	# labels), but for untracked files this duplicates the file path, so we
-	# stick to $1
-	# HACK: i have no idea how to 'return' multiple columns inside a
-	# ternary, so concat with a space as an ugly workaround
-	files=$(git status --porcelain=2 | awk '{print ($1=="?") ? $1" "$NF : $2" "$NF}')
 	# note: untracked files have no diff
 	prv_cmd="echo {} | awk '{print \$NF}' | xargs git diff --color=always"
-	sel=$(<<< "$files" fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
-	echo "$sel" |
-		grep -P '^\?' | # add untracked files first
-		awk '{print $NF}' |
-		xargs git add
+
+	sel=$(git status --porcelain=2 |
+		# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
+		#   $2					       $NF
+		# ? README.md
+		#
+		# $2 is more useful for tracked files (since it more closely maps to v1
+		# labels), but for untracked files this duplicates the file path, so we
+		# stick to $1
+		#
+		# https://git-scm.com/docs/git-status#_changed_tracked_entries
+		#
+		# HACK: i have no idea how to 'return' multiple columns inside
+		# a ternary, so concat with a space as an ugly workaround
+		awk '{print ($1=="?") ? $0 : $2" "$NF}' |
+		fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
+	# fzh --multi --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
+
+	# add untracked files first
+	echo "$sel" | grep -P '^\?' | awk '{print $NF}' | xargs git add
 	echo "$sel" | awk '{print $NF}' | xargs git commit -v
 }
 
@@ -1972,7 +2003,6 @@ ytm() {
 	waitdie mpv
 
 	while read -r query; do
-		# for query in "${queries[@]}"; do
 		echo "$query"
 		curl -sL 'https://music.youtube.com/youtubei/v1/search' -H 'Content-Type: application/json' \
 			--data-raw '{"context":{"client":{"clientName":"WEB_REMIX","clientVersion":"1.20240904.01.01"}},"query":"'"$query"'","params":"EgWKAQIIAWoSEAMQBBAJEA4QChAFEBEQEBAV"}' |
