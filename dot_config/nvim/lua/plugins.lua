@@ -844,6 +844,11 @@ require("lazy").setup(
 		}, -- }}}
 		-- colorschemes {{{
 
+		"devoc09/lflops.nvim",
+		"lancewilhelm/horizon-extended.nvim",
+		"philosofonusus/morta.nvim",
+		"pustota-theme/pustota.nvim",
+
 		{
 			"zootedb0t/citruszest.nvim",
 			lazy = true,
