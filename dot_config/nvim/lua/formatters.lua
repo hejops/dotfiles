@@ -12,20 +12,8 @@ require("conform").setup({
 		["goimports-reviser"] = { args = { "$FILENAME" } }, -- '-format' introduces additional formatting, which i don't like
 
 		golines = {
-			args = {
-				"--base-formatter=gofmt", -- https://github.com/segmentio/golines/issues/115#issuecomment-1824651357
-			},
-		},
-
-		-- python {{{
-		black = {
-			-- https://black.readthedocs.io/en/stable/the_black_code_style/future_style.html#preview-style
-			prepend_args = { "--unstable" },
-		},
-
-		isort = {
-			prepend_args = require("util").is_ubuntu and { "--profile", "black" } -- don't use single-line style at work
-				or { "--force-single-line-imports", "--profile", "black" },
+			-- https://github.com/segmentio/golines/issues/115#issuecomment-1824651357
+			args = { "--base-formatter=gofmt" },
 		},
 
 		ruff_fix = {
@@ -53,28 +41,27 @@ require("conform").setup({
 				"-",
 			},
 		},
-		-- }}}
-		-- js {{{
+
 		biome = {
 			-- important: at work, use top-level biome.json
 			-- note: cwd must be a func, not a string
-			cwd = require("util").root_directory,
+			-- cwd = require("util").root_directory,
 			condition = function()
 				return not vim.loop.fs_stat(".prettierrc.json")
 			end,
-			-- if biome.json exists at root, use it and leave args unchanged
-			args = require("util"):root_directory() and vim.loop.fs_stat(
-				require("util"):root_directory() .. "/biome.json"
-			) and {
-				"format",
-				"--stdin-file-path",
-				"$FILENAME",
-			} or {
-				"format",
-				"--indent-style=space",
-				"--stdin-file-path",
-				"$FILENAME",
-			},
+			args = (function()
+				local args = {
+					"format",
+					"--stdin-file-path",
+					"$FILENAME",
+				}
+				if not vim.fs.root(0, "biome.json") then
+					-- default is tab (although this may not be noticeable due to the
+					-- tabstop autocmd)
+					table.insert(args, "--indent-style=space")
+				end
+				return args
+			end)(),
 		},
 
 		-- note: for <script> to be formatted properly, type= is required
@@ -86,23 +73,6 @@ require("conform").setup({
 				-- location is irrelevant)
 				return "/tmp"
 			end,
-		},
-		-- }}}
-
-		sqlfluff = {
-			-- format: more reliable; will format if no violations found
-			-- fix: does nothing if 'Unfixable violations detected'
-			-- in either case, no `dialect` usually leads to timeout
-			args = {
-				"format",
-				"--dialect=postgres",
-				"--processes=32", -- lol
-				"--exclude-rules",
-				"layout.long_lines",
-				"-",
-			},
-			stdin = true,
-			require_cwd = false, -- else requires local .sqlfluff
 		},
 
 		shfmt = {
@@ -174,6 +144,22 @@ require("conform").setup({
 			args = { "-w", "$FILENAME" },
 			stdin = false,
 		},
+
+		-- sqlfluff = {
+		-- 	-- format: more reliable; will format if no violations found
+		-- 	-- fix: does nothing if 'Unfixable violations detected'
+		-- 	-- in either case, no `dialect` usually leads to timeout
+		-- 	args = {
+		-- 		"format",
+		-- 		"--dialect=postgres",
+		-- 		"--processes=32", -- lol
+		-- 		"--exclude-rules",
+		-- 		"layout.long_lines",
+		-- 		"-",
+		-- 	},
+		-- 	stdin = true,
+		-- 	require_cwd = false, -- else requires local .sqlfluff
+		-- },
 	},
 
 	formatters_by_ft = {
@@ -231,9 +217,5 @@ require("conform").setup({
 			-- "sqlfluff",
 			-- stop_after_first = true,
 		},
-
-		-- sql = {
-		-- 	"sqlfluff",
-		-- },
 	},
 })

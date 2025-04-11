@@ -38,8 +38,8 @@ local js_ts_hints = {
 	includeInlayVariableTypeHints = false,
 }
 
--- motivation: vim.lsp.buf.references and incoming_calls serve basically the
--- same purpose; the former outputs the call, the latter the caller. but i
+-- motivation: `vim.lsp.buf.references` and `incoming_calls` serve basically
+-- the same purpose; the former outputs the call, the latter the caller. but i
 -- don't really adopt a qf workflow, and i would prefer outputting both caller
 -- and call.
 --
@@ -134,7 +134,7 @@ local function on_attach(_, bufnr)
 	nmap("<leader>A", vim.lsp.buf.code_action)
 
 	nmap("<leader>i", tele_lsp_incoming_custom, "incoming calls")
-	nmap("<leader>s", telescope_b.lsp_dynamic_workspace_symbols, "document symbols") -- all project files; slow in python?
+	nmap("<leader>s", telescope_b.lsp_dynamic_workspace_symbols, "document symbols") -- all project files
 	nmap("K", vim.lsp.buf.hover, "hover documentation")
 	nmap("R", vim.lsp.buf.rename, "rename")
 
@@ -142,19 +142,6 @@ local function on_attach(_, bufnr)
 		-- TS has no project-wide scope, too bad
 		require("telescope.builtin").treesitter({ symbols = { "method", "function", "type" } })
 	end, "treesitter functions")
-
-	-- nmap("<c-k>", vim.lsp.buf.signature_help, "signature documentation") -- != buf.hover! see: https://github.com/neovim/neovim/discussions/25711#discussioncomment-7323330
-	-- nmap("<leader>S", telescope_b.lsp_document_symbols, "document symbols") -- pre-loaded, curr buf only (almost never used)
-	-- nmap("<leader>d", vim.lsp.buf.type_definition, "type definition")
-	-- nmap("<leader>o", telescope_b.lsp_outgoing_calls, "outgoing calls") -- what does this call? less useful; think of this like goto def, but preview
-	-- nmap("<leader>wa", vim.lsp.buf.add_workspace_folder, "workspace add folder")
-	-- nmap("<leader>wr", vim.lsp.buf.remove_workspace_folder, "workspace remove folder")
-	-- nmap("gI", vim.lsp.buf.implementation, "go to implementation") -- only useful for langs where def and impl can be separate (e.g. TS)
-	-- nmap("gd", vim.lsp.buf.declaration, "goto declaration") -- != definition
-
-	-- nmap("<leader>lw", function()
-	-- 	print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
-	-- end, "list workspace folders")
 end -- }}}
 
 local servers = { -- {{{
@@ -170,27 +157,27 @@ local servers = { -- {{{
 	-- ruff = {}, -- i don't know if this actually does anything
 	-- texlab = {},
 	bashls = {},
-	biome = {}, -- at work, root_dir should resolve to repo root, so no further config necessary
 	dockerls = {},
 	lexical = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
-	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5d55352b36054bcc7b4acc232cb99dc6/nvim/lua/plugins/lsp_init.lua#L90
+	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5/nvim/lua/plugins/lsp_init.lua#L90
 	taplo = {},
 	zls = {},
 
-	clangd = {
+	clangd = { -- mason versions are usually newer than arch
 		cmd = {
 			"clangd",
 
 			"--all-scopes-completion", -- include index symbols that are potentially out of scope
 			"--background-index", -- index project code in the background and persist index on disk (where?)
 			"--completion-style=detailed", -- don't combine overloads
-			"--enable-config", -- read .clangd
+			"--enable-config", -- read .clangd (see fallbackFlags below)
 			"--function-arg-placeholders", -- complete function and method calls
 			"--header-insertion-decorators",
-			"--header-insertion=iwyu", -- "The C header names <*.h> will still be accepted as providing the symbol, but you'll have to #include them by hand - this behavior isn’t customizable."
+			"--header-insertion=iwyu", -- correct insertion of c headers requires clangd 19 (?)
 			"--malloc-trim", -- Release memory periodically (lol)
 			"--pch-storage=memory", -- increase performance (at the expense of memory)
+			-- "--clang-tidy",
 			-- "--log=error",
 			-- "-j=6", -- workers
 		},
@@ -211,13 +198,18 @@ local servers = { -- {{{
 				-- https://stackoverflow.com/a/64138834
 				-- https://old.reddit.com/r/C_Programming/comments/xq58u7
 
-				-- "-std=" .. (vim.bo.filetype == "cpp" and "c++23" or "c23"),
+				"-std=" .. (vim.bo.filetype == "cpp" and "c++23" or "c23"),
 				-- "-std=c23",
 
 				"-I",
 				".", -- https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html#index-I
 
 				"-Weverything",
+
+				-- note: gcc notoriously does not warn about unreachable code
+				-- https://gcc.gnu.org/legacy-ml/gcc-help/2011-05/msg00360.html
+
+				-- TODO: warn unused includes (this worked on my laptop iirc)
 
 				"-Wno-declaration-after-statement", -- `int foo = 1;` not allowed in C99
 				"-Wno-missing-noreturn", -- noreturn requires C23, which breaks cproto
@@ -233,7 +225,8 @@ local servers = { -- {{{
 			usePlaceholders = true,
 		},
 
-		-- TODO: https://clangd.llvm.org/config#unusedincludes
+		-- -- TODO: https://clangd.llvm.org/config#unusedincludes
+		-- -- should be enabled by default from clangd 17
 		-- settings = {
 		-- 	diagnostics = { "UnusedIncludes=Strict" },
 		-- 	clangd = {
@@ -308,35 +301,20 @@ local servers = { -- {{{
 		},
 	},
 
+	-- biome = {
+	-- 	-- root_dir = require("util"):root_directory(),
+	-- 	root_dir = vim.fs.root(0, { "biome.json" }),
+	-- },
+
 	ts_ls = {
 
-		-- -- ts_ls generally does not need to be at root, but it may be better to be
-		-- -- consistent with biome
-		-- root_dir = require("util"):root_directory(),
-
-		-- https://github.com/Virus288/Neovim-Config/blob/5cb7f321d217d3f9163ddc26c4b25c4c35f80211/lua/configs/lspConfig.lua#L46
-		init_options = {
-			preferences = {
-				disableSuggestions = false,
-				includeCompletionsForModuleExports = true,
-				includeCompletionsForImportStatements = true,
-				importModuleSpecifierPreference = "relative",
-			},
-		},
+		-- if nil, reverts to default value
+		-- root_dir is important for loading tsconfig.json correctly!
+		root_dir = require("util"):root_directory(), -- .. "/src",
 
 		settings = {
 			javascript = { inlayHints = js_ts_hints },
-			typescript = {
-				inlayHints = js_ts_hints,
-				experimental = { -- typescript only?
-					updateImportsOnPaste = true,
-					enableProjectDiagnostics = true,
-				},
-				preferences = {
-					preferTypeOnlyAutoImports = true,
-					importModuleSpecifier = "relative",
-				},
-			},
+			typescript = { inlayHints = js_ts_hints },
 
 			-- note: js projects will require jsconfig.json
 			diagnostics = {
@@ -386,7 +364,13 @@ local servers = { -- {{{
 		settings = {
 			Lua = {
 				diagnostics = {
-					globals = { "vim", "mp" },
+					globals = {
+						"Command", -- yazi
+						"mp", -- mpv
+						"ui", -- yazi
+						"vim",
+						"ya", -- yazi
+					},
 					disable = { "missing-fields" },
 				},
 				telemetry = { enable = false },
@@ -424,7 +408,6 @@ require("lspconfig").postgres_lsp.setup({
 
 local diagnostics_signs = { Error = "💀", Warn = "🤔", Hint = "🤓", Info = "ⓘ" }
 for type, icon in pairs(diagnostics_signs) do
-	-- https://github.com/folke/trouble.nvim/issues/52#issuecomment-950044538
 	-- https://github.com/folke/trouble.nvim/issues/52#issuecomment-988874117
 	local hl = "DiagnosticSign" .. type
 	vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
@@ -432,18 +415,20 @@ end
 
 -- ensure all popups have borders for better readability
 -- https://vi.stackexchange.com/a/39075
-local _border = "single"
-vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
-	border = _border,
-})
-
-vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.signature_help, {
-	border = _border,
-})
-
-vim.diagnostic.config({
-	float = {
-		border = _border,
-		focusable = false,
-	},
-})
+-- this entire section can be removed from v0.11
+-- new scrollbars are kinda weird though
+-- local _border = "single"
+-- vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
+-- 	border = _border,
+-- })
+--
+-- vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.signature_help, {
+-- 	border = _border,
+-- })
+--
+-- vim.diagnostic.config({
+-- 	float = {
+-- 		border = _border,
+-- 		focusable = false,
+-- 	},
+-- })
