@@ -173,9 +173,8 @@ rt() {
 		prepend "$MU/" |
 		# larr fix_tags
 		while read -r d; do
-			if files mpv | grep -F "$d"; then
-				waitdie mpv
-			fi
+			{ files mpv | grep -F "$d" && waitdie; } > /dev/null 2> /dev/null
+			echo "$d"
 			# note: passing arbitrary num of args will probably be
 			# deprecated? but this is still needed for v/a fixing
 			# fix_tags "$d" < /dev/tty
