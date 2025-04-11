@@ -1938,17 +1938,16 @@ _unused() {
 			< ~/.bash_history grep -wq "$cmd" || echo "$cmd"
 		done
 
-	echo
-	echo "# recently used scripts"
-
 	# # scripts explicitly called from cli
 	# \ls ~/scripts | while read -r f; do
 	# 	history | grep -wq "$f" && [ -x ~/scripts/"$f" ] && echo "$f"
 	# done
 
-	# scripts accessed within the last 3 days (don't ask me why 3)
-	find ~/scripts -maxdepth 1 -type f -atime -3 -exec basename {} \; |
-		sort -u
+	# # scripts accessed within the last 3 days (don't ask me why 3)
+	# find ~/scripts -maxdepth 1 -type f -atime -3 -exec basename {} \; |
+	# 	sort -u |
+	# 	prepend "$HOME"/.local/bin/ |
+	# 	largs chezmoi add -f
 
 }
 
