@@ -47,7 +47,7 @@ alias dA="dc artist:"
 alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
-alias fzh="fzf --height=~33% --reverse" # - and ~ are not equivalent
+alias fzh="fzf --height=~33% --reverse" # height=~X% means min(input rows, window height * X%);
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
 alias mem='top -b -n1 -o %MEM | grep -m10 $USER'
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out ; kp"
@@ -192,6 +192,7 @@ alias S=gS
 alias b=git_branch # i could <leader>gB, but changing branch means context switching and probably closing vim anyway
 alias bb=gb
 alias cr=git_root
+alias e=v
 alias s=git_status # could be ported to vim maybe
 
 # discouraged due to double index keypresses: gt gf gb
@@ -229,12 +230,6 @@ v() {
 
 	_in_git_repo || return
 
-	# git ls-files . |
-	files=$(git diff --numstat master...HEAD)
-	if [[ -z $files ]]; then
-		files=$(git ls-files .)
-	fi
-
 	# bat can keep up with rapid renders; pygmentize can't
 	#
 	# chezmoi/ > time cat dot_config/nvim/init.lua >/dev/null
@@ -246,11 +241,28 @@ v() {
 	# chezmoi/ > time pygmentize dot_config/nvim/init.lua >/dev/null
 	# real    0m0.118s
 
-	<<< "$files" cut -f3 |
-		largs ls -1t |
+	if command -v bat > /dev/null; then
+		# on ubuntu:
+		# ln -s /usr/bin/batcat ~/.local/bin/bat
+		prv_cmd="bat --color always --style=auto {}"
+	else
+		prv_cmd="cat {}"
+	fi
+
+	{
+		git diff --numstat "$(_gmaster)...HEAD" | cut -f3 | grep . ||
+			git diff --numstat --ignore-submodules | cut -f3 | grep . ||
+			git ls-files .
+	} |
+		prepend "$(_get_repo_root)"/ |
+		largs realpath --relative-to=. 2> /dev/null |
+		largs ls -1t 2> /dev/null |
+		# height=~X% is not suitable because preview is usually longer
+		# than input rows, and preview must always be shown to a reasonable
+		# extent
 		fzf -m --prompt="$(_git_current_branch): " \
-			--height=~100% --reverse --preview-window='right,50%,border' \
-			--preview="bat --color always --style=auto {}" |
+			--height=50% --reverse --preview-window='right,50%,border' \
+			--preview="$prv_cmd" |
 		xargs nvim -p
 }
 
@@ -267,7 +279,7 @@ git_root() {
 
 gA() {
 	: un-add, unstage
-	# not sure which command i run more often
+	# i usually want restore more often (?)
 	set -x
 	git restore --staged "$@" \
 		2> /dev/null || # committed; without --staged, changes are discarded!
@@ -483,6 +495,9 @@ gcf() {
 	new_sha=$(_git_log_fzf . | cut -d' ' -f1)
 	[[ -z $new_sha ]] && return
 
+	# TODO:
+	# error: pathspec '55c82b4c1' did not match any file(s) known to git
+
 	# --fixup associates a new commit with an existing commit so that when
 	# you do an interactive rebase, you don't have to re-order any commits
 	# in order to squash them. And you don't have to change any commit
@@ -494,6 +509,16 @@ gcf() {
 	# --autostash required to avoid 'unstaged changes present'
 	# TODO: is -i necessary?
 	git rebase -i --autosquash --autostash || gC
+}
+
+gsq() {
+	: squash last n commits -- rewrites history!
+	# https://stackoverflow.com/a/5201642
+	n=$1
+	msg_and_body=$(git show --format="%s%x09%b" --no-patch HEAD~"$n")
+	git reset --soft HEAD~"$n"           # TODO: fzf-able
+	git commit --message="$msg_and_body" # hopefully this works
+	git push --force-with-lease origin "$(_git_current_branch)"
 }
 
 gc() {
@@ -593,6 +618,33 @@ git_status() {
 
 	# 1
 
+	if
+		staged=$(git status --porcelain . |
+			# grep '^A' | # only added files!
+			# grep -Fv '??' |
+			grep -P '^[A-Z]' |
+			awk '{print $NF}' |
+			# make paths absolute (default: relative to root)
+			prepend "$(_get_repo_root)/" |
+			# then relativise to cwd
+			largs realpath --relative-to=. 2> /dev/null) #&&
+		[[ -n $staged ]]
+	then
+		: diffing staged files
+
+		cat <<- EOF
+			Staged:
+
+			$(<<< "$staged" \xargs git diff --stat --staged |
+				grep -F '|' | # ignore summary line
+				sort -n -k3)
+		EOF
+
+	else
+		echo "Nothing staged."
+
+	fi
+
 	# note: colors are lost when piping, but sort is more useful than color
 	if
 		# git diff only diffs unstaged files
@@ -603,33 +655,16 @@ git_status() {
 		)
 		[[ -n $diffs ]]
 	then
-		: no changes staged yet
-		# { git status --porcelain | grep -Fv '??'; } 2> /dev/null
-		echo "Nothing staged. Current stat:"
-		echo
-		echo "$diffs"
+		# [[ -n $staged ]] && echo
+		cat <<- EOF
 
-	elif
-		files=$(git status --porcelain |
-			# grep '^A' | # only added files!
-			grep -Fv '??' |
-			awk '{print $NF}' |
-			# make paths absolute (default: relative to root)
-			prepend "$(_get_repo_root)/" |
-			# then relativise to cwd
-			largs realpath --relative-to=. 2> /dev/null) #&&
-		[[ -n $files ]]
-	then
-		: diffing staged files
+			Unstaged:
 
-		echo "Staged:"
-		echo
-		<<< "$files" \xargs git diff --stat --staged |
-			grep -F '|' | # ignore summary line
-			sort -n -k3
+			$diffs
+		EOF
 
-	else
-		: no files staged
+	# else
+	# 	: no files staged
 
 	fi
 
@@ -652,6 +687,7 @@ git_status() {
 	# 3
 
 	if ! git status | grep -q 'Your branch'; then
+		# TODO: could also mean no branch on remote yet
 		echo "No remote yet."
 	elif ! git status | grep -P '\d+ commits?'; then
 		echo 'No commits staged.'
@@ -922,6 +958,12 @@ gcon() {
 
 gapat() {
 	: stage hunks matching some pattern
+
+	# https://blog.paddlefish.net/git-tip-stage-lines-matching-a-regular-expression/
+
+	# git diff -U0 |
+	# 	grepdiff -E 'ountDocu' --output-matching=hunk |
+	# 	git apply --cached --unidiff-zero
 
 	# # https://choly.ca/post/git-programmatic-staging/
 	# git diff |
@@ -1384,6 +1426,7 @@ perfnode() {
 # c {{{
 
 x() {
+	\ls *.c 2> /dev/null || return
 	n=$(basename "$(realpath .)")
 	gcc -o "$n" ./*.c && "./$n"
 }
@@ -1695,8 +1738,8 @@ files() {
 # stdout manipulation {{{
 
 append() { < /dev/stdin awk "{print \$0 \"$1\"}"; }
-desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; }            # for ease of filtering logs
-largs() { < /dev/stdin xargs --no-run-if-empty --delimiter='\n' "$@"; } # split xargs by newline instead of space
+desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # for ease of filtering logs
+largs() { < /dev/stdin xargs --delimiter='\n' "$@"; }        # split xargs by newline instead of space
 line() { < /dev/stdin sed -n "${1}p"; }
 ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; } # lines to comma-delimited str
 paren() { < /dev/stdin prepend '(' | append ')'; }
@@ -1910,12 +1953,12 @@ kp() {
 rge() {
 
 	: edit files matching pattern
-	files=$(rg --files-with-matches "$@" | sort -u)
-	if [[ $(<<< "$files" wc -l) -gt 10 ]]; then
+	staged=$(rg --files-with-matches "$@" | sort -u)
+	if [[ $(<<< "$staged" wc -l) -gt 10 ]]; then
 		echo "More than 10 files found"
 		return
 	fi
-	echo "$files" | xargs nvim -p
+	echo "$staged" | xargs nvim -p
 }
 
 # rg -U --multiline-dotall '^import.+?;'

@@ -8,6 +8,9 @@ require("conform").setup({
 	-- :h conform-options
 	-- :h conform-formatters
 	formatters = {
+
+		["goimports-reviser"] = { args = { "$FILENAME" } }, -- '-format' introduces additional formatting, which i don't like
+
 		golines = {
 			-- https://github.com/segmentio/golines/issues/115#issuecomment-1824651357
 			args = { "--base-formatter=gofmt" },
@@ -128,6 +131,13 @@ require("conform").setup({
 		dhall = { command = "dhall", args = { "format" } },
 
 		latexindent = { args = { "--logfile=/dev/null" } },
+
+		-- curl -sSL https://api.github.com/repos/reteps/dockerfmt/releases |
+		-- 	sponge /dev/stdout |
+		-- 	grep -Pom1 "https.+linux-amd64.tar.gz" |
+		-- 	xargs curl -sL |
+		-- 	sponge /dev/stdout |
+		-- 	tar -xvz --one-top-level=~/.local/bin
 
 		dockerfmt = {
 			command = "dockerfmt",

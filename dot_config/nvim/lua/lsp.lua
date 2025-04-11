@@ -276,6 +276,10 @@ local servers = { -- {{{
 	},
 
 	-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md
+	-- TODO: lsp rename (or nvim) is acting weird (go 1.24, gopls 0.18): renames
+	-- are performed, but affected files are not opened in new tabs (maybe it was
+	-- always like that?), and each file needs to be explicitly opened/saved.
+	-- sometimes, renames are totally botched and result in ghastly syntax errors
 	gopls = {
 		settings = {
 			gopls = { -- i have absolutely no idea why gopls needs to stutter
@@ -398,7 +402,8 @@ require("lspconfig").gleam.setup({}) -- not on mason, must be installed globally
 require("lspconfig").postgres_lsp.setup({
 	-- works without active connection, but parser is unusable (agonisingly slow
 	-- and doesn't recognise some basic syntax (e.g. ON CONFLICT DO))
-	autostart = vim.fs.root(0, "postgrestools.jsonc") ~= nil,
+	-- autostart = vim.fs.root(0, "postgrestools.jsonc") ~= nil,
+	autostart = false,
 }) -- postgrestools init/check
 
 local diagnostics_signs = { Error = "💀", Warn = "🤔", Hint = "🤓", Info = "ⓘ" }
