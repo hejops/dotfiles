@@ -3,34 +3,6 @@
 -- https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers
 -- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
 
--- https://github.com/BrunoKrugel/dotfiles/blob/0b2bdc4b3909620727b3975c482eea3cbebd7f9f/lua/mappings.lua#L5
--- local function golang_goto_def()
--- 	local old = vim.lsp.buf.definition
--- 	local opts = {
--- 		on_list = function(options)
--- 			if options == nil or options.items == nil or #options.items == 0 then
--- 				return
--- 			end
--- 			local targetFile = options.items[1].filename
--- 			local prefix = string.match(targetFile, "(.-)_templ%.go$")
--- 			if prefix then
--- 				local function_name = vim.fn.expand("<cword>")
--- 				options.items[1].filename = prefix .. ".templ"
--- 				vim.fn.setqflist({}, " ", options)
--- 				vim.api.nvim_command("cfirst")
--- 				vim.api.nvim_command("silent! /templ " .. function_name)
--- 			else
--- 				old()
--- 			end
--- 		end,
--- 	}
--- 	vim.lsp.buf.definition = function(o)
--- 		o = o or {}
--- 		o = vim.tbl_extend("keep", o, opts)
--- 		old(o)
--- 	end
--- end
-
 -- https://github.com/fatih/dotfiles/blob/52e459c991e1fa8125fb28d4930f13244afecd17/init.lua#L748
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("UserLspConfig", {}),
@@ -311,6 +283,10 @@ local servers = { -- {{{
 	},
 
 	-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md
+	-- TODO: lsp rename (or nvim) is acting weird (go 1.24, gopls 0.18): renames
+	-- are performed, but affected files are not opened in new tabs (maybe it was
+	-- always like that?), and each file needs to be explicitly opened/saved.
+	-- sometimes, renames are totally botched and result in ghastly syntax errors
 	gopls = {
 		settings = {
 			gopls = { -- i have absolutely no idea why gopls needs to stutter
@@ -442,7 +418,8 @@ require("lspconfig").gleam.setup({}) -- not on mason, must be installed globally
 require("lspconfig").postgres_lsp.setup({
 	-- works without active connection, but parser is unusable (agonisingly slow
 	-- and doesn't recognise some basic syntax (e.g. ON CONFLICT DO))
-	autostart = vim.fs.root(0, "postgrestools.jsonc") ~= nil,
+	-- autostart = vim.fs.root(0, "postgrestools.jsonc") ~= nil,
+	autostart = false,
 }) -- postgrestools init/check
 
 local diagnostics_signs = { Error = "💀", Warn = "🤔", Hint = "🤓", Info = "ⓘ" }
