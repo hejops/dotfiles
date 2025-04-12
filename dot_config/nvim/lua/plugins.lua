@@ -844,10 +844,20 @@ require("lazy").setup(
 		}, -- }}}
 		-- colorschemes {{{
 
-		"devoc09/lflops.nvim",
-		"lancewilhelm/horizon-extended.nvim",
-		"philosofonusus/morta.nvim",
-		"pustota-theme/pustota.nvim",
+		-- above average contrast
+		-- line column visible
+		-- no font styling
+		-- not mono tabline
+
+		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
+		"shawilly/ponokai", -- good, italic comments
+		"thejian/nvim-moonwalk", -- italic comments
+		-- "bakageddy/alduin.nvim", -- some keywords too dim
+		-- "c9rgreen/vim-colors-modus", -- mono tabline
+		-- "e-q/okcolors.nvim", -- few colors
+		-- "iagorrr/noctis-high-contrast.nvim",
+		-- "miikanissi/modus-themes.nvim", -- has light
+		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
 
 		{
 			"zootedb0t/citruszest.nvim",
@@ -862,62 +872,6 @@ require("lazy").setup(
 				})
 			end,
 		},
-
-		{ "bluz71/vim-moonfly-colors", lazy = true }, -- pub and fn same color
-		{ "iagorrr/noctis-high-contrast.nvim", lazy = true }, -- italic comments/types
-		{ "ingsme/nvim-smyck.nvim", lazy = true }, -- 'hybrid', italic comments
-		{ "tomasr/molokai", lazy = true }, -- italic types/funcs, bold keywords
-		{ "uncleten276/dark_flat.nvim", lazy = true }, -- italic comments
-
-		{
-			"judaew/ronny.nvim",
-			lazy = true,
-			enabled = vim.fn.executable("git-lfs"), --  TODO: https://stackoverflow.com/a/42021818
-		},
-
-		-- "abstract-ide/abstract-cs", -- unreadable comments
-		-- "ajmwagar/vim-deus", -- mono tabline
-		-- "chriskempson/vim-tomorrow-theme", -- mono tabline
-		-- "crusoexia/vim-monokai", -- mid contrast
-		-- "danilo-augusto/vim-afterglow", -- mono tabline
-		-- "dasupradyumna/midnight.nvim", -- mono tabline
-		-- "dgox16/oldworld.nvim", -- inactive tab too dim
-		-- "ellisonleao/gruvbox.nvim", -- mid contrast
-		-- "everblush/nvim", -- comments too dim
-		-- "fenetikm/falcon", -- mono tabline
-		-- "gosukiwi/vim-atom-dark", -- bad lualine
-		-- "hachy/eva01.vim", -- don't like the low contrast one
-		-- "honamduong/hybrid.nvim", -- mid contrast (name conflicts with nvim-smyck)
-		-- "jaredgorski/spacecamp", -- bad lualine
-		-- "kvrohit/rasmus.nvim", -- mono tabline
-		-- "lighthaus-theme/vim-lighthaus", -- mono tabline
-		-- "martinsione/darkplus.nvim", -- tab/lualine too bright
-		-- "mellow-theme/mellow.nvim", -- everything is purple
-		-- "mofiqul/dracula.nvim", -- bad at highlighting comment
-		-- "nvimdev/oceanic-material", -- mono tabline
-		-- "oxfist/night-owl.nvim", -- mono tabline
-		-- "pauchiner/pastelnight.nvim", -- inlay hints too dark
-		-- "paulo-granthon/hyper.nvim", -- blue against black
-		-- "polirritmico/monokai-nightasty.nvim", -- line column too dim
-		-- "ray-x/aurora", -- mid contrast
-		-- "rockyzhang24/arctic.nvim", -- requires lush
-		-- "sjl/badwolf", -- mono tabline
-		-- "srijs/vim-colors-rusty", -- not matched by regex
-		-- "tiagovla/tokyodark.nvim", -- comment too dim
-		-- "tomasiser/vim-code-dark", -- mid contrast
-		-- "vague2k/vague.nvim", -- bad contrast
-		-- "volbot/voltrix.vim", -- mono tabline
-		-- "w0ng/vim-hybrid", -- mono tabline
-		-- "xero/miasma.nvim", -- nauseating
-		-- "yorickpeterse/autumn.vim", -- mono tabline
-		-- "yorickpeterse/happy_hacking.vim", -- mono tabline
-		-- "yorumicolors/yorumi.nvim", -- low contrast
-		-- { "bluz71/vim-moonfly-colors", lazy = true }, -- italic comments
-		-- { "challenger-deep-theme/vim", lazy = true }, -- mid contrast
-		-- { "morhetz/gruvbox", lazy = true }, -- has bold
-		-- { "nanotech/jellybeans.vim", lazy = true }, -- mid contrast
-		-- { "nlcodes/my_nvim_config", lazy = true }, -- mono tabline
-		-- { "shawilly/ponokai", lazy = true }, -- mid contrast
 
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
 		-- https://vimcolorschemes.com/i/new/b.dark
