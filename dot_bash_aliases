@@ -448,10 +448,16 @@ gS() {
 	# # relativising, and then rejoining!)
 	# files=$(git status --porcelain)
 
-	# note: untracked files have no diff
-	prv_cmd="echo {} | awk '{print \$NF}' | xargs git diff --color=always"
+	prv_cmd=$(
+		cat <<- EOF
+			echo {} | awk '{print \$NF}' | xargs git diff --color=always | grep . ||
+			echo {} | awk '{print \$NF}' | xargs bat --color always --style=auto 2>/dev/null 
+		EOF
+	)
 
-	sel=$(git status --porcelain=2 |
+	# by default, git status does not enter dirs containing only 1
+	# (untracked) file
+	sel=$(git status --porcelain=2 --untracked-files=all |
 		# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
 		#   $2					       $NF
 		# ? README.md
