@@ -406,29 +406,15 @@ require("lspconfig").postgres_lsp.setup({
 	autostart = false,
 }) -- postgrestools init/check
 
-local diagnostics_signs = { Error = "💀", Warn = "🤔", Hint = "🤓", Info = "ⓘ" }
-for type, icon in pairs(diagnostics_signs) do
-	-- https://github.com/folke/trouble.nvim/issues/52#issuecomment-988874117
-	local hl = "DiagnosticSign" .. type
-	vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
-end
+vim.diagnostic.config({
+	signs = {
+		text = {
 
--- ensure all popups have borders for better readability
--- https://vi.stackexchange.com/a/39075
--- this entire section can be removed from v0.11
--- new scrollbars are kinda weird though
--- local _border = "single"
--- vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
--- 	border = _border,
--- })
---
--- vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.signature_help, {
--- 	border = _border,
--- })
---
--- vim.diagnostic.config({
--- 	float = {
--- 		border = _border,
--- 		focusable = false,
--- 	},
--- })
+			-- [vim.diagnostic.severity.INFO] = "",
+			[vim.diagnostic.severity.ERROR] = "💀",
+			[vim.diagnostic.severity.HINT] = "🤓",
+			[vim.diagnostic.severity.INFO] = "ⓘ",
+			[vim.diagnostic.severity.WARN] = "🤔",
+		},
+	},
+})
