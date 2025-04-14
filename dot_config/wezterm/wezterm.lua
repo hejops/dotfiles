@@ -14,10 +14,18 @@ if wezterm.config_builder then
 	config = wezterm.config_builder()
 end
 
-local function get_output(command)
-	local handle = assert(io.popen(command))
-	_ = handle:read("*a")
-	return handle:close()
+-- local function get_output(command)
+-- 	local handle = assert(io.popen(command))
+-- 	_ = handle:read("*a")
+-- 	return handle:close()
+-- end
+
+---@return string
+local function get_output(cmd)
+	assert(cmd)
+	---@type string
+	local out, _ = assert(io.popen(cmd)):read("*all")
+	return out
 end
 
 local is_ubuntu = get_output("grep Ubuntu /etc/*-release")
@@ -27,6 +35,12 @@ local is_ubuntu = get_output("grep Ubuntu /etc/*-release")
 -- 		table.insert(t1, v)
 -- 	end
 -- end
+
+-- wezterm.on("gui-startup", function()
+-- 	local _, _, window = wezterm.mux.spawn_window({ args = { "yazi" } })
+-- 	window:spawn_tab({ args = { "yazi" } })
+-- 	window:spawn_tab({ args = { "yazi" } })
+-- end)
 
 -- behaviour {{{
 
@@ -168,13 +182,20 @@ if not is_ubuntu then
 	-- font_size = 12.0
 	-- -- underline 'disappears' at larger sizes in wezterm (works ootb in ghostty, regardless of size)
 	-- config.underline_position = -6
-elseif get_output("xdpyinfo | grep -F 'x1200'") then -- note: xrandr is unacceptably slow
-	-- (dual) 2k
+elseif get_output("xdpyinfo | grep -F 3840x1200") then -- note: xrandr is unacceptably slow
+	-- dual 2k
 	table.insert(fonts, 1, "NanumGothicCoding")
 	font_size = 13.0
-elseif get_output("xdpyinfo | grep -F '1920x1080'") then
-	-- laptop-only (2k)
+elseif get_output("xdpyinfo | grep -F x1200") then
+	-- single 2k
+	table.insert(fonts, 1, "NanumGothicCoding")
 	font_size = 16.0
+elseif get_output("xdpyinfo | grep -F 1920x1080") then
+	-- laptop-only (2k)
+	font_size = 18.0
+elseif get_output("xdpyinfo | grep -F 3840x3240") then
+	table.insert(fonts, 1, "NanumGothicCoding")
+	font_size = 24.0
 else
 	-- home, 4k only
 	font_size = 18.0
@@ -220,7 +241,8 @@ end
 local function get_title(tab)
 	local pane = tab.active_pane
 	local title = assert(pane.title) -- may be ""
-	local dir = assert(pane.current_working_dir.path)
+	-- local dir = assert(pane.current_working_dir.path)
+	local dir = pane.current_working_dir and pane.current_working_dir.path or ""
 	local proc = basename(assert(pane.foreground_process_name))
 
 	local function get_bash_dir()
@@ -266,7 +288,11 @@ local function get_title(tab)
 
 		-- yazi always executes commands from ~
 		local branch = get_output(string.format("git -C %s branch --show-current", dir))
-		return string.format("d: %s [%s]", basename(dir), branch)
+		if branch ~= "" then
+			return string.format("d: %s [%s]", basename(dir), branch)
+		else
+			return string.format("d: %s", basename(dir))
+		end
 	else
 		-- os.execute("notify-send unreachable!")
 		error("unreachable")
@@ -357,8 +383,12 @@ local function keys()
 
 		-- https://github.com/wez/wezterm/blob/main/docs/config/launch.md#the-launcher-menu
 
+		-- TODO: disable ctrl-tab (what key? what action?)
 		-- both SpawnWindow and SpawnTab default to cwd
 		-- { key = "t", mods = "CTRL", action = act.SpawnTab("CurrentPaneDomain") },
+		-- { key = "x", mods = "CTRL", action = nil },
+		{ key = "PageDown", mods = "CTRL", action = act.DisableDefaultAssignment },
+		{ key = "PageUp", mods = "CTRL", action = act.DisableDefaultAssignment },
 		{ key = "e", mods = "CTRL", action = act.SpawnWindow },
 		{ key = "t", mods = "CTRL", action = SpawnTabNext() },
 		{ key = "t", mods = leader, action = act.SpawnCommandInNewTab({ cwd = wezterm.home_dir }) },
@@ -379,6 +409,8 @@ local function keys()
 		{ key = "g", mods = leader, action = act(hint_file) },
 		{ key = "w", mods = leader, action = act.EmitEvent("watch") },
 		{ key = "z", mods = "CTRL", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
+
+		{ key = "w", mods = leader, action = wezterm.action.CloseCurrentTab({ confirm = true }) },
 
 		{ key = "p", mods = leader, action = act.ActivateCommandPalette },
 	}

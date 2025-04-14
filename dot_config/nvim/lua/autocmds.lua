@@ -328,6 +328,26 @@ vim.api.nvim_create_autocmd("FileType", {
 
 -- }}}
 
+vim.api.nvim_create_autocmd("TabClosed", {
+	-- stop lsps that no longer have any bufs
+	callback = function()
+		local tab_fts = {}
+		for _, fname in pairs(require("util"):get_tabs_loaded()) do
+			tab_fts[vim.fn.fnamemodify(fname, ":e")] = true
+		end
+		-- print(vim.inspect(tab_fts))
+
+		for _, client in pairs(vim.lsp.get_clients()) do
+			local lsp_fts = client.config.filetypes
+			if not require("util"):intersect(lsp_fts, tab_fts) then
+				-- vim.lsp.buf_detach_client(0, client.id)
+				-- this (barely) works; vim.lsp.buf_detach_client is hard to get right
+				vim.cmd(string.format("LspStop %s", client.id))
+			end
+		end
+	end,
+})
+
 vim.api.nvim_create_autocmd("VimLeave", {
 	command = "Lazy clean",
 	-- callback = function()
