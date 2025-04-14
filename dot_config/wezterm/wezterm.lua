@@ -247,7 +247,8 @@ end
 local function get_title(tab)
 	local pane = tab.active_pane
 	local title = assert(pane.title) -- may be ""
-	local dir = assert(pane.current_working_dir.path)
+	-- local dir = assert(pane.current_working_dir.path)
+	local dir = pane.current_working_dir and pane.current_working_dir.path or ""
 	local proc = basename(assert(pane.foreground_process_name))
 
 	local function get_bash_dir()
