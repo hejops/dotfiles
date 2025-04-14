@@ -12,6 +12,22 @@ M = {}
 
 -- https://luals.github.io/wiki/annotations
 
+function M:extend(t1, t2)
+	for _, v in pairs(t2) do
+		table.insert(t1, v)
+	end
+	return t1
+end
+
+function M:intersect(t1, t2)
+	for k, _ in pairs(t1) do
+		if t2[k] ~= nil then
+			return true
+		end
+	end
+	return false
+end
+
 -- vim.tbl_keys is non-deterministic
 function M:keys(t)
 	local _keys = {}
@@ -48,12 +64,13 @@ function M:buf_contains(target, lines)
 	return false
 end
 
-function M:get_bufs_loaded() -- return list of (open) buffer paths
+function M:get_bufs_loaded(buf_nums) -- return list of (open) buffer paths
 	-- TODO: ...that are git tracked
 	-- Git commit <paths>
 	local bufs_loaded = {}
 
-	for _, buf_num in ipairs(vim.api.nvim_list_bufs()) do
+	for _, buf_num in pairs(buf_nums or vim.api.nvim_list_bufs()) do
+		print(vim.inspect(buf_num))
 		if vim.api.nvim_buf_is_loaded(buf_num) then
 			local buf_name = vim.api.nvim_buf_get_name(buf_num)
 			if buf_name ~= "" then
@@ -66,6 +83,21 @@ function M:get_bufs_loaded() -- return list of (open) buffer paths
 	end
 
 	-- print(bufs_loaded)
+
+	return bufs_loaded
+end
+
+-- this will differ from get_bufs_loaded, because not all buffers may be open
+-- in a tab
+function M:get_tabs_loaded()
+	local bufs_loaded = {}
+
+	for _, tabpage in pairs(vim.api.nvim_list_tabpages()) do
+		local bufs = vim.fn.tabpagebuflist(tabpage)
+		-- tabpagebuflist claims to return number[], but actually returns number if
+		-- tab only contains one window/buffer
+		bufs_loaded = M:extend(bufs_loaded, M:get_bufs_loaded(type(bufs) == "number" and { bufs } or bufs))
+	end
 
 	return bufs_loaded
 end
