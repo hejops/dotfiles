@@ -28,7 +28,7 @@ local function get_output(cmd)
 	return out
 end
 
-local is_ubuntu = get_output("grep Ubuntu /etc/*-release")
+local is_ubuntu = get_output("grep Ubuntu /etc/*-release") ~= ""
 
 -- local function extend(t1, t2)
 -- 	for _, v in ipairs(t2) do
