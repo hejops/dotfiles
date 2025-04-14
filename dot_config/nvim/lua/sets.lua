@@ -11,11 +11,8 @@ vim.o.undodir = vim.fn.expand("~/.vim/undo2//")
 
 vim.opt.formatoptions:append("ro") -- auto insert comment on newline; only works in languages that have a default commentstring (i.e. not json)
 
-local titlestring = "%f" -- path to file, relative to cwd
--- .. "[%LL] " -- lines
--- .. "%a" -- "Argument list status as in default title." (?)
--- .. "%r" -- [RO]
--- .. "%m" -- [+]
+vim.o.titleold = "___" -- HACK: see wezterm.lua
+vim.o.titlestring = "x0%f" -- path to file, relative to cwd
 
 -- vim.g.ftplugin_sql_omni_key = "<C-j>" -- default <C-c> is annoying
 -- vim.g.netrw_browse_split=4	-- open in vsplit
@@ -75,8 +72,6 @@ vim.o.termguicolors = true -- enable 24-bit colour
 vim.o.timeout = true
 vim.o.timeoutlen = 1000
 vim.o.title = true -- set custom window title
-vim.o.titleold = "___" -- HACK: see wezterm.lua
-vim.o.titlestring = titlestring
 vim.o.ttimeoutlen = 0 -- re-enter normal mode instantly
 vim.o.ttyfast = true -- speed improvement?
 vim.o.undofile = true -- write undo history to a file

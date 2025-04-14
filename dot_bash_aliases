@@ -173,9 +173,8 @@ rt() {
 		prepend "$MU/" |
 		# larr fix_tags
 		while read -r d; do
-			if files mpv | grep -F "$d"; then
-				waitdie mpv
-			fi
+			{ files mpv | grep -F "$d" && waitdie; } > /dev/null 2> /dev/null
+			echo "$d"
 			# note: passing arbitrary num of args will probably be
 			# deprecated? but this is still needed for v/a fixing
 			# fix_tags "$d" < /dev/tty
@@ -449,10 +448,16 @@ gS() {
 	# # relativising, and then rejoining!)
 	# files=$(git status --porcelain)
 
-	# note: untracked files have no diff
-	prv_cmd="echo {} | awk '{print \$NF}' | xargs git diff --color=always"
+	prv_cmd=$(
+		cat <<- EOF
+			echo {} | awk '{print \$NF}' | xargs git diff --color=always | grep . ||
+			echo {} | awk '{print \$NF}' | xargs bat --color always --style=auto 2>/dev/null 
+		EOF
+	)
 
-	sel=$(git status --porcelain=2 |
+	# by default, git status does not enter dirs containing only 1
+	# (untracked) file
+	sel=$(git status --porcelain=2 --untracked-files=all |
 		# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
 		#   $2					       $NF
 		# ? README.md
@@ -1981,17 +1986,16 @@ _unused() {
 			< ~/.bash_history grep -wq "$cmd" || echo "$cmd"
 		done
 
-	echo
-	echo "# recently used scripts"
-
 	# # scripts explicitly called from cli
 	# \ls ~/scripts | while read -r f; do
 	# 	history | grep -wq "$f" && [ -x ~/scripts/"$f" ] && echo "$f"
 	# done
 
-	# scripts accessed within the last 3 days (don't ask me why 3)
-	find ~/scripts -maxdepth 1 -type f -atime -3 -exec basename {} \; |
-		sort -u
+	# # scripts accessed within the last 3 days (don't ask me why 3)
+	# find ~/scripts -maxdepth 1 -type f -atime -3 -exec basename {} \; |
+	# 	sort -u |
+	# 	prepend "$HOME"/.local/bin/ |
+	# 	largs chezmoi add -f
 
 }
 

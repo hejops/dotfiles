@@ -264,19 +264,28 @@ local function get_title(tab)
 		return get_bash_dir()
 	elseif proc == "ssh" then
 		return string.match(title, "@[^:]+") or proc
-	elseif proc == "nvim" or title ~= "___" then
-		-- TODO: long-lived processes invoked from bash (e.g. yarn, sleep) may get this
-
+	elseif
+		proc == "nvim" --
+		or title:sub(1, 2) == "x0"
+	then
 		-- this is the only situation where we ever check the title. when nvim is
 		-- started from yazi (i.e. yazi -> nvim), proc still remains yazi, which
-		-- makes sense, because yazi does not (and should not) exec. if only proc
-		-- is checked, it would be impossible to react to yazi -> nvim.
+		-- makes sense, because yazi does not (and should not) exec.
 		--
-		-- to work around this, we force nvim to set title, which is caught in this
-		-- condition. on exit, nvim must then set title to some reserved string to
-		-- signal that we should fallthrough to the next condition.
-		return "f: " .. basename(title):sub(1, 20)
-	elseif proc == "yazi" then
+		-- if only proc is checked, it would be impossible to react to yazi -> nvim
+		-- and nvim -> yazi. to work around this, we force nvim to set a reserved
+		-- title on startup (which is caught in this condition), and another title
+		-- on exit (which is caught in the next condition).
+
+		return "f: " .. basename(title):gsub("^x0", ""):sub(1, 20)
+	elseif
+		proc == "yazi" --
+		or title == "___"
+	then
+		-- note: nvim -> bash tends to end up here. this is probably because nvim
+		-- sets exit title faster than pane.foreground_process_name can update.
+		-- pressing super should set the title correctly
+
 		-- return basename(dir)
 
 		-- yazi always executes commands from ~
