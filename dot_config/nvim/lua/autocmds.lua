@@ -338,11 +338,17 @@ vim.api.nvim_create_autocmd("TabClosed", {
 		-- print(vim.inspect(tab_fts))
 
 		for _, client in pairs(vim.lsp.get_clients()) do
-			local lsp_fts = client.config.filetypes
+			local lsp_fts = {}
+			for _, ft in pairs(client.config.filetypes) do
+				lsp_fts[ft] = true
+			end
+
 			if not require("util"):intersect(lsp_fts, tab_fts) then
+				-- vim.lsp.buf_detach_client is hard to get right
 				-- vim.lsp.buf_detach_client(0, client.id)
-				-- this (barely) works; vim.lsp.buf_detach_client is hard to get right
 				vim.cmd(string.format("LspStop %s", client.id))
+				print("closed", vim.inspect(client._log_prefix))
+				return -- must return, otherwise all clients will be stopped for some reason
 			end
 		end
 	end,
