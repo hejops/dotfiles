@@ -106,9 +106,9 @@ local function md_to_pdf()
 	)
 	vim.fn.jobstart(compile)
 	-- TODO: if lsof err, return
-	-- if #io.popen("lsof " .. out):read("*a") == 0 then
-	-- 	vim.fn.jobstart(string.format("zathura %s >/dev/null 2>/dev/null", out))
-	-- end
+	if #io.popen("lsof " .. out):read("*a") == 0 then
+		vim.fn.jobstart(string.format("zathura %s >/dev/null 2>/dev/null", out))
+	end
 end
 
 -- compile md -> pdf
@@ -178,33 +178,6 @@ vim.api.nvim_create_autocmd("TermOpen", {
 	end,
 })
 
--- -- disabled, because trying to override the default behaviour is usually incorrect
--- -- ensure 80/20 horizontal split
--- vim.api.nvim_create_autocmd({ "VimResized" }, {
--- 	callback = function()
--- 		local windows = vim.api.nvim_tabpage_list_wins(0)
--- 		if #windows == 1 then
--- 			return
--- 		end
---
--- 		-- fidget init is counted as a win when active, leading to unwanted resizes
--- 		-- when starting up rust and go workspaces
--- 		-- https://github.com/j-hui/fidget.nvim/blob/60404ba67044c6ab01894dd5bf77bd64ea5e09aa/lua/fidget/notification/window.lua#L306
--- 		-- TODO: other transient buffers may need to be caught
--- 		for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
--- 			-- if vim.api.nvim_buf_get_option(bufnr, "filetype") == "fidget" then
--- 			if vim.api.nvim_get_option_value("filetype", { buf = bufnr }) == "fidget" then
--- 				return
--- 			end
--- 		end
---
--- 		-- require("util"):resize_2_splits()
--- 		-- vim.cmd.redraw()
--- 		-- vim.cmd.norm("h")
--- 		-- vim.cmd.norm("l")
--- 	end,
--- })
-
 -- FileType {{{
 
 vim.api.nvim_create_autocmd("FileType", {
@@ -241,17 +214,6 @@ vim.api.nvim_create_autocmd("FileType", {
 		vim.opt_local.tabstop = 2
 	end,
 })
-
--- vim.api.nvim_create_autocmd("FileType", {
--- 	pattern = { "sh" },
--- 	callback = function()
--- 		print("hi")
--- 		vim.opt_local.expandtab = false
--- 		vim.opt_local.shiftwidth = 8
--- 		vim.opt_local.softtabstop = 0
--- 		vim.opt_local.tabstop = 8
--- 	end,
--- })
 
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "html" },
@@ -352,7 +314,15 @@ vim.api.nvim_create_autocmd("FileType", {
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "go" },
 	callback = function()
-		vim.fn.chdir(vim.fs.root(0, { "go.mod" }))
+		vim.fn.chdir(vim.fs.root(0, "go.mod"))
+	end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "tex" },
+	callback = function()
+		-- could put chdir in tectonic_build, but this also disables vimtex
+		vim.fn.chdir(vim.fs.root(0, "Tectonic.toml"))
 	end,
 })
 
