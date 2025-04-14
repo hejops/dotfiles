@@ -333,7 +333,12 @@ vim.api.nvim_create_autocmd("TabClosed", {
 	callback = function()
 		local tab_fts = {}
 		for _, fname in pairs(require("util"):get_tabs_loaded()) do
-			tab_fts[vim.fn.fnamemodify(fname, ":e")] = true
+			local ft, _ = vim.filetype.match({ filename = fname })
+			if ft then
+				tab_fts[ft] = fname
+			end
+			-- filetype.match returns empty for sh, so need to rely on file ext
+			tab_fts[vim.fn.fnamemodify(fname, ":e")] = fname
 		end
 		-- print(vim.inspect(tab_fts))
 
@@ -348,7 +353,6 @@ vim.api.nvim_create_autocmd("TabClosed", {
 				-- vim.lsp.buf_detach_client(0, client.id)
 				vim.cmd(string.format("LspStop %s", client.id))
 				print("closed", vim.inspect(client._log_prefix))
-				return -- must return, otherwise all clients will be stopped for some reason
 			end
 		end
 	end,
