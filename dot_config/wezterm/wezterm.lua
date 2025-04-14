@@ -1,14 +1,8 @@
 -- https://gist.github.com/alexpls/83d7af23426c8928402d6d79e72f9401
 -- https://github.com/pynappo/dotfiles/blob/ec6476a4cb78176be10293812c02dda7a4ac999a/.config/wezterm/wezterm.lua#L182
 
--- reasons to use wezterm over kitty:
--- declarative config
--- auto-sourced config
--- much easier os-specific config
--- superior documentation
-
 -- reasons not to use wezterm:
--- memory leak? (not really an issue any more)
+-- memory leak
 
 local wezterm = require("wezterm")
 -- local log = wezterm.log_info
@@ -239,6 +233,9 @@ local function get_title(tab)
 	-- 	basename(dir),
 	-- }, " ")
 
+	-- os.execute("notify-send " .. proc)
+	-- os.execute(string.format("notify-send '%s'", title))
+
 	if proc == "bash" then
 		return get_bash_dir()
 	elseif proc == "ssh" then
@@ -329,10 +326,9 @@ local function keys()
 		},
 	}
 
-	-- spawn new tab adjacent to current one, with same cwd. this is most useful
-	-- for nvim
+	-- spawn new tab adjacent to current one, with same cwd
 	local function SpawnTabNext()
-		-- https://old.reddit.com/r/wezterm/comments/1d71ei3/how_to_make_spawntab_spawn_a_new_tab_next_to/l759axf/
+		-- https://old.reddit.com/r/wezterm/comments/1d71ei3/_/l759axf/
 		local function active_tab_index(window)
 			for _, item in ipairs(window:mux_window():tabs_with_info()) do
 				if item.is_active then
@@ -396,187 +392,10 @@ local function keys()
 	-- 	end
 	-- end
 
-	-- local function resize(window, pane)
-	-- 	local tab = pane:tab()
-	-- 	local panes = tab:panes_with_info() -- https://wezfurlong.org/wezterm/config/lua/MuxTab/panes_with_info.html
-	--
-	-- 	-- force right panes to have equal height
-	-- 	local height = panes[1].height
-	-- 	local r_height = math.floor(height / (#panes - 1)) -- before recalc
-	--
-	-- 	for x = 2, #panes do
-	-- 		panes = tab:panes_with_info() -- recalc
-	-- 		-- log(panes[x])
-	-- 		local p = panes[x].pane
-	--
-	-- 		local diff = p:get_dimensions().viewport_rows - r_height
-	-- 		local dir = diff > 0
-	-- 				-- and x < #panes
-	-- 				and "Up"
-	-- 			or "Down"
-	--
-	-- 		log("pane", x, #panes, "has height", p:get_dimensions().viewport_rows, "need", r_height, dir, diff)
-	--
-	-- 		-- adjust Up on first split ignored
-	-- 		-- adjust Down on last split ignored
-	-- 		-- https://github.com/wez/wezterm/issues/4038
-	--
-	-- 		-- > lua: opening new split: 4
-	-- 		-- > lua: pane 2 4 has height 32 need 20 Up 12 (manual AdjustPaneSize call would have worked)
-	-- 		-- > lua: height is now 32
-	-- 		-- > lua: pane 3 4 has height 2 need 20 Down -18
-	-- 		-- > lua: height is now 20
-	-- 		-- > lua: pane 4 4 has height 8 need 20 Down -12
-	-- 		-- > lua: height is now 1
-	--
-	-- 		-- https://wezfurlong.org/wezterm/config/lua/pane/index.html
-	-- 		-- https://wezfurlong.org/wezterm/config/lua/keyassignment/AdjustPaneSize.html
-	--
-	-- 		if diff == 0 then
-	-- 			log("already ok")
-	-- 		else
-	-- 			window:perform_action(act.AdjustPaneSize({ dir, math.abs(diff) }), p)
-	-- 		end
-	--
-	-- 		log("height is now", tab:panes_with_info()[x].height)
-	-- 	end
-	-- end
-
-	-- local test_keys = {
-	-- 	-- https://github.com/nathanaelkane/dotfiles/blob/8b6c3f59157ccd85a51e20b580930f160d29e121/config/wezterm.lua#L163
-	-- 	-- https://github.com/uolot/dotfiles/blob/aa07dd01fddab8c7ffaa2230f298946671979e1a/wezterm/balance.lua#L108
-	--
-	-- 	{
-	-- 		mods = "SUPER",
-	-- 		key = "r",
-	-- 		action = wezterm.action_callback(function(win, pane)
-	-- 			resize(win, pane)
-	-- 		end),
-	-- 	},
-	--
-	-- 	{
-	-- 		mods = "SUPER",
-	-- 		key = "t",
-	-- 		action = wezterm.action_callback(function(win, pane)
-	-- 			local tab = pane:tab()
-	-- 			local panes = tab:panes_with_info() -- https://wezfurlong.org/wezterm/config/lua/MuxTab/panes_with_info.html
-	--
-	-- 			if #panes == 3 then -- need to get resize working first
-	-- 				return
-	-- 			end
-	--
-	-- 			local active_pane = panes[get_active_pane(panes)].pane
-	-- 			-- local active_pane = tab.active_pane
-	-- 			local cwd = active_pane:get_current_working_dir().file_path
-	--
-	-- 			if #panes == 1 then
-	-- 				log("first pane, splitting horiz (2)")
-	-- 				panes[1].pane:split({
-	-- 					direction = "Right",
-	-- 					size = 0.45,
-	-- 					cwd = cwd,
-	-- 				})
-	-- 				-- active_pane:activate()
-	-- 				return
-	-- 			end
-	--
-	-- 			log("opening new split:", #panes + 1)
-	-- 			panes[#panes].pane:split({
-	-- 				direction = "Bottom",
-	-- 				cwd = cwd,
-	-- 			})
-	-- 			-- resize(win, pane)
-	-- 			-- active_pane:activate()
-	-- 		end),
-	-- 	},
-	--
-	-- 	-- 'fullscreen' = pane:set_zoomed(true)
-	--
-	-- 	-- TODO: on closing left pane (pane 1), activate pane 2 and move it left
-	-- 	-- TODO: on closing any pane, resize all right panes
-	--
-	-- 	-- https://github.com/wez/wezterm/discussions/3331#discussioncomment-9477701 (swap)
-	-- 	-- https://github.com/wez/wezterm/issues/1975#issuecomment-1134817741 (tmux style select)
-	--
-	-- 	-- https://wezfurlong.org/wezterm/config/lua/keyassignment/RotatePanes.html
-	-- 	-- https://wezfurlong.org/wezterm/config/lua/keyassignment/PaneSelect.html
-	--
-	-- 	-- { key = "k", mods = leader, action = wezterm.action.AdjustPaneSize({ "Up", 12 }) },
-	--
-	-- 	{
-	-- 		key = "i",
-	-- 		mods = "SUPER",
-	-- 		-- action = act.RotatePanes("Clockwise"),
-	-- 		action = wezterm.action_callback(function(window, pane)
-	-- 			-- os.execute("notify-send hi")
-	-- 			-- local active = get_active_pane()
-	-- 			window:perform_action(act.RotatePanes("Clockwise"), pane)
-	-- 		end),
-	-- 	},
-	--
-	-- 	-- TODO: should only be reloaded when screen dimensions change
-	-- 	-- https://wezfurlong.org/wezterm/config/lua/wezterm/on.html
-	-- 	{
-	-- 		key = ",",
-	-- 		mods = "SUPER",
-	-- 		action = wezterm.action_callback(function()
-	-- 			wezterm.reload_configuration()
-	-- 		end),
-	-- 	},
-	--
-	-- 	-- note: disable ubuntu default keybinds first (< ~/.config/dconf/dconf.ini dconf load /)
-	-- 	{ key = "h", mods = "SUPER", action = act.ActivateTabRelative(-1) },
-	-- 	{ key = "j", mods = "SUPER", action = act.ActivatePaneDirection("Next") },
-	-- 	{ key = "k", mods = "SUPER", action = act.ActivatePaneDirection("Prev") },
-	-- 	{ key = "l", mods = "SUPER", action = act.ActivateTabRelative(1) },
-	-- }
-
-	-- -- note: dwm binds always override these
-	-- if is_ubuntu then
-	-- 	extend(_keys, test_keys)
-	-- end
-
 	return _keys
 end
 
 config.keys = keys()
-
--- with Up 3
--- 1:22 -> 1:19
--- 2:9 -> 2:6
--- 3:3 -> 3:1
--- 4:1
-
--- without
--- 1:22
--- 2:11
--- 3:5
--- 4:2
-
--- expected:
--- 1:46 -> 2:23 -> 3:15 -> 4:11
-
--- local wezterm = require("wezterm")
--- config = wezterm.config_builder()
--- config.keys = {
--- 	{
--- 		mods = "SHIFT|CTRL",
--- 		key = "t",
--- 		action = wezterm.action_callback(function(win, pane)
--- 			local panes = pane:tab():panes_with_info()
--- 			log("new pane:", #panes + 1)
--- 			panes[1].pane:send_text(string.format("%d:%d ", 1, panes[1].height))
--- 			panes[#panes].pane:activate()
--- 			panes[#panes].pane:split({ direction = "Bottom" })
--- 			for i = 1, #panes + 1 do
--- 				local p = pane:tab():panes_with_info()[i]
--- 				win:perform_action({ AdjustPaneSize = { "Up", 3 } }, p.pane)
--- 				p.pane:send_text(string.format("%d:%d ", i, p.height))
--- 			end
--- 			panes[1].pane:activate()
--- 		end),
--- 	},
--- }
 
 -- }}}
 
