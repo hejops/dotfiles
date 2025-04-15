@@ -19,6 +19,8 @@ function M:extend(t1, t2)
 	return t1
 end
 
+---@param t1 {[string]: any}
+---@param t2 {[string]: any}
 function M:intersect(t1, t2)
 	for k, _ in pairs(t1) do
 		if t2[k] ~= nil then
