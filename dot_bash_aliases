@@ -921,9 +921,8 @@ gcon() {
 	}
 
 	get_conflicts() {
-		git status --porcelain |
-			# grep -P '^(UU|AA)'
-			# grep -P '^[^ ?]{2} '
+		# submodule conflicts don't really need to be resolved?
+		git status --porcelain --ignore-submodules=always |
 			grep -P '^([^ ?])\1 ' |
 			sort -u
 	}
