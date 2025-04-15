@@ -331,14 +331,23 @@ vim.api.nvim_create_autocmd("FileType", {
 vim.api.nvim_create_autocmd("TabClosed", {
 	-- stop lsps that no longer have any bufs
 	callback = function()
+		-- print(vim.fn.expand("%")) -- invoked after the tab close, not before
+
+		local special_fnames = {
+			dot_bash_aliases = "sh",
+		}
+
 		local tab_fts = {}
-		for _, fname in pairs(require("util"):get_tabs_loaded()) do
-			local ft, _ = vim.filetype.match({ filename = fname })
+		for _, buf_num in pairs(require("util"):get_tabs_loaded()) do
+			local ft, _ = vim.filetype.match({ buf = buf_num })
+
+			-- if ft is only known via modeline (and there is no shebang), match will
+			-- -always- return nil; not even contents will work!
+			ft = ft or special_fnames[vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf_num), ":t")]
+
 			if ft then
-				tab_fts[ft] = fname
+				tab_fts[ft] = buf_num
 			end
-			-- filetype.match returns empty for sh, so need to rely on file ext
-			tab_fts[vim.fn.fnamemodify(fname, ":e")] = fname
 		end
 		-- print(vim.inspect(tab_fts))
 
