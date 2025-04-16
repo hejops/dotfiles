@@ -541,10 +541,12 @@ gcf() {
 gsq() {
 	: squash last n commits -- rewrites history!
 	# https://stackoverflow.com/a/5201642
-	n=$1
-	msg_and_body=$(git show --format="%s%x09%b" --no-patch HEAD~"$n")
-	git reset --soft HEAD~"$n"           # TODO: fzf-able
-	git commit --message="$msg_and_body" # hopefully this works
+	sha=$(_git_log_fzf | cut -d' ' -f1)
+	# `git reset <sha>` brings us back to the commit -after- <sha>. this
+	# means we need to select the commit before the 'target', which is
+	# unintuitive. so we just go back 1 more commit with ~
+	git reset --soft "$sha~"
+	git commit --edit -m"$(git log --format=%B --reverse "HEAD..HEAD@{1}")"
 	git push --force-with-lease origin "$(_git_current_branch)"
 }
 
