@@ -374,8 +374,12 @@ git_branch() {
 		return
 	fi
 
-	# TODO: handle master..master?
-	prv_cmd="echo {} | sed -r 's/^[ *]+//; s/^/$(_gmaster)../' | xargs git log --oneline --color=always"
+	prv_cmd=$(
+		cat <<- EOF
+			echo {} | sed -r 's/^[ *]+//; s/^/$(_gmaster)../' | xargs git log --oneline --color=always | grep . ||
+				git log --oneline  --color=always $(_gmaster)
+		EOF
+	)
 	branch=$(git branch --sort=-committerdate |
 		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi |
 		sed -r 's/^[ *]+//')
@@ -939,9 +943,8 @@ gcon() {
 	}
 
 	get_conflicts() {
-		git status --porcelain |
-			# grep -P '^(UU|AA)'
-			# grep -P '^[^ ?]{2} '
+		# submodule conflicts don't really need to be resolved?
+		git status --porcelain --ignore-submodules=always |
 			grep -P '^([^ ?])\1 ' |
 			sort -u
 	}
