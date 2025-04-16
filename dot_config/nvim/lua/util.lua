@@ -89,16 +89,21 @@ function M:get_bufs_loaded(buf_nums) -- return list of (open) buffer paths
 	return bufs_loaded
 end
 
--- this will differ from get_bufs_loaded, because not all buffers may be open
--- in a tab
+---@return number[]
 function M:get_tabs_loaded()
+	-- this will differ from get_bufs_loaded, because not all buffers may be open
+	-- in a tab
+
 	local bufs_loaded = {}
 
 	for _, tabpage in pairs(vim.api.nvim_list_tabpages()) do
-		local bufs = vim.fn.tabpagebuflist(tabpage)
-		-- tabpagebuflist claims to return number[], but actually returns number if
-		-- tab only contains one window/buffer
-		bufs_loaded = M:extend(bufs_loaded, M:get_bufs_loaded(type(bufs) == "number" and { bufs } or bufs))
+		local buf_nums = vim.fn.tabpagebuflist(tabpage)
+		bufs_loaded = M:extend(
+			bufs_loaded,
+			-- tabpagebuflist claims to return List, but actually returns number if
+			-- tab only contains one window/buffer
+			type(buf_nums) == "number" and { buf_nums } or buf_nums
+		)
 	end
 
 	return bufs_loaded
