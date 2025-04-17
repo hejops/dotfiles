@@ -669,13 +669,19 @@ local ft_binds = { -- {{{
 	python = {
 		{
 			"n",
-			"<leader>dd",
+			"<leader>d",
 			function() -- toggle ruff
-				vim.diagnostic.reset(nil, 0)
-				require("lint").linters_by_ft = {
-					python = #require("lint").linters_by_ft.python > 0 and {} or { "ruff" },
-				}
-				require("lint").try_lint()
+				local ruff_active = require("lint").linters_by_ft.python ~= {}
+				if ruff_active then
+					require("lint").linters_by_ft.python = {}
+					vim.diagnostic.reset(nil, 0)
+					print("disabled ruff")
+				else
+					require("lint").linters_by_ft.python = { "ruff" }
+					require("lint").try_lint()
+					print("enabled ruff")
+				end
+				vim.cmd("e") -- force lsp to reload
 			end,
 		},
 
