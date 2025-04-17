@@ -240,22 +240,20 @@ v() {
 	# chezmoi/ > time pygmentize dot_config/nvim/init.lua >/dev/null
 	# real    0m0.118s
 
-	if command -v bat > /dev/null; then
-		# on ubuntu:
-		# ln -s /usr/bin/batcat ~/.local/bin/bat
-		prv_cmd="bat --color always --style=auto {}"
-	else
-		prv_cmd="cat {}"
-	fi
+	# on ubuntu:
+	# ln -s /usr/bin/batcat ~/.local/bin/bat
+	prv_cmd="bat --color always --style=auto {} 2>/dev/null || cat {}"
 
 	{
-		git diff --numstat "$(_gmaster)...HEAD" | cut -f3 | grep . ||
-			git diff --numstat --ignore-submodules | cut -f3 | grep . ||
-			git ls-files .
+		# git diff --name-only --ignore-submodules "$(_gmaster)...HEAD" | grep . #||
+		git log --no-merges --first-parent --name-only --pretty= "$(_gmaster)...HEAD" | grep .
+		git ls-files .
 	} |
 		prepend "$(_get_repo_root)"/ |
 		largs realpath --relative-to=. 2> /dev/null |
+		sort -u |
 		largs ls -1t 2> /dev/null |
+		head -n50 |
 		# height=~X% is not suitable because preview is usually longer
 		# than input rows, and preview must always be shown to a reasonable
 		# extent
@@ -291,6 +289,7 @@ gun() {
 		[[ $# -eq 0 ]] ||
 			[[ $(_git_current_branch) == $(_gmaster) ]] && [[ $1 == . ]]
 	then
+		echo "cannot reset on master"
 		return
 	fi
 
@@ -422,8 +421,17 @@ _git_log_fzf() {
 		: no remote yet
 	fi
 
-	# there is nothing to see in merge commits
-	git log --oneline --no-merges "${args[@]}" |
+	# there is literally nothing to see in merge commits (Merge branch 'x'
+	# into 'master'), so --no-merges is generally a good idea.
+	#
+	# however, commits that are the -result- of a merge are still included.
+	# these merges can be further ignored with --first-parent, although
+	# ignoring them may not always be desirable.
+	#
+	# alternatively, it may be good to indicate whether the commit was
+	# committed in this branch, or simply pulled from remote.
+
+	git log --oneline --no-merges --first-parent "${args[@]}" |
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
@@ -455,7 +463,7 @@ gS() {
 	prv_cmd=$(
 		cat <<- EOF
 			echo {} | awk '{print \$NF}' | xargs git diff --color=always | grep . ||
-			echo {} | awk '{print \$NF}' | xargs bat --color always --style=auto 2>/dev/null 
+			echo {} | awk '{print \$NF}' | xargs bat --color always --style=auto 2>/dev/null
 		EOF
 	)
 
@@ -926,7 +934,7 @@ gcon() {
 
 	get_conflicts() {
 		# submodule conflicts don't really need to be resolved?
-		git status --porcelain --ignore-submodules=always |
+		git status --porcelain --ignore-submodules=all |
 			grep -P '^([^ ?])\1 ' |
 			sort -u
 	}
@@ -1070,8 +1078,8 @@ gldiff() {
 
 		prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
 
-		n=$(glab mr list -F json --not-draft |
-			jq '.[:10][]' |
+		n=$(glab mr list -F json | #--not-draft |
+			jq '.[:25][]' |
 			jqt updated_at iid title assignee.username source_branch |
 			sort -r |
 			fzh --preview="$prv_cmd" |
@@ -1090,7 +1098,7 @@ gldiff() {
 	# cannot use glab mr diff because diff is malformed
 	src=$(curl -sL -H "Cookie:_gitlab_session=$GL_SESSION" "$url")
 	if <<< "$src" grep -q "Sign in"; then
-		echo "GL_SESSION expired"
+		echo "_gitlab_session expired"
 		return
 	fi
 	echo "$src" | delta
