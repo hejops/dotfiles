@@ -105,8 +105,16 @@ local function md_to_pdf()
 		out
 	)
 	vim.fn.jobstart(compile)
-	-- TODO: if lsof err, return
-	if #io.popen("lsof " .. out):read("*a") == 0 then
+	if
+		#io.popen(string.format(
+			-- lsof tries to read nonsense dirs on ubuntu, and fails
+			-- can't stat() overlay file system /var/lib/docker/overlay2/.../merged
+			-- can't stat() nsfs file system /run/docker/netns/...
+			"lsof '%s' 2>/dev/null || ps aux | grep zathura | grep '%s'", --
+			out,
+			out
+		)):read("*a") == 0
+	then
 		vim.fn.jobstart(string.format("zathura %s >/dev/null 2>/dev/null", out))
 	end
 end
@@ -339,7 +347,7 @@ vim.api.nvim_create_autocmd("TabClosed", {
 
 		local tab_fts = {}
 		for _, buf_num in pairs(require("util"):get_tabs_loaded()) do
-			local ft, _ = vim.filetype.match({ buf = buf_num })
+			local ft, _ = vim.filetype.match({ buf = buf_num }) -- TODO: match may fail
 
 			-- if ft is only known via modeline (and there is no shebang), match will
 			-- -always- return nil; not even contents will work!
