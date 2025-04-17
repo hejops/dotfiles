@@ -83,7 +83,15 @@ da() {
 }
 
 cm() {
+
 	if [[ $# -eq 0 ]]; then
+		# note: files added to cm via `add -f <symlink>` are not
+		# automatically updated when the src file (target of the
+		# symlink) is modified. the symlink targets must always be
+		# re-added. this will no longer be necessary when the scripts
+		# repo is deprecated.
+		cm status | grep -Po '\.local/bin/.+' | largs chezmoi add -f 2> /dev/null
+
 		chezmoi cd
 	else
 		chezmoi "$@"
@@ -173,13 +181,23 @@ rt() {
 		prepend "$MU/" |
 		# larr fix_tags
 		while read -r d; do
-			{ files mpv | grep -F "$d" && waitdie; } > /dev/null 2> /dev/null
+			files mpv | grep -Fq "$d" && waitdie mpv >&2
 			echo "$d"
 			# note: passing arbitrary num of args will probably be
 			# deprecated? but this is still needed for v/a fixing
 			# fix_tags "$d" < /dev/tty
 		done |
-		largs fix_tags
+		largs -o fix_tags
+
+	# dirs=$(< ~/.config/mpv/library fzf --multi --reverse --preview="ls \"$MU\"/{}" |
+	# 	prepend "$MU/")
+	# while read -r d; do
+	# 	files mpv | grep -Fq "$d" && waitdie mpv > /dev/null 2> /dev/null
+	# done <<< "$dirs"
+	# # note: passing arbitrary num of args will probably be deprecated? but
+	# # this is still needed for v/a fixing
+	# # fix_tags "$d" < /dev/tty
+	# echo "$dirs" | largs fix_tags
 
 }
 
@@ -531,10 +549,12 @@ gcf() {
 gsq() {
 	: squash last n commits -- rewrites history!
 	# https://stackoverflow.com/a/5201642
-	n=$1
-	msg_and_body=$(git show --format="%s%x09%b" --no-patch HEAD~"$n")
-	git reset --soft HEAD~"$n"           # TODO: fzf-able
-	git commit --message="$msg_and_body" # hopefully this works
+	sha=$(_git_log_fzf | cut -d' ' -f1)
+	# `git reset <sha>` brings us back to the commit -after- <sha>. this
+	# means we need to select the commit before the 'target', which is
+	# unintuitive. so we just go back 1 more commit with ~
+	git reset --soft "$sha~"
+	git commit --edit -m"$(git log --format=%B --reverse "HEAD..HEAD@{1}")"
 	git push --force-with-lease origin "$(_git_current_branch)"
 }
 
@@ -975,31 +995,20 @@ gcon() {
 gapat() {
 	: stage hunks matching some pattern
 
+	# grepdiff is more reliable than git diff -S/-G
+	# https://choly.ca/post/git-programmatic-staging/
 	# https://blog.paddlefish.net/git-tip-stage-lines-matching-a-regular-expression/
+	# https://old.reddit.com/r/git/comments/p1vltk
+	git diff -U0 |
+		grepdiff --output-matching=hunk -E "$1" |
+		# "By default, git apply expects that the patch being applied
+		# is a unified diff with at least one line of context."
+		git apply --cached --unidiff-zero
 
-	# git diff -U0 |
-	# 	grepdiff -E 'ountDocu' --output-matching=hunk |
-	# 	git apply --cached --unidiff-zero
-
-	# # https://choly.ca/post/git-programmatic-staging/
-	# git diff |
-	# 	# TODO: grepdiff seems to match entire context surrounding the
-	# 	# matches, instead of just the surrounding lines
-	# 	# might be useful: --only-match=rem|removals|add|additions|mod|modifications|all
-	# 	grepdiff --output-matching=hunk "$1" |
+	# # https://stackoverflow.com/a/52394658
+	# git diff --unified=1 --pickaxe-regex -S "$1" |
+	# 	grepdiff --output-matching=hunk --extended-regexp "$1" |
 	# 	git apply --cached
-
-	# # https://old.reddit.com/r/git/comments/p1vltk
-	# git diff -U0 |
-	# 	grepdiff --output-matching=hunk "$1" |
-	# 	# "By default, git apply expects that the patch being applied
-	# 	# is a unified diff with at least one line of context."
-	# 	git apply --cached --unidiff-zero
-
-	# https://stackoverflow.com/a/52394658
-	git diff --unified=1 --pickaxe-regex -S "$1" |
-		grepdiff --output-matching=hunk --extended-regexp "$1" |
-		git apply --cached
 
 	# see also:
 	# http://www.philandstuff.com/2014/02/09/git-pickaxe.html
@@ -1489,12 +1498,22 @@ sq() {
 	# PRAGMA mmap_size = 134217728; -- 128 megabytes
 	# PRAGMA synchronous = NORMAL;
 
-	if [[ -f $1 ]]; then
-		< "$2" sqlite3 "$1"
-	else
-		echo "$2" | sqlite3 "$1"
-	fi
-	# echo "Not a file: $1"
+	{
+		if [[ -f $1-wal ]]; then
+			cp "$1" tmp.db > /dev/null
+			echo "$2" | sqlite3 tmp.db
+		elif [[ -f $1 ]]; then
+			echo "$2" | sqlite3 "$1"
+		fi
+	} | jq '.[]'
+
+	# if [[ -f $1 ]]; then
+	# 	< "$2" sqlite3 "$1"
+	# else
+	# 	echo "$2" | sqlite3 "$1"
+	# fi
+	# # echo "Not a file: $1"
+
 }
 
 sqbrk() {
@@ -1926,7 +1945,38 @@ pacmir() {
 # 	done
 # }
 
+# seq 1 10 |
+# 	while read -r i; do
+# 		curl -sL "https://vimcolorschemes.com/i/new/b.dark/$([[ $i -gt 1 ]] && echo "p.$i")" |
+# 			grep -Po 'href="[^"]+' |
+# 			tail -n20
+# 	done |
+# 	cut -d/ -f2- |
+# 	sort -u
+
 # }}}
+
+# could replace xfer with this
+# python3 -m http.server -d .
+
+# # analyse complexity via indentation
+# < "$1" grep -Po '^\s+' | sed 's/\t/x/g' | sort | uniq -c
+
+subs() {
+	# https://www.azsubtitles.com/restful-api
+	# TODO: fname -> infer title
+	c "https://www.azsubtitles.com/api/search?q=${1// /+}" |
+		jq -r '.Items[0] | .UID' |
+		prepend 'https://www.azsubtitles.com/api/movie' |
+		xargs curl -sL |
+		# File can contain a list of episodes, but we usually just want the first element
+		jq -r '.AllSubs[] | select(.Language.Title == "English") | .File[0].Url' |
+		sort |
+		# head -n1 |
+		fzf |
+		xargs curl --globoff # need globoff to ignore {}[]
+
+}
 
 rema() {
 	rem "$(lp "$1" | grep -Po '^\S+')"
@@ -2005,8 +2055,8 @@ _unused() {
 	# # scripts accessed within the last 3 days (don't ask me why 3)
 	# find ~/scripts -maxdepth 1 -type f -atime -3 -exec basename {} \; |
 	# 	sort -u |
-	# 	prepend "$HOME"/.local/bin/ |
-	# 	largs chezmoi add -f
+	# 	grep -v gitignore |
+	# 	prepend "$HOME"/.local/bin/ #| largs chezmoi add -f
 
 }
 
