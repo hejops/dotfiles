@@ -96,13 +96,12 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 })
 
 local function md_to_pdf()
-	local _in = vim.fn.shellescape(vim.fn.expand("%")) -- basename!
+	local _in = vim.fn.expand("%") -- basename!
 	local out = string.gsub(_in, "%.md", ".pdf")
 	local compile = string.format(
-		--
-		[[ lowdown -sTms %s | pdfroff -tik -Kutf8 -mspdf > %s 2>/dev/null ]],
-		_in,
-		out
+		[[ lowdown -sTms %s | pdfroff -tik -Kutf8 -mspdf > %s 2>/dev/null ]], --
+		vim.fn.shellescape(_in),
+		vim.fn.shellescape(out)
 	)
 	vim.fn.jobstart(compile)
 	-- TODO: if lsof err, return
