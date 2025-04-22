@@ -850,14 +850,14 @@ require("lazy").setup(
 		-- not mono tabline
 
 		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
-		"shawilly/ponokai", -- good, italic comments
-		"thejian/nvim-moonwalk", -- italic comments
+		"shawilly/ponokai", -- good, invisible select in float
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
 		-- "e-q/okcolors.nvim", -- few colors
 		-- "iagorrr/noctis-high-contrast.nvim",
 		-- "miikanissi/modus-themes.nvim", -- has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
+		-- "thejian/nvim-moonwalk", -- unreadable git status
 
 		{
 			"zootedb0t/citruszest.nvim",
