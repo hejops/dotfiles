@@ -311,6 +311,7 @@ local function debug_print(cmd)
 	-- {{{
 	local filetypes = {
 
+		bash = 'echo "$@"',
 		c = "printf(@);",
 		elixir = "IO.puts(@)",
 		gleam = "io.debug(@)",
@@ -938,6 +939,7 @@ local function exec()
 		rust = "RUST_BACKTRACE=1 cargo run", -- TODO: if vim.fn.line(".") >= line num of first match of '#[cfg(test)]', run 'cargo test' instead
 
 		-- jq = string.format("jq -f %s %s", curr_file, curr_file:gsub(".jq", ".json")),
+		-- lua = "luafile " .. curr_file,
 		-- the normal langs
 		dhall = "dhall-to-json --file " .. curr_file,
 		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
