@@ -19,6 +19,35 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+local cfg = { -- {{{
+	-- https://github.com/folke/lazy.nvim#%EF%B8%8F-configuration
+	-- https://github.com/ecosse3/nvim/blob/e8418eb65af4471891ea9a5b74a94205804c49aa/lua/config/lazy.lua#L14C41-L34C2
+	checker = {
+		enabled = true,
+		notify = false,
+	},
+	-- defaults = { lazy = true },
+	install = {
+		missing = true,
+	},
+	-- performance = {
+	-- 	rtp = {
+	-- 		disabled_plugins = {
+	-- 			"gzip",
+	-- 			"netrwPlugin",
+	-- 			"tarPlugin",
+	-- 			"tohtml",
+	-- 			"tutor",
+	-- 			"zipPlugin",
+	-- 		},
+	-- 	},
+	-- },
+	-- debug = false,
+	-- ui = {
+	-- 	border = EcoVim.ui.float.border,
+	-- },
+} -- }}}
+
 require("lazy").setup(
 	{
 
@@ -31,8 +60,7 @@ require("lazy").setup(
 		"tpope/vim-fugitive",
 		"tpope/vim-repeat",
 		"tpope/vim-surround",
-		-- "tpope/vim-sleuth", -- detect tabstop and shiftwidth automatically; disabled because it has unexpected side effects
-		{ "akinsho/git-conflict.nvim", version = "*", opts = {} },
+		{ "akinsho/git-conflict.nvim", version = "*", opts = {} }, -- TODO: only if file contains conflict markers?
 		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} },
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
 
@@ -856,14 +884,22 @@ require("lazy").setup(
 		-- not mono tabline
 
 		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
-		"shawilly/ponokai", -- good, italic comments
-		"thejian/nvim-moonwalk", -- italic comments
+		"e-q/okcolors.nvim", -- few colors
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
-		-- "e-q/okcolors.nvim", -- few colors
 		-- "iagorrr/noctis-high-contrast.nvim",
-		-- "miikanissi/modus-themes.nvim", -- has light
+		-- "miikanissi/modus-themes.nvim", -- very good, but has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
+		-- "olivercederborg/poimandres.nvim", -- dim line column
+		-- "thejian/nvim-moonwalk", -- italic comments, unusual navic
+
+		{
+			"shawilly/ponokai",
+			lazy = true,
+			config = function()
+				vim.g.ponokai_disable_italic_comment = true
+			end,
+		},
 
 		{
 			"zootedb0t/citruszest.nvim",
@@ -884,32 +920,5 @@ require("lazy").setup(
 		-- }}}
 	},
 
-	{ -- config {{{
-		-- https://github.com/folke/lazy.nvim#%EF%B8%8F-configuration
-		-- https://github.com/ecosse3/nvim/blob/e8418eb65af4471891ea9a5b74a94205804c49aa/lua/config/lazy.lua#L14C41-L34C2
-		checker = {
-			enabled = true,
-			notify = false,
-		},
-		-- defaults = { lazy = true },
-		install = {
-			missing = true,
-		},
-		-- performance = {
-		-- 	rtp = {
-		-- 		disabled_plugins = {
-		-- 			"gzip",
-		-- 			"netrwPlugin",
-		-- 			"tarPlugin",
-		-- 			"tohtml",
-		-- 			"tutor",
-		-- 			"zipPlugin",
-		-- 		},
-		-- 	},
-		-- },
-		-- debug = false,
-		-- ui = {
-		-- 	border = EcoVim.ui.float.border,
-		-- },
-	} -- }}}
+	cfg --
 )
