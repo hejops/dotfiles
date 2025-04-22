@@ -1035,6 +1035,12 @@ gauthors() {
 		sort -n
 }
 
+gxx() {
+	prv_cmd="echo {} | cut -f1 | xargs git show --color=always"
+	git log --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S "$1" | # WARN: slow with large histories
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border'       # --ansi
+}
+
 # }}}
 # gitlab {{{
 
