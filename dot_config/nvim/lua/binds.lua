@@ -17,7 +17,6 @@ vim.keymap.set("i", "<c-l>", "<s-right>")
 vim.keymap.set("n", "!", ":!")
 vim.keymap.set("n", "-", "~h") -- +/- are just j/k
 vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
-vim.keymap.set("n", "<F12>", require("util").random_colorscheme)
 vim.keymap.set("n", "<c-c>", "<nop>")
 vim.keymap.set("n", "<c-z>", "<nop>")
 vim.keymap.set("n", "<tab>", "<nop>") -- tab may be equivalent to c-i
@@ -29,6 +28,7 @@ vim.keymap.set("n", "Q", ":bd<cr>")
 vim.keymap.set("n", "U", ":redo<cr>")
 vim.keymap.set("n", "X", '"_X')
 vim.keymap.set("n", "Y", "y$") -- default is redundant with yy
+vim.keymap.set("n", "Z?", ":wqa<cr>")
 vim.keymap.set("n", "ZX", ":wqa<cr>")
 vim.keymap.set("n", "co", "O<esc>jo<esc>k") -- surround current line with newlines
 vim.keymap.set("n", "gD", "<nop>")
@@ -93,30 +93,43 @@ vim.keymap.set("n", "zL", "zR")
 vim.keymap.set("n", "zh", "zm") -- fold
 vim.keymap.set("n", "zl", "zr") -- expand
 
--- -- https://stackoverflow.com/a/2439848
--- -- https://vim.fandom.com/wiki/Moving_lines_up_or_down
--- -- i very rarely use alt nowadays
--- vim.keymap.set("i", "<a-j>", "<esc>:m .+1<cr>==gi")
--- vim.keymap.set("i", "<a-k>", "<esc>:m .-2<cr>==gi")
--- vim.keymap.set("n", "<a-j>", ":m .+1<cr>==")
--- vim.keymap.set("n", "<a-k>", ":m .-2<cr>==")
--- vim.keymap.set("v", "<a-j>", ":m '>+1<cr>gv=gv")
--- vim.keymap.set("v", "<a-k>", ":m '<-2<cr>gv=gv")
+-- mouse
+for _, vmode in pairs({ "i", "n", "x" }) do
+	for _, mod in pairs({ "", "c-", "a-" }) do
+		for _, n in pairs({ "", "2-", "3-", "4-" }) do
+			vim.keymap.set(vmode, string.format("<%s%smiddlemouse>", mod, n), "<nop>")
+			vim.keymap.set(vmode, string.format("<%s%srightmouse>", mod, n), "<nop>")
+		end
+	end
+end
+
+for _, n in pairs({ "2-", "3-", "4-", "c-", "a-" }) do
+	vim.keymap.set("i", string.format("<%sleftmouse>", n), "<nop>")
+	vim.keymap.set("n", string.format("<%sleftmouse>", n), "<nop>")
+end
 
 -- commands
 -- vim.keymap.set("n", "<c-s>", ":keepjumps normal! mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true })
+-- vim.keymap.set("n", "<f12>", require("util").random_colorscheme)
 -- vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 -- vim.keymap.set("n", "<leader>T", ":tabe " .. vim.fn.expand("%:p:h")) -- expanded only once!
+-- vim.keymap.set("n", "cp", ":colo<cr>")
+-- vim.keymap.set("n", "cr", require("util").random_colorscheme)
 vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true }) -- vim's sort n is not at all like !sort -V
-vim.keymap.set("n", "<f10>", ":colo<cr>")
-vim.keymap.set("n", "<leader><tab>", ":set list!<cr>")
 vim.keymap.set("n", "<leader>D", [[:g/\v/d<Left><Left>]])
 vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- remove all undos -- https://stackoverflow.com/a/47524696
 vim.keymap.set("n", "<leader>n", [[:%g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("n", "<leader>r", [[:%s/\v/g<Left><Left>]]) -- TODO: % -> g/PATT/
+vim.keymap.set("n", "<s-tab>", ":set list!<cr>")
+vim.keymap.set("n", "<tab><tab>", ":set list!<cr>")
 vim.keymap.set("v", "D", [[:g/\v/d<Left><Left>]]) -- delete lines
 vim.keymap.set("v", "n", [[:g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
+
+vim.keymap.set("n", "cr", function()
+	require("util"):random_colorscheme()
+	vim.cmd("colo")
+end)
 
 -- vim.keymap.set("n", "<leader>T", ":tabe " .. vim.fn.expand("%:p:h")) -- expands only to first opened file!
 
@@ -145,72 +158,6 @@ vim.keymap.set("n", "x", function()
 	return vim.bo.modifiable == 0 and ":bd<cr>" or '"_x'
 end, { silent = true, expr = true })
 
-for _, vmode in pairs({ "i", "n", "x" }) do
-	for _, mod in pairs({ "", "c-", "a-" }) do
-		for _, n in pairs({ "", "2-", "3-", "4-" }) do
-			vim.keymap.set(vmode, string.format("<%s%smiddlemouse>", mod, n), "<nop>")
-			vim.keymap.set(vmode, string.format("<%s%srightmouse>", mod, n), "<nop>")
-		end
-	end
-end
-
-for _, n in pairs({ "2-", "3-", "4-", "c-", "a-" }) do
-	vim.keymap.set("i", string.format("<%sleftmouse>", n), "<nop>")
-	vim.keymap.set("n", string.format("<%sleftmouse>", n), "<nop>")
-end
-
--- vim-fugitive; the only plugin allowed in this file, because of how critical it is
--- most of fugitive's interactive features are better done via telescope (e.g. git log, git status)
-vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
-vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
-
-local function commit_staged()
-	-- {{{
-	if not require("util"):in_git_repo() then
-		print("not in git repo")
-	elseif -- any changes have been staged (taken from gc)
-		-- commit currently staged chunk(s)
-		require("util"):get_command_output("git diff --name-only --cached --diff-filter=AM | grep .") ~= ""
-	then
-		vim.cmd("Git commit --quiet -v")
-	elseif -- current file has changes
-		-- commit entire file
-		-- exits with 1 if there were differences
-		not require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0))
-	then
-		-- do i ever need to commit a whole file while there are staged chunks? remains to be seen
-		vim.cmd("Git commit --quiet -v %")
-	else
-		print("no changes to stage")
-	end
-end -- }}}
-
-vim.keymap.set("n", "<leader>C", commit_staged, { desc = "commit current buffer/hunks" })
-vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit current buffer/hunks" })
-
-vim.keymap.set("n", "<leader>gc", function()
-	print("deprecated; use <leader>c or <leader>C")
-end, { desc = "deprecated" })
-
--- TODO: git add % + git commit --amend --no-edit
-vim.keymap.set("n", "<leader>gC", function()
-	if require("util"):command_ok("git status --porcelain | grep -q '^M'") then
-		vim.cmd("Git commit --quiet --amend --no-edit")
-		print(
-			string.format(
-				"Added hunk(s) to previous commit: %s",
-				require("util"):get_command_output("git log -n 1 --pretty=format:%s")
-			)
-		)
-	else
-		print("No hunks staged")
-	end
-end, { desc = "append currently staged hunks to previous commit" })
-
-vim.keymap.set("n", "<leader>gd", function()
-	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
-end, { desc = "diff current HEAD against master" })
-
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
 vim.keymap.set("n", "<leader>I", [[:lua print(vim.inspect())<left><left>]])
@@ -218,21 +165,8 @@ vim.keymap.set("n", "<leader>M", '"qp0dd') -- dump q buffer into a newline and c
 vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
 vim.keymap.set("n", "z/", "ZZ") -- lazy exit
 
-local function toggle_diagnostics()
-	-- only disables inlay hints; popups (and trouble) remain
-	-- TODO: for python, only ruff should be toggled
-	if vim.diagnostic.is_enabled() then
-		vim.diagnostic.enable(false)
-		vim.diagnostic.hide()
-	else
-		vim.diagnostic.enable(true)
-		vim.diagnostic.show()
-	end
-end
-
--- subs = { { pat = str, rep = str } }
---
 -- substitutions are applied in sequential order
+---@param subs { pat: string, rep: string }[]
 local function apply_substitutions(subs)
 	for _, sub in pairs(subs) do
 		pcall(function() -- ignore all errors
@@ -348,6 +282,8 @@ local function debug_print(cmd)
 	end
 	vim.cmd.startinsert()
 end -- }}}
+
+-- mode: string|string[], lhs: string, rhs: string|function, opts?: vim.keymap.set.Opts
 
 -- TODO: move out to separate file (almost 400 lines!)
 -- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
@@ -628,29 +564,6 @@ local ft_binds = { -- {{{
 		-- TODO: go get foo, and import foo
 		-- https://github.com/ray-x/go.nvim/blob/cde0c7a110c0f65b9e4e6baf342654268efff371/lua/go/goget.lua#L23
 		-- {"n", "<leader>a", 'gg/import<cr>o"":!go get github.com/', {  }},
-
-		-- function GoGet(pkg)
-		-- 	local url = "github.com/" .. pkg
-		--
-		-- 	-- 1. go get github...
-		-- 	vim.system(
-		-- 		{ "go", "get", url },
-		-- 		{},
-		-- 		-- on_exit
-		-- 		function(obj)
-		-- 			if obj.code == 0 then
-		-- 				print("ok: " .. pkg)
-		-- 				os.execute("notify-send " .. pkg)
-		-- 			else
-		-- 				print(obj.signal)
-		-- 				print(obj.stdout)
-		-- 				print(obj.stderr)
-		-- 		}
-		-- 	}
-		-- 	):wait()
-		-- 	-- 2. add import statement (_ "github.com/..."), save
-		-- 	-- 3. go mod tidy
-		-- { "n", "<leader>a", ":lua GoGet''<left>" },
 	},
 
 	["go.sqlc"] = {
@@ -724,7 +637,22 @@ local ft_binds = { -- {{{
 		},
 
 		{ "n", "<c-k>", "ysiw]Ea()<esc>Pgqq", { remap = true } }, -- wrap in hyperlink
-		{ "n", "<leader>d", toggle_diagnostics },
+
+		{
+			"n",
+			"<leader>d",
+			function()
+				-- only disables inlay hints; popups (and trouble) remain
+				if vim.diagnostic.is_enabled() then
+					vim.diagnostic.enable(false)
+					vim.diagnostic.hide()
+				else
+					vim.diagnostic.enable(true)
+					vim.diagnostic.show()
+				end
+			end,
+		},
+
 		{
 			"n",
 			"<leader>s",
@@ -817,126 +745,21 @@ local function c_compiler_cmd()
 	return cmd .. " " .. table.concat(cmds[cmd], " ")
 end -- }}}
 
-local function ts_is_compiled(js, ts)
-	-- {{{
-	-- if the js file newer than the ts file, the ts file can be said to be
-	-- compiled
-
-	local f1 = assert(io.popen("stat -c %Y " .. js))
-	local js_epoch = f1:read()
-	f1:close()
-
-	local f2 = assert(io.popen("stat -c %Y " .. ts))
-	local ts_epoch = f2:read()
-	f2:close()
-
-	return js_epoch > ts_epoch
-end -- }}}
-
-local function get_ts_runner(file)
-	-- {{{
-	local node_version = require("util"):get_command_output("node -v")
-
-	-- -- https://old.reddit.com/r/neovim/comments/mq4pxn/best_way_to_get_current_buffer_content_as_a_lua/gufgtv8/
-	-- if require("util"):buf_contains("@observablehq/plot") then
-	-- 	local tmpfile = "/tmp/foo.html"
-	-- 	-- vim.cmd(front .. runner .. " | tee " .. tmpfile)
-	-- 	vim.cmd(string.format("%s %s | tee %s", front, runner, tmpfile))
-	-- 	os.execute("firefox " .. tmpfile)
-	-- 	vim.cmd.wincmd("k")
-	-- 	vim.cmd.wincmd("h")
-	-- 	return
-	-- end
-
-	local js = string.gsub(file, ".ts", ".js")
-
-	-- cd first, so that child's node_modules/tsx can be found
-	-- this assumes that node_modules and file.ts are at the same level
-	vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
-	file = vim.fn.expand("%:.") -- relative to child dir
-
-	-- if vim.loop.fs_stat(".env") and vim.fn.executable("node23") then
-	-- 	return "node23 --no-warnings --import=tsx --env-file=.env " .. file
-
-	-- TODO: must use tsx if any file imports are needed; node imports must
-	-- specify file ext (fixable at top-level imports, but not at subsequent
-	-- imports)
-
-	if node_version >= "v22.7.0" then -- 2x faster than tsx, but not guaranteed to work
-		-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
-		return "node --experimental-strip-types --experimental-transform-types " .. file
-	elseif node_version >= "v22.6.0" then
-		return "node --experimental-strip-types " .. file
-	elseif vim.loop.fs_stat(js) and ts_is_compiled(js, file) then
-		-- fastest, but requires already compiled js (which is slow)
-		return "node " .. js -- 0.035 s
-	--experimental-transform-types
-	elseif vim.loop.fs_stat("./node_modules/tsx") then
-		-- run with node directly (without transpilation); requires tsx
-		-- https://nodejs.org/api/typescript.html#full-typescript-support
-		-- --enable-source-maps doesn't seem to report source line number correctly
-		-- node --import=tsx is significantly faster than yarn tsx (avoids unnecessary overhead)
-		return "node --no-warnings --import=tsx " .. file
-	elseif vim.fn.executable("tsc") == 1 and vim.loop.fs_stat("./node_modules/@types/node") then
-		-- https://stackoverflow.com/a/78148646
-		os.execute("tsc " .. file) -- ts -> js, 1.46 s
-		return "node " .. js
-	elseif vim.loop.fs_stat("./package.json") then
-		-- TODO: print is shown after execute
-		print("installing tsx...") -- ts-node is not just single binary
-		-- npm install --save-dev tsx
-		os.execute("yarn add --dev tsx >/dev/null")
-		-- vim.fn.jobstart("yarn add --dev tsx") -- possibly bad recursion, high memory
-		return get_ts_runner(file)
-	else
-		error("need npm init")
-	end
-end -- }}}
-
 -- run current file and dump stdout to scratch buffer
 local function exec()
 	-- {{{
 	-- running tests is better left to the terminal itself (e.g. wezterm)
 
-	-- relative to cwd
-	local curr_file = vim.fn.expand("%")
 	local ft = vim.bo.filetype
-
-	if vim.bo.filetype == "nofile" then
+	if ft == "nofile" then
 		return
 	end
 
-	-- TODO: async (Dispatch)
-	local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
-	local wide = vim.o.columns > 150
-
-	-- split dimensions -must- be declared in the [v]new command. attempting to
-	-- shrink a main split will not enlarge the secondary split!
-	if wide then -- vsplit if wide enough
-		local w = math.floor(vim.o.columns * 0.33)
-		front = w .. " v" .. front
-	else
-		local h = vim.o.lines * 0.2
-		front = h .. front
-	end
-
+	local curr_file = vim.fn.expand("%") -- relative to cwd
 	curr_file = vim.fn.shellescape(curr_file)
-	local cwd = vim.fn.getcwd()
+	local cwd = vim.fn.getcwd() -- only for go
 
-	local function get_py_runner()
-		local root = require("util"):root_directory()
-		if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
-			-- ~/.cache/uv
-			return "uv run "
-		elseif root and vim.loop.fs_stat(root .. "/pyproject.toml") then
-			-- vim.loop.fs_stat(require("util"):root_directory() .. ".venv")
-			-- poetry install -vv
-			return "poetry run python3 "
-		else
-			return "python3 "
-		end
-	end
-
+	---@type {[string]: string}
 	local runners = {
 
 		-- the great langs
@@ -953,24 +776,12 @@ local function exec()
 		javascript = "node " .. curr_file,
 		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
 		ocaml = "ocaml " .. curr_file,
-		python = get_py_runner() .. curr_file,
 		ruby = "ruby " .. curr_file,
 		sh = "env bash " .. curr_file,
 		sql = string.format([[psql %s -f '%s']], require("util"):sql_connections().neon, curr_file),
 		zig = "zig run " .. curr_file,
 
 		-- the iffy langs
-		-- typescript = "NO_COLOR=1 deno run --check=all " .. curr_file,
-		-- sql = get_sql_cmd, --(curr_file),
-		typescript = get_ts_runner, --(curr_file),
-
-		["javascript.mongo"] = string.format(
-			-- -f FILE requires FILE to be mongosh (not js)
-			[[mongosh %s --authenticationDatabase admin --quiet --eval < %s | sed -r 's/^\S+>[ .]*//g']],
-			-- .. [[ | node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq]],
-			vim.env.MONGO_URL,
-			curr_file
-		),
 
 		-- note that :new brings us to repo root (verify with :new|pwd), so we need
 		-- to not only know where we used to be, but also run the basename.go
@@ -981,8 +792,90 @@ local function exec()
 		-- .. "grep -v _test | " -- ignore test files (ugh)
 		-- .. "xargs go run",
 
-		-- -- TODO: it is not clear which cmd should be used
-		-- go = string.format([[ go run "$(dirname %s)"/*.go ]], curr_file),
+		python = (function()
+			local root = require("util"):root_directory()
+			if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
+				-- ~/.cache/uv
+				return "uv run "
+			elseif root and vim.loop.fs_stat(root .. "/pyproject.toml") then
+				-- vim.loop.fs_stat(require("util"):root_directory() .. ".venv")
+				-- poetry install -vv
+				return "poetry run python3 "
+			else
+				return "python3 "
+			end
+		end)() .. curr_file,
+
+		typescript = (function()
+			local function ts_is_compiled(js)
+				-- if the js file newer than the ts file, the ts file can be said to be
+				-- compiled
+
+				local f1 = assert(io.popen("stat -c %Y " .. js))
+				local js_epoch = f1:read()
+				f1:close()
+
+				local f2 = assert(io.popen("stat -c %Y " .. curr_file))
+				local ts_epoch = f2:read()
+				f2:close()
+
+				return js_epoch > ts_epoch
+			end
+
+			local js = vim.fn.fnamemodify(curr_file, ":r") .. ".js"
+
+			-- cd first, so that child's node_modules/tsx can be found
+			-- this assumes that node_modules and file.ts are at the same level
+			vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
+			curr_file = vim.fn.expand("%:.") -- relative to child dir
+
+			-- if vim.loop.fs_stat(".env") and vim.fn.executable("node23") then
+			-- 	return "node23 --no-warnings --import=tsx --env-file=.env " .. file
+
+			-- TODO: must use tsx if any file imports are needed; node imports must
+			-- specify file ext (fixable at top-level imports, but not at subsequent
+			-- imports)
+
+			local node_version = require("util"):get_command_output("node -v")
+			if node_version >= "v22.7.0" then -- 2x faster than tsx, but not guaranteed to work
+				-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
+				return "node --experimental-strip-types --experimental-transform-types " .. curr_file
+			elseif node_version >= "v22.6.0" then
+				return "node --experimental-strip-types " .. curr_file
+			elseif vim.loop.fs_stat(js) and ts_is_compiled(js) then
+				-- fastest, but requires already compiled js (which is slow)
+				return "node " .. js -- 0.035 s
+			--experimental-transform-types
+			elseif vim.loop.fs_stat("./node_modules/tsx") then
+				-- run with node directly (without transpilation); requires tsx
+				-- https://nodejs.org/api/typescript.html#full-typescript-support
+				-- --enable-source-maps doesn't seem to report source line number correctly
+				-- node --import=tsx is significantly faster than yarn tsx (avoids unnecessary overhead)
+				return "node --no-warnings --import=tsx " .. curr_file
+			elseif vim.fn.executable("tsc") == 1 and vim.loop.fs_stat("./node_modules/@types/node") then
+				-- https://stackoverflow.com/a/78148646
+				os.execute("tsc " .. curr_file) -- ts -> js, 1.46 s
+				return "node " .. js
+			elseif vim.loop.fs_stat("./package.json") then
+				-- TODO: print is shown after execute
+				-- print("installing tsx...") -- ts-node is not just single binary
+				-- npm install --save-dev tsx
+				-- os.execute("yarn add --dev tsx >/dev/null")
+				error("need install tsx")
+				-- vim.fn.jobstart("yarn add --dev tsx") -- possibly bad recursion, high memory
+				-- return get_ts_runner(file)
+			else
+				error("no package.json found; need npm init")
+			end
+		end)(),
+
+		["javascript.mongo"] = string.format(
+			-- -f FILE requires FILE to be mongosh (not js)
+			[[mongosh %s --authenticationDatabase admin --quiet --eval < %s | sed -r 's/^\S+>[ .]*//g']],
+			-- .. [[ | node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq]],
+			vim.env.MONGO_URL,
+			curr_file
+		),
 
 		-- note: -static generates a fully self-contained binary. this roughly
 		-- doubles compile time, and makes the binary about 50x bigger
@@ -1002,44 +895,44 @@ local function exec()
 		-- should use make/cmake/ccache:
 		-- hello: hello.cpp
 		-- 	g++ hello.cpp -o hello
-		cpp = vim.loop.fs_stat("Makefile") and string.format([[ make && ./%s ]], string.gsub(curr_file, ".cpp", ""))
-			or string.format(
-				[[ time g++ %s -O0 -o %s && ./%s ]],
-				curr_file,
-				string.gsub(curr_file, ".cpp", ""),
-				string.gsub(curr_file, ".cpp", "")
-			),
+		cpp = (function()
+			local base = vim.fn.fnamemodify(curr_file, ":r") .. ".cpp"
 
-		-- -- the... kotlin
-		-- -- https://kotlinlang.org/docs/command-line.html#create-and-run-an-application
-		-- kotlin = string.format(
-		-- 	"kotlinc %s -include-runtime -d %s ; java -jar %s",
-		-- 	curr_file,
-		-- 	string.gsub(curr_file, ".kt", ".jar"),
-		-- 	string.gsub(curr_file, ".kt", ".jar")
-		-- ),
+			if vim.loop.fs_stat("Makefile") then
+				return string.format([[ make && ./%s ]], base)
+			end
+
+			return string.format([[ time g++ %s -O0 -o %s && ./%s ]], curr_file, base, base)
+		end)(),
 	}
 
 	local runner = runners[ft]
-
-	if ft == "" then
-		return
-	elseif runner == nil then
+	if not runner then
 		print("No runner configured for " .. ft)
 		return
-	elseif type(runner) == "function" then
-		runner = runner(curr_file)
-		-- elseif vim.loop.fs_stat(cwd .. "/manage.py") then -- django
-		-- 	runner = "./manage.py shell < " .. curr_file
-		-- elseif string.find(curr_file, "grammar.js") ~= nil then
-		-- 	-- runner = "tree-sitter generate ; tree-sitter parse ./testfile 2>/dev/null"
-		-- 	-- runner = "tree-sitter generate ; tree-sitter test" -- hard to diff without color
-		-- 	runner = "tsfmt testfile"
+		-- elseif type(runner) == "function" then
+		-- 	runner = runner(curr_file)
 	end
 
 	require("util"):close_unnamed_splits()
+
+	-- TODO: async (Dispatch)
+	local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
+	local wide = vim.o.columns > 150
+
+	-- split dimensions -must- be declared in the [v]new command. attempting to
+	-- shrink a main split will not enlarge the secondary split!
+	if wide then -- vsplit if wide enough
+		local w = math.floor(vim.o.columns * 0.33)
+		front = w .. " v" .. front
+	else
+		local h = vim.o.lines * 0.2
+		front = h .. front
+	end
+
 	-- print(front .. runner)
 	vim.cmd(front .. runner)
+
 	vim.cmd.norm("gg")
 	vim.cmd.wincmd(wide and "h" or "k") -- return focus to main split
 	require("util"):resize_2_splits()
