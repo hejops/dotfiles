@@ -670,13 +670,19 @@ local ft_binds = { -- {{{
 	python = {
 		{
 			"n",
-			"<leader>dd",
+			"<leader>d",
 			function() -- toggle ruff
-				vim.diagnostic.reset(nil, 0)
-				require("lint").linters_by_ft = {
-					python = #require("lint").linters_by_ft.python > 0 and {} or { "ruff" },
-				}
-				require("lint").try_lint()
+				local ruff_active = require("lint").linters_by_ft.python ~= {}
+				if ruff_active then
+					require("lint").linters_by_ft.python = {}
+					vim.diagnostic.reset(nil, 0)
+					print("disabled ruff")
+				else
+					require("lint").linters_by_ft.python = { "ruff" }
+					require("lint").try_lint()
+					print("enabled ruff")
+				end
+				vim.cmd("e") -- force lsp to reload
 			end,
 		},
 
@@ -1064,3 +1070,28 @@ vim.keymap.set("n", "yP", yank_line_and_path, { silent = true })
 
 -- [[#!/usr/bin/env bash
 -- set -euo pipefail]]
+
+local function test()
+	local ft = vim.bo.filetype
+	if ft == "nofile" then
+		return
+	end
+
+	local watchers = {
+
+		go = [[bash -c "find . -name '*.go' | entr -cr go test ./..."]],
+		python = [[bash -c "find . -name '*.py' | entr -cr poetry run pytest -x -vv"]],
+		rust = "cargo watch -x check -x test",
+	}
+
+	local watcher = watchers[ft]
+
+	if watcher == nil then
+		print("No test runner configured for " .. ft)
+		return
+	end
+	local cmd = string.format("wezterm start --cwd=. %s 2>/dev/null", watcher)
+	-- print(cmd)
+	os.execute(cmd)
+end
+vim.keymap.set("n", "<leader>w", test, { silent = true })

@@ -587,9 +587,15 @@ require("lazy").setup(
 				"mfussenegger/nvim-dap-python",
 				"thehamsta/nvim-dap-virtual-text",
 			},
-			ft = { "python" },
+			-- ft = { "python" },
+			lazy = true,
 			config = function()
 				-- https://github.com/mfussenegger/dotfiles/blob/da93d1f7f52ea50b00199696a6977dd70a84736e/vim/dot-config/nvim/lua/me/dap.lua
+
+				-- i am usually forced to use vsc*de for debugging anyway
+				if true then
+					return
+				end
 
 				local dap = require("dap")
 

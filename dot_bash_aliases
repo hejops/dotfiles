@@ -582,28 +582,22 @@ gc() {
 		done |
 			largs git commit -v
 
+	# note: git commit -av stages -all- changes in the entire repo. this is
+	# almost never what i want
+
 	elif
-		# 2a. file(s) that have been renamed/deleted
+		# 2. file(s) that have been renamed/deleted (only)
+		# this behaviour may not be desirable when modified files
+		# should also be included in the commit
 		git status --porcelain | grep -Pq '^R.+ -> '
 	then
 		pushd "$(_get_repo_root)" || return
 		git status --porcelain |
 			grep -P '^R' |
+			# commit both the old (src) and new (dst) fname
 			sed 's/^R[^ ]* //; s/->//' | # very iffy
-			# ideally, i want this (to avoid pushd), but xargs cannot be used on func
-			# xargs prepend "$(get_repo_root)"/ |
-			# realpath --relative-to=.
 			xargs git commit -v
 		popd || return
-
-	elif
-		# 2b. file(s) that have been renamed/deleted
-		git status --porcelain | grep -Pq '^(R | D)'
-	then
-		notify-send 'should be unreachable'
-		git status --porcelain | grep -P '^(R | D)' |
-			awk '{print $2}' | # iffy
-			xargs git commit -v
 
 	elif
 		# 3. all staged changes
@@ -614,9 +608,8 @@ gc() {
 
 	else
 		# 4. all files that have changed in the current dir
-		git diff --name-only |
+		git diff --name-only . |
 			prepend "$(_get_repo_root)/" |
-			grep "$PWD" |
 			grep -v .gitignore |
 			xargs git commit -v
 
@@ -749,30 +742,30 @@ gmm() {
 	git merge "origin/$(_gmaster)"
 }
 
-grbr() {
-	: rebase to remote, discarding all local changes that conflict with remote
-	# use case:
-	# - our branch was started at the same time as another branch
-	# - rewriting is simpler than resolving conflicts
-	# - the other branch is much larger
-	# - the other branch has been merged to master
-
-	cr
-
-	# first preserve files that were only added to in our branch
-	# (this is a looser definition than just 'new files')
-	git diff --numstat master...HEAD |
-		grep -P '^\d+\t0\t' |
-		cut -f3 |
-		xargs git diff master...HEAD > tmp.diff
-
-	# equivalent to `git rebase origin/master; git rebase --skip (repeatedly)`
-	git rebase --strategy-option=theirs "origin/$(_gmaster)"
-
-	git apply tmp.diff
-
-	# git push -f
-}
+# grbr() {
+# 	: rebase to remote, discarding all local changes that conflict with remote
+# 	# use case:
+# 	# - our branch was started at the same time as another branch
+# 	# - rewriting is simpler than resolving conflicts
+# 	# - the other branch is much larger
+# 	# - the other branch has been merged to master
+#
+# 	cr
+#
+# 	# first preserve files that were only added to in our branch
+# 	# (this is a looser definition than just 'new files')
+# 	git diff --numstat master...HEAD |
+# 		grep -P '^\d+\t0\t' |
+# 		cut -f3 |
+# 		xargs git diff master...HEAD > tmp.diff
+#
+# 	# equivalent to `git rebase origin/master; git rebase --skip (repeatedly)`
+# 	git rebase --strategy-option=theirs "origin/$(_gmaster)"
+#
+# 	git apply tmp.diff
+#
+# 	# git push -f
+# }
 
 _git_http() {
 	url=$1
@@ -956,7 +949,8 @@ gcon() {
 		# submodule conflicts don't really need to be resolved?
 		git status --porcelain --ignore-submodules=all |
 			grep -P '^([^ ?])\1 ' |
-			sort -u
+			sort -u |
+			cut -c3-
 	}
 
 	if ! conflicts=$(get_conflicts); then
@@ -985,10 +979,10 @@ gcon() {
 			return
 		fi
 		echo "Unresolved conflicts remaining!"
-		get_conflicts | cut -c3- | xargs nvim -p
+		get_conflicts | xargs nvim -p
 	done
 
-	get_conflicts | cut -c3- | xargs git add
+	get_conflicts | xargs git add
 	git commit -v
 }
 
@@ -1032,7 +1026,7 @@ guns() {
 # 	ggiturl "$1" | xargs git clone
 # }
 
-gau() {
+gauthors() {
 	: show authorship of file
 	git blame --line-porcelain "$1" |
 		sed -rn 's/^author (.+)/\1/p' |
@@ -1047,27 +1041,27 @@ gau() {
 # apt 1.36
 # snap 1.43/1.54, but cannot read config file (lol)
 
-gmr() {
-	: create or open mr in browser
-	branch=$(_git_current_branch)
-	url=$(git config --get remote.origin.url)
-	url=$(_git_http "$url")
-
-	if
-		n=$(glab mr list --source-branch "$branch" |
-			grep '^!' |
-			awk '{print $1}' |
-			tr -d '!')
-	then
-		echo "Opening MR $n"
-		url="$url/-/merge_requests/$n"
-	else
-		echo "Creating new MR"
-		url="$url/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch"
-	fi
-
-	xdg-open "$url" 2> /dev/null
-}
+# gmr() {
+# 	: create or open mr in browser
+# 	branch=$(_git_current_branch)
+# 	url=$(git config --get remote.origin.url)
+# 	url=$(_git_http "$url")
+#
+# 	if
+# 		n=$(glab mr list --source-branch "$branch" |
+# 			grep '^!' |
+# 			awk '{print $1}' |
+# 			tr -d '!')
+# 	then
+# 		echo "Opening MR $n"
+# 		url="$url/-/merge_requests/$n"
+# 	else
+# 		echo "Creating new MR"
+# 		url="$url/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch"
+# 	fi
+#
+# 	xdg-open "$url" 2> /dev/null
+# }
 
 gldiff() {
 
@@ -1207,79 +1201,77 @@ pup() {
 	fi
 }
 
-pentmd() {
-	: render entry points as markdown
-	# - [`poetry run XXX`](./path/to/script.py)
-	# shellcheck disable=SC2016
-	grep < pyproject.toml :main |
-		sed -r 's|^([^ ]+) = "([^:]+):main"|- [`poetry run \1`](./\2.py)|g' |
-		tr . / |
-		sed -r 's#/(/|py)#.\1#g'
-}
+# pentmd() {
+# 	: render entry points as markdown
+# 	# - [`poetry run XXX`](./path/to/script.py)
+# 	# shellcheck disable=SC2016
+# 	grep < pyproject.toml :main |
+# 		sed -r 's|^([^ ]+) = "([^:]+):main"|- [`poetry run \1`](./\2.py)|g' |
+# 		tr . / |
+# 		sed -r 's#/(/|py)#.\1#g'
+# }
 
 # }}}
 # rust {{{
 
+# alias sqp='cargo sqlx prepare --workspace; ga .sqlx; gc' # postgres only
 # cargo +nightly udeps
 alias cb="cargo build"
 alias cbr='cargo build --release && cp target/release/$(basename $PWD) .'
 alias cn="cargo new"
 alias ct="cargo test"
-alias cwr="cargo watch -x run"                           # web servers only
-alias sqp='cargo sqlx prepare --workspace; ga .sqlx; gc' # postgres only
+alias cwr="cargo watch -x run" # web servers only
 
-sqre() {
-	# regen sqlite db
-	# often required for sqlite, possibly when .sql files are modified are migration
-	# https://github.com/launchbadge/sqlx/discussions/1292#discussioncomment-3015486
-	sqlx database drop
-	sqlx database create
-	sqlx migrate run
-}
+# sqre() {
+# 	# regen sqlite db
+# 	# often required for sqlite, possibly when .sql files are modified are migration
+# 	# https://github.com/launchbadge/sqlx/discussions/1292#discussioncomment-3015486
+# 	sqlx database drop
+# 	sqlx database create
+# 	sqlx migrate run
+# }
 
 cw() {
 	cargo watch -x check -x "test $1"
 }
 
-rsmod() {
-
-	if [[ -f $1 ]]; then
-
-		# convert foo/bar.rs -> foo/bar/mod.rs
-		rs=$1
-		base=${rs/.rs/}
-		mkdir -p "$base"
-		mv "$rs" "$base/mod.rs"
-		# TODO: update lib, pub use, etc
-
-	elif [[ -n $1 ]]; then
-
-		echo "Creating module $1"
-
-		echo "pub mod $1;" >> src/lib.rs # doesn't work?
-		mkdir -p "src/$1"
-		mod="src/$1/mod.rs"
-		# touch "$mod"
-		echo "mod foo;" >> "$mod"
-		echo "pub use foo::*;" >> "$mod"
-
-	fi
-
-}
+# rsmod() {
+#
+# 	if [[ -f $1 ]]; then
+#
+# 		# convert foo/bar.rs -> foo/bar/mod.rs
+# 		rs=$1
+# 		base=${rs/.rs/}
+# 		mkdir -p "$base"
+# 		mv "$rs" "$base/mod.rs"
+# 		# TODO: update lib, pub use, etc
+#
+# 	elif [[ -n $1 ]]; then
+#
+# 		echo "Creating module $1"
+#
+# 		echo "pub mod $1;" >> src/lib.rs # doesn't work?
+# 		mkdir -p "src/$1"
+# 		mod="src/$1/mod.rs"
+# 		# touch "$mod"
+# 		echo "mod foo;" >> "$mod"
+# 		echo "pub use foo::*;" >> "$mod"
+#
+# 	fi
+#
+# }
 
 # }}}
 # go {{{
 
 # https://gist.githubusercontent.com/alexedwards/3b40775846535d0014ab1ff477e4a568/raw/15f15b499f626a6e3949c237d52a3e8aace1b05b/Makefile
 
-# alias gonew=gon
-alias gobe="go test -bench=. -run=^$ ./..."         # run benchmarks only -- https://stackoverflow.com/a/16161605
-alias gor="\ls *.go | grep -v _test | xargs go run" # won't work with args
+# alias gor="\ls *.go | grep -v _test | xargs go run" # won't work with args; gob is probably better
+alias gobe="go test -bench=. -run=^$ ./..." # run benchmarks only -- https://stackoverflow.com/a/16161605
 
 gop() {
 	# https://go.dev/blog/pprof
-
-	# https://github.com/google/pprof/blob/a8630aee4ab9e36dfc54c2e0a4df49abb8345dbd/internal/driver/commands.go#L125
+	# https://github.com/google/pprof/blob/a8630aee4ab/internal/driver/commands.go#L125
 	go tool pprof -web -nodefraction=0.1 ./*.prof 2> /dev/null
 }
 
@@ -1331,6 +1323,7 @@ gorep() {
 
 	# execute
 	gofmt -r "$patt -> $repl" -w ./*.go
+	# TODO: gapat
 }
 
 # https://leg100.github.io/en/posts/building-bubbletea-programs/
@@ -1429,23 +1422,23 @@ jupall() {
 	_js_pkgs | xargs -n1 -I{} yarn upgrade {}@latest
 }
 
-perfnode() {
-	if [[ $# -gt 0 ]]; then
-		# creates perf.data
-		perf record -e cycles:u -g -- node --perf-basic-prof "$@"
-	elif [[ -f perf.data ]]; then
-		# https://nodejs.org/en/learn/diagnostics/flame-graphs#create-a-flame-graph-with-system-perf-tools
-		# https://speakerdeck.com/mrfoto/what-are-flame-graphs-and-how-to-read-them
-		perf script | # reads perf.data
-			# remove internal
-			sed -r -e "/( __libc_start| LazyCompile | v8::internal::| Builtin:| Stub:| LoadIC:|\[unknown\]| LoadPolymorphicIC:)/d" \
-				-e 's/ LazyCompile:[*~]?/ /' |
-			# show only user defined functions
-			grep -e "$USER" -e '^\S' -e '^$' |
-			stackvis perf > flamegraph.htm
-		chromium flamegraph.htm 2> /dev/null &
-	fi
-}
+# perfnode() {
+# 	if [[ $# -gt 0 ]]; then
+# 		# creates perf.data
+# 		perf record -e cycles:u -g -- node --perf-basic-prof "$@"
+# 	elif [[ -f perf.data ]]; then
+# 		# https://nodejs.org/en/learn/diagnostics/flame-graphs#create-a-flame-graph-with-system-perf-tools
+# 		# https://speakerdeck.com/mrfoto/what-are-flame-graphs-and-how-to-read-them
+# 		perf script | # reads perf.data
+# 			# remove internal
+# 			sed -r -e "/( __libc_start| LazyCompile | v8::internal::| Builtin:| Stub:| LoadIC:|\[unknown\]| LoadPolymorphicIC:)/d" \
+# 				-e 's/ LazyCompile:[*~]?/ /' |
+# 			# show only user defined functions
+# 			grep -e "$USER" -e '^\S' -e '^$' |
+# 			stackvis perf > flamegraph.htm
+# 		chromium flamegraph.htm 2> /dev/null &
+# 	fi
+# }
 
 # }}}
 # c {{{
@@ -1516,16 +1509,16 @@ sq() {
 
 }
 
-sqbrk() {
-	# sqruff fix -f=json --force gripts/disq/queries/*.sql |
-	sqruff fix -f=json --force "$@" |
-		jq -r 'to_entries[] | .value=.value[].range.start.line | [.key, .value|tostring] | join("\t")' |
-		while read -r f lnum; do
-			# TODO: nothing can be done about url comments that are
-			# too long (other than removing them)
-			line=$(sed "${lnum}q;d" "$f")
-		done
-}
+# sqbrk() {
+# 	: i have no idea what this was supposed to do
+# 	sqruff fix -f=json --force "$@" |
+# 		jq -r 'to_entries[] | .value=.value[].range.start.line | [.key, .value|tostring] | join("\t")' |
+# 		while read -r f lnum; do
+# 			# TODO: nothing can be done about url comments that are
+# 			# too long (other than removing them)
+# 			line=$(sed "${lnum}q;d" "$f")
+# 		done
+# }
 
 psqlj() {
 	: convert psql output to jq
@@ -1884,7 +1877,8 @@ upload() {
 	echo -n "$link" | xclip -sel c
 }
 
-nmc() {
+wifi() {
+	: connect to wifi network without nmtui
 	ssid=$(nmcli --terse device wifi list |
 		fzf --reverse |
 		cut -d: -f8 |
@@ -1974,7 +1968,8 @@ subs() {
 		sort |
 		# head -n1 |
 		fzf |
-		xargs curl --globoff # need globoff to ignore {}[]
+		sed -r 's/ /%20/g' | # url must be encoded
+		xargs curl --globoff # but also need globoff to ignore {}[]
 
 }
 
@@ -1985,7 +1980,7 @@ rema() {
 # clickhouse-local --file "$1" --query "$2 FORMAT PrettyCompact"
 
 tvll() {
-	: truncate vim lsp.log
+	: truncate vim lsp.log -- should be nvim autocmd
 	i=90
 	while
 		[[ $i -ge 60 ]] &&
@@ -1999,10 +1994,6 @@ tvll() {
 }
 
 kp() {
-	# urldecode() {
-	# 	local i="${*//+/ }"
-	# 	echo -e "${i//%/\\x}"
-	# }
 	url='https://www.discogs.com/search/?style_exact=K-pop&sort=hot%2Cdesc&ev=gs_ms'
 	curl -sL "$url" -H 'User-Agent: M' | # lol
 		grep -Po '/release/\d+-[^"]+' |
@@ -2044,8 +2035,12 @@ _unused() {
 	< ~/.bash_aliases grep -Po '^[a-z]\w+\(\)' |
 		tr -d '()' |
 		while read -r cmd; do
-			< ~/.bash_history grep -wq "$cmd" || echo "$cmd"
-		done
+			< ~/.bash_history grep -wq "$cmd" && continue
+			< ~/.bash_aliases grep -Pq "^$cmd\(\) \{.+; \}" && continue # ignore one-liners
+			len=$(< ~/.bash_aliases sed -rn "/^$cmd\(/,/^\}/p" | wc -l)
+			echo "$len:$cmd"
+		done |
+		sort -n
 
 	# # scripts explicitly called from cli
 	# \ls ~/scripts | while read -r f; do
