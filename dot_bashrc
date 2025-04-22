@@ -276,12 +276,15 @@ fi
 # }}}
 # aliases {{{
 
+# alias tar="tar -vf"
 # note: rsync trailing slash: https://unix.stackexchange.com/a/402556
 alias cp="cp -rv"
+alias dmesg="dmesg --time-format=iso"
 alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
 alias fehm="feh --sort mtime"
 alias fehr="feh --randomize"
 alias grep="grep --color=auto"
+alias journalctl="journalctl --boot --output=short-iso" # journalctl | sort -k3 -k1 | less
 alias ln="ln -v"
 alias mkdir="mkdir -p"
 alias mv="mv -v"
@@ -289,7 +292,7 @@ alias pgrep="pgrep --list-full --exact"
 alias python=python3
 alias reset="reset; exec \$SHELL"                                       # reset undoes C-w; bind -f doesn't fix it
 alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
-alias tar="tar -vf"
+alias top="top -w\$COLUMNS"
 alias xargs1="xargs --max-args=1"
 alias xargs="xargs --no-run-if-empty --verbose"
 
@@ -387,20 +390,23 @@ GIT_PROMPT() {
 	# remote must exist
 	[[ -z $(git remote -v) ]] && return
 
+	# rev-parse fails if no remote yet
+	SHA=$(git rev-parse --short HEAD 2> /dev/null) || return
+
 	# git branch -r (remote)
 	# git branch -l (local)
 
 	CURRENT_LOCAL_BRANCH=$(git branch --show-current)
+	if [[ -z $CURRENT_LOCAL_BRANCH ]]; then
+		CURRENT_LOCAL_BRANCH=detached
+	fi
+
+	# elif [[ $(git branch | wc -l) -ne 1 ]]; then
+	# 	prompt+="<$CURRENT_LOCAL_BRANCH:$SHA> " || return
+	# fi
 
 	local prompt
-	prompt=''
-
-	if [[ -z $CURRENT_LOCAL_BRANCH ]]; then
-		prompt+="<detached:$(git rev-parse --short HEAD 2> /dev/null)> " || return
-	elif [[ $(git branch | wc -l) -ne 1 ]]; then
-		# rev-parse fails if no remote yet
-		prompt+="<$CURRENT_LOCAL_BRANCH:$(git rev-parse --short HEAD 2> /dev/null)> " || return
-	fi
+	prompt="< $CURRENT_LOCAL_BRANCH :: $SHA > "
 
 	# set -x
 	# sorted branches, most recently committed first
@@ -427,25 +433,25 @@ GIT_PROMPT() {
 
 	fi
 
-	# format is there \t here, where each int represents number of commits
-	# ahead of local HEAD
-	state=$(
-		git rev-list --left-right --count \
-			"origin/$MASTER...HEAD" 2> /dev/null |
-			\xargs
+	state=""
+
+	read -r behind ahead < <(
+		# format is there \t here, where each int represents number of
+		# commits ahead of local HEAD
+		git rev-list --left-right --count "origin/$MASTER...HEAD" 2> /dev/null
 	)
-	if [[ $state == '0 0' ]]; then
-		: up to date with master - regardless of branch
-		state=""
-	else
-		# state=$(<<< "$state" tr -s '\t' :)
-		# probably better to destructure fields (readarray?), but this
-		# is fine for now
-		state=$(<<< "$state" sed -r '
-			s/^0 //g			# not behind master
-			s/ / commits behind, /g
-		')
-		state+=" commits ahead of $MASTER"
+
+	if [[ $behind -gt 0 ]]; then
+		state="$behind commits behind"
+
+		if [[ $ahead -gt 0 ]]; then
+			state+=", $ahead commits ahead of $MASTER"
+		else
+			state+=" $MASTER"
+		fi
+
+	elif [[ $ahead -gt 0 ]]; then
+		state+="$ahead commits ahead of $MASTER"
 
 	fi
 

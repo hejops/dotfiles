@@ -891,7 +891,7 @@ require("lazy").setup(
 		-- "miikanissi/modus-themes.nvim", -- very good, but has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
 		-- "olivercederborg/poimandres.nvim", -- dim line column
-		-- "thejian/nvim-moonwalk", -- italic comments, unusual navic
+		-- "thejian/nvim-moonwalk", -- unreadable git status
 
 		{
 			"shawilly/ponokai",
