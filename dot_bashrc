@@ -27,7 +27,6 @@ paths=(
 	~/rust/search/target/release
 )
 
-# to see 'clean' sys.path, run 'python3 -S -m site'
 for p in "${paths[@]}"; do
 	echo "$PATH" | grep -Fq "$p" && continue
 	[[ -d $p ]] &&
@@ -115,12 +114,6 @@ export VD_CONFIG=$XDG_CONFIG_HOME/visidata/config
 export FIREFOX_PROFILE=4clnophl.default
 export INVID=vid.puffyan.us
 export NTFS_ILLEGAL='<>:"/\|?*'
-
-# if [[ $(xdpyinfo | awk '/dimensions/ {print $2}') == 3840x2160 ]]; then
-# 	export ROFI_FONT='"fira mono 12"'
-# else
-# 	export ROFI_FONT='"fira mono 9"'
-# fi
 
 # alias time='(TIMEFORMAT="  %1Uu  %1Ss  %1Re"; time m)'
 # https://gist.github.com/linse/3737870#bash-time
@@ -281,36 +274,6 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 fi
 
 # }}}
-# macos settings {{{
-
-if [[ $OSTYPE == darwin* ]]; then
-
-	# time desync cannot be fixed in system settings, even though the same
-	# server is used -- thanks apple!
-	# sudo sntp -sS time.apple.com
-
-	alias exa=eza # exa is unmaintained; on arch, eza is aliased to exa
-	alias xdg-open=open
-	export BASH_SILENCE_DEPRECATION_WARNING=1
-	export FZF_DEFAULT_COMMAND="find ." # path cannot be omitted
-
-	# osxkeychain is a fairly painless, https based (not ssh) way to access
-	# private repos from multiple accounts
-	# git config --list --show-origin
-	# file:/Library/Developer/CommandLineTools/usr/share/git-core/gitconfig   credential.helper=osxkeychain
-
-	# https://docs.github.com/en/get-started/getting-started-with-git/updating-credentials-from-the-macos-keychain#updating-your-credentials-via-keychain-access
-	# https://gist.github.com/nepsilon/0fd0c779f76d7172f12477ba9d71bb66#how-to-use-mac-keychain-to-store-github-repos-credentials
-	# https://git-scm.com/book/sv/v2/Git-Tools-Credential-Storage
-
-	# for gui (VNC Viewer)
-
-	# docker rm -vf $(docker ps -aq)
-	# docker rmi -f $(docker images -aq)
-
-fi
-
-# }}}
 # aliases {{{
 
 # alias tar="tar -vf"
@@ -356,10 +319,15 @@ if command -v pacman > /dev/null; then
 	# alias pclean="paccache --remove && sudo pacman -Scc --noconfirm"
 	alias get="sudo pacman --sync"
 	alias lp="pacman --query --search"
+	alias lps="expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort -n"
 	alias pclean="paccache --remove && yes | sudo pacman -Scc"
 	alias pwhich="pacman -Qo"
 	alias rem="sudo pacman --remove --recursive" # --cascade
 	alias sp="pacman --sync --search"
+
+	# expac --timefmt='%Y-%m-%d %T' '%l\t%n' |
+	# 	while read -r x; do if command -v "$(<<< "$x" cut -f2)" > /dev/null; then echo "$x"; fi; done |
+	# 	sort -n
 
 elif command -v apt > /dev/null; then
 
@@ -499,7 +467,7 @@ GIT_PROMPT() {
 	fi
 
 	# list number of dead local branches
-	if dead=$(git branch -vv | grep -c ': gone]'); then
+	if dead=$(git branch -vv | grep -Fc ': gone]'); then
 		[[ -n $state ]] && state+=' '
 		state+="($dead dead branches)"
 	fi
@@ -529,8 +497,8 @@ PS1=''
 PS1+='\n' # newline
 PS1+='$(last_exit)'
 # ps --pid $PPID | grep -q yazi && PS1+="📁" # current shell was spawned from within file manager
-ps --pid $PPID | grep -Pq '\ssh$' && PS1+="📁" # current shell was spawned from within file manager
-PS1+='[\A] '                                  # time
+ps --pid "$PPID" | grep -Pq '\ssh$' && PS1+="📁" # current shell was spawned from within file manager
+PS1+='[\A] '                                    # time
 PS1+='$(GIT_PROMPT)'
 PS1+='\n'  # newline
 PS1+='\W/' # cwd with trailing slash -- TODO: relativise to project root
@@ -540,11 +508,6 @@ PS1+='> ' # prompt symbol
 # note: modifying PS1 gives more control than modifying PROMPT_COMMAND, since
 # we have 3 dynamic parts (and we already use PROMPT_COMMAND for history
 # anyway)
-
-# # from now on, only poetry should be used
-# if [[ -n $CONDA_PREFIX ]]; then
-# 	PS1="($(basename "$CONDA_PREFIX")) $PS1"
-# fi
 
 # }}}
 
