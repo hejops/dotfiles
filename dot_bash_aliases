@@ -418,13 +418,14 @@ _git_log_fzf() {
 		args+=("$@")
 		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
 	elif
-		[[ $# -gt 1 ]] # probably arbitrary options
+		[[ $# -gt 1 ]] # probably arbitrary options to git log
 	then
+		# TODO: allow arbitrary options to fzf (this is a can of worms)
 		args+=("$@")
 	elif
 		# other dev branch
 		[[ $# -eq 1 ]] &&
-			git branch --remote | grep -Pq "^  origin/$1$"
+			git branch --remote | grep -Pqx "  origin/$1"
 	then
 		git pull > /dev/null 2> /dev/null
 		args+=("origin/$1")
@@ -585,25 +586,36 @@ gc() {
 	# note: git commit -av stages -all- changes in the entire repo. this is
 	# almost never what i want
 
+	# elif
+	# 	# 2. file(s) that have been renamed (only)
+	# 	# this behaviour may not be desirable when modified files
+	# 	# should also be included in the commit
+	# 	git status --porcelain | grep -Pq '^R.+ -> '
+	# then
+	# 	pushd "$(_get_repo_root)" || return
+	# 	git status --porcelain |
+	# 		grep -P '^R' |
+	# 		# commit both the old (src) and new (dst) fname
+	# 		sed 's/^R[^ ]* //; s/->//' | # very iffy
+	# 		xargs git commit -v
+	# 	popd || return
+
 	elif
-		# 2. file(s) that have been renamed/deleted (only)
+		# 2. file(s) that have been renamed/deleted
 		# this behaviour may not be desirable when modified files
 		# should also be included in the commit
-		git status --porcelain | grep -Pq '^R.+ -> '
+		rd=$(git diff --diff-filter=RD --name-only | grep .)
 	then
-		pushd "$(_get_repo_root)" || return
-		git status --porcelain |
-			grep -P '^R' |
-			# commit both the old (src) and new (dst) fname
-			sed 's/^R[^ ]* //; s/->//' | # very iffy
+		echo "$rd" |
+			prepend "$(_get_repo_root)/" |
 			xargs git commit -v
-		popd || return
 
 	elif
 		# 3. all staged changes
 		# [git diff] "exits with 1 if there were differences"
 		! git diff --staged --diff-filter=AMD --quiet
 	then
+		: committing staged changes
 		git commit -v
 
 	else
@@ -1956,6 +1968,19 @@ pacmir() {
 
 # }}}
 
+kb() {
+	if lsusb | grep -iq ergo; then
+		# https://en.akkogear.com/faq/how-do-i-get-hold-tap-keys-by-via/
+		# https://github.com/gabrielmscampos/ergodash-fw
+		# https://github.com/AndrewKlement/ErgoDash_VIA/blob/main/ErgodashVia/keymap.json
+		# TODO: usevia can't save (or load) 'design' layout, so... too bad?
+		dragon-drop --and-exit --on-top ~/ErgoDash_rev1_via/ErgoDash.json &
+		ci https://usevia.app/settings
+	# elif lsusb | grep -iq elora; then
+	# 	exec /opt/vial-appimage/vial-appimage.AppImage
+	fi
+}
+
 # could replace xfer with this
 # python3 -m http.server -d .
 
@@ -2080,7 +2105,7 @@ ys() { # read youtube subs in less
 		xargs curl -sL |
 		dehtml |
 		grep -v -- '-->' |
-		grep -Pv '^\s*$' |
+		grep -Pvx '\s*' |
 		tr '\n' ' ' |
 		fold --spaces |
 		less
@@ -2188,7 +2213,7 @@ epk() {
 		zip -X -0 --quiet "$tmpname" mimetype
 		zip -X -9 --quiet --no-dir-entries --recurse-paths "$tmpname" META-INF OEBPS
 		cd ..
-		mv "$tmpdir/$tmpname.zip" "$f"
+		\mv "$tmpdir/$tmpname.zip" "$f"
 		\rm -rf "$tmpdir"
 		echo "fixed $f"
 
