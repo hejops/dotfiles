@@ -489,16 +489,6 @@ last_exit() {
 	fi
 }
 
-docker_df() {
-	groups | grep -q docker || return 0 # last_exit
-
-	sum=$(docker system df --format="{{.Reclaimable}}" |
-		tr -d B |
-		paste -sd+ |
-		bc)
-	[[ $sum -gt 1000000 ]] && echo "docker: $sum"
-}
-
 # apparently, double quotes only evaluate once, while single quotes allow
 # (repeated) expansion at runtime
 # https://stackoverflow.com/a/21219060
@@ -506,7 +496,6 @@ docker_df() {
 # PS1='[\A] \W/ $(GIT_PROMPT)> '
 PS1=''
 PS1+='\n' # newline
-PS1+='$(docker_df)'
 PS1+='$(last_exit)'
 # ps --pid $PPID | grep -q yazi && PS1+="📁" # current shell was spawned from within file manager
 ps --pid "$PPID" | grep -Pq '\ssh$' && PS1+="📁" # current shell was spawned from within file manager

@@ -10,6 +10,27 @@
 	sed -e 's/<[^>]*>//g' |
 		fold -w 65 -s
 
+if
+	groups | grep -q docker &&
+		sum=$(docker system df --format="{{.Reclaimable}}" |
+			grep GB |
+			cut -d. -f1 |
+			paste -sd+ |
+			bc) &&
+		[[ $sum -gt 1 ]]
+then
+	docker system df
+
+	# --all: all images without at least one container associated
+	# to (not just dangling ones)
+	#
+	# note: actual space reclaimed tends to be lower than reported
+	docker system prune --all
+
+	# usually not important
+	docker volume ls -f dangling=true -q | xargs docker volume rm
+fi
+
 # }}}
 # aliases {{{
 
@@ -1640,8 +1661,8 @@ doslow() {
 }
 
 docl() {
-	sudo docker system prune
-	sudo docker volume ls -f dangling=true -q | xargs sudo docker volume rm
+	docker system prune
+	docker volume ls -f dangling=true -q | xargs docker volume rm
 }
 
 dostop() {
@@ -1775,7 +1796,7 @@ files() {
 		grep -P --color=never '^/(home|run)'
 }
 
-# TODO: firefox xcb problem
+# TODO: firefox xcb problem; vscode can be ruled out. possibly chromium?
 # pidof firefox | tr ' ' , | \xargs lsof -p | grep --color=auto -Po '/[a-z].+' | sort -u | grep xcb
 # ls /snap/firefox/current/gnome-platform/*
 # "/snap/firefox/current/gnome-platform/*": No such file or directory (os error 2)
