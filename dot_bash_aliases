@@ -1994,11 +1994,17 @@ kb() {
 		# https://en.akkogear.com/faq/how-do-i-get-hold-tap-keys-by-via/
 		# https://github.com/gabrielmscampos/ergodash-fw
 		# https://github.com/AndrewKlement/ErgoDash_VIA/blob/main/ErgodashVia/keymap.json
-		# TODO: usevia can't save (or load) 'design' layout, so... too bad?
-		dragon-drop --and-exit --on-top ~/ErgoDash_rev1_via/ErgoDash.json &
-		ci https://usevia.app/settings
+
+		# pass env vars to dbus via systemd?
+		# required for file picker; only once per boot (?)
+		# https://bbs.archlinux.org/viewtopic.php?pid=2161602#p2161602
+		source /etc/X11/xinit/xinitrc.d/50-systemd-user.sh
+
+		ci https://usevia.app/design
+
 	# elif lsusb | grep -iq elora; then
 	# 	exec /opt/vial-appimage/vial-appimage.AppImage
+
 	fi
 }
 
