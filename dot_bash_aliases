@@ -1643,8 +1643,8 @@ doslow() {
 }
 
 docl() {
-	sudo docker system prune
-	sudo docker volume ls -f dangling=true -q | xargs sudo docker volume rm
+	docker system prune
+	docker volume ls -f dangling=true -q | xargs docker volume rm
 }
 
 dostop() {
@@ -1778,7 +1778,7 @@ files() {
 		grep -P --color=never '^/(home|run)'
 }
 
-# TODO: firefox xcb problem
+# TODO: firefox xcb problem; vscode can be ruled out. possibly chromium?
 # pidof firefox | tr ' ' , | \xargs lsof -p | grep --color=auto -Po '/[a-z].+' | sort -u | grep xcb
 # ls /snap/firefox/current/gnome-platform/*
 # "/snap/firefox/current/gnome-platform/*": No such file or directory (os error 2)
