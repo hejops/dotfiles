@@ -610,6 +610,7 @@ local ft_binds = { -- {{{
 		-- sed -i -r '/^\t+".*[A-Z]/ s/([a-z0-9])([A-Z])/\1_\L\2/g; s/"([A-Z])/"\L\1/g' file.go
 
 		{ "n", "<leader>B", ":!go build -x<cr>" }, -- could be a BufWritePost Dispatch
+		{ "n", "<leader>C", ":'<,'>s/\vif([^{]+)/case \1:/g<cr>" },
 		{ "n", "<leader>E", "oif err!=nil{panic(err)}<esc>:w<cr>o" }, -- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
 
 		{
