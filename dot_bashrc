@@ -304,6 +304,7 @@ alias cg="wget --continue"
 alias ftail="tail -f"
 alias gtime="env time --format \"\$GNUTIMEFORMAT\" -- echo" # aliasing time to gnu time will disable the builtin
 alias h="htop -u \$USER"
+alias lk=lsl
 alias ls="_exa --group-directories-first --tree --level 2" # note: --tree is slow in large dirs
 alias lsc="_exa --time-style=iso --sort created"
 alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permissions --no-user"
