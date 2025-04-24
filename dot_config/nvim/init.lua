@@ -221,6 +221,60 @@ vim.api.nvim_create_autocmd({ "VimResized" }, {
 -- vim.keymap.set("n", "<leader>gB", ":GitBlameToggle<cr>") -- must be explicitly enabled on mac (due to lacking horizontal space)
 vim.keymap.set("n", "<leader>J", ":TSJToggle<cr>")
 
+-- vim-fugitive
+vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
+vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
+
+local function commit_staged()
+	-- {{{
+	if not require("util"):in_git_repo() then
+		print("not in git repo")
+	elseif -- any changes have been staged (taken from gc)
+		-- commit currently staged chunk(s)
+		require("util"):get_command_output("git diff --name-only --cached --diff-filter=AM | grep .") ~= ""
+	then
+		vim.cmd("Git commit --quiet -v")
+	elseif -- current file has changes
+		-- commit entire file
+		-- exits with 1 if there were differences
+		not require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0))
+	then
+		-- do i ever need to commit a whole file while there are staged chunks? remains to be seen
+		vim.cmd("Git commit --quiet -v %")
+	else
+		print("no changes to stage")
+	end
+end -- }}}
+
+vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit current buffer/hunks" })
+
+for _, k in pairs({ "C", "gc" }) do
+	vim.keymap.set("n", "<leader>" .. k, function()
+		print("deprecated; use <leader>c")
+	end, { desc = "deprecated" })
+end
+
+vim.keymap.set("n", "<leader>gC", function()
+	-- TODO: git add % + git commit --amend --no-edit
+	if not require("util"):command_ok("git status --porcelain | grep -q '^M'") then
+		print("No hunks staged")
+		return
+	end
+
+	vim.cmd("Git commit --quiet --amend --no-edit")
+	print(
+		string.format(
+			"Added hunk(s) to previous commit: %s",
+			require("util"):get_command_output("git log -n 1 --pretty=format:%s")
+		)
+	)
+end, { desc = "append currently staged hunks to previous commit" })
+
+-- use gdm instead
+-- vim.keymap.set("n", "<leader>gd", function()
+-- 	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
+-- end, { desc = "diff current HEAD against master" })
+
 -- vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
 vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>", { desc = "stage all hunks in current buffer" }) -- same as :Gwrite, but without making the commit
 vim.keymap.set("n", "<leader>gh", ":Gitsigns stage_hunk<cr>") -- more ergonomic than gs? (debatable)

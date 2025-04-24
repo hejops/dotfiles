@@ -305,6 +305,7 @@ alias cg="wget --continue"
 alias ftail="tail -f"
 alias gtime="env time --format \"\$GNUTIMEFORMAT\" -- echo" # aliasing time to gnu time will disable the builtin
 alias h="htop -u \$USER"
+alias lk=lsl
 alias ls="_exa --group-directories-first --tree --level 2" # note: --tree is slow in large dirs
 alias lsc="_exa --time-style=iso --sort created"
 alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permissions --no-user"
@@ -497,9 +498,8 @@ last_exit() {
 PS1=''
 PS1+='\n' # newline
 PS1+='$(last_exit)'
-# ps --pid $PPID | grep -q yazi && PS1+="📁" # current shell was spawned from within file manager
-ps --pid "$PPID" | grep -Pq '\ssh$' && PS1+="📁" # current shell was spawned from within file manager
-PS1+='[\A] '                                    # time
+ps --pid "$PPID" | grep -Pwq '(yazi|sh$)' && PS1+="📁" # current shell was spawned from within file manager
+PS1+='[\A] '                                          # time
 PS1+='$(GIT_PROMPT)'
 PS1+='\n'  # newline
 PS1+='\W/' # cwd with trailing slash -- TODO: relativise to project root

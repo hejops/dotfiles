@@ -780,7 +780,7 @@ local function exec()
 		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
 		ocaml = "ocaml " .. curr_file,
 		ruby = "ruby " .. curr_file,
-		sh = "env bash " .. curr_file,
+		sh = "env bash " .. vim.fn.expand("%:t"), -- `new` usually cds to git dir (e.g. scripts), but why?
 		sql = string.format([[psql %s -f '%s']], require("util"):sql_connections().neon, curr_file),
 		zig = "zig run " .. curr_file,
 
