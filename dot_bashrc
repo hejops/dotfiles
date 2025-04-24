@@ -9,6 +9,7 @@
 
 # startup time must remain <= 0.005s
 # TIMEFORMAT='%lU' ; for i in $(seq 1 10) ; do time $SHELL -c exit 2>/dev/null ; done
+# TIMEFORMAT='%lU' ; for i in $(seq 1 10) ; do time $SHELL -ic exit 2>/dev/null ; done
 
 # return
 
@@ -457,13 +458,13 @@ GIT_PROMPT() {
 
 	if
 		[[ $CURRENT_LOCAL_BRANCH != "$MASTER" ]] &&
-			# dev_ahead=$(git rev-list --left-right --count "origin/$CURRENT_LOCAL_BRANCH...HEAD" | cut -f2) &&
-			# suppress error if dev branch does not exist on remote yet
-			dev_ahead=$(git log --oneline --first-parent "origin/$CURRENT_LOCAL_BRANCH...HEAD" 2> /dev/null | wc -l) &&
-			[[ $dev_ahead -gt 0 ]]
+			! dev_ahead=$(git log --oneline --first-parent "origin/$CURRENT_LOCAL_BRANCH...HEAD" 2> /dev/null | wc -l)
 	then
-		# state+=" ($dev_ahead commits ahead of dev)"
+		state+=" (no remote branch yet)"
+
+	elif [[ $dev_ahead -gt 0 ]]; then
 		state+=" ($dev_ahead unpushed)"
+
 	fi
 
 	# list number of dead local branches
