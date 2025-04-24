@@ -1,6 +1,7 @@
 # shellcheck shell=bash
 # vim:ft=bash
-# if possible, this file should remain under 1000 LOC.
+# if possible, this file should remain under 1000 LOC. interactive shell
+# startup time should remain under 0.02 s
 
 # autostart {{{
 
@@ -10,26 +11,26 @@
 	sed -e 's/<[^>]*>//g' |
 		fold -w 65 -s
 
-if
-	groups | grep -q docker &&
-		sum=$(docker system df --format="{{.Reclaimable}}" |
-			grep GB |
-			cut -d. -f1 |
-			paste -sd+ |
-			bc) &&
-		[[ $sum -gt 1 ]]
-then
-	docker system df
-
-	# --all: all images without at least one container associated
-	# to (not just dangling ones)
-	#
-	# note: actual space reclaimed tends to be lower than reported
-	docker system prune --all
-
-	# usually not important
-	docker volume ls -f dangling=true -q | xargs docker volume rm
-fi
+# if
+# 	groups | grep -q docker &&
+# 		sum=$(docker system df --format="{{.Reclaimable}}" |
+# 			grep GB |
+# 			cut -d. -f1 |
+# 			paste -sd+ |
+# 			bc) &&
+# 		[[ $sum -gt 1 ]]
+# then
+# 	docker system df
+#
+# 	# --all: all images without at least one container associated
+# 	# to (not just dangling ones)
+# 	#
+# 	# note: actual space reclaimed tends to be lower than reported
+# 	docker system prune --all
+#
+# 	# usually not important
+# 	docker volume ls -f dangling=true -q | xargs docker volume rm
+# fi
 
 # }}}
 # aliases {{{
@@ -481,7 +482,15 @@ git_log() {
 }
 
 grev() {
+	: revert single commit in isolation
 	_git_log_fzf "$@" | awk '{print $1}' | xargs git revert
+}
+
+gRev() {
+	: rollback history to a known good commit -- check ci first
+	sha=$(_git_log_fzf "$@" | awk '{print $1}')
+	git checkout -f "$sha" -- .
+	git commit -av
 }
 
 # gsdel() {
@@ -698,10 +707,16 @@ git_status() {
 		cat <<- EOF
 			Staged:
 
-			$(<<< "$staged" \xargs git diff --stat --staged |
-				grep -F '|' | # ignore summary line
-				sort -n -k3)
 		EOF
+
+		# TODO: can we not rely on pipefail?
+		set -o pipefail
+		<<< "$staged" \xargs git diff --stat --staged 2> /dev/null |
+			grep -F '|' | # ignore summary line
+			sort -n -k3 ||
+			# TODO: deleted files raise error
+			git status --porcelain | grep '^[A-Z]'
+		set +o pipefail
 
 	else
 		echo "Nothing staged."
@@ -1071,11 +1086,15 @@ gauthors() {
 gxx() {
 	prv_cmd="echo {} | cut -f1 | xargs git show --color=always"
 	git log --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S "$1" | # WARN: slow with large histories
-		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border'       # --ansi
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' |     # --ansi
+		cut -f1 |
+		xargs git show
 }
 
 # }}}
 # gitlab {{{
+
+alias gld=gldiff
 
 # apt 1.36
 # snap 1.43/1.54, but cannot read config file (lol)
@@ -1385,6 +1404,16 @@ gow() {
 
 }
 gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run app
+
+god() {
+	: generate documentation for file
+	# godoc is only for generating stdlib docs?
+	< "$1" grep -P '^(type|func)' |
+		grep -Pow '[A-Z]\w+' |
+		sort -u |
+		xargs -n1 go doc 2> /dev/null |
+		grep -Pv '^package'
+}
 
 # }}}
 # js {{{
