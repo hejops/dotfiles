@@ -70,6 +70,7 @@ alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
 alias fzh="fzf --height=~33% --reverse" # height=~X% means min(input rows, window height * X%);
+alias inw="inotifywait --monitor --recursive --format='%T %w %e %f' --timefmt='%Y-%m-%dT%H:%M:%S'"
 alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
 alias mem='top -b -n1 -o %MEM | grep -m10 $USER'
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out ; kp"
@@ -1926,14 +1927,16 @@ plot() {
 # web {{{
 
 ,c() {
+	# note: arch's prettier may hold back node versions, so it is usually
+	# better to use mason's one and symlink it to .local/bin
 	c "$1" | prettier --parser html
 	# c "$1" | lynx -stdin -dump
 	# tidy injects extra stuff
 }
 
 ,,c() {
-	# uses a different user agent from curl
-	# C() {
+	# uses a different user agent from curl. in most cases, it is probably
+	# better to just get ua from firefox
 	: alternative to curl
 	python3 -c '
 import codecs

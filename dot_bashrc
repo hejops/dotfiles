@@ -297,7 +297,7 @@ alias top="top -w\$COLUMNS"
 alias xargs1="xargs --max-args=1"
 alias xargs="xargs --no-run-if-empty --verbose"
 
-# alias cget=cg
+# alias lsc="_exa --time-style=iso --sort created"
 alias ..="cd .."
 alias _exa="exa --all --long --links --dereference --color=always --git" # helper
 alias c="curl --silent --location --fail"
@@ -305,9 +305,7 @@ alias cg="wget --continue"
 alias ftail="tail -f"
 alias gtime="env time --format \"\$GNUTIMEFORMAT\" -- echo" # aliasing time to gnu time will disable the builtin
 alias h="htop -u \$USER"
-alias lk=lsl
 alias ls="_exa --group-directories-first --tree --level 2" # note: --tree is slow in large dirs
-alias lsc="_exa --time-style=iso --sort created"
 alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permissions --no-user"
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
 alias r="yazi"
@@ -315,6 +313,13 @@ alias rgf="rg --files-with-matches"
 alias rgl="rg --no-heading --with-filename"
 alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tmp="cd \$(mktemp -d)"
+
+# peak of laziness
+alias c,=cd # WARN: ,c is also a function
+alias dk=lsl
+alias k=cd
+alias kd=lsl
+alias lk=lsl
 
 if command -v pacman > /dev/null; then
 
