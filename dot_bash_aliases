@@ -267,7 +267,7 @@ v() {
 	{
 		# git diff --name-only --ignore-submodules "$(_gmaster)...HEAD" | grep . #||
 		git log --no-merges --first-parent --name-only --pretty= "$(_gmaster)...HEAD" | grep .
-		git ls-files .
+		git ls-files --full-name # . is implicit
 	} |
 		prepend "$(_get_repo_root)"/ |
 		largs realpath --relative-to=. 2> /dev/null |
@@ -1388,11 +1388,13 @@ gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run
 god() {
 	: generate documentation for file
 	# godoc is only for generating stdlib docs?
-	< "$1" grep -P '^(type|func)' |
+	pushd "$(dirname "$1")"
+	< "$(basename "$1")" grep -P '^(type|func)' |
 		grep -Pow '[A-Z]\w+' |
 		sort -u |
 		xargs -n1 go doc 2> /dev/null |
 		grep -Pv '^package'
+	popd
 }
 
 # }}}
@@ -1649,11 +1651,35 @@ dps() {
 doslow() {
 	: list slowest steps in a docker log
 
-	# set -eu
+	if [[ $# -eq 0 ]]; then
+		# devc logs
+
+		# prev=''
+		grep -RPh '\d+/\d+\]' .config/Code/logs/*/window1/exthost/ms-vscode-remote.remote-containers |
+			grep -P '\d{3,}\.\ds$' |
+			cut -d= -f2- |
+			sort -nr |
+			sort -u |
+			# dedup by step
+			while read -r line; do
+				step=$(<<< "$line" cut -d' ' -f2)
+				if ! <<< "$prev" grep -Fq "$step"; then
+					echo "$prev"
+				fi
+				prev=$line
+			done |
+			awk '{print $NF,$0}' |
+			sort -nr |
+			cut -f2- -d' '
+
+		return
+	fi
+
 	if
 		steps=$(< "$1" grep -P '^#\d+ DONE' |
 			sort -Vu |
-			awk '!a[$1]++') && [[ -n $steps ]]
+			awk '!a[$1]++') &&
+			[[ -n $steps ]]
 	then
 		paste <(echo "$steps") <(
 			<<< "$steps" cut -d' ' -f1 |
@@ -1670,8 +1696,10 @@ doslow() {
 }
 
 docl() {
-	docker system prune
-	docker volume ls -f dangling=true -q | xargs docker volume rm
+	docker system df
+	docker system prune --all
+	docker volume ls -f dangling=true -q | xargs docker volume rm # usually not important
+
 }
 
 dostop() {
@@ -1687,21 +1715,22 @@ dorm() {
 # }}}
 # ssh {{{
 
-if [[ -n $REMOTE ]]; then
+# rsync ~/.config/readline/inputrc "$remote:$HOME/.inputrc"
+# ssh "$remote" 'touch ~/.hushlogin' # suppress annoying ubuntu login msg
 
-	sget() {
-		if [[ -f $1 ]]; then
-			rsync --no-relative --files-from="$1" "$REMOTE:/" .
-		else
-			rsync --exclude=".*/" "$REMOTE:$1" .
-		fi
-	}
+sget() {
+	remote=$1
+	if [[ -f $1 ]]; then
+		rsync --no-relative --files-from="$1" "$remote:/" .
+	else
+		rsync --exclude=".*/" "$remote:$1" .
+	fi
+}
 
-	sput() {
-		rsync --exclude=".*/" "$@" "$REMOTE:~/"
-	}
-
-fi
+sput() {
+	remote=$1
+	rsync --exclude=".*/" "$@" "$remote:~/"
+}
 
 # https://gist.github.com/cmbaughman/6a2ae275e0c0f39f42d95a728e07f796
 # https://www.redhat.com/sysadmin/ssh-automation-sshpass
