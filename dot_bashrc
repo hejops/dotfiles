@@ -279,11 +279,10 @@ fi
 
 # alias tar="tar -vf"
 # note: rsync trailing slash: https://unix.stackexchange.com/a/402556
+alias cal="cal --monday --week"
 alias cp="cp -rv"
 alias dmesg="dmesg --time-format=iso"
 alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
-alias fehm="feh --sort mtime"
-alias fehr="feh --randomize"
 alias grep="grep --color=auto"
 alias journalctl="journalctl --boot --output=short-iso" # journalctl | sort -k3 -k1 | less
 alias ln="ln -v"
@@ -294,7 +293,6 @@ alias python=python3
 alias reset="reset; exec \$SHELL"                                       # reset undoes C-w; bind -f doesn't fix it
 alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
 alias top="top -w\$COLUMNS"
-alias xargs1="xargs --max-args=1"
 alias xargs="xargs --no-run-if-empty --verbose"
 
 # alias lsc="_exa --time-style=iso --sort created"
@@ -302,6 +300,8 @@ alias ..="cd .."
 alias _exa="exa --all --long --links --dereference --color=always --git" # helper
 alias c="curl --silent --location --fail"
 alias cg="wget --continue"
+alias fehm="feh --sort mtime"
+alias fehr="feh --randomize"
 alias ftail="tail -f"
 alias gtime="env time --format \"\$GNUTIMEFORMAT\" -- echo" # aliasing time to gnu time will disable the builtin
 alias h="htop -u \$USER"
@@ -313,6 +313,7 @@ alias rgf="rg --files-with-matches"
 alias rgl="rg --no-heading --with-filename"
 alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tmp="cd \$(mktemp -d)"
+alias xargs1="xargs --max-args=1"
 
 # peak of laziness
 alias c,=cd # WARN: ,c is also a function
