@@ -547,7 +547,41 @@ local ft_binds = { -- {{{
 
 		{ "n", "<leader>B", ":!go build -x<cr>" }, -- could be a BufWritePost Dispatch
 		{ "n", "<leader>C", ":'<,'>s/\vif([^{]+)/case \1:/g<cr>" },
-		{ "n", "<leader>E", "oif err!=nil{panic(err)}<esc>:w<cr>o" }, -- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
+
+		{
+			"n",
+			"<leader>E",
+			function() -- handle error
+				-- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
+
+				local lnum = vim.api.nvim_win_get_cursor(0)[1] -- 1-indexed
+				local curr_line = vim.fn.getline(lnum)
+
+				-- note: lua has no 'word boundary' pattern
+				-- https://stackoverflow.com/a/6192354
+				if not vim.fn.getline("."):match("err") then
+					print("no err")
+					return
+				end
+
+				local next_line = vim.fn.getline(lnum + 1)
+				lnum = lnum - 1 -- adjust for 0-indexing
+
+				local err_check = "if .*err [!=]= nil"
+				if curr_line:match(err_check) then
+					print("err already handled")
+					return
+				elseif next_line:match(err_check) then -- merge err decl and err check
+					vim.api.nvim_buf_set_lines(0, lnum, lnum + 2, false, { -- 0-indexed, [start,end)
+						string.format("if %s; err!= nil {", curr_line),
+					})
+				else
+					vim.api.nvim_buf_set_lines(0, lnum + 1, lnum + 1, false, { "if err!= nil {panic(err)}" })
+				end
+
+				vim.cmd.w()
+			end,
+		},
 
 		{
 			"n",
