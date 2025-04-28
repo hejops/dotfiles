@@ -551,6 +551,7 @@ local ft_binds = { -- {{{
 		{
 			"n",
 			"<leader>E",
+			-- TODO: could be BufWritePost autocmd...
 			function() -- handle error
 				-- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
 
@@ -805,6 +806,7 @@ local function exec()
 		-- jq = string.format("jq -f %s %s", curr_file, curr_file:gsub(".jq", ".json")),
 		-- lua = "luafile " .. curr_file,
 		-- the normal langs
+		d = "dmd -run " .. curr_file,
 		dhall = "dhall-to-json --file " .. curr_file,
 		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 		elvish = "elvish " .. curr_file,
@@ -844,22 +846,7 @@ local function exec()
 		end)() .. curr_file,
 
 		typescript = (function()
-			local function ts_is_compiled(js)
-				-- if the js file newer than the ts file, the ts file can be said to be
-				-- compiled
-
-				local f1 = assert(io.popen("stat -c %Y " .. js))
-				local js_epoch = f1:read()
-				f1:close()
-
-				local f2 = assert(io.popen("stat -c %Y " .. curr_file))
-				local ts_epoch = f2:read()
-				f2:close()
-
-				return js_epoch > ts_epoch
-			end
-
-			local js = vim.fn.fnamemodify(curr_file, ":r") .. ".js"
+			-- local js = vim.fn.fnamemodify(curr_file, ":r") .. ".js"
 
 			-- cd first, so that child's node_modules/tsx can be found
 			-- this assumes that node_modules and file.ts are at the same level
@@ -876,24 +863,20 @@ local function exec()
 			local node_version = require("util"):get_command_output("node -v")
 			if node_version >= "v22.7.0" then -- 2x faster than tsx, but not guaranteed to work
 				-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
-				return "node --experimental-strip-types --experimental-transform-types " .. curr_file
+				return "node --no-warnings --experimental-strip-types --experimental-transform-types " .. curr_file
 			elseif node_version >= "v22.6.0" then
-				return "node --experimental-strip-types " .. curr_file
-			elseif vim.loop.fs_stat(js) and ts_is_compiled(js) then
-				-- fastest, but requires already compiled js (which is slow)
-				return "node " .. js -- 0.035 s
-			--experimental-transform-types
+				return "node --no-warnings --experimental-strip-types " .. curr_file
 			elseif vim.loop.fs_stat("./node_modules/tsx") then
 				-- run with node directly (without transpilation); requires tsx
 				-- https://nodejs.org/api/typescript.html#full-typescript-support
 				-- --enable-source-maps doesn't seem to report source line number correctly
 				-- node --import=tsx is significantly faster than yarn tsx (avoids unnecessary overhead)
 				return "node --no-warnings --import=tsx " .. curr_file
-			elseif vim.fn.executable("tsc") == 1 and vim.loop.fs_stat("./node_modules/@types/node") then
-				-- https://stackoverflow.com/a/78148646
-				os.execute("tsc " .. curr_file) -- ts -> js, 1.46 s
-				return "node " .. js
-			elseif vim.loop.fs_stat("./package.json") then
+			-- elseif vim.fn.executable("tsc") == 1 and vim.loop.fs_stat("./node_modules/@types/node") then
+			-- 	-- https://stackoverflow.com/a/78148646
+			-- 	os.execute("tsc " .. curr_file) -- ts -> js, 1.46 s
+			-- 	return "node " .. js
+			elseif vim.fs.root(0, "package.json") then
 				-- TODO: print is shown after execute
 				-- print("installing tsx...") -- ts-node is not just single binary
 				-- npm install --save-dev tsx
