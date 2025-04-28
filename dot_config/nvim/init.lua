@@ -222,6 +222,8 @@ vim.api.nvim_create_autocmd({ "VimResized" }, {
 vim.keymap.set("n", "<leader>J", ":TSJToggle<cr>")
 
 -- vim-fugitive
+-- vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
+vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 vim.keymap.set("n", "<leader>gP", ":Git add %<cr>", { desc = "add current buffer (patch)" })
 vim.keymap.set("n", "<leader>gU", ":Git checkout -- %<cr>", { desc = "discard all uncommitted changes" })
 vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
@@ -255,6 +257,10 @@ for _, k in pairs({ "C", "gc" }) do
 		print("deprecated; use <leader>c")
 	end, { desc = "deprecated" })
 end
+
+vim.keymap.set("n", "<leader>gp", function()
+	print("deprecated; use <leader>.")
+end, { desc = "deprecated" })
 
 vim.keymap.set("n", "<leader>gC", function()
 	-- TODO: git add % + git commit --amend --no-edit
