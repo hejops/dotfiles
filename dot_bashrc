@@ -312,6 +312,7 @@ alias qm="vim +Quickmath -c startinsert /tmp/foo"
 alias r="yazi"
 alias rgf="rg --files-with-matches"
 alias rgl="rg --no-heading --with-filename"
+alias rgml="rg --multiline --multiline-dotall"
 alias sqj="sqlite3 -json"
 alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tmp="cd \$(mktemp -d)"
@@ -346,6 +347,9 @@ elif command -v apt > /dev/null; then
 	alias lp="apt list --installed 2>/dev/null | grep"
 	alias lpu="apt list --upgradable"
 	alias rem="sudo apt --purge autoremove"
+	alias sp="apt-cache search . | grep -w"
+	alias u="sudo apt-get update && sudo apt-get upgrade && sudo apt autoremove"
+	alias uu="lpu | cut -d/ -f1 | xargs -o sudo apt-get --with-new-pkgs upgrade" # upgrade 'kept back' packages https://askubuntu.com/a/602
 
 elif command -v port > /dev/null; then
 

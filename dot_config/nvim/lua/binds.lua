@@ -545,6 +545,12 @@ local ft_binds = { -- {{{
 		-- https://stackoverflow.com/a/28795550
 		-- sed -i -r '/^\t+".*[A-Z]/ s/([a-z0-9])([A-Z])/\1_\L\2/g; s/"([A-Z])/"\L\1/g' file.go
 
+		{
+			"n",
+			"<leader>R",
+			[[:'{+2,'}s/\v\t+(\w+).+/\1: foo.\1,/g<cr>]], -- struct def -> struct instantiation
+		},
+
 		{ "n", "<leader>B", ":!go build -x<cr>" }, -- could be a BufWritePost Dispatch
 		{ "n", "<leader>C", ":'<,'>s/\vif([^{]+)/case \1:/g<cr>" },
 
@@ -796,7 +802,7 @@ local function exec()
 	curr_file = vim.fn.shellescape(curr_file)
 	local cwd = vim.fn.getcwd() -- only for go
 
-	---@type {[string]: string}
+	---@type {[string]: string|function}
 	local runners = {
 
 		-- the great langs
@@ -831,27 +837,27 @@ local function exec()
 		-- .. "grep -v _test | " -- ignore test files (ugh)
 		-- .. "xargs go run",
 
-		python = (function()
-			local root = require("util"):root_directory()
+		python = function()
+			-- local root = require("util"):root_directory()
 			if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
 				-- ~/.cache/uv
 				return "uv run "
-			elseif root and vim.loop.fs_stat(root .. "/pyproject.toml") then
+			-- elseif root and vim.loop.fs_stat(root .. "/pyproject.toml") then
+			elseif vim.fs.root(0, "pyproject.toml") then
 				-- vim.loop.fs_stat(require("util"):root_directory() .. ".venv")
 				-- poetry install -vv
 				return "poetry run python3 "
 			else
 				return "python3 "
 			end
-		end)() .. curr_file,
+		end, --() .. curr_file,
 
-		typescript = (function()
-			-- local js = vim.fn.fnamemodify(curr_file, ":r") .. ".js"
-
+		-- local js = vim.fn.fnamemodify(curr_file, ":r") .. ".js"
+		typescript = function()
 			-- cd first, so that child's node_modules/tsx can be found
 			-- this assumes that node_modules and file.ts are at the same level
 			vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
-			curr_file = vim.fn.expand("%:.") -- relative to child dir
+			ts = vim.fn.expand("%:.") -- relative to child dir
 
 			-- if vim.loop.fs_stat(".env") and vim.fn.executable("node23") then
 			-- 	return "node23 --no-warnings --import=tsx --env-file=.env " .. file
@@ -872,10 +878,6 @@ local function exec()
 				-- --enable-source-maps doesn't seem to report source line number correctly
 				-- node --import=tsx is significantly faster than yarn tsx (avoids unnecessary overhead)
 				return "node --no-warnings --import=tsx " .. curr_file
-			-- elseif vim.fn.executable("tsc") == 1 and vim.loop.fs_stat("./node_modules/@types/node") then
-			-- 	-- https://stackoverflow.com/a/78148646
-			-- 	os.execute("tsc " .. curr_file) -- ts -> js, 1.46 s
-			-- 	return "node " .. js
 			elseif vim.fs.root(0, "package.json") then
 				-- TODO: print is shown after execute
 				-- print("installing tsx...") -- ts-node is not just single binary
@@ -887,7 +889,7 @@ local function exec()
 			else
 				error("no package.json found; need npm init")
 			end
-		end)(),
+		end, --(curr_file),
 
 		["javascript.mongo"] = string.format(
 			-- -f FILE requires FILE to be mongosh (not js)
@@ -930,8 +932,8 @@ local function exec()
 	if not runner then
 		print("No runner configured for " .. ft)
 		return
-		-- elseif type(runner) == "function" then
-		-- 	runner = runner(curr_file)
+	elseif type(runner) == "function" then
+		runner = runner(curr_file)
 	end
 
 	require("util"):close_unnamed_splits()

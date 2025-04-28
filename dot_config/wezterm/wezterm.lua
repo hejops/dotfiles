@@ -237,13 +237,7 @@ local function get_title(tab)
 
 		-- return basename(dir)
 
-		-- yazi always executes commands from ~
-		local branch = get_output(string.format("git -C %s branch --show-current", dir))
-		if branch ~= "" then
-			return string.format("d: %s [%s]", basename(dir), branch)
-		else
-			return string.format("d: %s", basename(dir))
-		end
+		return string.format("d: %s", basename(dir))
 	else
 		-- os.execute("notify-send unreachable!")
 		error("unreachable")
@@ -253,7 +247,20 @@ local function get_title(tab)
 end
 
 wezterm.on("format-window-title", function(tab, pane, tabs, panes, cfg)
-	return get_title(tab) -- only applies to wezterm windows
+	local title = get_title(tab) -- only applies to wezterm windows
+
+	local dir = pane.current_working_dir and pane.current_working_dir.path or ""
+
+	-- attaching branch info to tab title is silly, because it uses a lot of space
+
+	-- yazi always executes commands from ~
+	local branch = get_output(string.format("git -C %s branch --show-current", dir)):gsub("\n", "")
+	if branch == "" then
+		return title
+	else
+		-- return string.format("[%s] %s", branch, title)
+		return string.format("%s [%s]", title, branch)
+	end
 end)
 
 wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)
@@ -266,6 +273,17 @@ end)
 
 -- }}}
 -- keys {{{
+
+local function file_exists(fname)
+	-- https://stackoverflow.com/a/4991602
+	local f = io.open(fname, "r")
+	if f ~= nil then
+		io.close(f)
+		return true
+	else
+		return false
+	end
+end
 
 local function keys()
 	local leader = "SHIFT|CTRL"
@@ -281,6 +299,13 @@ local function keys()
 			},
 			action = wezterm.action_callback(function(window, pane)
 				local url = window:get_selection_text_for_pane(pane)
+
+				-- -- first determine if ff has xcb problem
+				-- if is_ubuntu and not file_exists("/var/lib/snapd/lib/gl/libxcb.so.1") then
+				-- 	os.execute("notify-send 'xcb broken!'")
+				-- 	return
+				-- end
+
 				-- log("opening: " .. url)
 				-- if string.find(url, "youtu") then
 				-- 	wezterm.open_with(url, "mpv")
@@ -345,6 +370,7 @@ local function keys()
 		{ mods = "CTRL", key = "g", action = act(hint_url) },
 		{ mods = "CTRL", key = "t", action = SpawnTabNext() },
 		{ mods = "CTRL", key = "z", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
+		{ mods = "WIN", key = "f", action = act.DisableDefaultAssignment },
 
 		-- { mods = leader, key = "g", action = act(hint_file) },
 		-- { mods = leader, key = "o", action = act.MoveTabRelative(1) }, -- moving tabs is probably an antipattern
