@@ -444,6 +444,23 @@ telescope.setup({
 			},
 		},
 
+		git_status = {
+			mappings = {
+				-- ironically, <c-i> is a perfectly fine mapping
+				-- https://github.com/nvim-telescope/telescope.nvim/blob/a4ed82509/lua/telescope/actions/init.lua#L885
+				i = {
+					["<cr>"] = function()
+						local selection = require("telescope.actions.state").get_selected_entry()
+						if selection.status:sub(2) ~= " " then
+							-- starts in insert mode for some reason, which is nice
+							vim.cmd("Git commit -v " .. selection.value)
+						end
+					end,
+				},
+				-- n = { ["<cr>"] = telescope_actions.git_staging_toggle },
+			},
+		},
+
 		--   -- use trouble instead
 		-- diagnostics = {
 		-- 	-- :h telescope.builtin.diagnostics()
@@ -493,9 +510,8 @@ vim.keymap.set("n", "<leader>.", telescope.extensions.adjacent.adjacent) -- TODO
 vim.keymap.set("n", "<leader>/", telescope_b.live_grep, { desc = "ripgrep" }) -- entire project
 vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
 vim.keymap.set("n", "<leader>e", telescope_b.git_files, { desc = "git ls-files" })
-
--- vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" }) -- gS, except it just opens the file; it could probably commit though...
 vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" })
+vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" })
 
 local git_log_cmd = {
 	"git",
