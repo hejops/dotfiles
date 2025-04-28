@@ -126,6 +126,12 @@ vim.keymap.set("v", "D", [[:g/\v/d<Left><Left>]]) -- delete lines
 vim.keymap.set("v", "n", [[:g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
 
+vim.keymap.set("n", "<leader>h", function()
+	-- inlay hints lead to -a lot- of clutter (esp in rust), so they should not
+	-- be enabled by default
+	vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
+end, { desc = "toggle inlay hints" })
+
 vim.keymap.set("n", "cr", function()
 	require("util"):random_colorscheme()
 	vim.cmd("colo")
