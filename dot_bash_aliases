@@ -11,27 +11,6 @@
 	sed -e 's/<[^>]*>//g' |
 		fold -w 65 -s
 
-# if
-# 	groups | grep -q docker &&
-# 		sum=$(docker system df --format="{{.Reclaimable}}" |
-# 			grep GB |
-# 			cut -d. -f1 |
-# 			paste -sd+ |
-# 			bc) &&
-# 		[[ $sum -gt 1 ]]
-# then
-# 	docker system df
-#
-# 	# --all: all images without at least one container associated
-# 	# to (not just dangling ones)
-# 	#
-# 	# note: actual space reclaimed tends to be lower than reported
-# 	docker system prune --all
-#
-# 	# usually not important
-# 	docker volume ls -f dangling=true -q | xargs docker volume rm
-# fi
-
 # }}}
 # aliases {{{
 
@@ -58,7 +37,7 @@ alias rat='exec yazi "$HDD/torrent" "$HDD/movies"'
 # alias n="NO_COLOR=1 node --import=tsx"
 alias au="audacious -H"
 alias bh="vb -b"
-alias cam="ls /dev/video* && mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed && exit" # TODO: handle >1 video device (just increment n until file not exist)
+alias cam="ls /dev/video* && exec mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed" # TODO: handle >1 video device (just increment n until file not exist)
 alias cdnp='cd "$(files mpv | grep mp3 | largs dirname)"'
 alias ci="chromium --incognito"
 alias colt="column -t -s$'\t'" # align tab-containing output
@@ -71,7 +50,7 @@ alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
 alias fzh="fzf --height=~33% --reverse" # height=~X% means min(input rows, window height * X%);
 alias inw="inotifywait --monitor --recursive --format='%T %w %e %f' --timefmt='%Y-%m-%dT%H:%M:%S'"
-alias li="chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg' & exit"
+alias li="exec chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg'"
 alias mem='top -b -n1 -o %MEM | grep -m10 $USER'
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out ; kp"
 alias pq="~/plaque/plaque"
@@ -226,7 +205,7 @@ rt() {
 
 # }}}
 
-# git {{{
+# git
 
 alias S=gS
 alias b=git_branch # i could <leader>gB, but changing branch means context switching and probably closing vim anyway
@@ -255,6 +234,13 @@ alias gig='$EDITOR $(_get_repo_root)/.gitignore'
 alias gu=gun
 alias gx='git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S' # TODO: colt would be nice, but then it can't be an alias anymore
 
+# git info {{{
+# functions that only report info
+
+# shellcheck disable=SC2120
+gls() { git ls-files "${1:-.}"; }
+
+_get_remote() { git config --get remote.origin.url; }
 _get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
 _git_current_branch() { git branch --show-current; }
 _in_git_repo() { git rev-parse --is-inside-work-tree > /dev/null 2> /dev/null; }
@@ -266,47 +252,6 @@ _gmaster() {
 	git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4
 }
 
-v() {
-
-	_in_git_repo || return
-
-	# bat can keep up with rapid renders; pygmentize can't
-	#
-	# chezmoi/ > time cat dot_config/nvim/init.lua >/dev/null
-	# real    0m0.001s
-	#
-	# chezmoi/ > time bat --color=always --style=auto --paging=never dot_config/nvim/init.lua >/dev/null
-	# real    0m0.028s
-	#
-	# chezmoi/ > time pygmentize dot_config/nvim/init.lua >/dev/null
-	# real    0m0.118s
-
-	# on ubuntu:
-	# ln -s /usr/bin/batcat ~/.local/bin/bat
-	prv_cmd="bat --color always --style=auto {} 2>/dev/null || cat {}"
-
-	{
-		# git diff --name-only --ignore-submodules "$(_gmaster)...HEAD" | grep . #||
-		git log --no-merges --first-parent --name-only --pretty= "$(_gmaster)...HEAD" | grep .
-		git ls-files --full-name # . is implicit
-	} |
-		prepend "$(_get_repo_root)"/ |
-		largs realpath --relative-to=. 2> /dev/null |
-		sort -u |
-		largs ls -1t 2> /dev/null |
-		head -n50 |
-		# height=~X% is not suitable because preview is usually longer
-		# than input rows, and preview must always be shown to a reasonable
-		# extent
-		fzf -m --prompt="$(_git_current_branch): " \
-			--height=50% --reverse --preview-window='right,50%,border' \
-			--preview="$prv_cmd" |
-		xargs nvim -p
-}
-
-# shellcheck disable=SC2120
-gls() { git ls-files "${1:-.}"; }
-
 git_root() {
 	if _in_git_repo; then
 		cd "$(_get_repo_root)" || :
@@ -315,171 +260,23 @@ git_root() {
 	fi
 }
 
-gA() {
-	: un-add, unstage
-	# i usually want restore more often (?)
-	set -x
-	git restore --staged "$@" \
-		2> /dev/null || # committed; without --staged, changes are discarded!
-		git reset "$@"  # not committed yet
-	set +x
-}
-
-gun() {
-	if
-		[[ $# -eq 0 ]] ||
-			[[ $(_git_current_branch) == $(_gmaster) ]] && [[ $1 == . ]]
-	then
-		echo "cannot reset on master"
-		return
-	fi
-
-	git diff "$@" | cat
-	git checkout -- "$@"
-	echo "undid ${#@} files"
-}
-
-gb() {
-	: switch to new branch, or existing branch
-
-	# no remote branches
-	default_local_branch=$(_gmaster) #|| :
-	current_local_branch=$(_git_current_branch)
-
-	if [[ $# -eq 0 ]]; then
-		if [[ $default_local_branch == "$current_local_branch" ]]; then
-			echo "Already on $default_local_branch"
-		else
-			# func retval is not propagated to parent
-			git checkout "$default_local_branch" || return 1
-			timeout 30 git pull
-		fi
+_git_http() {
+	url=$1
+	if [[ $url == http* ]]; then
+		echo "$url"
 	else
-
-		# generally, new branches should target master. however, this
-		# may not always be the case, so accept an optional 2nd arg to
-		# specify target branch (should be current)
-		if ! git checkout "${2:-$default_local_branch}"; then
-			return 1
-		fi
-
-		timeout 30 git pull || return
-
-		# existing remote branch > create local branch > existing local branch
-		if
-			git branch -r | grep "origin/$1"
-		then
-			# note: git hook stdout cannot be suppressed
-			echo "Switching to remote branch $1"
-			git switch "$1" || return 1
-
-		elif git switch --create "$1"; then
-			:
-
-		else
-			# should be infallible?
-			git switch "$1" || return 1
-
-		fi
+		tr <<< "$url" : / | sed -r 's|git@|https://|; s|.git$||'
 	fi
 
 }
 
-git_branch() {
-	# https://stackoverflow.com/a/1441062
-	# --pretty=format:'%h%x09%an%x09%ad%x09%s' # no color
-	# TODO: include date/author, but preserve color
-
-	_in_git_repo || return
-	if [[ $(git branch | wc -l) -eq 1 ]]; then
-		echo "No other branches; create one with gb <branch>"
-		return
-	fi
-
-	prv_cmd=$(
-		cat <<- EOF
-			echo {} | sed -r 's/^[ *]+//; s/^/$(_gmaster)../' | xargs git log --oneline --color=always | grep . ||
-				git log --oneline  --color=always $(_gmaster)
-		EOF
-	)
-	branch=$(git branch --sort=-committerdate |
-		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi |
-		sed -r 's/^[ *]+//')
-	[[ -z $branch ]] && return
-	gb "$branch"
-}
-
-gbd() {
-	: prune local branches that no longer exist on remote -- unstaged changes will be lost!
-	# https://stackoverflow.com/a/46192689
-	git branch -vv |
-		grep ': gone]' |
-		grep -v "\*" |
-		awk '{ print $1; }' |
-		xargs -r git branch -D
-}
-
-# gpick() {
-# 	: cherry pick commit from other branch
-#
-# 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
-# 	sha=$(git log --branches --remotes --tags --oneline --decorate |
-# 		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
-# 		awk '{print $1}')
-#
-# 	# https://stackoverflow.com/a/29788254
-# 	[[ -n $sha ]] && git show "$sha" | git apply -
-# }
-
-_git_log_fzf() {
-	_in_git_repo || return
-	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
-
-	args=()
-
-	if [[ -f $1 ]] || [[ -d $1 ]]; then
-		args+=("$@")
-		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
-	elif
-		[[ $# -gt 1 ]] # probably arbitrary options to git log
-	then
-		# TODO: allow arbitrary options to fzf (this is a can of worms)
-		args+=("$@")
-	elif
-		# other dev branch
-		[[ $# -eq 1 ]] &&
-			git branch --remote | grep -Pqx "  origin/$1"
-	then
-		git pull > /dev/null 2> /dev/null
-		args+=("origin/$1")
-	elif
-		m=$(_gmaster) &&
-			[[ $(_git_current_branch) == "$m" ]]
-	then
-		: on master
-	elif [[ -n $m ]]; then # dev branch
-		args+=("$m...HEAD")
-	else
-		: no remote yet
-	fi
-
-	# there is literally nothing to see in merge commits (Merge branch 'x'
-	# into 'master'), so --no-merges is generally a good idea.
-	#
-	# however, commits that are the -result- of a merge are still included.
-	# these merges can be further ignored with --first-parent, although
-	# ignoring them may not always be desirable.
-	#
-	# alternatively, it may be good to indicate whether the commit was
-	# committed in this branch, or simply pulled from remote.
-
-	git log --oneline --no-merges --first-parent "${args[@]}" |
-		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
-}
-
-git_log() {
-	: browse git log, showing each commit\'s diff in fzf preview
-	_git_log_fzf "$@" | awk '{print $1}' | xargs git show
+gauthors() {
+	: show authorship of file
+	git blame --line-porcelain "$1" |
+		sed -rn 's/^author (.+)/\1/p' |
+		sort |
+		uniq -c |
+		sort -n
 }
 
 gL() {
@@ -490,185 +287,7 @@ gL() {
 		fzf --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
-grev() {
-	: revert single commit in isolation
-	_git_log_fzf "$@" | awk '{print $1}' | xargs git revert
-}
-
-gRev() {
-	: rollback history to a known good commit -- check ci first
-	sha=$(_git_log_fzf "$@" | awk '{print $1}')
-	git checkout -f "$sha" -- .
-	git commit -av
-}
-
-# gsdel() {
-# 	: show last state of a deleted file
-# 	# https://stackoverflow.com/a/19727752
-# 	f=$1
-# 	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
-# }
-
-gS() {
-	: like gs+gl, for files to stage/commit
-
-	# # porcelain v1 is -always- relative to repo root, which makes
-	# # relativising to cwd needlessly tedious (this would probably involve
-	# # splitting each line, prepending repo root to the latter part,
-	# # relativising, and then rejoining!)
-	# files=$(git status --porcelain)
-
-	prv_cmd=$(
-		cat <<- EOF
-			echo {} | awk '{print \$NF}' | xargs git diff --color=always | grep . ||
-			echo {} | awk '{print \$NF}' | xargs bat --color always --style=auto 2>/dev/null
-		EOF
-	)
-
-	# by default, git status does not enter dirs containing only 1
-	# (untracked) file
-	sel=$(git status --porcelain=2 --untracked-files=all |
-		# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
-		#   $2					       $NF
-		# ? README.md
-		#
-		# $2 is more useful for tracked files (since it more closely maps to v1
-		# labels), but for untracked files this duplicates the file path, so we
-		# stick to $1
-		#
-		# https://git-scm.com/docs/git-status#_changed_tracked_entries
-		#
-		# HACK: i have no idea how to 'return' multiple columns inside
-		# a ternary, so concat with a space as an ugly workaround
-		awk '{print ($1=="?") ? $0 : $2" "$NF}' |
-		fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
-	# fzh --multi --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
-
-	# add untracked files first
-	echo "$sel" | grep -P '^\?' | awk '{print $NF}' | xargs git add
-	echo "$sel" | awk '{print $NF}' | xargs git commit -v
-}
-
-# gac() {
-# 	: append ALL changes to most recent unpushed commit
-# 	git add "$@"
-# 	git commit --amend --no-edit
-# }
-
-gapc() {
-	git add --patch "$@"
-	git commit --amend --no-edit
-}
-
-gcf() {
-	: make a new commit to be squashed with an earlier one
-
-	# https://jordanelver.co.uk/blog/2020/06/04/fixing-commits-with-git-commit-fixup-and-git-rebase-autosquash/
-	old_sha=$(_git_log_fzf . | cut -d' ' -f1)
-	[[ -z $old_sha ]] && return
-
-	new_sha=$(_git_log_fzf . | cut -d' ' -f1)
-	[[ -z $new_sha ]] && return
-
-	# TODO:
-	# error: pathspec '55c82b4c1' did not match any file(s) known to git
-
-	# --fixup associates a new commit with an existing commit so that when
-	# you do an interactive rebase, you don't have to re-order any commits
-	# in order to squash them. And you don't have to change any commit
-	# messages
-	git commit --fixup "$old_sha" "$new_sha"
-
-	# with no arg, defaults to curr branch (NEVER use gmaster; to avoid
-	# losing work, git rebase --abort immediately)
-	# --autostash required to avoid 'unstaged changes present'
-	# TODO: is -i necessary?
-	git rebase -i --autosquash --autostash || gC
-}
-
-gsq() {
-	: squash last n commits -- rewrites history!
-	# https://stackoverflow.com/a/5201642
-	sha=$(_git_log_fzf | cut -d' ' -f1)
-	# `git reset <sha>` brings us back to the commit -after- <sha>. this
-	# means we need to select the commit before the 'target', which is
-	# unintuitive. so we just go back 1 more commit with ~
-	git reset --soft "$sha~"
-	git commit --edit -m"$(git log --format=%B --reverse "HEAD..HEAD@{1}")"
-	git push --force-with-lease origin "$(_git_current_branch)"
-}
-
-gc() {
-	: commit
-
-	if [[ $# -gt 0 ]]; then
-
-		# 1. specified files, but excluding untracked files
-		# note: this loop commits renamed files, but does not commit
-		# their old names
-
-		# arr=()
-		# for f in "$@"; do
-		# 	[[ ! -f $f ]] && continue
-		# 	realpath "$f" | xargs git ls-files | grep -q . && arr+=("$f")
-		# done
-		# git commit -v "${arr[@]}"
-
-		for f in "$@"; do
-			[[ ! -f $f ]] && continue
-			realpath "$f" |
-				xargs git ls-files |
-				grep -q . && echo "$f"
-		done |
-			largs git commit -v
-
-	# note: git commit -av stages -all- changes in the entire repo. this is
-	# almost never what i want
-
-	# elif
-	# 	# 2. file(s) that have been renamed (only)
-	# 	# this behaviour may not be desirable when modified files
-	# 	# should also be included in the commit
-	# 	git status --porcelain | grep -Pq '^R.+ -> '
-	# then
-	# 	pushd "$(_get_repo_root)" || return
-	# 	git status --porcelain |
-	# 		grep -P '^R' |
-	# 		# commit both the old (src) and new (dst) fname
-	# 		sed 's/^R[^ ]* //; s/->//' | # very iffy
-	# 		xargs git commit -v
-	# 	popd || return
-
-	elif
-		# 2. file(s) that have been renamed/deleted
-		# this behaviour may not be desirable when modified files
-		# should also be included in the commit
-		rd=$(git diff --diff-filter=RD --name-only | grep .)
-	then
-		echo "$rd" |
-			prepend "$(_get_repo_root)/" |
-			xargs git commit -v
-
-	elif
-		# 3. all staged changes
-		# [git diff] "exits with 1 if there were differences"
-		! git diff --staged --diff-filter=AMD --quiet
-	then
-		: committing staged changes
-		git commit -v
-
-	else
-		# 4. all files that have changed in the current dir
-		git diff --name-only . |
-			prepend "$(_get_repo_root)/" |
-			grep -v .gitignore |
-			xargs git commit -v
-
-	fi
-
-}
-
-git_status() {
+git_status() { # {{{
 	# 1. changed files (twice: porcelain, then diff stat)
 	# 2. untracked files
 	# 3. current number of staged commits
@@ -781,163 +400,35 @@ git_status() {
 	fi
 
 	popd > /dev/null 2> /dev/null || :
-}
-
-gmm() {
-
-	# in case of submodule conflict:
-	# cd $submodule
-	# gun .
-	# git merge $hash (git should tell you which hash -- how to script?)
-	# git add $submodule
-	# git commit
-
-	: merge master into dev branch
-	# https://stackoverflow.com/a/20103414
-	git fetch origin # gets you up to date with origin
-	# TODO: for forks, need to sync fork (in gh), then git pull
-	git merge "origin/$(_gmaster)"
-}
-
-# grbr() {
-# 	: rebase to remote, discarding all local changes that conflict with remote
-# 	# use case:
-# 	# - our branch was started at the same time as another branch
-# 	# - rewriting is simpler than resolving conflicts
-# 	# - the other branch is much larger
-# 	# - the other branch has been merged to master
-#
-# 	cr
-#
-# 	# first preserve files that were only added to in our branch
-# 	# (this is a looser definition than just 'new files')
-# 	git diff --numstat master...HEAD |
-# 		grep -P '^\d+\t0\t' |
-# 		cut -f3 |
-# 		xargs git diff master...HEAD > tmp.diff
-#
-# 	# equivalent to `git rebase origin/master; git rebase --skip (repeatedly)`
-# 	git rebase --strategy-option=theirs "origin/$(_gmaster)"
-#
-# 	git apply tmp.diff
-#
-# 	# git push -f
-# }
-
-_git_http() {
-	url=$1
-	if [[ $url == http* ]]; then
-		echo "$url"
-	else
-		tr <<< "$url" : / | sed -r 's|git@|https://|; s|.git$||'
-	fi
-
-}
+} # }}}
 
 gh() {
 	: open remote url
 
-	if ! repo=$(git config --get remote.origin.url); then
+	if ! repo=$(_get_remote); then
 		echo "Current repo has no remote"
 		return
 	fi
-	repo=${repo%*.git}
 
-	if [[ -f $1 ]] && git ls-files --error-unmatch "$1" &> /dev/null; then
-		# TODO: path must be relativised to repo root (rev-parse?)
-		# i.e. realpath - repo_root
+	# better handled in vim
 
-		# view file at its most recent commit
-		hash=$(git log --max-count=1 --pretty=format:%h -- "$1")
-		url="$repo/blob/$hash/$1"
+	# if [[ -f $1 ]] && git ls-files --error-unmatch "$1" &> /dev/null; then
+	# 	# view file at its most recent commit
+	# 	hash=$(git log --max-count=1 --pretty=format:%h -- "$1")
+	# 	url="$repo/blob/$hash/$1"
+	#
+	# elif [[ -n $1 ]]; then # view repo at specific commit
+	# 	h=$(git rev-parse --short --verify HEAD)
+	# 	url="$repo/commit/$h"
+	# fi
 
-	elif [[ -n $1 ]]; then # view repo at specific commit
-		# TODO: git log oneline -> fzf
-		h=$(git rev-parse --short --verify HEAD)
-		url="$repo/commit/$h"
-
-	else
-		url="$repo"
-
-	fi
-
+	url=${repo%*.git}
 	url=$(_git_http "$url")
-
 	echo "$url"
 	# ubuntu is a pita:
 	# gio: ...: Failed to find default application for content type ‘text/html’
 	xdg-open "$url" ||
 		firefox "$url"
-}
-
-gnew() {
-	: push to newly created remote
-
-	if [[ -f files_to_add ]]; then
-		if [[ -d .git ]] && [[ -d .git_old ]]; then
-			echo 'new and old git histories found, remove new one first: rm -rf ./.git'
-			return
-		fi
-		mv .git .git_old
-	fi
-
-	# echo $GIT_EMAIL
-	# return
-
-	# https://kbroman.org/github_tutorial/pages/init.html
-	# set -euo pipefail
-
-	# no repo yet
-	if [[ ! -d .git ]]; then
-		git init
-		return
-	fi
-
-	if
-		! git log > /dev/null 2> /dev/null &&
-			! git status --porcelain | grep -Fv '??'
-	then
-		echo 'no commits made yet'
-		return
-	else
-		# WARN: this may not be desired
-		git commit -m "initial commit"
-	fi
-
-	# no remote yet
-	if ! git config --get remote.origin.url; then
-		git branch -M master # don't call _gmaster!
-		xdg-open https://github.com/new &
-		read -rp 'Repo name (not URL!): ' repo
-		git remote add origin "https://github.com/hejops/$repo"
-		git push -u origin master
-		git status
-		git remote set-head origin --auto
-	fi
-
-}
-
-_gssh() {
-	: init github ssh key
-	# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key
-	#
-	# note: this key must still be added to github!
-	# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account#adding-a-new-ssh-key-to-your-account
-
-	# password not strictly necessary
-	ssh-keygen -t ed25519 -C hejops1@gmail.com -f "$HOME/.ssh/github_$(date -I)"
-	ssh -T git@github.com 2>&1 | grep -q success && echo ok
-
-	# to actually use the key on startup, add to .xinitrc (or similar);
-
-	# if [[ -z $SSH_AUTH_SOCK ]]; then
-	# 	{
-	# 		pkill ssh-agent
-	# 		eval "$(ssh-agent -s)"
-	# 		ssh-add "$HOME/.ssh/github_2024-06-17"
-	# 	} > /dev/null 2> /dev/null
-	# fi
-
 }
 
 gd() {
@@ -953,7 +444,93 @@ gd() {
 	fi
 }
 
-gdm() {
+# }}}
+# git history {{{
+
+_git_log_fzf() { # {{{
+	_in_git_repo || return
+	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
+
+	args=()
+
+	if [[ -f $1 ]] || [[ -d $1 ]]; then
+		args+=("$@")
+		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
+	elif
+		[[ $# -gt 1 ]] # probably arbitrary options to git log
+	then
+		# TODO: allow arbitrary options to fzf (this is a can of worms)
+		args+=("$@")
+	elif
+		# other dev branch
+		[[ $# -eq 1 ]] &&
+			git branch --remote | grep -Pqx "  origin/$1"
+	then
+		git pull > /dev/null 2> /dev/null
+		args+=("origin/$1")
+	elif
+		m=$(_gmaster) &&
+			[[ $(_git_current_branch) == "$m" ]]
+	then
+		: on master
+	elif [[ -n $m ]]; then # dev branch
+		args+=("$m...HEAD")
+	else
+		: no remote yet
+	fi
+
+	# there is literally nothing to see in merge commits (Merge branch 'x'
+	# into 'master'), so --no-merges is generally a good idea.
+	#
+	# however, commits that are the -result- of a merge are still included.
+	# these merges can be further ignored with --first-parent, although
+	# ignoring them may not always be desirable.
+	#
+	# alternatively, it may be good to indicate whether the commit was
+	# committed in this branch, or simply pulled from remote.
+
+	git log --oneline --no-merges --first-parent "${args[@]}" |
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+}     # }}}
+v() { # {{{
+	: open recently modified files
+
+	_in_git_repo || return
+
+	# bat can keep up with rapid renders; pygmentize can't
+	#
+	# chezmoi/ > time cat dot_config/nvim/init.lua >/dev/null
+	# real    0m0.001s
+	#
+	# chezmoi/ > time bat --color=always --style=auto --paging=never dot_config/nvim/init.lua >/dev/null
+	# real    0m0.028s
+	#
+	# chezmoi/ > time pygmentize dot_config/nvim/init.lua >/dev/null
+	# real    0m0.118s
+
+	# on ubuntu:
+	# ln -s /usr/bin/batcat ~/.local/bin/bat
+	prv_cmd="bat --color always --style=auto {} 2>/dev/null || cat {}"
+
+	{
+		# git diff --name-only --ignore-submodules "$(_gmaster)...HEAD" | grep . #||
+		git log --no-merges --first-parent --name-only --pretty= "$(_gmaster)...HEAD" | grep .
+		git ls-files --full-name # . is implicit
+	} |
+		prepend "$(_get_repo_root)"/ |
+		largs realpath --relative-to=. 2> /dev/null |
+		sort -u |
+		largs ls -1t 2> /dev/null |
+		head -n50 |
+		# height=~X% is not suitable because preview is usually longer
+		# than input rows, and preview must always be shown to a reasonable
+		# extent
+		fzf -m --prompt="$(_git_current_branch): " \
+			--height=50% --reverse --preview-window='right,50%,border' \
+			--preview="$prv_cmd" |
+		xargs nvim -p
+}       # }}}
+gdm() { # {{{
 	: diff against master, like in a PR
 
 	# caveat: due to git internals, it is not trivial to produce a diff
@@ -988,9 +565,407 @@ gdm() {
 	# 	git diff "$(gmaster)...HEAD"
 	# fi
 
+} # }}}
+
+git_log() {
+	: browse git log, showing each commit\'s diff in fzf preview
+	_git_log_fzf "$@" | awk '{print $1}' | xargs git show
 }
 
-gcon() {
+gxx() {
+	: show commits whose changes contain a pattern
+	prv_cmd="echo {} | cut -f1 | xargs git show --color=always"
+	git log --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S "$1" | # WARN: slow with large histories
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' |     # --ansi
+		cut -f1 |
+		xargs git show
+}
+
+# gsdel() {
+# 	: show last state of a deleted file
+# 	# https://stackoverflow.com/a/19727752
+# 	f=$1
+# 	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
+# }
+
+# git diff blame
+# https://gist.github.com/maxrothman/d27bbc36f7c150924de6c6e54965de4d py
+# https://github.com/eantoranz/difflame py
+# https://github.com/dmnd/git-diff-blame pl
+
+# GitBlameOpenFileURL
+# $url/-/blob/$branch/$path
+
+# }}}
+# git staging {{{
+# functions that modify files or the index
+
+gA() {
+	: un-add, unstage
+	# i usually want restore more often (?)
+	set -x
+	git restore --staged "$@" \
+		2> /dev/null || # committed; without --staged, changes are discarded!
+		git reset "$@"  # not committed yet
+	set +x
+}
+
+gc() {
+	: commit
+
+	if [[ $# -gt 0 ]]; then
+
+		# 1. specified files, but excluding untracked files
+		# note: this loop commits renamed files, but does not commit
+		# their old names
+
+		# arr=()
+		# for f in "$@"; do
+		# 	[[ ! -f $f ]] && continue
+		# 	realpath "$f" | xargs git ls-files | grep -q . && arr+=("$f")
+		# done
+		# git commit -v "${arr[@]}"
+
+		for f in "$@"; do
+			[[ ! -f $f ]] && continue
+			realpath "$f" |
+				xargs git ls-files |
+				grep -q . && echo "$f"
+		done |
+			largs git commit -v
+
+	# note: git commit -av stages -all- changes in the entire repo. this is
+	# almost never what i want
+
+	# elif
+	# 	# 2. file(s) that have been renamed (only)
+	# 	# this behaviour may not be desirable when modified files
+	# 	# should also be included in the commit
+	# 	git status --porcelain | grep -Pq '^R.+ -> '
+	# then
+	# 	pushd "$(_get_repo_root)" || return
+	# 	git status --porcelain |
+	# 		grep -P '^R' |
+	# 		# commit both the old (src) and new (dst) fname
+	# 		sed 's/^R[^ ]* //; s/->//' | # very iffy
+	# 		xargs git commit -v
+	# 	popd || return
+
+	elif
+		# 2. file(s) that have been renamed/deleted
+		# this behaviour may not be desirable when modified files
+		# should also be included in the commit
+		rd=$(git diff --diff-filter=RD --name-only | grep .)
+	then
+		echo "$rd" |
+			prepend "$(_get_repo_root)/" |
+			xargs git commit -v
+
+	elif
+		# 3. all staged changes
+		# [git diff] "exits with 1 if there were differences"
+		! git diff --staged --diff-filter=AMD --quiet
+	then
+		: committing staged changes
+		git commit -v
+
+	else
+		# 4. all files that have changed in the current dir
+		git diff --name-only . |
+			prepend "$(_get_repo_root)/" |
+			grep -v .gitignore |
+			xargs git commit -v
+
+	fi
+
+}
+
+gS() {
+	: like gs+gl, for files to stage/commit
+
+	# # porcelain v1 is -always- relative to repo root, which makes
+	# # relativising to cwd needlessly tedious (this would probably involve
+	# # splitting each line, prepending repo root to the latter part,
+	# # relativising, and then rejoining!)
+	# files=$(git status --porcelain)
+
+	prv_cmd=$(
+		cat <<- EOF
+			echo {} | awk '{print \$NF}' | xargs git diff --color=always | grep . ||
+			echo {} | awk '{print \$NF}' | xargs bat --color always --style=auto 2>/dev/null
+		EOF
+	)
+
+	# by default, git status does not enter dirs containing only 1
+	# (untracked) file
+	sel=$(git status --porcelain=2 --untracked-files=all |
+		# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
+		#   $2					       $NF
+		# ? README.md
+		#
+		# $2 is more useful for tracked files (since it more closely maps to v1
+		# labels), but for untracked files this duplicates the file path, so we
+		# stick to $1
+		#
+		# https://git-scm.com/docs/git-status#_changed_tracked_entries
+		#
+		# HACK: i have no idea how to 'return' multiple columns inside
+		# a ternary, so concat with a space as an ugly workaround
+		awk '{print ($1=="?") ? $0 : $2" "$NF}' |
+		fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
+	# fzh --multi --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
+
+	# add untracked files first
+	echo "$sel" | grep -P '^\?' | awk '{print $NF}' | xargs git add
+	echo "$sel" | awk '{print $NF}' | xargs git commit -v
+}
+
+gsq() {
+	: squash last n commits -- rewrites history!
+	# https://stackoverflow.com/a/5201642
+	sha=$(_git_log_fzf | cut -d' ' -f1)
+	# `git reset <sha>` brings us back to the commit -after- <sha>. this
+	# means we need to select the commit before the 'target', which is
+	# unintuitive. so we just go back 1 more commit with ~
+	git reset --soft "$sha~"
+	git commit --edit -m"$(git log --format=%B --reverse "HEAD..HEAD@{1}")"
+	git push --force-with-lease origin "$(_git_current_branch)"
+}
+
+gcf() {
+	: make a new commit to be squashed with an earlier one
+
+	# https://jordanelver.co.uk/blog/2020/06/04/fixing-commits-with-git-commit-fixup-and-git-rebase-autosquash/
+	old_sha=$(_git_log_fzf . | cut -d' ' -f1)
+	[[ -z $old_sha ]] && return
+
+	new_sha=$(_git_log_fzf . | cut -d' ' -f1)
+	[[ -z $new_sha ]] && return
+
+	# TODO:
+	# error: pathspec '55c82b4c1' did not match any file(s) known to git
+
+	# --fixup associates a new commit with an existing commit so that when
+	# you do an interactive rebase, you don't have to re-order any commits
+	# in order to squash them. And you don't have to change any commit
+	# messages
+	git commit --fixup "$old_sha" "$new_sha"
+
+	# with no arg, defaults to curr branch (NEVER use gmaster; to avoid
+	# losing work, git rebase --abort immediately)
+	# --autostash required to avoid 'unstaged changes present'
+	# TODO: is -i necessary?
+	git rebase -i --autosquash --autostash || gC
+}
+
+gapat() { # {{{
+	: stage hunks matching some pattern
+
+	# grepdiff is more reliable than git diff -S/-G
+	# https://choly.ca/post/git-programmatic-staging/
+	# https://blog.paddlefish.net/git-tip-stage-lines-matching-a-regular-expression/
+	# https://old.reddit.com/r/git/comments/p1vltk
+	git diff -U0 |
+		grepdiff --output-matching=hunk -E "$1" |
+		# "By default, git apply expects that the patch being applied
+		# is a unified diff with at least one line of context."
+		git apply --cached --unidiff-zero
+
+	# # https://stackoverflow.com/a/52394658
+	# git diff --unified=1 --pickaxe-regex -S "$1" |
+	# 	grepdiff --output-matching=hunk --extended-regexp "$1" |
+	# 	git apply --cached
+
+	# see also:
+	# http://www.philandstuff.com/2014/02/09/git-pickaxe.html
+	# https://git-scm.com/docs/gitdiffcore#_diffcore_pickaxe_for_detecting_additiondeletion_of_specified_string
+
+	git commit -v
+
+	# # unstage hunks that were unnecessarily added
+	# git reset -p
+} # }}}
+
+grev() {
+	: revert single commit in isolation
+	_git_log_fzf "$@" | awk '{print $1}' | xargs git revert
+}
+
+gRev() {
+	: rollback entire index to a known good commit -- check ci first
+	sha=$(_git_log_fzf "$@" | awk '{print $1}')
+	git checkout -f "$sha" -- .
+	git commit -av
+}
+
+gun() {
+	if
+		[[ $# -eq 0 ]] ||
+			[[ $(_git_current_branch) == $(_gmaster) ]] && [[ $1 == . ]]
+	then
+		echo "cannot reset on master"
+		return
+	fi
+
+	git diff "$@" | cat
+	git checkout -- "$@"
+	echo "undid ${#@} files"
+}
+
+guns() {
+	: revert file to its state in a previous commit
+	[[ $# -ne 1 ]] && return
+
+	f=$1
+	prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1"
+
+	# _git_log_fzf "$1" |
+	git log --oneline "$1" |
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
+		awk '{print $1}' |
+		xargs -I{}git checkout {} -- "$f"
+
+}
+
+# gpick() {
+# 	: cherry pick commit from other branch
+# 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
+# 	sha=$(git log --branches --remotes --tags --oneline --decorate |
+# 		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
+# 		awk '{print $1}')
+# 	# https://stackoverflow.com/a/29788254
+# 	[[ -n $sha ]] && git show "$sha" | git apply -
+# }
+
+# gac() {
+# 	: append ALL changes to most recent unpushed commit
+# 	git add "$@"
+# 	git commit --amend --no-edit
+# }
+
+# gapc() {
+# 	git add --patch "$@"
+# 	git commit --amend --no-edit
+# }
+
+# }}}
+# git branch # {{{
+gb() { # {{{
+	: switch to new branch, or existing branch
+
+	# no remote branches
+	default_local_branch=$(_gmaster) #|| :
+	current_local_branch=$(_git_current_branch)
+
+	if [[ $# -eq 0 ]]; then
+		if [[ $default_local_branch == "$current_local_branch" ]]; then
+			echo "Already on $default_local_branch"
+		else
+			# func retval is not propagated to parent
+			git checkout "$default_local_branch" || return 1
+			timeout 30 git pull
+		fi
+	else
+
+		# generally, new branches should target master. however, this
+		# may not always be the case, so accept an optional 2nd arg to
+		# specify target branch (should be current)
+		if ! git checkout "${2:-$default_local_branch}"; then
+			return 1
+		fi
+
+		timeout 30 git pull || return
+
+		# existing remote branch > create local branch > existing local branch
+		if
+			git branch -r | grep "origin/$1"
+		then
+			# note: git hook stdout cannot be suppressed
+			echo "Switching to remote branch $1"
+			git switch "$1" || return 1
+
+		elif git switch --create "$1"; then
+			:
+
+		else
+			# should be infallible?
+			git switch "$1" || return 1
+
+		fi
+	fi
+
+} # }}}
+
+git_branch() {
+	: switch to branch
+	# https://stackoverflow.com/a/1441062
+	# --pretty=format:'%h%x09%an%x09%ad%x09%s' # no color
+	# TODO: include date/author, but preserve color
+
+	_in_git_repo || return
+	if [[ $(git branch | wc -l) -eq 1 ]]; then
+		echo "No other branches; create one with gb <branch>"
+		return
+	fi
+
+	prv_cmd=$(
+		cat <<- EOF
+			echo {} | sed -r 's/^[ *]+/$(_gmaster)../' | xargs git log --oneline --color=always | grep . ||
+				git log --oneline  --color=always {}
+		EOF
+	)
+	branch=$(git branch --sort=-committerdate |
+		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi |
+		sed -r 's/^[ *]+//')
+	[[ -z $branch ]] && return
+	gb "$branch"
+}
+
+gbd() {
+	: prune local branches that no longer exist on remote -- unstaged changes will be lost!
+	# https://stackoverflow.com/a/46192689
+	git branch -vv |
+		grep ': gone]' |
+		grep -v "\*" |
+		awk '{ print $1; }' |
+		xargs -r git branch -D
+}
+# }}}
+# git remote {{{
+# functions that involve remote repository
+
+_gssh() { # {{{
+	: init github ssh key
+	# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key
+	#
+	# note: this key must still be added to github!
+	# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account#adding-a-new-ssh-key-to-your-account
+
+	# password not strictly necessary
+	ssh-keygen -t ed25519 -C hejops1@gmail.com -f "$HOME/.ssh/github_$(date -I)"
+	ssh -T git@github.com 2>&1 | grep -q success && echo ok
+
+	# to actually use the key on startup, add to .xinitrc (or similar);
+
+	# if [[ -z $SSH_AUTH_SOCK ]]; then
+	# 	{
+	# 		pkill ssh-agent
+	# 		eval "$(ssh-agent -s)"
+	# 		ssh-add "$HOME/.ssh/github_2024-06-17"
+	# 	} > /dev/null 2> /dev/null
+	# fi
+
+} # }}}
+
+gmm() {
+	: merge master into dev branch
+	# https://stackoverflow.com/a/20103414
+	git fetch origin
+	# TODO: for forks, need to sync fork (in gh), then git pull
+	git merge "origin/$(_gmaster)"
+}
+
+gcon() { # {{{
 	# https://nitaym.github.io/ourstheirs/
 
 	: resolve conflicts, if any, and merge
@@ -1030,6 +1005,13 @@ gcon() {
 		return
 	fi
 
+	# in case of submodule conflict:
+	# cd $submodule
+	# gun .
+	# git merge $hash (git should tell you which hash -- how to script?)
+	# git add $submodule
+	# git commit
+
 	while has_conflicts; do
 		if [[ -f .abort ]]; then
 			git merge --abort
@@ -1041,74 +1023,76 @@ gcon() {
 
 	get_conflicts | xargs git add
 	git commit -v
-}
+}        # }}}
+gnew() { # {{{
+	: push to newly created remote
 
-gapat() {
-	: stage hunks matching some pattern
+	# if [[ -f files_to_add ]]; then
+	# 	if [[ -d .git ]] && [[ -d .git_old ]]; then
+	# 		echo 'new and old git histories found, remove new one first: rm -rf ./.git'
+	# 		return
+	# 	fi
+	# 	mv .git .git_old
+	# fi
 
-	# grepdiff is more reliable than git diff -S/-G
-	# https://choly.ca/post/git-programmatic-staging/
-	# https://blog.paddlefish.net/git-tip-stage-lines-matching-a-regular-expression/
-	# https://old.reddit.com/r/git/comments/p1vltk
-	git diff -U0 |
-		grepdiff --output-matching=hunk -E "$1" |
-		# "By default, git apply expects that the patch being applied
-		# is a unified diff with at least one line of context."
-		git apply --cached --unidiff-zero
+	if _get_remote; then
+		return
 
-	# # https://stackoverflow.com/a/52394658
-	# git diff --unified=1 --pickaxe-regex -S "$1" |
-	# 	grepdiff --output-matching=hunk --extended-regexp "$1" |
-	# 	git apply --cached
+	elif [[ ! -d .git ]]; then
+		git init
+		return
 
-	# see also:
-	# http://www.philandstuff.com/2014/02/09/git-pickaxe.html
-	# https://git-scm.com/docs/gitdiffcore#_diffcore_pickaxe_for_detecting_additiondeletion_of_specified_string
+	elif
+		! git log > /dev/null 2> /dev/null &&
+			! git status --porcelain | grep -Fv '??'
+	then
+		echo 'no commits made yet'
+		return
 
-	git commit -v
+	else
+		# WARN: this may not be desired
+		git commit -m "initial commit"
+	fi
 
-	# # unstage hunks that were unnecessarily added
-	# git reset -p
-}
+	git branch -M master # don't call _gmaster!
+	xdg-open https://github.com/new &
+	read -rp 'Repo name (not URL!): ' repo
 
-guns() {
-	: revert file to its state in a previous commit
-	[[ $# -ne 1 ]] && return
+	# https://kbroman.org/github_tutorial/pages/init.html
+	git remote add origin "https://github.com/hejops/$repo"
+	git push -u origin master
+	git status
+	git remote set-head origin --auto
 
-	f=$1
-	prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1"
-
-	# _git_log_fzf "$1" |
-	git log --oneline "$1" |
-		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
-		awk '{print $1}' |
-		xargs -I{}git checkout {} -- "$f"
-
-}
+} # }}}
 
 # gclone() {
 # 	ggiturl() { <<< "$1" sed 's|http://|git@|; s|/|:|; s/$/.git/'; }
 # 	ggiturl "$1" | xargs git clone
 # }
 
-gauthors() {
-	: show authorship of file
-	git blame --line-porcelain "$1" |
-		sed -rn 's/^author (.+)/\1/p' |
-		sort |
-		uniq -c |
-		sort -n
-}
-
-gxx() {
-	prv_cmd="echo {} | cut -f1 | xargs git show --color=always"
-	git log --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S "$1" | # WARN: slow with large histories
-		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' |     # --ansi
-		cut -f1 |
-		xargs git show
-}
+# grbr() {
+# 	: rebase to remote, discarding all local changes that conflict with remote
+# 	# use case:
+# 	# - our branch was started at the same time as another branch
+# 	# - rewriting is simpler than resolving conflicts
+# 	# - the other branch is much larger
+# 	# - the other branch has been merged to master
+# 	cr
+# 	# first preserve files that were only added to in our branch
+# 	# (this is a looser definition than just 'new files')
+# 	git diff --numstat master...HEAD |
+# 		grep -P '^\d+\t0\t' |
+# 		cut -f3 |
+# 		xargs git diff master...HEAD > tmp.diff
+# 	# equivalent to `git rebase origin/master; git rebase --skip (repeatedly)`
+# 	git rebase --strategy-option=theirs "origin/$(_gmaster)"
+# 	git apply tmp.diff
+# 	# git push -f
+# }
 
 # }}}
+
 # gitlab {{{
 
 alias gld=gldiff
@@ -1119,9 +1103,8 @@ alias gld=gldiff
 # gmr() {
 # 	: create or open mr in browser
 # 	branch=$(_git_current_branch)
-# 	url=$(git config --get remote.origin.url)
+# 	url=$(_get_remote)
 # 	url=$(_git_http "$url")
-#
 # 	if
 # 		n=$(glab mr list --source-branch "$branch" |
 # 			grep '^!' |
@@ -1134,7 +1117,6 @@ alias gld=gldiff
 # 		echo "Creating new MR"
 # 		url="$url/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch"
 # 	fi
-#
 # 	xdg-open "$url" 2> /dev/null
 # }
 
@@ -1169,7 +1151,7 @@ gldiff() {
 		n=$1
 	fi
 
-	url=$(git config --get remote.origin.url)
+	url=$(_get_remote)
 	url=$(_git_http "$url")
 	url="$url/-/merge_requests/$n.diff"
 
@@ -1195,20 +1177,6 @@ gcoup() {
 }
 
 # }}}
-
-# git diff blame
-# https://gist.github.com/maxrothman/d27bbc36f7c150924de6c6e54965de4d py
-# https://github.com/eantoranz/difflame py
-# https://github.com/dmnd/git-diff-blame pl
-
-# GitBlameOpenFileURL
-# $url/-/blob/$branch/$path
-
-# jj
-# jj git init --colocate
-# jj describe
-# non-starter until jj describe has a verbose option
-# https://github.com/jj-vcs/jj/issues/1946#issuecomment-2561045057
 
 # python {{{
 

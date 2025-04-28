@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# this only waits for processes that terminate themselves. to wait for
+# processes that write files without terminating, inotifywait is required
+
+[[ $# -eq 0 ]] && exit 1
+
+for proc in "$@"; do
+	if pids=$(pidof "$proc"); then
+		echo "Waiting for $proc..."
+		echo -n "$pids" | xargs -d' ' -I{} tail --pid={} -f /dev/null
+	else
+		echo "No process $proc"
+	fi
+done

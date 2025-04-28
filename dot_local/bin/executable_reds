@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -eu #o pipefail
+
+usage() {
+	cat << EOF
+Usage: $(basename "$0") [options]
+
+EOF
+	exit
+}
+
+if [ -t 1 ] && pgrep redshift; then
+	pkill redshift
+fi
+
+# # retired: https://github.com/mozilla/ichnaea/issues/2065
+# loc="$(curl -s "https://location.services.mozilla.com/v1/geolocate?key=geoclue" |
+# 	jq -r '"\(.location.lat):\(.location.lng)"')"
+
+loc=$(curl -s "https://ipinfo.io" | jq -r .loc | tr , :)
+
+if [[ -z $loc ]]; then
+	notify-send "Could not get location"
+	exit
+fi
+
+notify-send "Starting redshift"
+
+# -o = one-shot, process dies, not useful for autostart, but useful for cron
+# TODO: daytime -b 1, night 0.8
+exec redshift \
+	-l "$loc" \
+	-b 0.7 \
+	-P &
+
+# -P -o

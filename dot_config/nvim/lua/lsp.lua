@@ -385,17 +385,20 @@ local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protoc
 
 mason_lspconfig.setup({ ensure_installed = vim.tbl_keys(servers) })
 
-mason_lspconfig.setup_handlers({
-	-- the func passed to setup_handlers is called once for -each- installed server on startup
-	function(server_name)
-		require("lspconfig")[server_name].setup(vim.tbl_extend("force", {
-			capabilities = capabilities,
-			on_attach = on_attach,
-			settings = servers[server_name],
-			filetypes = (servers[server_name] or {}).filetypes,
-		}, servers[server_name] or {}))
-	end,
-})
+local function setup(server_name)
+	local base_cfg = {
+		capabilities = capabilities,
+		on_attach = on_attach,
+		settings = servers[server_name],
+		filetypes = (servers[server_name] or {}).filetypes,
+	}
+	local extended = servers[server_name] or {}
+	local cfg = vim.tbl_extend("force", base_cfg, extended)
+	require("lspconfig")[server_name].setup(cfg)
+end
+
+-- the func passed to setup_handlers is called once for -each- installed server on startup
+mason_lspconfig.setup_handlers({ setup })
 
 require("lspconfig").digestif.setup({}) -- requires luarocks; autocomplete is wonky
 require("lspconfig").gleam.setup({}) -- not on mason, must be installed globally

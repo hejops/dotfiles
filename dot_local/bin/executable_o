@@ -1,57 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-usage() {
-	cat << EOF
-Usage: $(basename "$0")
-	Select and open commonly edited files
-EOF
-	exit
-}
+. ~/.bashrc # required for WORK_DIRS
 
 if
 	command -v chezmoi > /dev/null
 then
-	# if file was rm'd (but not git rm'd), just allow
-	# realpath to fail
-	# dotfiles=$(chezmoi managed --include=files |
-	# 	xargs -d '\n' realpath || :)
-
 	dotfiles=$(chezmoi managed --include=files --path-style=source-relative)
-
 fi
 
-sel=$(
-	{
-		. ~/.bashrc
-		[[ -f ~/.bash_aliases_work ]] && . ~/.bash_aliases_work
-		# multiple dirs can be specified, but are sorted separately
-		# TODO: WORK_DIRS -> sort mtime
-		echo "${WORK_DIRS[@]}" |
-			tr ' ' '\n' |
-			while read -r d; do
-				[[ -d $d ]] && echo "$d"
-			done
+sel=$({
+	# multiple dirs can be specified, but are sorted separately
+	# TODO: WORK_DIRS -> sort mtime
+	echo "${WORK_DIRS[@]}" | tr ' ' '\n'
+	echo "$dotfiles"
+} | rofi -dmenu -i)
 
-		echo "$dotfiles"
-
-	} |
-		# sort -u |
-		# sed "s|$HOME|~|g" | # tilde will not expand
-		rofi -dmenu -i
-)
-
-if [ -d "$sel" ]; then
-	cd "$sel"
-	sel=$(git ls-files |
-		xargs ls -1t |
-		rofi -dmenu -i |
-		# if file was rm'd (but not git rm'd), realpath will fail
-		xargs realpath || :)
-	[ -z "$sel" ] && exit
+if [[ -d $sel ]]; then
+	cd "$sel" # needed for ls
+	if [[ -d .git ]]; then
+		sel=$(git ls-files |
+			xargs ls -1t |
+			rofi -dmenu -i |
+			# if file was rm'd (but not git rm'd), realpath will fail
+			xargs realpath || :)
+	else
+		sel=$(find . -type f | rofi -dmenu -i)
+	fi
+	[[ -z $sel ]] && exit
 fi
-
-cd "$(dirname "$(realpath "$sel")")"
 
 if grep <<< "$dotfiles" -F "$sel"; then
 
@@ -61,20 +38,19 @@ if grep <<< "$dotfiles" -F "$sel"; then
 	# watched as expected. this suggests that chezmoi is incapable of
 	# watching more than one file at a time
 
-	# # `chezmoi edit` performs appropriate redirect
-	# exec $TERMINAL chezmoi edit --watch "$sel"
-
-	# requires chezmoi.nvim
+	# we rely on chezmoi.nvim to handle edit --watch (and cd)
 	# https://github.com/xvzc/chezmoi.nvim?tab=readme-ov-file#treat-all-files-in-chezmoi-source-directory-as-chezmoi-files
-	exec $TERMINAL $EDITOR "$HOME/.local/share/chezmoi/$sel"
+
+	# on opening new wezterm window, cwd is reset to ~
+	term_cmd=(wezterm start --cwd .)
+	sel="$HOME/.local/share/chezmoi/$sel"
+
+elif [[ -f $sel ]]; then
+	term_cmd=(wezterm start --cwd "$(git rev-parse --show-toplevel)")
 
 else
+	exit 1
 
-	# could be done by project.nvim; i removed project.nvim, but i forgot
-	# the reason for doing so
-	if top=$(git rev-parse --show-toplevel); then
-		cd "$top"
-	fi
-
-	exec $TERMINAL "$EDITOR" "$sel"
 fi
+
+exec "${term_cmd[@]}" "$EDITOR" "$sel"
