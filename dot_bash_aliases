@@ -482,6 +482,14 @@ git_log() {
 	_git_log_fzf "$@" | awk '{print $1}' | xargs git show
 }
 
+gL() {
+	: show full history of a file/dir
+	prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1"
+	git log --oneline "$1" |
+		tac |
+		fzf --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+}
+
 grev() {
 	: revert single commit in isolation
 	_git_log_fzf "$@" | awk '{print $1}' | xargs git revert
@@ -1065,9 +1073,17 @@ gapat() {
 
 guns() {
 	: revert file to its state in a previous commit
+	[[ $# -ne 1 ]] && return
+
 	f=$1
-	sha=$(_git_log_fzf "$1" | awk '{print $1}')
-	git checkout "$sha" -- "$f"
+	prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1"
+
+	# _git_log_fzf "$1" |
+	git log --oneline "$1" |
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
+		awk '{print $1}' |
+		xargs -I{}git checkout {} -- "$f"
+
 }
 
 # gclone() {
@@ -1409,6 +1425,8 @@ gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run
 god() {
 	: generate documentation for file
 	# godoc is only for generating stdlib docs?
+	# https://pkg.go.dev/golang.org/x/tools/cmd/godoc
+
 	pushd "$(dirname "$1")"
 	< "$(basename "$1")" grep -P '^(type|func)' |
 		grep -Pow '[A-Z]\w+' |
