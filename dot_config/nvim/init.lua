@@ -43,7 +43,8 @@ vim.api.nvim_create_autocmd({ "BufReadPost" }, {
 		-- specifically, the option is set after buffer is loaded (so we can get
 		-- the lines), and (possibly) before conform:format is called
 		local d = require("util"):sql_dialect()
-		table.insert(require("conform").formatters.sqlfluff.args, 2, "--dialect=" .. d)
+		d = "postgres" -- TODO: check... something
+		-- table.insert(require("conform").formatters.sqlfluff.args, 2, "--dialect=" .. d)
 		table.insert(require("lint").linters.sqlfluff.args, 2, "--dialect=" .. d)
 		-- os.execute("notify-send -- " .. require("conform").formatters.sqlfluff.args[3])
 	end,
@@ -120,8 +121,14 @@ vim.api.nvim_create_autocmd({ "VimEnter" }, {
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 	pattern = { "*.sql" },
 	callback = function()
-		if vim.loop.fs_stat("sqlc.yaml") then
-			vim.cmd("Dispatch sqlc vet && sqlc generate")
+		-- TODO: this autocmd stops once any non-sql file is loaded
+		if --vim.env.POSTGRES_URL and
+			vim.loop.fs_stat("sqlc.yaml") and vim.loop.fs_stat("Makefile")
+		then
+			-- to avoid needing to explicitly set and pass POSTGRES_URL, just use the
+			-- Makefile, which already takes care of this
+			-- vim.cmd("Dispatch source ./templates/.env ; POSTGRES_URL=$POSTGRES_URL sqlc vet && sqlc generate")
+			vim.cmd("Dispatch make db-vet && make db-generate")
 		end
 	end,
 })
