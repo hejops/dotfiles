@@ -919,6 +919,12 @@ git_branch() {
 		sed -r 's/^[ *]+//')
 	[[ -z $branch ]] && return
 	gb "$branch"
+
+	# # TODO: revert all unstaged changes, then switch
+	# git switch "$branch" 2>&1 |
+	# 	grep '^\s' |
+	# 	xargs git checkout --
+
 }
 
 gbd() {
