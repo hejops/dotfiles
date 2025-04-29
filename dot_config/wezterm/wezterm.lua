@@ -14,12 +14,6 @@ if wezterm.config_builder then
 	config = wezterm.config_builder()
 end
 
--- local function get_output(command)
--- 	local handle = assert(io.popen(command))
--- 	_ = handle:read("*a")
--- 	return handle:close()
--- end
-
 ---@return string
 local function get_output(cmd)
 	assert(cmd)
@@ -68,55 +62,6 @@ wezterm.on("view-history-in-pager", function(window, pane)
 	wezterm.sleep_ms(5000)
 	os.remove(name)
 end)
-
-wezterm.on(
-	"watch",
-	-- spawn new window for watch testing
-	-- this is similar to exec (in my init.lua); but i generally don't want to
-	-- run tests in a vim split
-	-- https://github.com/rwxrob/dot/blob/fa81b2b138805276a35b458196b67ddb87660505/scripts/goentrtest
-	-- https://github.com/vouch/vouch-proxy/blob/ad2e9ac8ad03e7d22cdbb44abc47c74ad046071a/do.sh#L109
-	function(window, pane) -- {{{
-		-- determine what lang we are in. we always assume we are at project root
-
-		-- ideally, the table should be something like
-		-- go = {
-		--	f = 'go.mod', -- how to tell what lang
-		--	proc = 'entr', -- how to tell if we are running (via pgrep etc)
-		--	cmd = {...}, -- what to do
-		-- }
-		-- but this is fine for now
-
-		local watchers = {
-
-			-- ["pyproject.toml"] = { "poetry", "run", "pytest", "-x", "-vv" },
-			["Cargo.toml"] = { "cargo", "watch", "-x", "check", "-x", "test" },
-			["go.mod"] = { "bash", "-c", "find . -name '*.go' | entr -cr go test ./..." },
-			["pyproject.toml"] = { "bash", "-c", "find . -name '*.py' | entr -cr poetry run pytest -x -vv" },
-		}
-
-		-- https://github.com/rust-lang/rust/blob/master/src/doc/rustc/src/tests/index.md#cli-arguments
-		-- runner = "cargo test -- --include-ignored --show-output" -- incl test stdout
-		-- runner = "cargo test -- --include-ignored --nocapture" -- incl test debug messages
-
-		-- TODO: prevent duplicate
-
-		for f, cmd in pairs(watchers) do
-			local fo = io.open(
-				-- get_current_working_dir returns url (file://...)
-				pane:get_current_working_dir().file_path
-					.. "/"
-					.. f,
-				"r"
-			)
-			if fo ~= nil then
-				io.close(fo)
-				window:perform_action(act.SpawnCommandInNewWindow({ args = cmd }), pane)
-				return
-			end
-		end
-	end -- }}}
-)
 
 -- }}}
 -- font {{{
@@ -258,7 +203,10 @@ local function get_title(tab)
 	-- os.execute("notify-send " .. proc)
 	-- os.execute(string.format("notify-send '%s'", title))
 
-	if proc == "bash" then
+	if proc == "" and dir == "" then -- mpv?
+		-- os.execute(string.format("notify-send '%s'", dir))
+		return "unknown"
+	elseif proc == "bash" then
 		return get_bash_dir()
 	elseif proc == "ssh" then
 		return string.match(title, "@[^:]+") or proc
@@ -282,7 +230,10 @@ local function get_title(tab)
 	then
 		-- note: nvim -> bash tends to end up here. this is probably because nvim
 		-- sets exit title faster than pane.foreground_process_name can update.
-		-- pressing super should set the title correctly
+		-- pressing super should set the title correctly (but not for
+		-- nvim->bash->mpv, for example)
+
+		-- os.execute(string.format("notify-send '%s'", proc))
 
 		-- return basename(dir)
 
@@ -380,6 +331,7 @@ local function keys()
 	-- spawn new tab adjacent to current one, with same cwd
 	local function SpawnTabNext()
 		-- https://old.reddit.com/r/wezterm/comments/1d71ei3/_/l759axf/
+		---@return number?
 		local function active_tab_index(window)
 			for _, item in ipairs(window:mux_window():tabs_with_info()) do
 				if item.is_active then
@@ -408,37 +360,31 @@ local function keys()
 
 		-- https://github.com/wez/wezterm/blob/main/docs/config/launch.md#the-launcher-menu
 
-		-- TODO: disable ctrl-tab (what key? what action?)
 		-- both SpawnWindow and SpawnTab default to cwd
-		-- { key = "t", mods = "CTRL", action = act.SpawnTab("CurrentPaneDomain") },
-		-- { key = "x", mods = "CTRL", action = nil },
-		{ key = "PageDown", mods = "CTRL", action = act.DisableDefaultAssignment },
-		{ key = "PageUp", mods = "CTRL", action = act.DisableDefaultAssignment },
-		{ key = "e", mods = "CTRL", action = act.SpawnWindow },
-		{ key = "f", mods = "WIN", action = act.DisableDefaultAssignment },
-		{ key = "t", mods = "CTRL", action = SpawnTabNext() },
-		{ key = "t", mods = leader, action = act.SpawnCommandInNewTab({ cwd = wezterm.home_dir }) },
+		-- note: ctrl-shift-i = tab
+		-- { mods = "CTRL", key = "e", action = act.SpawnWindow },
+		-- { mods = "CTRL", key = "r", action = act.PromptInputLine(rename_tab) },
+		{ mods = "CTRL", key = "PageDown", action = act.DisableDefaultAssignment },
+		{ mods = "CTRL", key = "PageUp", action = act.DisableDefaultAssignment },
+		{ mods = "CTRL", key = "Tab", action = act.DisableDefaultAssignment },
+		{ mods = "CTRL", key = "g", action = act(hint_url) },
+		{ mods = "CTRL", key = "t", action = SpawnTabNext() },
+		{ mods = "CTRL", key = "z", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
+		{ mods = "WIN", key = "f", action = act.DisableDefaultAssignment },
 
-		-- ctrl-shift-i = tab
-		-- { key = "o", mods = leader, action = act.ShowTabNavigator },
-		{ key = "o", mods = leader, action = act.MoveTabRelative(1) },
-		{ key = "y", mods = leader, action = act.MoveTabRelative(-1) }, -- u reserved -- org.freedesktop.ibus.panel.emoji unicode-hotkey ['<Control><Shift>u']
-
-		{ key = "h", mods = leader, action = act.ActivateTabRelative(-1) },
-		{ key = "j", mods = leader, action = act.ScrollByPage(1) },
-		{ key = "k", mods = leader, action = act.ScrollByPage(-1) },
-		{ key = "l", mods = leader, action = act.ActivateTabRelative(1) },
-
-		-- { key = "r", mods = "CTRL", action = act.PromptInputLine(rename_tab) },
-		-- { key = "x", mods = leader, action = act.EmitEvent("view-history-in-pager") },
-		{ key = "g", mods = "CTRL", action = act(hint_url) },
-		{ key = "g", mods = leader, action = act(hint_file) },
-		{ key = "w", mods = leader, action = act.EmitEvent("watch") },
-		{ key = "z", mods = "CTRL", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
-
-		{ key = "w", mods = leader, action = wezterm.action.CloseCurrentTab({ confirm = true }) },
-
-		{ key = "p", mods = leader, action = act.ActivateCommandPalette },
+		-- { mods = leader, key = "g", action = act(hint_file) },
+		-- { mods = leader, key = "o", action = act.MoveTabRelative(1) }, -- moving tabs is probably an antipattern
+		-- { mods = leader, key = "p", action = act.ActivateCommandPalette },
+		-- { mods = leader, key = "w", action = act.EmitEvent("watch") }, -- moved to vim
+		-- { mods = leader, key = "x", action = act.EmitEvent("view-history-in-pager") },
+		-- { mods = leader, key = "y", action = act.MoveTabRelative(-1) }, -- u reserved -- org.freedesktop.ibus.panel.emoji unicode-hotkey ['<Control><Shift>u']
+		{ mods = leader, key = "h", action = act.ActivateTabRelative(-1) },
+		{ mods = leader, key = "i", action = act.ShowTabNavigator },
+		{ mods = leader, key = "j", action = act.ScrollByPage(1) },
+		{ mods = leader, key = "k", action = act.ScrollByPage(-1) },
+		{ mods = leader, key = "l", action = act.ActivateTabRelative(1) },
+		{ mods = leader, key = "t", action = act.SpawnCommandInNewTab({ cwd = wezterm.home_dir }) }, -- TODO: also adjacent?
+		{ mods = leader, key = "x", action = wezterm.action.CloseCurrentTab({ confirm = true }) },
 	}
 
 	-- local function get_active_pane(panes)

@@ -229,6 +229,10 @@ vim.api.nvim_create_autocmd({ "VimResized" }, {
 vim.keymap.set("n", "<leader>J", ":TSJToggle<cr>")
 
 -- vim-fugitive
+-- vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
+vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
+vim.keymap.set("n", "<leader>gP", ":Git add %<cr>", { desc = "add current buffer (patch)" })
+vim.keymap.set("n", "<leader>gU", ":Git checkout -- %<cr>", { desc = "discard all uncommitted changes" })
 vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
 vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 
@@ -260,6 +264,10 @@ for _, k in pairs({ "C", "gc" }) do
 		print("deprecated; use <leader>c")
 	end, { desc = "deprecated" })
 end
+
+vim.keymap.set("n", "<leader>gp", function()
+	print("deprecated; use <leader>.")
+end, { desc = "deprecated" })
 
 vim.keymap.set("n", "<leader>gC", function()
 	-- TODO: git add % + git commit --amend --no-edit
@@ -319,49 +327,6 @@ vim.keymap.set("n", "<leader>go", function()
 	-- vim.cmd("GitBlameCopyCommitURL")
 	-- vim.fn.jobstart([[sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"]])
 end, { desc = "view commit of current line (in browser)" })
-
--- https://github.com/ThePrimeagen/refactoring.nvim#configuration-for-refactoring-operations
--- https://github.com/kentchiu/nvim-config/blob/d60768f59bfee285a26f24a3879f6b155a1c630c/lua/custom/plugins/refactory.lua#L11
-
--- vim.keymap.set({ "n", "x" }, "<leader>R", function()
--- 	-- https://github.com/ThePrimeagen/refactoring.nvim/issues/270#issuecomment-1071037162
--- 	-- require("telescope").extensions.refactoring.refactors({ initial_mode = "normal" })
--- 	require("refactoring").select_refactor({ show_success_message = true })
--- end, {
--- 	noremap = true,
--- 	desc = "refactor menu",
--- })
---
--- -- nmap r = tab prefix
--- -- nmap R = rename
--- -- vmap r = substitute
--- -- vmap R = redundant with c
---
--- -- inlines actually increase code repetition, not sure when this would be desirable
--- vim.keymap.set("n", "rfI", ":Refactor inline_func")
--- vim.keymap.set("n", "rfi", ":Refactor inline_var")
--- vim.keymap.set("x", "Rfi", ":Refactor inline_var")
---
--- vim.keymap.set("n", "rfb", ":Refactor extract_block") -- rename current block (usually func)
--- vim.keymap.set("n", "rfbf", ":Refactor extract_block_to_file")
--- vim.keymap.set("x", "Rfe", ":Refactor extract ") -- places refactored func at top, which is less than ideal
--- vim.keymap.set("x", "Rff", ":Refactor extract_to_file ") -- does not update existing imports of the func; https://github.com/ThePrimeagen/refactoring.nvim/issues/426#issuecomment-1808512168
--- vim.keymap.set("x", "Rfv", ":Refactor extract_var ")
---
--- -- You can also use below = true here to to change the position of the printf
--- -- statement (or set two remaps for either one). This remap must be made in normal mode.
--- vim.keymap.set("n", "<leader>Rp", function()
--- 	require("refactoring").debug.printf({ below = true, show_success_message = true })
--- end, { desc = "refactor printf" })
---
--- vim.keymap.set({ "x", "n" }, "<leader>Rv", function()
--- 	require("refactoring").debug.print_var({ show_success_message = true })
--- end, { desc = "refactor print var" })
---
--- vim.keymap.set("n", "<leader>Rc", function()
--- 	-- Supports only normal mode
--- 	require("refactoring").debug.cleanup({ show_success_message = true })
--- end, { desc = "refactor cleanup" })
 
 -- unlike telescope diagnostics, trouble is persistent (per tab)
 vim.keymap.set("n", "<leader>j", function()
@@ -492,6 +457,23 @@ telescope.setup({
 			},
 		},
 
+		git_status = {
+			mappings = {
+				-- ironically, <c-i> is a perfectly fine mapping
+				-- https://github.com/nvim-telescope/telescope.nvim/blob/a4ed82509/lua/telescope/actions/init.lua#L885
+				i = {
+					["<cr>"] = function()
+						local selection = require("telescope.actions.state").get_selected_entry()
+						if selection.status:sub(2) ~= " " then
+							-- starts in insert mode for some reason, which is nice
+							vim.cmd("Git commit -v " .. selection.value)
+						end
+					end,
+				},
+				-- n = { ["<cr>"] = telescope_actions.git_staging_toggle },
+			},
+		},
+
 		--   -- use trouble instead
 		-- diagnostics = {
 		-- 	-- :h telescope.builtin.diagnostics()
@@ -530,29 +512,53 @@ vim.api.nvim_create_autocmd({ "VimEnter", "VimResized" }, {
 	end,
 })
 
+-- rarely used
+vim.keymap.set("n", "<leader>b", telescope_b.buffers, { desc = "open buffers" })
+vim.keymap.set("n", "<leader>f", telescope_b.find_files, { desc = "find" })
+vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tabs) -- TODO: if 1 tab, noop
+
 -- telescope.treesitter is less useful than telescope_b.lsp_*_symbols
--- vim.keymap.set("n", "<leader>E", telescope.extensions.chezmoi.find_files, { desc = "chezmoi" }) -- i have never used this
 -- vim.keymap.set("n", "<leader>F", telescope.oldfiles, { desc = "recently opened files" })
--- vim.keymap.set("n", "<leader>z", telescope_b.current_buffer_fuzzy_find, { desc = "grep" }) -- current buf, pre-loaded, rarely used
 vim.keymap.set("n", "<leader>.", telescope.extensions.adjacent.adjacent) -- TODO: ignore binary
 vim.keymap.set("n", "<leader>/", telescope_b.live_grep, { desc = "ripgrep" }) -- entire project
 vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
-vim.keymap.set("n", "<leader>b", telescope_b.buffers, { desc = "open buffers" })
 vim.keymap.set("n", "<leader>e", telescope_b.git_files, { desc = "git ls-files" })
-vim.keymap.set("n", "<leader>f", telescope_b.find_files, { desc = "find" })
-vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tabs)
-
--- vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" }) -- like git ls-files with diff
 vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" })
-vim.keymap.set("n", "<leader>gl", telescope_b.git_commits, { desc = "git log with commit diffs" }) -- basically gld
+vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" })
+
+local git_log_cmd = {
+	"git",
+	"log",
+	"--pretty=%h \t %ad \t %s", -- oneline lacks date
+	"--abbrev-commit",
+	"--no-merges",
+	"--first-parent",
+}
+
+-- vim.keymap.set("n", "<leader>gl", telescope_b.git_commits, { desc = "git log" })
+
+vim.keymap.set("n", "<leader>gl", function()
+	-- there is probably a native vim api for this, but whatever
+	local branch = require("util"):get_command_output("git branch --show-current", true)
+	local master =
+		require("util"):get_command_output("git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4", true)
+
+	telescope_b.git_commits({
+		-- git_command = vim.list_extend(git_log_cmd, branch ~= master and { branch .. "...HEAD" } or {}),
+		git_command = vim.list_extend(git_log_cmd, { branch ~= master and branch .. "...HEAD" or nil }),
+	})
+end, { desc = "git log (current branch only)" })
+
+vim.keymap.set("n", "<leader>gL", function()
+	telescope_b.git_commits({
+		git_command = vim.list_extend(git_log_cmd, { vim.fn.expand("%") }),
+	})
+end, { desc = "git log (current file only)" })
+
+-- requires user input (or visual selection):
+-- git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S
 
 -- vim.keymap.set("n", "<leader>?", telescope_b.help_tags, { desc = "search help" }) -- let's face it; i never use this
-
-vim.keymap.set("n", "<leader>h", function()
-	-- inlay hints lead to -a lot- of clutter (esp in rust), so they should not
-	-- be enabled by default
-	vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
-end, { desc = "toggle inlay hints" })
 
 -- }}}
 

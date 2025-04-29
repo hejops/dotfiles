@@ -168,8 +168,8 @@ toolbar .toolbarbutton-1,
   > .urlbarView-row-inner,
 .urlbarView-title:not(:empty) ~ .urlbarView-action,
 #urlbar.megabar[focused="true"] > #urlbar-background {
-  background-color: var(background-color) !important;
   background: var(background-color) !important;
+  background-color: var(background-color) !important;
   border: none !important;
   color: var(--beige) !important;
 }
@@ -245,8 +245,8 @@ toolbar .toolbarbutton-1,
 .searchbar-textbox,
 .urlbarView:not(.megabar),
 toolbar .toolbarbutton-1 {
-  background-color: var(background-color) !important;
   background: var(background-color) !important;
+  background-color: var(background-color) !important;
   border: none !important;
   color: var(--beige) !important;
   margin-inline: 0px !important;

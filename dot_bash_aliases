@@ -5,11 +5,19 @@
 
 # autostart {{{
 
-[[ -f /tmp/verse.json ]] && [[ -s /tmp/verse.json ]] &&
-	ps --pid "$PPID" | grep -Fq wezterm &&
-	< /tmp/verse.json jq -r '.votd | .reference, .content' |
-	sed -e 's/<[^>]*>//g' |
-		fold -w 65 -s
+if ps --pid "$PPID" | grep -Fq wezterm; then
+
+	[[ -f /tmp/verse.json ]] && [[ -s /tmp/verse.json ]] &&
+		< /tmp/verse.json jq -r '.votd | .reference, .content' |
+		sed -e 's/<[^>]*>//g' |
+			fold -w 65 -s
+
+	# [[ -d $SLSK ]] && du -csh "$SLSK" |
+	# 	head -n1 |
+	# 	cut -d. -f1 |
+	# 	\xargs -I{} test {} -ge 3 && echo hi
+
+fi
 
 # }}}
 # aliases {{{
@@ -23,7 +31,6 @@ alias met=metronome
 alias ns=notify-send
 alias trk=trackratings.py
 alias tt=taptempo
-alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 alias wd=waitdie
 alias xo=xdg-open
 
@@ -49,7 +56,7 @@ alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
 alias fzh="fzf --height=~33% --reverse" # height=~X% means min(input rows, window height * X%);
-alias inw="inotifywait --monitor --recursive --format='%T %w %e %f' --timefmt='%Y-%m-%dT%H:%M:%S'"
+alias inw="inotifywait --monitor --recursive"
 alias li="exec chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg'"
 alias mem='top -b -n1 -o %MEM | grep -m10 $USER'
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out ; kp"
@@ -72,9 +79,21 @@ alias y="bash ~/gripts/disq/ytm.sh"
 # }}}
 # frequent {{{
 
+# # show contents of most recent self-sent msg
+# notmuch show --limit=1 from:hejops1 |
+# 	grep -Po 'id:\S+' |
+# 	xargs notmuch show --part=2
+
 # < ~/.config/mpv/library fzf |
 # 	prepend "$MU"/ |
 # 	largs mpv
+
+m() {
+	{
+		find "$HDD/movies" -type f
+		cat ~/to_watch
+	} | fzf
+}
 
 da() {
 	if [[ $# -eq 1 ]]; then
@@ -139,29 +158,40 @@ sd() {
 	waitdie mpv pacman curl
 
 	if [[ -n $HDD ]]; then
-		while files firefox | grep "$HDD"; do
-			sleep 1m
-		done
 
+		while
+			files firefox | grep "$HDD"
+		do
+			inotifywait -e moved_to "$HDD"/movies
+		done
 		killall firefox
 
-		# pgrep -u $USER cron
+		# # infinite loop if nothing downloading
+		# while
+		# 	files python | grep "$MU" | largs -n1 inotifywait -e move_self
+		# do
+		# 	date -Is
+		# done
 
-		# if pgrep nicotine; then
-		# 	pid=$(waitdie -s nicotine)
-		# 	[[ -n $pid ]] && waitdie -w nicotine
-		# fi
+		# # only loops once?
+		# while
+		# 	f=$(files python | grep "$MU")
+		# do
+		# 	echo "$f" | largs -o -n1 inotifywait -e move_self
+		# done
 
-		while files python | grep "$MU"; do
-			sleep 10m
-		done
+		# while
+		# 	files python | grep -q "$MU"
+		# do
+		# 	files python | grep "$MU" | largs -n1 inotifywait -e move_self
+		# done
+		# return
+		# # killall nicotine
+
 	fi
 
-	# pkill nicotine
-	# TODO: if new day (morning), just return
 	echo "Shutting down..."
 	sleep 3
-	# pulseaudio -k
 	shutdown now
 }
 
@@ -201,6 +231,43 @@ rt() {
 	# # fix_tags "$d" < /dev/tty
 	# echo "$dirs" | largs fix_tags
 
+}
+
+ytm() {
+
+	f=$(mktemp)
+	"$EDITOR" +startinsert "$f"
+
+	waitdie mpv
+
+	while read -r query; do
+		echo "$query"
+		curl -sL 'https://music.youtube.com/youtubei/v1/search' -H 'Content-Type: application/json' \
+			--data-raw '{"context":{"client":{"clientName":"WEB_REMIX","clientVersion":"1.20240904.01.01"}},"query":"'"$query"'","params":"EgWKAQIIAWoSEAMQBBAJEA4QChAFEBEQEBAV"}' |
+			jq '
+		.contents |
+		.tabbedSearchResultsRenderer |
+		.tabs[] |
+		.tabRenderer |
+		.content |
+		.sectionListRenderer |
+		# .contents[] | # TODO: filter null
+		.contents[1] |
+		.musicShelfRenderer |
+		.contents[] |
+		.musicResponsiveListItemRenderer |
+		.flexColumns[] |
+		.musicResponsiveListItemFlexColumnRenderer |
+		.text |
+		.runs[]
+	' |
+			grep videoId |
+			cut -d'"' -f4 |
+			prepend 'https://youtube.com/watch?v=' |
+			xargs mpv --video=no
+	done < "$f"
+
+	exit
 }
 
 # }}}
@@ -936,6 +1003,7 @@ gbd() {
 		awk '{ print $1; }' |
 		xargs -r git branch -D
 }
+
 # }}}
 # git remote {{{
 # functions that involve remote repository
@@ -1186,22 +1254,28 @@ gcoup() {
 
 # python {{{
 
-# i haven't worked in python in a while, so this may be cleaned up
-
-pydeps() {
-	# https://stackoverflow.com/a/75344709
-	mapfile -t args < /dev/stdin
-	python -c 'import sys
-for i in sys.argv[1:]:
-    if i.split(".")[0] not in sys.stdlib_module_names:
-        print(i)' "${args[@]}"
-}
-
 genuv() {
 	: generate dependencies of a uv script
+	# would be better in vim, but i don't like writing python scripts these
+	# days anyway
+
+	pydeps() {
+		: for a given file, list imports that are not in stdlib
+
+		# note: this still includes first-party imports
+		< "$1" grep -P '^(from|import)' |
+			cut -d' ' -f2 |
+			sort -u |
+			# https://stackoverflow.com/a/75344709
+			xargs python -c 'import sys
+for i in sys.argv[1:]:
+    if i.split(".")[0] not in sys.stdlib_module_names:
+        print(i)' 2> /dev/null
+	}
+
 	# assumes there are no 1st party imports; when generating dependencies
 	# of a uv script, this is probably true
-	deps=$(< "$1" grep -P '^(from|import)' | cut -d' ' -f2 | sort -u | pydeps)
+	deps=$(pydeps "$1")
 	[[ -z $deps ]] && return
 
 	cat << EOF
@@ -1213,8 +1287,6 @@ $(echo "$deps" | while read -r dep; do echo "#   \"$dep\","; done)
 EOF
 
 }
-
-alias pt='gls | grep test_.*py | xargs pytest -x -vv --disable-warnings'
 
 pget() {
 	pyp=$(_get_repo_root)/pyproject.toml
@@ -1232,6 +1304,7 @@ pget() {
 
 # why can't they output json like sane people
 # what does ! even mean??
+# presumably, yellow is major, red is minor/patch?
 # poetry show --outdated | grep -F '!' | awk '{print $1}'
 
 pup() {
@@ -1254,7 +1327,7 @@ pup() {
 # 	: render entry points as markdown
 # 	# - [`poetry run XXX`](./path/to/script.py)
 # 	# shellcheck disable=SC2016
-# 	grep < pyproject.toml :main |
+# 	< pyproject.toml grep :main |
 # 		sed -r 's|^([^ ]+) = "([^:]+):main"|- [`poetry run \1`](./\2.py)|g' |
 # 		tr . / |
 # 		sed -r 's#/(/|py)#.\1#g'
@@ -1285,29 +1358,22 @@ cw() {
 }
 
 # rsmod() {
-#
 # 	if [[ -f $1 ]]; then
-#
 # 		# convert foo/bar.rs -> foo/bar/mod.rs
 # 		rs=$1
 # 		base=${rs/.rs/}
 # 		mkdir -p "$base"
 # 		mv "$rs" "$base/mod.rs"
 # 		# TODO: update lib, pub use, etc
-#
 # 	elif [[ -n $1 ]]; then
-#
 # 		echo "Creating module $1"
-#
 # 		echo "pub mod $1;" >> src/lib.rs # doesn't work?
 # 		mkdir -p "src/$1"
 # 		mod="src/$1/mod.rs"
 # 		# touch "$mod"
 # 		echo "mod foo;" >> "$mod"
 # 		echo "pub use foo::*;" >> "$mod"
-#
 # 	fi
-#
 # }
 
 # }}}
@@ -1544,16 +1610,6 @@ fi
 
 sq() {
 
-	# TODO: sqlite in prod
-	# https://fractaledmind.github.io/2023/09/07/enhancing-rails-sqlite-fine-tuning/#pragmas-summary
-
-	# PRAGMA busy_timeout = 5000;
-	# PRAGMA cache_size = 2000;
-	# PRAGMA journal_mode = WAL;
-	# PRAGMA journal_size_limit = 67108864; -- 64 megabytes
-	# PRAGMA mmap_size = 134217728; -- 128 megabytes
-	# PRAGMA synchronous = NORMAL;
-
 	{
 		if [[ -f $1-wal ]]; then
 			cp "$1" tmp.db > /dev/null
@@ -1719,7 +1775,8 @@ dostop() {
 	docker ps --all --quiet | xargs docker stop
 }
 
-dorm() {
+donuke() {
+	: stop and remove all containers
 	mapfile -t containers < "$(docker ps --all --quiet)"
 	docker stop "${containers[@]}"
 	docker rm "${containers[@]}"
@@ -1731,19 +1788,17 @@ dorm() {
 # rsync ~/.config/readline/inputrc "$remote:$HOME/.inputrc"
 # ssh "$remote" 'touch ~/.hushlogin' # suppress annoying ubuntu login msg
 
-sget() {
-	remote=$1
-	if [[ -f $1 ]]; then
-		rsync --no-relative --files-from="$1" "$remote:/" .
-	else
-		rsync --exclude=".*/" "$remote:$1" .
-	fi
-}
+# sget() {
+# 	remote=$1
+# 	if [[ -f $1 ]]; then
+# 		rsync --no-relative --files-from="$1" "$remote:/" .
+# 	else
+# 		rsync --exclude=".*/" "$remote:$1" .
+# 	fi
+# }
 
-sput() {
-	remote=$1
-	rsync --exclude=".*/" "$@" "$remote:~/"
-}
+# sget() { rsync --exclude=".*/" "$1:$2" .; }
+# sput() { rsync --exclude=".*/" "$2" "$1:~/"; }
 
 # https://gist.github.com/cmbaughman/6a2ae275e0c0f39f42d95a728e07f796
 # https://www.redhat.com/sysadmin/ssh-automation-sshpass
@@ -1841,7 +1896,7 @@ files() {
 	: list files in use by a process
 	pidof "$1" |
 		tr ' ' , |
-		xargs lsof -p |
+		xargs lsof -p 2> /dev/null |
 		grep -Po '/[a-z].+' |
 		sort -u |
 		grep -P --color=never '^/(home|run)'
@@ -1978,58 +2033,18 @@ wifi() {
 	nmcli --ask device wifi connect "$ssid" # password $password
 }
 
-nt() {
-	: check network status in a loop
-	int=5
-	SECONDS=0
-	while true; do
-		# result=$(timeout 1 ping -c 1 google.com 2> /dev/null)
-		# if [[ $? -eq 0 ]]; then
-		if ! _result=$(timeout 1 ping -c 1 google.com 2> /dev/null); then
-			echo -en "\r\e[Kalive $SECONDS"
-			notify-send alive
-			[[ $int -lt 80 ]] && ((int *= 2))
-		else
-			# grep <<< "$result" -Po '\d+ ms'
-			echo -en '\r\e[Kdead'
-			int=5
-			SECONDS=0
-		fi
-		sleep "$int"
-	done
-}
-
 getmail() {
 	mail 2>&1 | grep 'No new mail.'
 	[[ $(notmuch count tag:inbox and tag:unread and date:today) -eq 0 ]] && return
-	TERM=xterm-direct neomutt
+	TERM=xterm-direct exec neomutt
 }
 
-pacmir() {
-	: regenerate pacman mirrors
-	# TODO: test current speed; if ok, just return
-	country=$(curl -sL ipinfo.io | jq -r .country)
-	url="https://archlinux.org/mirrorlist/?country=$country&protocol=https&use_mirror_status=on"
-	curl -s "$url" |
-		sed -e 's/^#Server/Server/' -e '/^#/d' |
-		rankmirrors --max-time 1 -v -n 99 - |
-		sudo tee /etc/pacman.d/mirrorlist
-
+get_cookie() {
+	\cp ~/.mozilla/firefox/*default/cookies.sqlite tmp.db
+	sql="select value from moz_cookies where name = '$1' order by id desc limit 1"
+	sqlite3 tmp.db "$sql"
+	rm tmp.db > /dev/null
 }
-
-# mw() {
-# 	cd ~/.mail/account.gmail || return
-# 	while true; do
-# 		# note: deleting empty dirs will almost certainly break sync
-# 		gmi pull
-# 		new=$(notmuch count tag:inbox and tag:unread and date:today)
-# 		if [[ $new -gt 0 ]]; then
-# 			notify-send -u critical "$new new mail"
-# 			neomutt
-# 		fi
-# 		sleep 15m
-# 	done
-# }
 
 # seq 1 10 |
 # 	while read -r i; do
@@ -2041,6 +2056,18 @@ pacmir() {
 # 	sort -u
 
 # }}}
+
+alias immo="notmuch show from:dresdden or from:noreply@immobilienscout24.de | grep 'Adresse: ' | sort -u"
+
+# clickhouse-local --file "$1" --query "$2 FORMAT PrettyCompact"
+
+# could replace xfer with this
+# python3 -m http.server -d .
+
+# # analyse complexity via indentation
+# < "$1" grep -Po '^\s+' | sed 's/\t/x/g' | sort | uniq -c
+
+# echo ${files[@]} | entr -cr $cmd
 
 kb() {
 	if lsusb | grep -iq ergo; then
@@ -2055,17 +2082,19 @@ kb() {
 
 		ci https://usevia.app/design
 
+	elif lsusb | grep -q Kinesis; then
+		f=/run/media/"$USER"/ADV360/layouts/layout1.txt
+		if [[ ! -f $f ]]; then
+			echo 'connect first'
+			inotifywait -e create "/run/media/$USER"
+		fi
+		vim "$f"
+
 	# elif lsusb | grep -iq elora; then
 	# 	exec /opt/vial-appimage/vial-appimage.AppImage
 
 	fi
 }
-
-# could replace xfer with this
-# python3 -m http.server -d .
-
-# # analyse complexity via indentation
-# < "$1" grep -Po '^\s+' | sed 's/\t/x/g' | sort | uniq -c
 
 subs() {
 	# https://www.azsubtitles.com/restful-api
@@ -2084,14 +2113,8 @@ subs() {
 
 }
 
-rema() {
-	rem "$(lp "$1" | grep -Po '^\S+')"
-}
-
-# clickhouse-local --file "$1" --query "$2 FORMAT PrettyCompact"
-
 tvll() {
-	: truncate vim lsp.log -- should be nvim autocmd
+	: truncate vim lsp.log -- should be nvim autocmd, or session startup
 	i=90
 	while
 		[[ $i -ge 60 ]] &&
@@ -2106,7 +2129,7 @@ tvll() {
 
 kp() {
 	url='https://www.discogs.com/search/?style_exact=K-pop&sort=hot%2Cdesc&ev=gs_ms'
-	curl -sL "$url" -H 'User-Agent: M' | # lol
+	curl -sL "$url" -H 'User-Agent: M' -H 'Upgrade-Insecure-Requests: 1' |
 		grep -Po '/release/\d+-[^"]+' |
 		cut -d'-' -f2- |
 		tr '-' ' ' |
@@ -2119,7 +2142,6 @@ kp() {
 }
 
 rge() {
-
 	: edit files matching pattern
 	staged=$(rg --files-with-matches "$@" | sort -u)
 	if [[ $(<<< "$staged" wc -l) -gt 10 ]]; then
@@ -2129,18 +2151,6 @@ rge() {
 	echo "$staged" | xargs nvim -p
 }
 
-# rg -U --multiline-dotall '^import.+?;'
-# similar for go; difficult for python if not one-per-line
-
-# uncommon
-
-# echo ${files[@]} | entr -cr $cmd
-
-# {
-# 	find "$HDD/movies" -type f
-# 	cat ~/to_watch
-# } | fzf
-
 _unused() {
 	: list unused functions
 	< ~/.bash_aliases grep -Po '^[a-z]\w+\(\)' |
@@ -2148,7 +2158,8 @@ _unused() {
 		while read -r cmd; do
 			< ~/.bash_history grep -wq "$cmd" && continue
 			< ~/.bash_aliases grep -Pq "^$cmd\(\) \{.+; \}" && continue # ignore one-liners
-			len=$(< ~/.bash_aliases sed -rn "/^$cmd\(/,/^\}/p" | wc -l)
+			# len=$(< ~/.bash_aliases sed -rn "/^$cmd\(/,/^\}/p" | wc -l)
+			len=$(type "$cmd" | wc -l) # more compact, 'neutralises' linebreaks
 			echo "$len:$cmd"
 		done |
 		sort -n
@@ -2203,51 +2214,10 @@ yti() {
 		jq -r .title
 }
 
-ytm() {
-	# queries=()
-
-	# while true; do
-	# 	read -r line
-	# 	[[ -z $line ]] && break
-	# 	queries+=("$line")
-	# done
-
-	f=$(mktemp)
-	"$EDITOR" +startinsert "$f"
-
-	waitdie mpv
-
-	while read -r query; do
-		echo "$query"
-		curl -sL 'https://music.youtube.com/youtubei/v1/search' -H 'Content-Type: application/json' \
-			--data-raw '{"context":{"client":{"clientName":"WEB_REMIX","clientVersion":"1.20240904.01.01"}},"query":"'"$query"'","params":"EgWKAQIIAWoSEAMQBBAJEA4QChAFEBEQEBAV"}' |
-			jq '
-		.contents |
-		.tabbedSearchResultsRenderer |
-		.tabs[] |
-		.tabRenderer |
-		.content |
-		.sectionListRenderer |
-		# .contents[] | # TODO: filter null
-		.contents[1] |
-		.musicShelfRenderer |
-		.contents[] |
-		.musicResponsiveListItemRenderer |
-		.flexColumns[] |
-		.musicResponsiveListItemFlexColumnRenderer |
-		.text |
-		.runs[]
-	' |
-			grep videoId |
-			cut -d'"' -f4 |
-			prepend 'https://youtube.com/watch?v=' |
-			xargs mpv --video=no
-	done < "$f"
-
-}
-
 nico() {
 	# set -x
+	# TODO: investigate --headless mode
+	: launch searches in nicotine
 	[[ ! -f $1 ]] && return
 	xdotool key super+8
 	# ensure window is focused!
@@ -2301,10 +2271,10 @@ epk() {
 }
 
 watchmem() {
-	stdin="$(< /dev/stdin)"
+	: watch memory usage of pid
+	pid="$(< /dev/stdin)"
 
-	if [[ $stdin =~ ^[0-9]+$ ]]; then
-		pid="$stdin"
+	if [[ $pid =~ ^[0-9]+$ ]]; then
 		watch -d ps -o %cpu,%mem,cmd -p "$pid"
 
 	# else
@@ -2351,24 +2321,34 @@ scan() {
 	rm -I "$f"-*
 }
 
-# force delete plugins where contents were unintentionally changed (typically
-# via a stray `black` format)
-# note: Lazy (still) doesn't have a log file, so the output must be copied from
-# Lazy itself
-# https://github.com/folke/lazy.nvim/blob/014d1d6d78df4e58f962158e6e00261d8632612c/TODO.md?plain=1#L47
-# < lazy.log grep 'local changes in' |
-# 	cut -d'`' -f2 |
-# 	sort -u |
-# 	xargs rm -rf
-
 # note: sendmail unresponsive
 # note: it is not known what set up is needed
 # echo "$body" | mail --subject="$subject" $email
 
 mdr() {
-	c 'https://www.mdr.de/nachrichten/index.html' |
+	articles=$(c 'https://www.mdr.de/nachrichten/index.html' |
 		grep 'class="headline" ' |
 		prepend '<li>' |
 		html2markdown --domain https://www.mdr.de |
-		sort -u
+		sort -u |
+		grep -v /podcast/ |
+		sed -r '1d; s/\[(.+)\]\((.+)\)/\1	\2/g')
+
+	urls=$(<<< "$articles" cut -f1 | fzf -m --reverse)
+
+	echo "$urls" |
+		while read -r t; do
+			<<< "$articles" grep -F "$t	"
+		done |
+		cut -f2 |
+		sort -u |
+		while read -r url; do
+			echo "# $url"
+			curl -sL "$url" |
+				sed -n '/<p class="text">/,/<\/p>/p' |
+				html2markdown
+		done |
+		lowdown -sTms |
+		pdfroff -tik -Kutf8 -mspdf |
+		zathura --mode=fullscreen -
 }

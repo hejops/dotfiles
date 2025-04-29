@@ -284,6 +284,7 @@ alias cp="cp -rv"
 alias dmesg="dmesg --time-format=iso"
 alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
 alias grep="grep --color=auto"
+alias inotifywait="inotifywait --format='%T	%w%f	%e' --timefmt='%Y-%m-%dT%H:%M:%S'"
 alias journalctl="journalctl --boot --output=short-iso" # journalctl | sort -k3 -k1 | less
 alias ln="ln -v"
 alias mkdir="mkdir -p"
@@ -312,6 +313,7 @@ alias r="yazi"
 alias rgf="rg --files-with-matches"
 alias rgl="rg --no-heading --with-filename"
 alias rgml="rg --multiline --multiline-dotall"
+alias sqj="sqlite3 -json"
 alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tmp="cd \$(mktemp -d)"
 alias xargs1="xargs --max-args=1"
@@ -333,6 +335,7 @@ if command -v pacman > /dev/null; then
 	alias pwhich="pacman -Qo"
 	alias rem="sudo pacman --remove --recursive" # --cascade
 	alias sp="pacman --sync --search"
+	alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 
 	# expac --timefmt='%Y-%m-%d %T' '%l\t%n' |
 	# 	while read -r x; do if command -v "$(<<< "$x" cut -f2)" > /dev/null; then echo "$x"; fi; done |
@@ -354,10 +357,24 @@ elif command -v port > /dev/null; then
 
 fi
 
+rema() { rem "$(lp "$1" | grep -Po '^\S+')"; } # remove all packages matching pattern
+
 remsafe() {
 	: remove pacman package recursively, but reinstall optional deps
 	pkgs=("$(rem "$1" | grep requires | cut -d' ' -f5 | tr -d : | sort -u | xargs)")
 	get "${pkgs[@]}"
+}
+
+pacmir() {
+	: regenerate pacman mirrors
+	# TODO: test current speed; if ok, just return
+	country=$(curl -sL ipinfo.io | jq -r .country)
+	url="https://archlinux.org/mirrorlist/?country=$country&protocol=https&use_mirror_status=on"
+	curl -s "$url" |
+		sed 's/^#Server/Server/; /^#/d' |
+		rankmirrors --max-time 1 --verbose -n 99 - |
+		sudo tee /etc/pacman.d/mirrorlist
+
 }
 
 # }}}
