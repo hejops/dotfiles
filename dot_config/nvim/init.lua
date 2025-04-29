@@ -218,7 +218,6 @@ vim.api.nvim_create_autocmd({ "VimResized" }, {
 -- }}}
 -- plugin binds {{{
 
--- vim.keymap.set("n", "<leader>gB", ":GitBlameToggle<cr>") -- must be explicitly enabled on mac (due to lacking horizontal space)
 vim.keymap.set("n", "<leader>J", ":TSJToggle<cr>")
 
 -- vim-fugitive
@@ -227,7 +226,6 @@ vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push 
 vim.keymap.set("n", "<leader>gP", ":Git add %<cr>", { desc = "add current buffer (patch)" })
 vim.keymap.set("n", "<leader>gU", ":Git checkout -- %<cr>", { desc = "discard all uncommitted changes" })
 vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
-vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 
 local function commit_staged()
 	-- {{{
