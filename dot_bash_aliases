@@ -168,25 +168,18 @@ sd() {
 
 		# # infinite loop if nothing downloading
 		# while
-		# 	files python | grep "$MU" | largs -n1 inotifywait -e move_self
+		# 	files python | grep "$SLSK" | largs -n1 inotifywait -e move_self
 		# do
 		# 	date -Is
 		# done
 
-		# # only loops once?
-		# while
-		# 	f=$(files python | grep "$MU")
-		# do
-		# 	echo "$f" | largs -o -n1 inotifywait -e move_self
-		# done
-
-		# while
-		# 	files python | grep -q "$MU"
-		# do
-		# 	files python | grep "$MU" | largs -n1 inotifywait -e move_self
-		# done
-		# return
-		# # killall nicotine
+		# only loops once?
+		while
+			f=$(files python | grep "$SLSK")
+		do
+			echo "$f" | largs -o -n1 inotifywait -e move_self
+		done
+		killall nicotine
 
 	fi
 
@@ -287,14 +280,13 @@ alias s=git_status # could be ported to vim maybe
 alias gl=git_log
 alias gs=git_status
 
+# alias gCH="git reset --hard HEAD~1"                     # un-commit, and undo changes; i.e. gC + gun
+# alias gap="git add --patch"                      # prefer :Git add -p %
 # alias gdnw="git diff --color-words --no-index"
 # alias gun="git checkout --" # discard all local changes ("undo")
-alias g,="git pull"
 alias g.="git push"
 alias gC="git show HEAD | cat; git reset --soft HEAD~1" # un-commit, but leave changes
-alias gCH="git reset --hard HEAD~1"                     # un-commit, and undo changes (destructive!)
 alias ga="git add"
-alias gap="git add --patch"                      # i need to figure out how to do this in vim, because going backwards is hell
 alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
 alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
 alias gig='$EDITOR $(_get_repo_root)/.gitignore'
@@ -667,6 +659,10 @@ gxx() {
 # }
 
 # git diff blame
+# inherently, this means git diff must operate on a time range that spans more
+# than commits, typically a (big) diff of a PR. by extension, this means that
+# git diff blame is only useful when multiple authors have worked on the same
+# PR, which tends to not happen very often IME.
 # https://gist.github.com/maxrothman/d27bbc36f7c150924de6c6e54965de4d py
 # https://github.com/eantoranz/difflame py
 # https://github.com/dmnd/git-diff-blame pl
@@ -1070,10 +1066,22 @@ _gssh() { # {{{
 
 gmm() {
 	: merge master into dev branch
+	[[ $(_git_current_branch) == $(_gmaster) ]] && return
 	# https://stackoverflow.com/a/20103414
 	git fetch origin
 	# TODO: for forks, need to sync fork (in gh), then git pull
 	git merge "origin/$(_gmaster)"
+}
+
+g,() {
+	git pull && return
+	git diff --name-only master..origin/master |
+		while read -r f; do
+			# exit loop on backing out; could gun, but this is
+			# debatable, because changes are lost forever
+			git commit -v "$f" || break
+			# [[ $? -eq 123 ]] && break
+		done
 }
 
 gcon() { # {{{
