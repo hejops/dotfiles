@@ -8,6 +8,15 @@ local in_git_dir = git_dir ~= nil
 local git = string.format("git -C %s ", git_dir)
 local has_remote = util:get_command_output(git .. "remote -v") ~= ""
 
+---@param fname string
+---@return string
+local function read_file(fname)
+	local fo = assert(io.open(fname))
+	local contents = fo:read()
+	fo:close()
+	return contents
+end
+
 ---@param from string
 ---@param to string
 ---@return number
@@ -25,30 +34,33 @@ end
 -- can check .git/HEAD, but a shell is fine for now
 local curr_branch = util:get_command_output(git .. "branch --show-current", true) -- or ""
 
--- this file will be watched for changes
-local f = string.format("%s/.git/refs/heads/%s", git_dir, curr_branch)
+-- TODO: reset cache on push
 
-if in_git_dir then
-	-- print(f)
-	local branch_head_file_contents = assert(io.open(f))
-	M.head_sha = branch_head_file_contents:read()
-	branch_head_file_contents:close()
-end
+-- this file will be watched for changes
+local head_file = string.format("%s/.git/refs/heads/%s", git_dir, curr_branch)
+local master_file = string.format("%s/.git/refs/remotes/origin/%s", git_dir, curr_branch)
 
 -- print(
 -- 	M.head_sha, --
--- 	commits_ahead("origin/master", M.head_sha),
+-- 	commits_ahead(M.origin_master_sha, M.head_sha),
 -- 	"x"
 -- )
-
--- TODO: reset cache on push
 
 ---@type { [string]: number }
 M.cache = {}
 
-if M.head_sha and has_remote then
-	M.cache["origin/master" .. M.head_sha] = commits_ahead("origin/master", M.head_sha)
-	-- ["origin/" .. M.curr_branch .. M.head_sha] = commits_ahead("origin/master", M.head_sha),
+if in_git_dir and has_remote then
+	-- print(f)
+	-- local branch_head_file_contents = assert(io.open(head_file))
+	-- M.head_sha = branch_head_file_contents:read()
+	-- branch_head_file_contents:close()
+
+	M.head_sha = read_file(head_file)
+	M.origin_master_sha = read_file(master_file)
+
+	M.cache[M.origin_master_sha .. M.head_sha] = commits_ahead(M.origin_master_sha, M.head_sha)
+
+	-- ["origin/" .. M.curr_branch .. M.head_sha] = commits_ahead(M.origin_master_sha, M.head_sha),
 end
 
 -- print(vim.inspect(M.cache))
@@ -61,26 +73,35 @@ end
 
 -- note: this func is constantly executed!
 local watcher = assert(vim.loop.new_fs_event())
+local watcher2 = assert(vim.loop.new_fs_event())
 local function update_branch()
 	-- active_bufnr = tostring(vim.api.nvim_get_current_buf())
 	watcher:stop()
-	watcher:start(f, {}, vim.schedule_wrap(update_branch))
+	watcher:start(head_file, {}, vim.schedule_wrap(update_branch))
+	watcher2:start(master_file, {}, vim.schedule_wrap(update_branch)) -- TODO: extra start call, or extra watcher?
 
-	local branch_head_file_contents = assert(io.open(f))
-	local new_head_sha = branch_head_file_contents:read()
-	branch_head_file_contents:close()
+	-- local branch_head_file_contents = assert(io.open(head_file))
+	-- local new_head_sha = branch_head_file_contents:read()
+	-- branch_head_file_contents:close()
+
+	local new_head_sha = read_file(head_file)
+	local new_master_sha = read_file(master_file)
 
 	-- os.execute("notify-send " .. M.head_sha)
 
-	if M.head_sha == new_head_sha then
-		return
+	-- made a commit
+	if M.head_sha ~= new_head_sha then
+		M.cache[M.origin_master_sha .. new_head_sha] = commits_ahead(M.origin_master_sha, new_head_sha)
+		-- increment, so git rev-list needs to be run only once
+		-- M.cache[M.origin_master_sha .. new_head_sha] = M.cache[M.origin_master_sha .. M.head_sha] + 1
+		M.head_sha = new_head_sha
 	end
 
-	-- M.cache["origin/master" .. new_head_sha] = commits_ahead("origin/master", M.head_sha)
-
-	-- increment, so git rev-list needs to be run only once
-	M.cache["origin/master" .. new_head_sha] = M.cache["origin/master" .. M.head_sha] + 1
-	M.head_sha = new_head_sha
+	-- pushed
+	if M.origin_master_sha ~= new_master_sha then
+		M.cache[new_master_sha .. M.head_sha] = commits_ahead(new_master_sha, M.head_sha)
+		M.origin_master_sha = new_master_sha
+	end
 end
 
 if in_git_dir then
@@ -99,7 +120,7 @@ function M:foo()
 		return "" -- not nil!
 	end
 
-	local k = "origin/master" .. M.head_sha
+	local k = M.origin_master_sha .. M.head_sha
 	local v = M.cache[k]
 
 	if v > 0 then
