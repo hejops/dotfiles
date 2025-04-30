@@ -12,10 +12,13 @@ if ps --pid "$PPID" | grep -Fq wezterm; then
 		sed -e 's/<[^>]*>//g' |
 			fold -w 65 -s
 
-	# [[ -d $SLSK ]] && du -csh "$SLSK" |
-	# 	head -n1 |
-	# 	cut -d. -f1 |
-	# 	\xargs -I{} test {} -ge 3 && echo hi
+	if [[ -d $SLSK ]]; then
+		x=$(du -csh "$SLSK" | head -n1)
+		if <<< "$x" grep -Po '^\d+' | \xargs -I{} test {} -ge 3; then
+			echo -e "\n$x"
+		fi
+		unset x
+	fi
 
 fi
 
@@ -159,25 +162,17 @@ sd() {
 
 	if [[ -n $HDD ]]; then
 
-		while
+		if
 			files firefox | grep "$HDD"
-		do
+		then
 			inotifywait -e moved_to "$HDD"/movies
-		done
+		fi
 		killall firefox
 
-		# # infinite loop if nothing downloading
-		# while
-		# 	files python | grep "$SLSK" | largs -n1 inotifywait -e move_self
-		# do
-		# 	date -Is
-		# done
-
-		# only loops once?
 		while
-			f=$(files python | grep "$SLSK")
+			f=$(files python | grep -m1 "$SLSK")
 		do
-			echo "$f" | largs -o -n1 inotifywait -e move_self
+			inotifywait -e move_self "$f"
 		done
 		killall nicotine
 
@@ -640,6 +635,16 @@ gxx() {
 		xargs git show
 }
 
+gcoup() {
+	: for a given file, show which files changed together
+	# https://adamtornhill.com/articles/crimescene/codeascrimescene.htm
+	git log --pretty=%h "$1" |
+		xargs git show --name-only --pretty= |
+		sort |
+		uniq -c |
+		sort -n
+}
+
 # gsdel() {
 # 	: show last state of a deleted file
 # 	# https://stackoverflow.com/a/19727752
@@ -1045,6 +1050,7 @@ g,() {
 			git commit -v "$f" || break
 			# [[ $? -eq 123 ]] && break
 		done
+	git pull
 }
 
 gcon() { # {{{
@@ -1247,16 +1253,6 @@ gldiff() {
 }
 
 gci() { watch -n 30 'glab ci list -P 10 | grep -P "^\(" | column -t'; }
-
-gcoup() {
-	: for a given file, show which files changed together
-	# https://adamtornhill.com/articles/crimescene/codeascrimescene.htm
-	git log --pretty=%h "$1" |
-		xargs git show --name-only --pretty= |
-		sort |
-		uniq -c |
-		sort -n
-}
 
 # }}}
 
@@ -2067,6 +2063,8 @@ get_cookie() {
 
 alias immo="notmuch show from:dresdden or from:noreply@immobilienscout24.de | grep 'Adresse: ' | sort -u"
 
+# df | grep '/$' | cut -d' ' -f1 | xargs sudo smartctl -a
+
 # clickhouse-local --file "$1" --query "$2 FORMAT PrettyCompact"
 
 # could replace xfer with this
@@ -2213,6 +2211,7 @@ ys() { # read youtube subs in less
 yti() {
 	: get info for currently playing file with youtube id
 	# www-watch?v=bMEfWLA-V00.mp3
+	# TODO: pgrep mpv is probably easier innit
 	pactl list sink-inputs |
 		grep media.name |
 		cut -d= -f3 |
