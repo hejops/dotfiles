@@ -527,8 +527,11 @@ vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" 
 local git_log_cmd = {
 	"git",
 	"log",
-	"--pretty=%h \t %ad \t %s", -- oneline lacks date
-	"--abbrev-commit",
+	-- -- oneline lacks date, but it is much harder to impl decorate in pretty
+	-- "--pretty=%h \t %ad \t %s",
+	-- "--abbrev-commit",
+	"--oneline",
+	"--decorate", -- mark origin/dev and origin/master
 	"--no-merges",
 	"--first-parent",
 }
@@ -543,7 +546,7 @@ vim.keymap.set("n", "<leader>gl", function()
 
 	telescope_b.git_commits({
 		-- git_command = vim.list_extend(git_log_cmd, branch ~= master and { branch .. "...HEAD" } or {}),
-		git_command = vim.list_extend(git_log_cmd, { branch ~= master and branch .. "...HEAD" or nil }),
+		git_command = vim.list_extend(git_log_cmd, { branch .. "..." .. (branch == master and "HEAD" or master) }),
 	})
 end, { desc = "git log (current branch only)" })
 

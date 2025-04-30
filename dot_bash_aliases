@@ -324,6 +324,19 @@ _git_http() {
 
 }
 
+_git_has_conflicts() {
+	rg --hidden '^[<=>]{7}'
+	return $?
+}
+
+_git_get_conflicts() {
+	# submodule conflicts don't really need to be resolved?
+	git status --porcelain --ignore-submodules=all |
+		grep -P '^([^ ?])\1 ' |
+		sort -u |
+		cut -c3-
+}
+
 gauthors() {
 	: show authorship of file
 	git blame --line-porcelain "$1" |
@@ -408,11 +421,9 @@ git_status() { # {{{
 	# note: colors are lost when piping, but sort is more useful than color
 	if
 		# git diff only diffs unstaged files
-		diffs=$(
-			git diff --stat . | # generally, i only want to see the diff stat for current dir
-				grep -F '|' |      # ignore summary line
-				sort -n -k3        # most changes last (more useful in short terminals)
-		)
+		diffs=$(git diff --stat . | # generally, i only want to see the diff stat for current dir
+			grep -F '|' |              # ignore summary line
+			sort -n -k3)               # most changes last (more useful in short terminals)
 		[[ -n $diffs ]]
 	then
 		# [[ -n $staged ]] && echo
@@ -921,6 +932,17 @@ guns() {
 gb() { # {{{
 	: switch to new branch, or existing branch
 
+	handle_conflicts() {
+		_git_has_conflicts || return
+		# similar to gcon
+		while _git_has_conflicts; do
+			echo "Conflicts found!"
+			_git_get_conflicts | xargs nvim -p
+		done
+		_git_get_conflicts | xargs git add
+		git commit -v
+	}
+
 	# no remote branches
 	default_local_branch=$(_gmaster) #|| :
 	current_local_branch=$(_git_current_branch)
@@ -938,26 +960,46 @@ gb() { # {{{
 		# generally, new branches should target master. however, this
 		# may not always be the case, so accept an optional 2nd arg to
 		# specify target branch (should be current)
-		if ! git checkout "${2:-$default_local_branch}"; then
-			return 1
-		fi
+		#
+		# TODO: --conflict will fail if changes have been staged
+
+		# TODO: --conflict will cause conflict markers to appear in
+		# master. this is never desired, so conflicts should be
+		# resolved in the current branch (i.e. -before- the checkout)
+
+		git checkout "${2:-$default_local_branch}"
+
+		# git checkout --conflict=zdiff3 "${2:-$default_local_branch}"
+		# handle_conflicts
 
 		timeout 30 git pull || return
 
 		# existing remote branch > create local branch > existing local branch
 		if
-			git branch -r | grep "origin/$1"
+			! git branch | grep -Px "[ *] $1" &&
+				git branch -r | grep "origin/$1"
 		then
 			# note: git hook stdout cannot be suppressed
 			echo "Switching to remote branch $1"
 			git switch "$1" || return 1
 
-		elif git switch --create "$1"; then
+		elif git switch --create "$1" 2> /dev/null; then
 			:
 
 		else
-			# should be infallible?
-			git switch "$1" || return 1
+			# plain git switch can fail, if 'files would be
+			# overwritten by checkout'. with --conflict, switch
+			# always succeeds, but may result in conflicts which
+			# must be resolved
+			git switch --conflict=zdiff3 "$1"
+
+			handle_conflicts
+
+			# # alternatively, revert all unstaged changes, then
+			# # switch. this is probably more fragile
+			# git switch "$branch" 2>&1 |
+			# 	grep '^\s' |
+			# 	xargs git checkout --
 
 		fi
 	fi
@@ -987,11 +1029,6 @@ git_branch() {
 		sed -r 's/^[ *]+//')
 	[[ -z $branch ]] && return
 	gb "$branch"
-
-	# # TODO: revert all unstaged changes, then switch
-	# git switch "$branch" 2>&1 |
-	# 	grep '^\s' |
-	# 	xargs git checkout --
 
 }
 
@@ -1060,20 +1097,7 @@ gcon() { # {{{
 
 	# git diff --name-only --diff-filter=U --relative
 
-	has_conflicts() {
-		rg --hidden '^[<=>]{7}'
-		return $?
-	}
-
-	get_conflicts() {
-		# submodule conflicts don't really need to be resolved?
-		git status --porcelain --ignore-submodules=all |
-			grep -P '^([^ ?])\1 ' |
-			sort -u |
-			cut -c3-
-	}
-
-	if ! conflicts=$(get_conflicts); then
+	if ! conflicts=$(_git_get_conflicts); then
 		echo "No conflicts detected"
 		return
 	fi
@@ -1088,7 +1112,7 @@ gcon() { # {{{
 				git add yarn.lock
 				popd || return
 			done
-		has_conflicts && return
+		_git_has_conflicts && return
 		git commit -v
 		return
 	fi
@@ -1100,16 +1124,16 @@ gcon() { # {{{
 	# git add $submodule
 	# git commit
 
-	while has_conflicts; do
+	while _git_has_conflicts; do
 		if [[ -f .abort ]]; then
 			git merge --abort
 			return
 		fi
 		echo "Unresolved conflicts remaining!"
-		get_conflicts | xargs nvim -p
+		_git_get_conflicts | xargs nvim -p
 	done
 
-	get_conflicts | xargs git add
+	_git_get_conflicts | xargs git add
 	git commit -v
 }        # }}}
 gnew() { # {{{
@@ -1785,6 +1809,16 @@ donuke() {
 	docker stop "${containers[@]}"
 	docker rm "${containers[@]}"
 }
+
+# # list docker containers responsible for a given high-memory/cpu process
+# top -bn1 |
+# 	grep -m5 python |
+# 	cut -d' ' -f1 |
+# 	xargs -n1 pstree -as |
+# 	grep moby |
+# 	sort -u |
+# 	grep -Po '[0-9a-f]{64}' |
+# 	xargs -I{} sudo docker ps -f id={}
 
 # }}}
 # ssh {{{
