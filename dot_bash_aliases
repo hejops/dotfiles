@@ -295,9 +295,16 @@ alias gx='git log --author=$(git config --get user.email) --branches --format="%
 gls() { git ls-files "${1:-.}"; }
 
 _get_remote() { git config --get remote.origin.url; }
-_get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
 _git_current_branch() { git branch --show-current; }
 _in_git_repo() { git rev-parse --is-inside-work-tree > /dev/null 2> /dev/null; }
+
+_get_repo_root() {
+	if [[ $(basename "$PWD") == .git ]]; then
+		realpath ..
+	else
+		git rev-parse --show-toplevel 2> /dev/null
+	fi
+}
 
 _gmaster() {
 	: get default branch, e.g. master
