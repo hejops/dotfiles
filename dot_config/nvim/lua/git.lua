@@ -4,7 +4,7 @@ local util = require("util")
 
 local git_dir = vim.fs.root(0, ".git")
 local in_git_dir = git_dir ~= nil
-local has_remote = util:get_command_output("git remote -v") ~= ""
+local has_remote = util:get_command_output(string.format("git -C %s remote -v", git_dir)) ~= ""
 
 ---@param from string
 ---@param to string
