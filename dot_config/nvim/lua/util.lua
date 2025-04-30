@@ -1,4 +1,4 @@
-M = {}
+local M = {}
 
 -- "The colon syntax is used for defining methods, that is, functions that have
 -- an implicit extra parameter self"
@@ -22,6 +22,7 @@ end
 ---@param t1 {[string]: any}
 ---@param t2 {[string]: any}
 function M:intersect(t1, t2)
+	-- print(vim.inspect(t1), vim.inspect(t2))
 	for k, _ in pairs(t1) do
 		if t2[k] ~= nil then
 			return true
@@ -57,6 +58,7 @@ function M:get_bufnr(fname)
 end
 
 -- only first 10 lines of buffer are checked
+---@return boolean
 function M:buf_contains(target, lines)
 	for _, l in pairs(vim.api.nvim_buf_get_lines(0, 0, lines or 10, false)) do
 		if string.find(l, target) ~= nil then
@@ -66,6 +68,7 @@ function M:buf_contains(target, lines)
 	return false
 end
 
+---@return string[]
 function M:get_bufs_loaded(buf_nums) -- return list of (open) buffer paths
 	-- TODO: ...that are git tracked
 	-- Git commit <paths>
@@ -238,8 +241,9 @@ end -- }}}
 
 -- i/o {{{
 
--- commands should not contain pipe, because exit code will always be 2 (use
--- get_command_output and check for non-empty output instead)
+-- note: `cmd` cannot contain pipe, because exit code will always be 2; use
+-- `get_command_output` and check for non-empty output instead
+---@param cmd string
 function M:command_ok(cmd)
 	assert(cmd)
 	-- https://stackoverflow.com/a/23827063
