@@ -4,7 +4,9 @@ local util = require("util")
 
 local git_dir = vim.fs.root(0, ".git")
 local in_git_dir = git_dir ~= nil
-local has_remote = util:get_command_output(string.format("git -C %s remote -v", git_dir)) ~= ""
+
+local git = string.format("git -C %s ", git_dir)
+local has_remote = util:get_command_output(git .. "remote -v") ~= ""
 
 ---@param from string
 ---@param to string
@@ -16,12 +18,12 @@ local function commits_ahead(from, to)
 	-- the ending commit must always be specified as a sha, because it can and
 	-- will change as commits are made.
 
-	local cmd = string.format("git -C %s rev-list --left-right --count %s...%s | cut -f2", git_dir, from, to)
+	local cmd = string.format("%s rev-list --left-right --count %s...%s | cut -f2", git, from, to)
 	return assert(tonumber(util:get_command_output(cmd, true)))
 end
 
 -- can check .git/HEAD, but a shell is fine for now
-local curr_branch = util:get_command_output(string.format("git -C %s branch --show-current", git_dir), true) or ""
+local curr_branch = util:get_command_output(git .. "branch --show-current", true) -- or ""
 
 -- this file will be watched for changes
 local f = string.format("%s/.git/refs/heads/%s", git_dir, curr_branch)
@@ -38,6 +40,8 @@ end
 -- 	commits_ahead("origin/master", M.head_sha),
 -- 	"x"
 -- )
+
+-- TODO: reset cache on push
 
 ---@type { [string]: number }
 M.cache = {}
