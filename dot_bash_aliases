@@ -275,12 +275,10 @@ alias s=git_status # could be ported to vim maybe
 alias gl=git_log
 alias gs=git_status
 
-# alias gap="git add --patch"                      # prefer :Git add -p %
 # alias gdnw="git diff --color-words --no-index"
-# alias gun="git checkout --" # discard all local changes ("undo")
 alias g.="git push"
-alias gC="git show HEAD | cat; git reset --soft HEAD~1"                           # un-commit, but leave changes
-alias gCH="git show HEAD | cat; read -r -p '\nconfirm?'; git reset --hard HEAD~1" # un-commit, and undo changes; i.e. gC + gun
+alias gC="git show HEAD | cat; git reset --soft HEAD~1"                                         # un-commit, but keep changes staged
+alias gCH="git show --oneline HEAD | cat; echo; read -r -p 'confirm?'; git reset --hard HEAD~1" # un-commit, and discard changes
 alias ga="git add"
 alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
 alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
