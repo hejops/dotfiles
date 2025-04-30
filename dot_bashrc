@@ -420,9 +420,6 @@ GIT_PROMPT() {
 			git rev-parse --is-inside-work-tree > /dev/null 2>&1
 	} || return
 
-	# remote must exist
-	[[ -z $(git remote -v) ]] && return
-
 	# rev-parse fails if no remote yet
 	SHA=$(git rev-parse --short HEAD 2> /dev/null) || return
 
@@ -440,6 +437,12 @@ GIT_PROMPT() {
 
 	local prompt
 	prompt="< $CURRENT_LOCAL_BRANCH :: $SHA > "
+
+	# remote must exist
+	if [[ -z $(git remote -v) ]]; then
+		echo "$prompt"
+		return 0
+	fi
 
 	# set -x
 	# sorted branches, most recently committed first
