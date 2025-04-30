@@ -265,25 +265,8 @@ require("lazy").setup(
 					-- https://github.com/nvim-lualine/lualine.nvim#component-specific-options
 
 					lualine_a = {
-						"branch",
-						-- function()
-						-- 	local f = function(cmd)
-						-- 		return require("util"):get_command_output(cmd, true)
-						-- 	end
-						--
-						-- 	local branch = f("git branch --show-current")
-						-- 	local ahead_m = f([[git rev-list --left-right --count "origin/master...HEAD" | cut -f2]])
-						-- 	local ahead_b =
-						-- 		f(string.format([[git rev-list --left-right --count "%s...HEAD" | cut -f2]], branch))
-						--
-						-- 	if ahead_m == "0" then
-						-- 		return branch
-						-- 	elseif ahead_b == "0" then
-						-- 		return branch .. string.format("[m+%s]", ahead_m)
-						-- 	else
-						-- 		return branch .. string.format("[m+%s|b+%s]", ahead_m, ahead_b)
-						-- 	end
-						-- end,
+						-- "branch",
+						require("git").foo,
 					},
 
 					lualine_b = {
