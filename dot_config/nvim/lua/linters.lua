@@ -18,6 +18,7 @@ local linters = {
 	htmldjango = { "djlint" },
 	javascript = { "biomejs" }, -- should resolve to repo root
 	javascriptreact = { "biomejs" },
+	lua = { "luacheck" },
 	make = { "checkmake" },
 	python = { "ruff" }, -- may have duplicate with ruff lsp
 	sql = { "sqlfluff", "squawk" }, -- slow lint is fine, since async
@@ -36,7 +37,7 @@ if vim.fn["globpath"](".", "commitlint.config.js") ~= "" then
 	table.insert(linters.gitcommit, "commitlint")
 end
 
--- https://github.com/orumin/dotfiles/blob/62d7afe8a9bf531d1b5c8b13bbb54a55592b34b3/nvim/lua/configs/plugin/lsp/linter_config.lua#L7
+-- https://github.com/orumin/dotfiles/blob/62d7afe8a9bf53/nvim/lua/configs/plugin/lsp/linter_config.lua#L7
 require("lint").linters_by_ft = linters
 
 -- TODO: configure linters https://golangci-lint.run/usage/linters/#asasalint
@@ -51,7 +52,7 @@ require("lint").linters.markdownlint.args = {
 	"--stdin",
 }
 
--- https://github.com/rrunner/dotfiles/blob/d55d90ed5d481fc1138483f76f0970d93784bf0a/nvim/.config/nvim/lua/plugins/linting.lua#L17
+-- https://github.com/rrunner/dotfiles/blob/d55d90ed5d481fc/nvim/.config/nvim/lua/plugins/linting.lua#L17
 require("lint").linters.ruff.args = { -- {{{
 	"check",
 	"--preview",
@@ -190,6 +191,11 @@ require("lint").linters.squawk = { -- {{{
 		return items
 	end,
 } -- }}}
+
+require("lint").linters.luacheck.args = vim.list_extend(require("lint").linters.luacheck.args, {
+	"--globals",
+	"vim",
+})
 
 -- linters cannot be conditionally disabled at config time. they can only be
 -- disabled at runtime:
