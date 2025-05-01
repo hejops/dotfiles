@@ -3,7 +3,45 @@
 # if possible, this file should remain under 1000 LOC. interactive shell
 # startup time should remain under 0.02 s
 
-# autostart {{{
+# startup {{{
+
+if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
+
+	cat /tmp/updates
+
+	if
+		< /tmp/updates grep -q '^python ' &&
+			! < /tmp/updates grep -P 'python (3\.\d+)\S+ -> \1'
+	then
+		echo -e "WARNING: major Python update\n"
+		# TODO: update globally installed pips (scrobblerh)
+	fi
+
+	if
+		< /tmp/updates grep -q '^postgresql ' &&
+			! < /tmp/updates grep -P 'postgresql (\d+)\S+ -> \1'
+	then
+		echo -e "WARNING: major postgresql update\n"
+	fi
+
+	if sudo pacman -Syu; then
+		rm /tmp/updates
+
+		# may get unset after update? not sure what causes it
+		setxkbmap -layout us -option -option compose:rctrl,caps:menu
+
+	elif
+		# if pacman hasn't been run in a long time, keys in keyring
+		# will expire. updating archlinux-keyring should fix this
+		command -v expac > /dev/null &&
+			last_update=$(expac --timefmt '%s' "%l" | sort -n | tail -n1) &&
+			# https://stackoverflow.com/a/6948865
+			[[ $(((last_update - $(date +%s)) / (60 * 60 * 24))) -gt 14 ]]
+	then
+		sudo pacman -Sy archlinux-keyring
+
+	fi
+fi
 
 if ps --pid "$PPID" | grep -Fq wezterm; then
 
@@ -187,19 +225,8 @@ rt() {
 	: pass an array of relative paths to tagfix
 	# note: dead symlinks are still displayed as if they exist
 
-	larr() {
-		# like xargs, but takes a single multi-line arg and turns it into an array
-		mapfile -t args < /dev/stdin
-		[[ -z ${args[*]} ]] && return # mimic xargs -r
-		for a in "${args[@]}"; do
-			files mpv | grep "$MU/$a" && waitdie mpv
-		done
-		"$1" "${args[@]}" < /dev/tty
-	}
-
 	< ~/.config/mpv/library fzf --multi --reverse --preview="ls \"$MU\"/{}" |
 		prepend "$MU/" |
-		# larr fix_tags
 		while read -r d; do
 			files mpv | grep -Fq "$d" && waitdie mpv >&2
 			echo "$d"
@@ -207,17 +234,8 @@ rt() {
 			# deprecated? but this is still needed for v/a fixing
 			# fix_tags "$d" < /dev/tty
 		done |
-		largs -o fix_tags
-
-	# dirs=$(< ~/.config/mpv/library fzf --multi --reverse --preview="ls \"$MU\"/{}" |
-	# 	prepend "$MU/")
-	# while read -r d; do
-	# 	files mpv | grep -Fq "$d" && waitdie mpv > /dev/null 2> /dev/null
-	# done <<< "$dirs"
-	# # note: passing arbitrary num of args will probably be deprecated? but
-	# # this is still needed for v/a fixing
-	# # fix_tags "$d" < /dev/tty
-	# echo "$dirs" | largs fix_tags
+		# to preserve the old behaviour (>1 args), remove -n1
+		largs -o -n1 fix_tags
 
 }
 
@@ -228,6 +246,7 @@ ytm() {
 
 	waitdie mpv
 
+	all_ids=
 	while read -r query; do
 		echo "$query"
 		curl -sL 'https://music.youtube.com/youtubei/v1/search' -H 'Content-Type: application/json' \
@@ -251,6 +270,11 @@ ytm() {
 	' |
 			grep videoId |
 			cut -d'"' -f4 |
+			while read -r id; do
+				<<< "$all_ids" grep -Fxq "$id" && continue
+				all_ids+=$'\n'$id
+				echo "$id"
+			done |
 			prepend 'https://youtube.com/watch?v=' |
 			xargs mpv --video=no
 	done < "$f"
@@ -519,6 +543,12 @@ gd() {
 
 _git_log_fzf() { # {{{
 	_in_git_repo || return
+	# rather, if the heads dir is empty; but i don't want to ls/glob
+	if [[ ! -f $(_get_repo_root)/.git/refs/heads/master ]]; then
+		echo "no commits yet" >&2
+		return 1
+	fi
+
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
 
 	args=()

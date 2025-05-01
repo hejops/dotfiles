@@ -234,47 +234,6 @@ esac
 export FZF_DEFAULT_COMMAND="find -L"
 export LESS="-R --mouse --wheel-lines=$((LINES / 2))" # ensure mouse wheel works in delta
 
-# startup {{{
-
-if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
-
-	cat /tmp/updates
-
-	if
-		< /tmp/updates grep -q '^python ' &&
-			! < /tmp/updates grep -P 'python (3\.\d+)\S+ -> \1'
-	then
-		echo -e "WARNING: major Python update\n"
-		# TODO: update globally installed pips (scrobblerh)
-	fi
-
-	if
-		< /tmp/updates grep -q '^postgresql ' &&
-			! < /tmp/updates grep -P 'postgresql (\d+)\S+ -> \1'
-	then
-		echo -e "WARNING: major postgresql update\n"
-	fi
-
-	if sudo pacman -Syu; then
-		rm /tmp/updates
-
-		# may get unset after update? not sure what causes it
-		setxkbmap -layout us -option -option compose:rctrl,caps:menu
-
-	elif
-		# if pacman hasn't been run in a long time, keys in keyring
-		# will expire. updating archlinux-keyring should fix this
-		command -v expac > /dev/null &&
-			last_update=$(expac --timefmt '%s' "%l" | sort -n | tail -n1) &&
-			# https://stackoverflow.com/a/6948865
-			[[ $(((last_update - $(date +%s)) / (60 * 60 * 24))) -gt 14 ]]
-	then
-		sudo pacman -Sy archlinux-keyring
-
-	fi
-fi
-
-# }}}
 # aliases {{{
 
 # alias tar="tar -vf"
@@ -327,13 +286,14 @@ alias lk=lsl
 
 if command -v pacman > /dev/null; then
 
+	# alias lpt="pactree"
 	# alias pclean="paccache --remove && sudo pacman -Scc --noconfirm"
+	# alias rem="sudo pacman --remove --recursive" # --cascade
 	alias get="sudo pacman --sync"
 	alias lp="pacman --query --search"
 	alias lps="expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort -n"
 	alias pclean="paccache --remove && yes | sudo pacman -Scc"
 	alias pwhich="pacman -Qo"
-	alias rem="sudo pacman --remove --recursive" # --cascade
 	alias sp="pacman --sync --search"
 	alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 
@@ -356,6 +316,17 @@ elif command -v port > /dev/null; then
 	alias get="sudo port install"
 
 fi
+
+rem() {
+	[[ $# -ne 1 ]] && return
+	tree=$(pactree -r "$1") || return
+	if [[ $(<<< "$tree" wc -l) -eq 1 ]]; then
+		lp "$1"
+	else
+		echo "$tree"
+	fi
+	sudo pacman --remove --recursive "$1"
+}
 
 rema() { rem "$(lp "$1" | grep -Po '^\S+')"; } # remove all packages matching pattern
 
