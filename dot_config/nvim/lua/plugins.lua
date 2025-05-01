@@ -121,16 +121,6 @@ require("lazy").setup(
 			-- end,
 		},
 
-		-- -- uses deprecated vim.lsp.buf_get_clients
-		-- {
-		-- 	-- cd to repo root (else autochdir), most useful for go
-		-- 	-- note: opts={} is not always equivalent to config=function()require'foo'.setup({})end, apparently
-		-- 	"ahmedkhalf/project.nvim",
-		-- 	config = function()
-		-- 		require("project_nvim").setup({})
-		-- 	end,
-		-- },
-
 		{
 			"lervag/vimtex",
 			ft = { "tex", "bib" },

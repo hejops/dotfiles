@@ -3,6 +3,12 @@
 vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "set nocursorline | norm zz" })
 vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 
+vim.api.nvim_create_autocmd("VimEnter", {
+	callback = function()
+		vim.fn.chdir(vim.fs.root(0, ".git") or vim.fn.expand("%:p:h"))
+	end,
+})
+
 -- restore last cursor position
 vim.api.nvim_create_autocmd("BufReadPost", {
 	callback = function()
