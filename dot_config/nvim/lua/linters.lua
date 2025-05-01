@@ -21,7 +21,10 @@ local linters = {
 	lua = { "luacheck" },
 	make = { "checkmake" },
 	python = { "ruff" }, -- may have duplicate with ruff lsp
-	sql = { "sqlfluff", "squawk" }, -- slow lint is fine, since async
+	sql = {
+		"sqlfluff", -- slow lint is fine, since async
+		vim.fn.executable("squawk") == 1 and "squawk" or nil,
+	},
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
 
