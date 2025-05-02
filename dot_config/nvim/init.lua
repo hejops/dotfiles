@@ -545,8 +545,7 @@ vim.keymap.set("n", "<leader>gl", function()
 		require("util"):get_command_output("git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4", true)
 
 	telescope_b.git_commits({
-		-- git_command = vim.list_extend(git_log_cmd, branch ~= master and { branch .. "...HEAD" } or {}),
-		git_command = vim.list_extend(git_log_cmd, { branch .. "..." .. (branch == master and "HEAD" or master) }),
+		git_command = vim.list_extend(git_log_cmd, branch ~= master and { master .. "...HEAD" } or {}),
 	})
 end, { desc = "git log (current branch only)" })
 
