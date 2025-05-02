@@ -1120,12 +1120,7 @@ gmm() {
 g,() {
 	git pull && return
 	git diff --name-only master..origin/master |
-		while read -r f; do
-			# exit loop on backing out; could gun, but this is
-			# debatable, because changes are lost forever
-			git commit -v "$f" || break
-			# [[ $? -eq 123 ]] && break
-		done
+		xargs -n1 git commit -v "$f" #|| break
 	git pull
 }
 
