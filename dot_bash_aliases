@@ -152,7 +152,7 @@ cm() {
 		# symlink) is modified. the symlink targets must always be
 		# re-added. this will no longer be necessary when the scripts
 		# repo is deprecated.
-		cm status | grep -Po '\.local/bin/.+' | largs chezmoi add -f 2> /dev/null
+		chezmoi status | grep -Po '\.local/bin/.+' | largs chezmoi add -f 2> /dev/null
 
 		chezmoi cd
 	else
