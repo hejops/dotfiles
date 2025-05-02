@@ -1002,7 +1002,9 @@ gb() { # {{{
 		# master. this is never desired, so conflicts should be
 		# resolved in the current branch (i.e. -before- the checkout)
 
-		git checkout "${2:-$default_local_branch}"
+		# post checkout hook outputs to stderr
+		# but real errors are probably also written to stderr?
+		git checkout "${2:-$default_local_branch}" > /dev/null 2> /dev/null
 
 		# git checkout --conflict=zdiff3 "${2:-$default_local_branch}"
 		# handle_conflicts
@@ -1011,14 +1013,16 @@ gb() { # {{{
 
 		# existing remote branch > create local branch > existing local branch
 		if
-			! git branch | grep -Px "[ *] $1" &&
-				git branch -r | grep "origin/$1"
+			! git branch | grep -qPx "[ *] $1" &&
+				git branch -r | grep -q "origin/$1"
 		then
 			# note: git hook stdout cannot be suppressed
 			echo "Switching to remote branch $1"
-			git switch "$1" || return 1
+			git switch "$1" > /dev/null || return 1
 
-		elif git switch --create "$1" 2> /dev/null; then
+		elif
+			git switch --create "$1" > /dev/null 2> /dev/null
+		then
 			:
 
 		else
@@ -1026,7 +1030,7 @@ gb() { # {{{
 			# overwritten by checkout'. with --conflict, switch
 			# always succeeds, but may result in conflicts which
 			# must be resolved
-			git switch --conflict=zdiff3 "$1"
+			git switch --conflict=zdiff3 "$1" > /dev/null
 
 			handle_conflicts
 
@@ -1116,12 +1120,7 @@ gmm() {
 g,() {
 	git pull && return
 	git diff --name-only master..origin/master |
-		while read -r f; do
-			# exit loop on backing out; could gun, but this is
-			# debatable, because changes are lost forever
-			git commit -v "$f" || break
-			# [[ $? -eq 123 ]] && break
-		done
+		xargs -n1 git commit -v "$f" #|| break
 	git pull
 }
 

@@ -185,7 +185,7 @@ require("lint").linters.squawk = { -- {{{
 					lnum = diag.line, -- squawk tends to misreport lnum, and does not report end_lnum
 					col = 0,
 					end_col = 999,
-					message = diag.messages[1].Note .. "\n\n" .. diag.messages[2].Help,
+					message = diag.messages[1].Note, -- .. "\n\n" .. diag.messages[2].Help,
 					severity = assert(severities[diag.level], "missing mapping for severity " .. diag.level),
 				})
 			end
