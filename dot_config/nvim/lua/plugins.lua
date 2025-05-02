@@ -216,9 +216,7 @@ require("lazy").setup(
 			-- automatically (mason's ensure_installed only applies to lsps). this is
 			-- not essential, but nice to have
 			--
-			-- null-ls has been deprecated, and is now replaced by none-ls
-			--
-			-- https://github.com/jjangsangy/Dotfiles/blob/a96a66b1b3db191a848daed2f3f2ff498a1e96ad/astro_nvim/plugins/mason.lua#L15
+			-- https://github.com/jjangsangy/Dotfiles/blob/a96a66b1b/astro_nvim/plugins/mason.lua#L15
 			"jay-babu/mason-null-ls.nvim",
 			-- overrides `require("mason-null-ls").setup(...)`
 			dependencies = {
@@ -236,7 +234,8 @@ require("lazy").setup(
 					"goimports-reviser",
 					"golines",
 					"mdslw",
-					"prettier", -- for html/yaml, iirc?
+					"prettier", -- only for html/yaml, iirc
+					"shellharden",
 					"shfmt",
 					"stylua",
 
