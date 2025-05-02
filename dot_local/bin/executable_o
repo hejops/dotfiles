@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. ~/.bashrc # required for WORK_DIRS
-
 if
 	command -v chezmoi > /dev/null
 then
@@ -10,6 +8,8 @@ then
 fi
 
 sel=$({
+	. ~/.bashrc # required for WORK_DIRS
+
 	# multiple dirs can be specified, but are sorted separately
 	# TODO: WORK_DIRS -> sort mtime
 	echo "${WORK_DIRS[@]}" | tr ' ' '\n'
@@ -30,7 +30,9 @@ if [[ -d $sel ]]; then
 	[[ -z $sel ]] && exit
 fi
 
-if grep <<< "$dotfiles" -F "$sel"; then
+term_cmd=(wezterm start)
+
+if <<< "$dotfiles" grep -Fx "$sel"; then
 
 	# note: the 2nd time `chezmoi edit --watch` is called, changes are not
 	# applied to the 2nd file on save, regardless of whether chezmoi.nvim
@@ -41,12 +43,10 @@ if grep <<< "$dotfiles" -F "$sel"; then
 	# we rely on chezmoi.nvim to handle edit --watch (and cd)
 	# https://github.com/xvzc/chezmoi.nvim?tab=readme-ov-file#treat-all-files-in-chezmoi-source-directory-as-chezmoi-files
 
-	# on opening new wezterm window, cwd is reset to ~
-	term_cmd=(wezterm start --cwd .)
 	sel="$HOME/.local/share/chezmoi/$sel"
 
 elif [[ -f $sel ]]; then
-	term_cmd=(wezterm start --cwd "$(git rev-parse --show-toplevel)")
+	:
 
 else
 	exit 1

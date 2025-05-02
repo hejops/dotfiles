@@ -3,7 +3,45 @@
 # if possible, this file should remain under 1000 LOC. interactive shell
 # startup time should remain under 0.02 s
 
-# autostart {{{
+# startup {{{
+
+if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
+
+	cat /tmp/updates
+
+	if
+		< /tmp/updates grep -q '^python ' &&
+			! < /tmp/updates grep -P 'python (3\.\d+)\S+ -> \1'
+	then
+		echo -e "WARNING: major Python update\n"
+		# TODO: update globally installed pips (scrobblerh)
+	fi
+
+	if
+		< /tmp/updates grep -q '^postgresql ' &&
+			! < /tmp/updates grep -P 'postgresql (\d+)\S+ -> \1'
+	then
+		echo -e "WARNING: major postgresql update\n"
+	fi
+
+	if sudo pacman -Syu; then
+		rm /tmp/updates
+
+		# may get unset after update? not sure what causes it
+		setxkbmap -layout us -option -option compose:rctrl,caps:menu
+
+	elif
+		# if pacman hasn't been run in a long time, keys in keyring
+		# will expire. updating archlinux-keyring should fix this
+		command -v expac > /dev/null &&
+			last_update=$(expac --timefmt '%s' "%l" | sort -n | tail -n1) &&
+			# https://stackoverflow.com/a/6948865
+			[[ $(((last_update - $(date +%s)) / (60 * 60 * 24))) -gt 14 ]]
+	then
+		sudo pacman -Sy archlinux-keyring
+
+	fi
+fi
 
 if ps --pid "$PPID" | grep -Fq wezterm; then
 
@@ -12,10 +50,13 @@ if ps --pid "$PPID" | grep -Fq wezterm; then
 		sed -e 's/<[^>]*>//g' |
 			fold -w 65 -s
 
-	# [[ -d $SLSK ]] && du -csh "$SLSK" |
-	# 	head -n1 |
-	# 	cut -d. -f1 |
-	# 	\xargs -I{} test {} -ge 3 && echo hi
+	if [[ -d $SLSK ]]; then
+		x=$(du -csh "$SLSK" | head -n1)
+		if <<< "$x" grep -Po '^\d+' | \xargs -I{} test {} -ge 3; then
+			echo -e "\n$x"
+		fi
+		unset x
+	fi
 
 fi
 
@@ -159,25 +200,17 @@ sd() {
 
 	if [[ -n $HDD ]]; then
 
-		while
+		if
 			files firefox | grep "$HDD"
-		do
+		then
 			inotifywait -e moved_to "$HDD"/movies
-		done
+		fi
 		killall firefox
 
-		# # infinite loop if nothing downloading
-		# while
-		# 	files python | grep "$SLSK" | largs -n1 inotifywait -e move_self
-		# do
-		# 	date -Is
-		# done
-
-		# only loops once?
 		while
-			f=$(files python | grep "$SLSK")
+			f=$(files python | grep -m1 "$SLSK")
 		do
-			echo "$f" | largs -o -n1 inotifywait -e move_self
+			inotifywait -e move_self "$f"
 		done
 		killall nicotine
 
@@ -192,19 +225,8 @@ rt() {
 	: pass an array of relative paths to tagfix
 	# note: dead symlinks are still displayed as if they exist
 
-	larr() {
-		# like xargs, but takes a single multi-line arg and turns it into an array
-		mapfile -t args < /dev/stdin
-		[[ -z ${args[*]} ]] && return # mimic xargs -r
-		for a in "${args[@]}"; do
-			files mpv | grep "$MU/$a" && waitdie mpv
-		done
-		"$1" "${args[@]}" < /dev/tty
-	}
-
 	< ~/.config/mpv/library fzf --multi --reverse --preview="ls \"$MU\"/{}" |
 		prepend "$MU/" |
-		# larr fix_tags
 		while read -r d; do
 			files mpv | grep -Fq "$d" && waitdie mpv >&2
 			echo "$d"
@@ -212,17 +234,8 @@ rt() {
 			# deprecated? but this is still needed for v/a fixing
 			# fix_tags "$d" < /dev/tty
 		done |
-		largs -o fix_tags
-
-	# dirs=$(< ~/.config/mpv/library fzf --multi --reverse --preview="ls \"$MU\"/{}" |
-	# 	prepend "$MU/")
-	# while read -r d; do
-	# 	files mpv | grep -Fq "$d" && waitdie mpv > /dev/null 2> /dev/null
-	# done <<< "$dirs"
-	# # note: passing arbitrary num of args will probably be deprecated? but
-	# # this is still needed for v/a fixing
-	# # fix_tags "$d" < /dev/tty
-	# echo "$dirs" | largs fix_tags
+		# to preserve the old behaviour (>1 args), remove -n1
+		largs -o -n1 fix_tags
 
 }
 
@@ -233,6 +246,7 @@ ytm() {
 
 	waitdie mpv
 
+	all_ids=
 	while read -r query; do
 		echo "$query"
 		curl -sL 'https://music.youtube.com/youtubei/v1/search' -H 'Content-Type: application/json' \
@@ -256,6 +270,11 @@ ytm() {
 	' |
 			grep videoId |
 			cut -d'"' -f4 |
+			while read -r id; do
+				<<< "$all_ids" grep -Fxq "$id" && continue
+				all_ids+=$'\n'$id
+				echo "$id"
+			done |
 			prepend 'https://youtube.com/watch?v=' |
 			xargs mpv --video=no
 	done < "$f"
@@ -280,12 +299,10 @@ alias s=git_status # could be ported to vim maybe
 alias gl=git_log
 alias gs=git_status
 
-# alias gCH="git reset --hard HEAD~1"                     # un-commit, and undo changes; i.e. gC + gun
-# alias gap="git add --patch"                      # prefer :Git add -p %
 # alias gdnw="git diff --color-words --no-index"
-# alias gun="git checkout --" # discard all local changes ("undo")
 alias g.="git push"
-alias gC="git show HEAD | cat; git reset --soft HEAD~1" # un-commit, but leave changes
+alias gC="git show HEAD | cat; git reset --soft HEAD~1"                                         # un-commit, but keep changes staged
+alias gCH="git show --oneline HEAD | cat; echo; read -r -p 'confirm?'; git reset --hard HEAD~1" # un-commit, and discard changes
 alias ga="git add"
 alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
 alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
@@ -300,9 +317,16 @@ alias gx='git log --author=$(git config --get user.email) --branches --format="%
 gls() { git ls-files "${1:-.}"; }
 
 _get_remote() { git config --get remote.origin.url; }
-_get_repo_root() { git rev-parse --show-toplevel 2> /dev/null; }
 _git_current_branch() { git branch --show-current; }
 _in_git_repo() { git rev-parse --is-inside-work-tree > /dev/null 2> /dev/null; }
+
+_get_repo_root() {
+	if [[ $(basename "$PWD") == .git ]]; then
+		realpath ..
+	else
+		git rev-parse --show-toplevel 2> /dev/null
+	fi
+}
 
 _gmaster() {
 	: get default branch, e.g. master
@@ -519,6 +543,12 @@ gd() {
 
 _git_log_fzf() { # {{{
 	_in_git_repo || return
+	# rather, if the heads dir is empty; but i don't want to ls/glob
+	if [[ ! -f $(_get_repo_root)/.git/refs/heads/master ]]; then
+		echo "no commits yet" >&2
+		return 1
+	fi
+
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
 
 	args=()
@@ -649,6 +679,16 @@ gxx() {
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' |     # --ansi
 		cut -f1 |
 		xargs git show
+}
+
+gcoup() {
+	: for a given file, show which files changed together
+	# https://adamtornhill.com/articles/crimescene/codeascrimescene.htm
+	git log --pretty=%h "$1" |
+		xargs git show --name-only --pretty= |
+		sort |
+		uniq -c |
+		sort -n
 }
 
 # gsdel() {
@@ -1086,6 +1126,7 @@ g,() {
 			git commit -v "$f" || break
 			# [[ $? -eq 123 ]] && break
 		done
+	git pull
 }
 
 gcon() { # {{{
@@ -1275,16 +1316,6 @@ gldiff() {
 }
 
 gci() { watch -n 30 'glab ci list -P 10 | grep -P "^\(" | column -t'; }
-
-gcoup() {
-	: for a given file, show which files changed together
-	# https://adamtornhill.com/articles/crimescene/codeascrimescene.htm
-	git log --pretty=%h "$1" |
-		xargs git show --name-only --pretty= |
-		sort |
-		uniq -c |
-		sort -n
-}
 
 # }}}
 
@@ -2105,6 +2136,8 @@ get_cookie() {
 
 alias immo="notmuch show from:dresdden or from:noreply@immobilienscout24.de | grep 'Adresse: ' | sort -u"
 
+# df | grep '/$' | cut -d' ' -f1 | xargs sudo smartctl -a
+
 # clickhouse-local --file "$1" --query "$2 FORMAT PrettyCompact"
 
 # could replace xfer with this
@@ -2251,6 +2284,7 @@ ys() { # read youtube subs in less
 yti() {
 	: get info for currently playing file with youtube id
 	# www-watch?v=bMEfWLA-V00.mp3
+	# TODO: pgrep mpv is probably easier innit
 	pactl list sink-inputs |
 		grep media.name |
 		cut -d= -f3 |

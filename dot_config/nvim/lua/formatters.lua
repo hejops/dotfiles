@@ -169,6 +169,7 @@ require("conform").setup({
 
 		-- jq = { "jq" }, -- jq only formats json (duh)
 		-- ocaml = { "ocamlformat" },
+		-- xml = { "xmlformat" }, -- ModuleNotFoundError: No module named 'xmlformatter'
 		["_"] = { "trim_whitespace", "trim_newlines" },
 		bash = { "shfmt", "shellharden" }, -- bash ft is only via modeline (?)
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
@@ -189,7 +190,6 @@ require("conform").setup({
 		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
-		xml = { "xmlformat" },
 		yaml = { "prettier" }, -- TODO: no .clangd parser
 
 		javascript = js_formatters,
