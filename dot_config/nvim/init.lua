@@ -27,7 +27,10 @@ vim.api.nvim_create_autocmd({
 }, {
 	callback = function()
 		if vim.bo.modifiable then
-			require("conform").format()
+			local ok, x = pcall(require("conform").format)
+			if not ok then
+				print(x)
+			end
 		end
 	end,
 })
