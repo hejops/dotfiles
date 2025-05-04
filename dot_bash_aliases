@@ -110,12 +110,31 @@ alias tx="tectonic -X"
 alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 alias y="bash ~/gripts/disq/ytm.sh"
 
-# cd ~/gripts/oar || :
-# [[ ! -d ./out ]] && time ./oar
-# waitdie mpv
-# vol --auto
-# mpv --profile=bcx ./out
-# rm -rI ./out
+EXA_ARGS=(
+
+	# https://github.com/search?type=code&q=path:dot_config/eza
+	# xdg dir is only for theme...?
+
+	# --dereference # this actually undoes symlink `-> ...`
+	--all # show dot files
+	--color=always
+	--git                     # status porcelain
+	--group-directories-first # debatable
+	--links                   # inode count
+	--long                    # note: long names will not be wrapped
+	--no-permissions
+	--no-user
+	--octal-permissions
+	--time-style=iso
+
+	--level=2
+	--tree # will be slow in large (wide) dirs
+
+	# --sort=modified
+)
+
+alias ls='exa ${EXA_ARGS[*]}'
+alias lsl="ls --sort=modified"
 
 # }}}
 # frequent {{{
@@ -1529,13 +1548,13 @@ god() {
 	# godoc is only for generating stdlib docs?
 	# https://pkg.go.dev/golang.org/x/tools/cmd/godoc
 
-	pushd "$(dirname "$1")"
+	pushd "$(dirname "$1")" || return
 	< "$(basename "$1")" grep -P '^(type|func)' |
 		grep -Pow '[A-Z]\w+' |
 		sort -u |
 		xargs -n1 go doc 2> /dev/null |
 		grep -Pv '^package'
-	popd
+	popd || :
 }
 
 # }}}
@@ -1635,7 +1654,7 @@ jupall() {
 # c {{{
 
 x() {
-	\ls *.c 2> /dev/null || return
+	\ls ./*.c 2> /dev/null || return
 	n=$(basename "$(realpath .)")
 	gcc -o "$n" ./*.c && "./$n"
 }
@@ -1750,7 +1769,7 @@ dolc() {
 	name=$1
 	json="$(docker inspect --format='{{.LogPath}}' "$name")"
 	# [[ ! -f $json ]] && return
-	sudo ls "$json" > /dev/null || return
+	sudo "$(command ls)" "$json" > /dev/null || return
 	# doesn't work for go binary? file -is- cleared, but `docker logs` still produces old output
 	: | sudo tee "$json"
 	sudo du "$json"
@@ -2129,7 +2148,7 @@ get_cookie() {
 
 # }}}
 
-alias immo="notmuch show from:dresdden or from:noreply@immobilienscout24.de | grep 'Adresse: ' | sort -u"
+alias imm="notmuch show from:noreply@immobilienscout24.de | grep -Po 'Adresse: [^(]+' | sed -r 's/([a-z])([A-Z])/\1\t\2/' | sort -u"
 
 # df | grep '/$' | cut -d' ' -f1 | xargs sudo smartctl -a
 
