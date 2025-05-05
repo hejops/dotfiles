@@ -1122,7 +1122,7 @@ gmm() {
 g,() {
 	git pull && return
 	git diff --name-only master..origin/master |
-		xargs -n1 git commit -v "$f" #|| break
+		xargs -n1 git commit -v
 	git pull
 }
 
