@@ -60,6 +60,8 @@ if ps --pid "$PPID" | grep -Fq wezterm; then
 
 fi
 
+[[ -f ~/jira.txt ]] && cat ~/jira.txt
+
 # }}}
 # aliases {{{
 
