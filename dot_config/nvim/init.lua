@@ -27,7 +27,10 @@ vim.api.nvim_create_autocmd({
 }, {
 	callback = function()
 		if vim.bo.modifiable then
-			require("conform").format()
+			local ok, x = pcall(require("conform").format)
+			if not ok then
+				print(x)
+			end
 		end
 	end,
 })
@@ -227,105 +230,6 @@ vim.api.nvim_create_autocmd({ "VimResized" }, {
 
 vim.keymap.set("n", "<leader>J", ":TSJToggle<cr>")
 
--- vim-fugitive
--- vim.keymap.set("n", "<leader>gp", ":Dispatch! git push<cr>", { desc = "git push (async)" })
-vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
-vim.keymap.set("n", "<leader>gP", ":Git add %<cr>", { desc = "add current buffer (patch)" })
-vim.keymap.set("n", "<leader>gU", ":Git checkout -- %<cr>", { desc = "discard all uncommitted changes" })
-vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
-
-local function commit_staged()
-	-- {{{
-	if not require("util"):in_git_repo() then
-		print("not in git repo")
-	elseif -- any changes have been staged (taken from gc)
-		-- commit currently staged chunk(s)
-		require("util"):get_command_output("git diff --name-only --cached --diff-filter=AM | grep .") ~= ""
-	then
-		vim.cmd("Git commit --quiet -v")
-	elseif -- current file has changes
-		-- commit entire file
-		-- exits with 1 if there were differences
-		not require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0))
-	then
-		-- do i ever need to commit a whole file while there are staged chunks? remains to be seen
-		vim.cmd("Git commit --quiet -v %")
-	else
-		print("no changes to stage")
-	end
-end -- }}}
-
-vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit current buffer/hunks" })
-
-for _, k in pairs({ "C", "gc" }) do
-	vim.keymap.set("n", "<leader>" .. k, function()
-		print("deprecated; use <leader>c")
-	end, { desc = "deprecated" })
-end
-
-vim.keymap.set("n", "<leader>gp", function()
-	print("deprecated; use <leader>.")
-end, { desc = "deprecated" })
-
-vim.keymap.set("n", "<leader>gC", function()
-	-- TODO: git add % + git commit --amend --no-edit
-	if not require("util"):command_ok("git status --porcelain | grep -q '^M'") then
-		print("No hunks staged")
-		return
-	end
-
-	vim.cmd("Git commit --quiet --amend --no-edit")
-	print(
-		string.format(
-			"Added hunk(s) to previous commit: %s",
-			require("util"):get_command_output("git log -n 1 --pretty=format:%s")
-		)
-	)
-end, { desc = "append currently staged hunks to previous commit" })
-
--- use gdm instead
--- vim.keymap.set("n", "<leader>gd", function()
--- 	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
--- end, { desc = "diff current HEAD against master" })
-
--- vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
-vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>", { desc = "stage all hunks in current buffer" }) -- same as :Gwrite, but without making the commit
-vim.keymap.set("n", "<leader>gh", ":Gitsigns stage_hunk<cr>") -- more ergonomic than gs? (debatable)
-vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>")
-vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
-
-vim.keymap.set("n", "<leader>go", function()
-	-- GitBlameOpenFileURL may produce bogus URLs, usually when files are moved.
-	-- in such cases, GitBlameOpenCommitURL may be better
-	-- https://github.com/f-person/git-blame.nvim/issues/103
-	-- vim.cmd("GitBlameOpenFileURL")
-
-	-- GitBlameOpenFileURL always opens the file at the commit of the current
-	-- line. sometimes it is better to just construct url with latest commit of
-	-- current branch
-	local base = require("util")
-		:get_command_output("git config --get remote.origin.url", true)
-		:gsub("git@", "https://")
-		:gsub("com:", "com/")
-		:gsub(".git$", "")
-	local branch = require("util"):get_command_output("git branch --show-current", true)
-	local path = require("util"):get_command_output("git ls-files --full-name " .. vim.fn.expand("%:p"), true)
-
-	local url = string.format("%s/blob/%s/%s", base, branch, path)
-	if base:match("gitlab") then
-		url = url:gsub("/blob/", "/-/blob/")
-	end
-	vim.fn.jobstart("xdg-open " .. url)
-
-	-- $url/-/blob/$branch/$path
-
-	-- vim.cmd("GitBlameOpenCommitURL")
-
-	-- -- ubuntu xdg-open may not work
-	-- vim.cmd("GitBlameCopyCommitURL")
-	-- vim.fn.jobstart([[sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"]])
-end, { desc = "view commit of current line (in browser)" })
-
 -- unlike telescope diagnostics, trouble is persistent (per tab)
 vim.keymap.set("n", "<leader>j", function()
 	require("trouble").open({ mode = "diagnostics" })
@@ -499,9 +403,6 @@ telescope.setup({
 -- extensions must be loaded after `telescope.setup`
 telescope.load_extension("heading")
 
--- }}}
--- telescope binds {{{
-
 vim.api.nvim_create_autocmd({ "VimEnter", "VimResized" }, {
 	callback = function()
 		require("telescope").setup({
@@ -520,6 +421,8 @@ vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tab
 vim.keymap.set("n", "<leader>.", telescope.extensions.adjacent.adjacent) -- TODO: ignore binary
 vim.keymap.set("n", "<leader>/", telescope_b.live_grep, { desc = "ripgrep" }) -- entire project
 vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
+-- }}}
+-- git {{{
 vim.keymap.set("n", "<leader>e", telescope_b.git_files, { desc = "git ls-files" })
 vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" })
 vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" })
@@ -535,8 +438,6 @@ local git_log_cmd = {
 	"--no-merges",
 	"--first-parent",
 }
-
--- vim.keymap.set("n", "<leader>gl", telescope_b.git_commits, { desc = "git log" })
 
 vim.keymap.set("n", "<leader>gl", function()
 	-- there is probably a native vim api for this, but whatever
@@ -559,6 +460,124 @@ end, { desc = "git log (current file only)" })
 -- git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S
 
 -- vim.keymap.set("n", "<leader>?", telescope_b.help_tags, { desc = "search help" }) -- let's face it; i never use this
+
+vim.keymap.set("n", "<leader>gL", function()
+	telescope_b.git_commits({
+		git_command = vim.list_extend(git_log_cmd, { vim.fn.expand("%") }),
+	})
+end, { desc = "git log (current file only)" })
+
+vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
+vim.keymap.set("n", "<leader>gP", ":Git add %<cr>", { desc = "add current buffer (patch)" })
+vim.keymap.set("n", "<leader>gU", ":Git checkout -- %<cr>", { desc = "discard all uncommitted changes" })
+vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
+
+local function commit_staged() -- {{{
+	if not require("util"):in_git_repo() then
+		print("not in git repo")
+	elseif -- any changes have been staged (taken from gc)
+		-- commit currently staged chunk(s)
+		require("util"):get_command_output("git diff --name-only --cached --diff-filter=AM | grep .") ~= ""
+	then
+		vim.cmd("Git commit --quiet -v")
+	elseif -- current file has changes
+		-- commit entire file
+		-- exits with 1 if there were differences
+		not require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0))
+	then
+		-- do i ever need to commit a whole file while there are staged chunks? remains to be seen
+		vim.cmd("Git commit --quiet -v %")
+	else
+		print("no changes to stage")
+	end
+end -- }}}
+vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit current buffer/hunks" })
+
+vim.keymap.set("n", "<leader>gap", function()
+	-- local patt = vim.fn.input({}) -- TODO: rg picker
+	-- local prompt = string.format("Directory %s does not exist. Create? ", parent)
+
+	local patt
+	vim.ui.input({ prompt = "pattern: " }, function(input)
+		patt = input
+	end)
+
+	require("util"):get_command_output(
+		string.format(
+			[[git diff -U0 | grepdiff --output-matching=hunk -E "%s" | git apply --cached --unidiff-zero]],
+			patt
+		)
+	)
+	commit_staged()
+end, { desc = "git add hunks matching pattern" })
+
+for _, k in pairs({ "C", "gc" }) do
+	vim.keymap.set("n", "<leader>" .. k, function()
+		print("deprecated; use <leader>c")
+	end, { desc = "deprecated" })
+end
+
+vim.keymap.set("n", "<leader>gp", function()
+	print("deprecated; use <leader>.")
+end, { desc = "deprecated" })
+
+vim.keymap.set("n", "<leader>gC", function()
+	-- TODO: git add % + git commit --amend --no-edit
+	if not require("util"):command_ok("git status --porcelain | grep -q '^M'") then
+		print("No hunks staged")
+		return
+	end
+
+	vim.cmd("Git commit --quiet --amend --no-edit")
+	print(
+		string.format(
+			"Added hunk(s) to previous commit: %s",
+			require("util"):get_command_output("git log -n 1 --pretty=format:%s")
+		)
+	)
+end, { desc = "append currently staged hunks to previous commit" })
+
+-- use gdm instead
+-- vim.keymap.set("n", "<leader>gd", function()
+-- 	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
+-- end, { desc = "diff current HEAD against master" })
+
+-- vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
+-- vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>", { desc = "stage all hunks in current buffer" }) -- same as :Gwrite, but without making the commit
+vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>")
+vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
+
+vim.keymap.set("n", "<leader>go", function()
+	-- GitBlameOpenFileURL may produce bogus URLs, usually when files are moved.
+	-- in such cases, GitBlameOpenCommitURL may be better
+	-- https://github.com/f-person/git-blame.nvim/issues/103
+	-- vim.cmd("GitBlameOpenFileURL")
+
+	-- GitBlameOpenFileURL always opens the file at the commit of the current
+	-- line. sometimes it is better to just construct url with latest commit of
+	-- current branch
+	local base = require("util")
+		:get_command_output("git config --get remote.origin.url", true)
+		:gsub("git@", "https://")
+		:gsub("com:", "com/")
+		:gsub(".git$", "")
+	local branch = require("util"):get_command_output("git branch --show-current", true)
+	local path = require("util"):get_command_output("git ls-files --full-name " .. vim.fn.expand("%:p"), true)
+
+	local url = string.format("%s/blob/%s/%s", base, branch, path)
+	if base:match("gitlab") then
+		url = url:gsub("/blob/", "/-/blob/")
+	end
+	vim.fn.jobstart("xdg-open " .. url)
+
+	-- $url/-/blob/$branch/$path
+
+	-- vim.cmd("GitBlameOpenCommitURL")
+
+	-- -- ubuntu xdg-open may not work
+	-- vim.cmd("GitBlameCopyCommitURL")
+	-- vim.fn.jobstart([[sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"]])
+end, { desc = "view commit of current line (in browser)" })
 
 -- }}}
 
@@ -626,7 +645,8 @@ cmp.setup({
 			-- this restriction can easily be made rust-specific
 			-- https://neovim.discourse.group/t/how-to-disable-lsp-snippets/922/5
 			entry_filter = function(entry)
-				return require("cmp").lsp.CompletionItemKind.Snippet ~= entry:get_kind()
+				return --vim.bo.filetype == "rust" and
+					entry:get_kind() ~= require("cmp").lsp.CompletionItemKind.Snippet
 			end,
 		},
 		{ name = "luasnip" },
@@ -636,6 +656,6 @@ cmp.setup({
 	},
 })
 
-require("cmp-gitcommit").setup({}) -- i don't really use this
+require("cmp-gitcommit").setup({}) -- i don't really (know how to) use this
 
 -- }}}
