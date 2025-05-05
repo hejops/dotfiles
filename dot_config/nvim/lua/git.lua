@@ -6,16 +6,7 @@ local git_dir = vim.fs.root(0, ".git")
 local in_git_dir = git_dir ~= nil
 
 local git = string.format("git -C %s ", git_dir)
-local has_remote = util:get_command_output(git .. "remote -v") ~= ""
-
----@param fname string
----@return string
-local function read_file(fname)
-	local fo = assert(io.open(fname))
-	local contents = fo:read()
-	fo:close()
-	return contents
-end
+local has_remote = git_dir ~= nil and util:get_command_output(git .. "remote -v") ~= ""
 
 ---@param from string
 ---@param to string
@@ -32,7 +23,7 @@ local function commits_ahead(from, to)
 end
 
 -- can check .git/HEAD, but a shell is fine for now
-local curr_branch = util:get_command_output(git .. "branch --show-current", true) -- or ""
+local curr_branch = git_dir ~= nil and util:get_command_output(git .. "branch --show-current", true) -- or ""
 
 -- TODO: reset cache on push
 
@@ -55,8 +46,8 @@ if in_git_dir and has_remote then
 	-- M.head_sha = branch_head_file_contents:read()
 	-- branch_head_file_contents:close()
 
-	M.head_sha = read_file(head_file)
-	M.origin_master_sha = read_file(master_file)
+	M.head_sha = util:read_file(head_file)
+	M.origin_master_sha = util:read_file(master_file)
 
 	M.cache[M.origin_master_sha .. M.head_sha] = commits_ahead(M.origin_master_sha, M.head_sha)
 
@@ -84,8 +75,8 @@ local function update_branch()
 	-- local new_head_sha = branch_head_file_contents:read()
 	-- branch_head_file_contents:close()
 
-	local new_head_sha = read_file(head_file)
-	local new_master_sha = read_file(master_file)
+	local new_head_sha = util:read_file(head_file)
+	local new_master_sha = util:read_file(master_file)
 
 	-- os.execute("notify-send " .. M.head_sha)
 
@@ -127,7 +118,7 @@ function M:foo()
 		return string.format(
 			"%s[%s+%s]", --
 			curr_branch,
-			curr_branch == "master" and "" or "m",
+			curr_branch == "master" and "" or "b",
 			v
 		)
 	else

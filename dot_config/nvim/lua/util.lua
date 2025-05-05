@@ -241,6 +241,15 @@ end -- }}}
 
 -- i/o {{{
 
+---@param fname string
+---@return string
+function M:read_file(fname)
+	local fo = assert(io.open(fname))
+	local contents = fo:read()
+	fo:close()
+	return contents
+end
+
 -- note: `cmd` cannot contain pipe, because exit code will always be 2; use
 -- `get_command_output` and check for non-empty output instead
 ---@param cmd string
