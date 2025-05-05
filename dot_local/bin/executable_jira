@@ -1,0 +1,50 @@
+#!/usr/bin/bash
+set -euo pipefail
+
+. ~/.bash_aliases_work # JIRA, JIRA_TOKEN
+
+# https://id.atlassian.com/manage-profile/security/api-tokens
+
+get_assigned_issues() {
+	# https://github.com/pol-rivero/github-desktop-plus/blob/4c7b34112ff/docs/branch-name-presets.md?plain=1#L65
+	query='assignee=currentUser() AND status != "Done" ORDER BY created DESC'
+
+	# https:/stackoverflow.com/a/25200638
+	curl -sL --get \
+		--url "$JIRA/rest/api/3/search/jql" \
+		--data-urlencode "jql=$query" \
+		--data-urlencode "fields=summary,status,worklog" \
+		--user "$WORK_EMAIL:$JIRA_TOKEN" \
+		--header 'Accept: application/json' |
+		jq -r '
+		# https://stackoverflow.com/a/31890081
+		def mapping: {
+			"In Review": 1,
+			"In Progress": 2,
+			"active to do": 3,
+			"Proposal": 4,
+			"Backlog": 5
+		};
+		[ .issues[] | {url: .self, title: .fields.summary, status: .fields.status.name, worklog: .fields.worklog.worklogs} ] |
+		map(.status |= mapping[.]) |
+		map(.worklog = [.worklog[].timeSpentSeconds]) |
+		map(.worklog = [.worklog|add][0]) |
+		# map(.worklog = .worklog // 0) | # coalesce only works in obj construction?
+		map(.worklog = if .worklog then .worklog else 0 end) | # number needed for sort
+		sort_by(.status, -.worklog) 
+	'
+}
+
+# summarise
+get_assigned_issues | jq -r '.[] | [.status,.url,.title] | @tsv'
+
+# https://github.com/sbreining/logwork/blob/fe45bbf4f34e7b613ad3f482ed26be95fb5e04c7/logwork.sh#L113
+
+# # log work
+# curl -s \
+# 	--user "$WORK_EMAIL:$JIRA_TOKEN" \
+# 	-X POST -H "Content-Type: application/json" \
+# 	-d '{"started":"'""$d'","timeSpentSeconds":'"$t"'}' \
+# 	"$JIRA/rest/api/2/issue/$n/worklog"
+
+# TODO: map git branch to jira issue id
