@@ -421,11 +421,14 @@ vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tab
 vim.keymap.set("n", "<leader>.", telescope.extensions.adjacent.adjacent) -- TODO: ignore binary
 vim.keymap.set("n", "<leader>/", telescope_b.live_grep, { desc = "ripgrep" }) -- entire project
 vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
+
+-- vim.keymap.set("n", "<leader>?", telescope_b.help_tags, { desc = "search help" }) -- let's face it; i never use this
+
 -- }}}
 -- git {{{
 vim.keymap.set("n", "<leader>e", telescope_b.git_files, { desc = "git ls-files" })
-vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" })
-vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" })
+vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" }) -- rare
+vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" }) -- rare
 
 local git_log_cmd = {
 	"git",
@@ -460,18 +463,10 @@ end, { desc = "git log (current file only)" })
 -- requires user input (or visual selection):
 -- git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S
 
--- vim.keymap.set("n", "<leader>?", telescope_b.help_tags, { desc = "search help" }) -- let's face it; i never use this
-
-vim.keymap.set("n", "<leader>gL", function()
-	telescope_b.git_commits({
-		git_command = vim.list_extend(git_log_cmd, { vim.fn.expand("%") }),
-	})
-end, { desc = "git log (current file only)" })
-
 vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
-vim.keymap.set("n", "<leader>gP", ":Git add %<cr>", { desc = "add current buffer (patch)" })
 vim.keymap.set("n", "<leader>gU", ":Git checkout -- %<cr>", { desc = "discard all uncommitted changes" })
-vim.keymap.set("n", "<leader>ga", ":Gwrite<cr>", { desc = "add current buffer" })
+vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" })
+vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
 local function commit_staged() -- {{{
 	if not require("util"):in_git_repo() then
@@ -492,16 +487,22 @@ local function commit_staged() -- {{{
 		print("no changes to stage")
 	end
 end -- }}}
-vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit current buffer/hunks" })
+vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit" })
 
-vim.keymap.set("n", "<leader>gap", function()
-	-- local patt = vim.fn.input({}) -- TODO: rg picker
-	-- local prompt = string.format("Directory %s does not exist. Create? ", parent)
+-- vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
+-- vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>", { desc = "stage all hunks in current buffer" }) -- same as :Gwrite, but without making the commit
+vim.keymap.set("n", "<leader>gab", ":Gwrite<cr>", { desc = "add current buffer (entire)" })
+vim.keymap.set("n", "<leader>gap", ":Git add %<cr>", { desc = "add current buffer (patch)" })
 
+vim.keymap.set("n", "<leader>gaP", function()
 	local patt
-	vim.ui.input({ prompt = "pattern: " }, function(input)
+	vim.ui.input({ prompt = "pattern: " }, function(input) -- TODO: rg picker
 		patt = input
 	end)
+
+	if not patt then
+		return
+	end
 
 	require("util"):get_command_output(
 		string.format(
@@ -510,17 +511,7 @@ vim.keymap.set("n", "<leader>gap", function()
 		)
 	)
 	commit_staged()
-end, { desc = "git add hunks matching pattern" })
-
-for _, k in pairs({ "C", "gc" }) do
-	vim.keymap.set("n", "<leader>" .. k, function()
-		print("deprecated; use <leader>c")
-	end, { desc = "deprecated" })
-end
-
-vim.keymap.set("n", "<leader>gp", function()
-	print("deprecated; use <leader>.")
-end, { desc = "deprecated" })
+end, { desc = "commit hunks matching pattern" })
 
 vim.keymap.set("n", "<leader>gC", function()
 	-- TODO: git add % + git commit --amend --no-edit
@@ -542,11 +533,6 @@ end, { desc = "append currently staged hunks to previous commit" })
 -- vim.keymap.set("n", "<leader>gd", function()
 -- 	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
 -- end, { desc = "diff current HEAD against master" })
-
--- vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
--- vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>", { desc = "stage all hunks in current buffer" }) -- same as :Gwrite, but without making the commit
-vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>")
-vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
 vim.keymap.set("n", "<leader>go", function()
 	-- GitBlameOpenFileURL may produce bogus URLs, usually when files are moved.
@@ -579,6 +565,18 @@ vim.keymap.set("n", "<leader>go", function()
 	-- vim.cmd("GitBlameCopyCommitURL")
 	-- vim.fn.jobstart([[sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"]])
 end, { desc = "view commit of current line (in browser)" })
+
+local deprecations = {
+	C = "c",
+	gc = "c",
+	gp = "g.",
+}
+
+for old, new in pairs(deprecations) do
+	vim.keymap.set("n", "<leader>" .. old, function()
+		print("deprecated; use <leader>" .. new)
+	end, { desc = "deprecated" })
+end
 
 -- }}}
 
