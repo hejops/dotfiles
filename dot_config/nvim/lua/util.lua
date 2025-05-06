@@ -40,6 +40,7 @@ function M:keys(t)
 	return _keys
 end
 
+--- @param s string
 function M:literal_keys(s)
 	vim.api.nvim_feedkeys(s, "n", false) -- .. '/'
 end
