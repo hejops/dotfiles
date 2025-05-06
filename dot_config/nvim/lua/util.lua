@@ -244,7 +244,7 @@ end -- }}}
 
 ---@param fname string
 ---@return string?
-local function read_file(fname)
+function M:read_file(fname)
 	local fo = io.open(fname)
 	if not fo then
 		-- print(fname, "does not exist")
