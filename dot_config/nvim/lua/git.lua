@@ -5,20 +5,7 @@ local util = require("util")
 local git_dir = vim.fs.root(0, ".git")
 
 local git = string.format("git -C %s ", git_dir)
-local has_remote = util:get_command_output(git .. "remote -v") ~= ""
-
----@param fname string
----@return string?
-local function read_file(fname)
-	local fo = io.open(fname)
-	if not fo then
-		-- print(fname, "does not exist")
-		return
-	end
-	local contents = fo:read()
-	fo:close()
-	return contents
-end
+local has_remote = git_dir ~= nil and util:get_command_output(git .. "remote -v") ~= ""
 
 ---@param from string
 ---@param to string
@@ -30,7 +17,7 @@ local function commits_ahead(from, to)
 end
 
 -- can check .git/HEAD, but a shell is fine for now
-local curr_branch = util:get_command_output(git .. "branch --show-current", true) -- or ""
+local curr_branch = git_dir ~= nil and util:get_command_output(git .. "branch --show-current", true) -- or ""
 
 -- this file will be watched for changes
 local head_file = string.format("%s/.git/refs/heads/%s", git_dir, curr_branch)
@@ -42,10 +29,9 @@ M.cache = {}
 if git_dir and has_remote then
 	-- print(f)
 
-	M.head_sha = read_file(head_file) -- nil if no commits made
-
+	M.head_sha = util:read_file(head_file) -- nil if no commits made
 	if M.head_sha then
-		M.origin_master_sha = read_file(master_file)
+		M.origin_master_sha = util:read_file(master_file)
 		M.cache[M.origin_master_sha .. M.head_sha] = commits_ahead(M.origin_master_sha, M.head_sha)
 	end
 
@@ -70,8 +56,8 @@ local function update_branch()
 	watcher:start(head_file, {}, vim.schedule_wrap(update_branch))
 	watcher2:start(master_file, {}, vim.schedule_wrap(update_branch))
 
-	local new_head_sha = read_file(head_file)
-	local new_master_sha = read_file(master_file)
+	local new_head_sha = util:read_file(head_file)
+	local new_master_sha = util:read_file(master_file)
 
 	-- os.execute("notify-send " .. M.head_sha)
 
@@ -117,7 +103,7 @@ function M:foo()
 		return string.format(
 			"%s[%s+%s]", --
 			curr_branch,
-			curr_branch == "master" and "" or "m",
+			curr_branch == "master" and "" or "b",
 			v
 		)
 	else

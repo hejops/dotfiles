@@ -242,6 +242,19 @@ end -- }}}
 
 -- i/o {{{
 
+---@param fname string
+---@return string?
+local function read_file(fname)
+	local fo = io.open(fname)
+	if not fo then
+		-- print(fname, "does not exist")
+		return
+	end
+	local contents = fo:read()
+	fo:close()
+	return contents
+end
+
 -- note: `cmd` cannot contain pipe, because exit code will always be 2; use
 -- `get_command_output` and check for non-empty output instead
 ---@param cmd string
