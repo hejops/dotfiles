@@ -60,7 +60,7 @@ if ps --pid "$PPID" | grep -Fq wezterm; then
 
 fi
 
-[[ -f ~/jira.txt ]] && cat ~/jira.txt
+[[ -f ~/jira.txt ]] && < ~/jira.txt cut -f1,3
 
 # }}}
 # aliases {{{
@@ -576,7 +576,7 @@ _git_log_fzf() { # {{{
 	then
 		: on master
 	elif [[ -n $m ]]; then # dev branch
-		args+=("$m...HEAD")
+		args+=(--first-parent "$m...HEAD")
 	else
 		: no remote yet
 	fi
@@ -591,7 +591,7 @@ _git_log_fzf() { # {{{
 	# alternatively, it may be good to indicate whether the commit was
 	# committed in this branch, or simply pulled from remote.
 
-	git log --oneline --no-merges --first-parent "${args[@]}" |
+	git log --oneline --no-merges "${args[@]}" |
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }     # }}}
 v() { # {{{
@@ -1011,15 +1011,16 @@ gb() { # {{{
 		# git checkout --conflict=zdiff3 "${2:-$default_local_branch}"
 		# handle_conflicts
 
-		timeout 30 git pull || return
-
 		# existing remote branch > create local branch > existing local branch
 		if
 			! git branch | grep -qPx "[ *] $1" &&
+				timeout 30 git pull &&
 				git branch -r | grep -q "origin/$1"
 		then
 			# note: git hook stdout cannot be suppressed
 			echo "Switching to remote branch $1"
+
+			# TODO: --guess?
 			git switch "$1" > /dev/null || return 1
 
 		elif
@@ -1028,13 +1029,33 @@ gb() { # {{{
 			:
 
 		else
+
+			# TODO: keeping unstaged changes in the new branch is
+			# just annoying, because these changes are usually
+			# never meant to be committed. but --discard-changes is
+			# also unsafe
+
+			# note: .. and ... are NOT synonymous! ... is usually
+			# what we want
+
+			# presumably, ' M	' can be safely ignored?
+			# git diff-tree HEAD "$1"
+			# git diff-index "$1"
+			# git diff --numstat "$1"...HEAD
+
+			git diff-index "$1" |
+				grep -F '00000 M	' | # conflict?
+				cut -f2 |
+				xargs git diff
+
 			# plain git switch can fail, if 'files would be
 			# overwritten by checkout'. with --conflict, switch
 			# always succeeds, but may result in conflicts which
-			# must be resolved
-			git switch --conflict=zdiff3 "$1" > /dev/null
-
-			handle_conflicts
+			# must be resolved in the new branch
+			git switch "$1"
+			# --conflict=zdiff3 "$1" > /dev/null
+			#
+			# handle_conflicts
 
 			# # alternatively, revert all unstaged changes, then
 			# # switch. this is probably more fragile
@@ -1044,6 +1065,11 @@ gb() { # {{{
 
 		fi
 	fi
+
+	# rev-list probably wouldn't be useful if we don't fetch though
+	# note: rev-list errors if branch has no remote yet
+	[[ "$(git rev-list --left-right --count \
+		"origin/$1...HEAD" 2> /dev/null | cut -f1)" -gt 0 ]] && git pull
 
 } # }}}
 
@@ -1121,7 +1147,7 @@ gmm() {
 
 g,() {
 	git pull && return
-	git diff --name-only master..origin/master |
+	git diff --name-only "$(_gmaster)..origin/$(_gmaster)" |
 		xargs -n1 git commit -v
 	git pull
 }
@@ -2255,7 +2281,7 @@ _unused() {
 
 # rng() { for _ in "$(seq "${2:-1}")"; do echo $((1 + RANDOM % ${1:-100})); done; }
 ,pgrep() { \pgrep "$1" | xargs ps; } # ps for runtime
-pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill; }
+pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill -9; }
 pkill1() { \pgrep "$1" | sed 1d | xargs kill; }                                            # kill all procs except 1st
 rng() { while read -r _; do echo $((1 + RANDOM % ${1:-100})); done < "$(seq "${2:-1}")"; } # shellharden
 ya() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
