@@ -306,7 +306,7 @@ elif command -v apt > /dev/null; then
 	alias get="sudo apt install" # || snap
 	alias lp="apt list --installed 2>/dev/null | grep"
 	alias lpu="apt list --upgradable"
-	alias rem="sudo apt --purge autoremove"
+	# alias rem="sudo apt --purge autoremove"
 	alias sp="apt-cache search . | grep -w"
 	alias u="sudo apt-get update && sudo apt-get upgrade && sudo apt autoremove"
 	alias uu="lpu | cut -d/ -f1 | xargs -o sudo apt-get --with-new-pkgs upgrade" # upgrade 'kept back' packages https://askubuntu.com/a/602
@@ -442,29 +442,36 @@ GIT_PROMPT() {
 
 	state=""
 
-	read -r behind ahead < <(
+	# TODO: note: 'behind branch' is not handled (which is relatively rare,
+	# but will happen when other people commit to my branch) it is handled
+	# after checkout
+
+	read -r behind_m ahead_m < <(
 		# format is there \t here, where each int represents number of
-		# commits ahead of local HEAD
-		git rev-list --left-right --count "origin/$MASTER...HEAD" 2> /dev/null
+		# commits ahead_m of local HEAD
+		git rev-list --left-right --count \
+			"origin/$MASTER...HEAD" 2> /dev/null
 	)
 
-	if [[ $behind -gt 0 ]]; then
-		state="$behind commits behind"
+	if [[ $behind_m -gt 0 ]]; then
+		state="$behind_m commits behind"
 
-		if [[ $ahead -gt 0 ]]; then
-			state+=", $ahead commits ahead of $MASTER"
+		if [[ $ahead_m -gt 0 ]]; then
+			state+=", $ahead_m commits ahead of $MASTER"
 		else
 			state+=" $MASTER"
 		fi
 
-	elif [[ $ahead -gt 0 ]]; then
-		state+="$ahead commits ahead of $MASTER"
+	elif [[ $ahead_m -gt 0 ]]; then
+		state+="$ahead_m commits ahead of $MASTER"
 
 	fi
 
 	if
 		[[ $CURRENT_LOCAL_BRANCH != "$MASTER" ]] &&
-			! dev_ahead=$(git log --oneline --first-parent "origin/$CURRENT_LOCAL_BRANCH...HEAD" 2> /dev/null | wc -l)
+			! dev_ahead=$(git log --oneline --first-parent \
+				"origin/$CURRENT_LOCAL_BRANCH...HEAD" 2> /dev/null |
+				wc -l)
 	then
 		state+=" (no remote branch yet)"
 
