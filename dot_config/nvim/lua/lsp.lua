@@ -380,34 +380,32 @@ local servers = { -- {{{
 	},
 } -- }}}
 
-local mason_lspconfig = require("mason-lspconfig")
-local capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()) -- wrap default capabilities with cmp
+-- -- this doesn't work at all lol
+-- vim.lsp.config("*", {
+-- 	root_markers = { ".git" },
+-- 	capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()),
+-- 	on_attach = on_attach,
+-- })
 
-mason_lspconfig.setup({ ensure_installed = vim.tbl_keys(servers) })
-
-local function setup(server_name)
-	local base_cfg = {
-		capabilities = capabilities,
-		on_attach = on_attach,
-		settings = servers[server_name],
-		filetypes = (servers[server_name] or {}).filetypes,
-	}
-	local extended = servers[server_name] or {}
-	local cfg = vim.tbl_extend("force", base_cfg, extended)
-	require("lspconfig")[server_name].setup(cfg)
+local base_cfg = {
+	capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()),
+	on_attach = on_attach,
+}
+for server_name, cfg in pairs(servers) do
+	vim.lsp.config(server_name, vim.tbl_extend("force", base_cfg, cfg))
 end
 
--- the func passed to setup_handlers is called once for -each- installed server on startup
-mason_lspconfig.setup_handlers({ setup })
+require("mason").setup()
+require("mason-lspconfig").setup({ ensure_installed = vim.tbl_keys(servers) }) -- very slow in v2?
 
-require("lspconfig").digestif.setup({}) -- requires luarocks; autocomplete is wonky
-require("lspconfig").gleam.setup({}) -- not on mason, must be installed globally
-require("lspconfig").postgres_lsp.setup({
-	-- works without active connection, but parser is unusable (agonisingly slow
-	-- and doesn't recognise some basic syntax (e.g. ON CONFLICT DO))
-	-- autostart = vim.fs.root(0, "postgrestools.jsonc") ~= nil,
-	autostart = false,
-}) -- postgrestools init/check
+-- require("lspconfig").digestif.setup({}) -- requires luarocks; autocomplete is wonky
+-- require("lspconfig").gleam.setup({}) -- not on mason, must be installed globally
+-- require("lspconfig").postgres_lsp.setup({
+-- 	-- works without active connection, but parser is unusable (agonisingly slow
+-- 	-- and doesn't recognise some basic syntax (e.g. ON CONFLICT DO))
+-- 	-- autostart = vim.fs.root(0, "postgrestools.jsonc") ~= nil,
+-- 	autostart = false,
+-- }) -- postgrestools init/check
 
 vim.diagnostic.config({
 	signs = {
