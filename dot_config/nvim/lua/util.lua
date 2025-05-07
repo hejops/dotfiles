@@ -40,6 +40,7 @@ function M:keys(t)
 	return _keys
 end
 
+--- @param s string
 function M:literal_keys(s)
 	vim.api.nvim_feedkeys(s, "n", false) -- .. '/'
 end
@@ -242,9 +243,13 @@ end -- }}}
 -- i/o {{{
 
 ---@param fname string
----@return string
+---@return string?
 function M:read_file(fname)
-	local fo = assert(io.open(fname))
+	local fo = io.open(fname)
+	if not fo then
+		-- print(fname, "does not exist")
+		return
+	end
 	local contents = fo:read()
 	fo:close()
 	return contents

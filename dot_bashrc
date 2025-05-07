@@ -238,7 +238,7 @@ export LESS="-R --mouse --wheel-lines=$((LINES / 2))" # ensure mouse wheel works
 
 # alias tar="tar -vf"
 # note: rsync trailing slash: https://unix.stackexchange.com/a/402556
-alias cal="cal --monday --week"
+alias cal="cal --monday --week" # util-linux (ubuntu uses bsd's)
 alias cp="cp -rv"
 alias dmesg="dmesg --time-format=iso"
 alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
@@ -255,25 +255,21 @@ alias rsync="rsync --partial --progress --recursive --archive --update" # all op
 alias top="top -w\$COLUMNS"
 alias xargs="xargs --no-run-if-empty --verbose"
 
-# alias lsc="_exa --time-style=iso --sort created"
+# alias gtime='env time --format="$GNUTIMEFORMAT" -- echo' # aliasing time to gnu time will disable the builtin
+# alias t="wezterm start --new-tab --cwd \$(realpath .)" # just use ctrl-t?
 alias ..="cd .."
-alias _exa="exa --all --long --links --dereference --color=always --git" # helper
 alias c="curl --silent --location --fail"
 alias cg="wget --continue"
 alias fehm="feh --sort mtime"
 alias fehr="feh --randomize"
 alias ftail="tail -f"
-alias gtime="env time --format \"\$GNUTIMEFORMAT\" -- echo" # aliasing time to gnu time will disable the builtin
-alias h="htop -u \$USER"
-alias ls="_exa --group-directories-first --tree --level 2" # note: --tree is slow in large dirs
-alias lsl="_exa --time-style=iso --sort modified --no-permissions --octal-permissions --no-user"
+alias h="htop --user=\$USER"
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
 alias r="yazi"
 alias rgf="rg --files-with-matches"
 alias rgl="rg --no-heading --with-filename"
 alias rgml="rg --multiline --multiline-dotall"
 alias sqj="sqlite3 -json"
-alias t="wezterm start --new-tab --cwd \$(realpath .)"
 alias tmp="cd \$(mktemp -d)"
 alias xargs1="xargs --max-args=1"
 
@@ -370,6 +366,7 @@ stty werase undef
 # https://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/bash-prompt-escape-sequences.html
 
 set -o vi
+# set +h # always lookup command path on every invocation
 
 # GSHA=$(git rev-parse --short HEAD) # sha is cool but useless
 

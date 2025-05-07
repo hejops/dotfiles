@@ -5,6 +5,9 @@ vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 
 vim.api.nvim_create_autocmd("VimEnter", {
 	callback = function()
+		if vim.bo.filetype == "man" then
+			return
+		end
 		vim.fn.chdir(vim.fs.root(0, ".git") or vim.fn.expand("%:p:h"))
 	end,
 })
