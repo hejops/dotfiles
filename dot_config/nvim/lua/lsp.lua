@@ -414,6 +414,9 @@ require("mason-lspconfig").setup({
 })
 
 vim.diagnostic.config({
+	virtual_text = true,
+	-- virtual_text = { current_line = true },
+	-- virtual_lines = true, -- really dislike this
 	signs = {
 		text = {
 
