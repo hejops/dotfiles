@@ -522,8 +522,20 @@ require("lazy").setup(
 			dependencies = {
 
 				"williamboman/mason-lspconfig.nvim",
-				{ "folke/neodev.nvim", opts = {} }, -- for init.lua only
 				{ "j-hui/fidget.nvim", opts = {}, event = "LspAttach" }, -- status updates for LSP
+
+				{
+					"folke/lazydev.nvim",
+					ft = "lua",
+					opts = {
+						library = {
+							-- See the configuration section for more details
+							-- Load luvit types when the `vim.uv` word is found
+							{ path = "${3rd}/luv/library", words = { "vim%.uv" } },
+						},
+					},
+				},
+
 				{
 					"kosayoda/nvim-lightbulb",
 					event = "LspAttach",
