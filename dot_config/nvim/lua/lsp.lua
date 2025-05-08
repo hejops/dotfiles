@@ -380,6 +380,14 @@ local servers = { -- {{{
 	},
 } -- }}}
 
+local extra_servers = { -- these lsps are not on mason
+	digestif = {}, -- requires luarocks; autocomplete is wonky
+	gleam = {},
+	-- works without active connection, but parser is unusable (agonisingly slow
+	-- and doesn't recognise some basic syntax (e.g. ON CONFLICT DO))
+	postgres_lsp = { autostart = false },
+}
+
 -- -- this doesn't work at all lol
 -- vim.lsp.config("*", {
 -- 	root_markers = { ".git" },
@@ -391,21 +399,19 @@ local base_cfg = {
 	capabilities = require("cmp_nvim_lsp").default_capabilities(vim.lsp.protocol.make_client_capabilities()),
 	on_attach = on_attach,
 }
-for server_name, cfg in pairs(servers) do
+for server_name, cfg in pairs(vim.tbl_extend("force", servers, extra_servers)) do
 	vim.lsp.config(server_name, vim.tbl_extend("force", base_cfg, cfg))
 end
 
-require("mason").setup()
-require("mason-lspconfig").setup({ ensure_installed = vim.tbl_keys(servers) }) -- very slow in v2?
+vim.lsp.enable(vim.tbl_keys(servers))
 
--- require("lspconfig").digestif.setup({}) -- requires luarocks; autocomplete is wonky
--- require("lspconfig").gleam.setup({}) -- not on mason, must be installed globally
--- require("lspconfig").postgres_lsp.setup({
--- 	-- works without active connection, but parser is unusable (agonisingly slow
--- 	-- and doesn't recognise some basic syntax (e.g. ON CONFLICT DO))
--- 	-- autostart = vim.fs.root(0, "postgrestools.jsonc") ~= nil,
--- 	autostart = false,
--- }) -- postgrestools init/check
+-- require("mason").setup() -- implicitly initialised in plugins.lua
+
+-- should only be used for ensure_installed now; lsp init is handled by vim.lsp.enable
+require("mason-lspconfig").setup({
+	ensure_installed = vim.tbl_keys(servers),
+	automatic_enable = false, -- very slow compared to vim.lsp.enable
+})
 
 vim.diagnostic.config({
 	signs = {
