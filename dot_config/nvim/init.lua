@@ -442,7 +442,7 @@ local git_log_cmd = {
 	"--first-parent",
 }
 
-vim.keymap.set("n", "<leader>gl", function()
+local function git_log()
 	-- there is probably a native vim api for this, but whatever
 	local branch = require("util"):get_command_output("git branch --show-current", true)
 	local master =
@@ -451,7 +451,10 @@ vim.keymap.set("n", "<leader>gl", function()
 	telescope_b.git_commits({
 		git_command = vim.list_extend(git_log_cmd, branch ~= master and { master .. "...HEAD" } or {}),
 	})
-end, { desc = "git log (current branch only)" })
+end
+
+vim.keymap.set("n", "<leader>gl", git_log, { desc = "git log (current branch only)" })
+vim.keymap.set("n", "gl", git_log, { desc = "git log (current branch only)" })
 
 vim.keymap.set("n", "<leader>gL", function()
 	telescope_b.git_commits({

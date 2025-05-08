@@ -783,14 +783,14 @@ require("lazy").setup(
 								["gk"] = "@function.outer",
 								["gK"] = "@class.outer",
 							},
-							goto_next_end = {
-								["gl"] = "@function.outer",
-								["gL"] = "@class.outer",
-							},
-							goto_previous_end = {
-								["gh"] = "@function.outer",
-								["gH"] = "@class.outer",
-							},
+							-- goto_next_end = {
+							-- 	["gl"] = "@function.outer",
+							-- 	["gL"] = "@class.outer",
+							-- },
+							-- goto_previous_end = {
+							-- 	["gh"] = "@function.outer",
+							-- 	["gH"] = "@class.outer",
+							-- },
 						},
 						-- swap = {
 						-- 	-- only works in params, not data structures (e.g. arrays)
