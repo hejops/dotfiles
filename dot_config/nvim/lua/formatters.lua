@@ -128,6 +128,8 @@ require("conform").setup({
 			},
 		},
 
+		sqruff = { exit_codes = { 0, 1 } },
+
 		dhall = { command = "dhall", args = { "format" } },
 
 		latexindent = { args = { "--logfile=/dev/null" } },
