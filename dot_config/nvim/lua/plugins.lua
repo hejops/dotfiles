@@ -7,7 +7,7 @@ local columns = 120 -- lualine, git-blame
 
 -- https://github.com/folke/lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
+if not vim.uv.fs_stat(lazypath) then
 	vim.fn.system({
 		"git",
 		"clone",
@@ -124,7 +124,7 @@ require("lazy").setup(
 		{
 			"lervag/vimtex",
 			ft = { "tex", "bib" },
-			enabled = vim.bo.filetype == "tex" and not vim.loop.fs_stat("Tectonic.toml"),
+			enabled = vim.bo.filetype == "tex" and not vim.uv.fs_stat("Tectonic.toml"),
 		},
 
 		{

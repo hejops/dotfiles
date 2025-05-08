@@ -38,7 +38,7 @@ vim.api.nvim_create_autocmd({
 vim.api.nvim_create_autocmd({ "BufReadPost" }, {
 	pattern = { "*.sql" },
 	callback = function()
-		if not vim.loop.fs_stat("config.yml") then
+		if not vim.uv.fs_stat("config.yml") then
 			print("No config.yml found, sqls will not be started")
 		end
 
@@ -93,7 +93,7 @@ vim.api.nvim_create_autocmd({
 
 -- hacked together from exec
 local function tectonic_build() -- {{{
-	if not vim.loop.fs_stat("Tectonic.toml") then
+	if not vim.uv.fs_stat("Tectonic.toml") then
 		return
 	end
 
@@ -126,7 +126,7 @@ vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 	callback = function()
 		-- TODO: this autocmd stops once any non-sql file is loaded
 		if --vim.env.POSTGRES_URL and
-			vim.loop.fs_stat("sqlc.yaml") and vim.loop.fs_stat("Makefile")
+			vim.uv.fs_stat("sqlc.yaml") and vim.uv.fs_stat("Makefile")
 		then
 			-- to avoid needing to explicitly set and pass POSTGRES_URL, just use the
 			-- Makefile, which already takes care of this

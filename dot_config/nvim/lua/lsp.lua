@@ -252,8 +252,8 @@ local servers = { -- {{{
 
 	sqls = {
 
-		-- autostart = vim.loop.fs_stat(vim.env.HOME .. "/.config/sqls/config.yml"),
-		autostart = vim.loop.fs_stat("./config.yml") ~= nil,
+		-- autostart = vim.uv.fs_stat(vim.env.HOME .. "/.config/sqls/config.yml"),
+		autostart = vim.uv.fs_stat("./config.yml") ~= nil,
 
 		-- rely on workspace-specific config file
 		-- https://github.com/sqls-server/sqls?tab=readme-ov-file#db-configuration

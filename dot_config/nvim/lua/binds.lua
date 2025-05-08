@@ -849,9 +849,9 @@ local function exec()
 			if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
 				-- ~/.cache/uv
 				return "uv run "
-			-- elseif root and vim.loop.fs_stat(root .. "/pyproject.toml") then
+			-- elseif root and vim.uv.fs_stat(root .. "/pyproject.toml") then
 			elseif vim.fs.root(0, "pyproject.toml") then
-				-- vim.loop.fs_stat(require("util"):root_directory() .. ".venv")
+				-- vim.uv.fs_stat(require("util"):root_directory() .. ".venv")
 				-- poetry install -vv
 				return "poetry run python3 "
 			else
@@ -866,7 +866,7 @@ local function exec()
 			vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
 			ts = vim.fn.expand("%:.") -- relative to child dir
 
-			-- if vim.loop.fs_stat(".env") and vim.fn.executable("node23") then
+			-- if vim.uv.fs_stat(".env") and vim.fn.executable("node23") then
 			-- 	return "node23 --no-warnings --import=tsx --env-file=.env " .. file
 
 			-- TODO: must use tsx if any file imports are needed; node imports must
@@ -879,7 +879,7 @@ local function exec()
 				return "node --no-warnings --experimental-strip-types --experimental-transform-types " .. curr_file
 			elseif node_version >= "v22.6.0" then
 				return "node --no-warnings --experimental-strip-types " .. curr_file
-			elseif vim.loop.fs_stat("./node_modules/tsx") then
+			elseif vim.uv.fs_stat("./node_modules/tsx") then
 				-- run with node directly (without transpilation); requires tsx
 				-- https://nodejs.org/api/typescript.html#full-typescript-support
 				-- --enable-source-maps doesn't seem to report source line number correctly
@@ -927,7 +927,7 @@ local function exec()
 		cpp = (function()
 			local base = vim.fn.fnamemodify(curr_file, ":r") .. ".cpp"
 
-			if vim.loop.fs_stat("Makefile") then
+			if vim.uv.fs_stat("Makefile") then
 				return string.format([[ make && ./%s ]], base)
 			end
 

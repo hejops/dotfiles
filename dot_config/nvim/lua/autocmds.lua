@@ -153,7 +153,7 @@ vim.api.nvim_create_autocmd({ "WinEnter" }, {
 vim.api.nvim_create_autocmd("BufWritePost", {
 	pattern = { "*.c", "*.cpp" },
 	callback = function()
-		if vim.loop.fs_stat("Makefile") then
+		if vim.uv.fs_stat("Makefile") then
 			vim.cmd("Dispatch!")
 		end
 
@@ -168,7 +168,7 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 vim.api.nvim_create_autocmd("BufNewFile", {
 	callback = function()
 		local parent = vim.fn.expand("%:p:h")
-		if vim.loop.fs_stat(parent) then
+		if vim.uv.fs_stat(parent) then
 			return
 		end
 
@@ -240,7 +240,7 @@ vim.api.nvim_create_autocmd("FileType", {
 
 		if
 			-- TODO: project node_modules might make more sense?
-			not vim.loop.fs_stat(
+			not vim.uv.fs_stat(
 				vim.fn.stdpath("data") .. "/mason/packages/markuplint/node_modules/@markuplint/htmx-parser"
 			)
 		then
@@ -251,7 +251,7 @@ vim.api.nvim_create_autocmd("FileType", {
 			print("installed htmx-parser")
 		end
 
-		if not vim.loop.fs_stat(".markuplintrc.json") then
+		if not vim.uv.fs_stat(".markuplintrc.json") then
 			os.execute([[
 				echo '{
 					"extends": ["markuplint:recommended"],
@@ -286,7 +286,7 @@ vim.api.nvim_create_autocmd("FileType", {
 		vim.keymap.set("n", "<c-c>", function()
 			local c = string.find(vim.fn.expand("%"), "%.c$")
 			local other = vim.fn.expand("%<") .. (c and ".h" or ".c")
-			if vim.loop.fs_stat(other) then
+			if vim.uv.fs_stat(other) then
 				vim.cmd("tab drop " .. other)
 				vim.cmd.norm("zz")
 			end
