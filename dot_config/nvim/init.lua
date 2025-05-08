@@ -456,7 +456,7 @@ end
 vim.keymap.set("n", "<leader>gl", git_log, { desc = "git log (current branch only)" })
 vim.keymap.set("n", "gl", git_log, { desc = "git log (current branch only)" })
 
-vim.keymap.set("n", "<leader>gL", function()
+vim.keymap.set("n", "gL", function()
 	telescope_b.git_commits({
 		git_command = vim.list_extend(git_log_cmd, { vim.fn.expand("%") }),
 	})
@@ -468,6 +468,7 @@ end, { desc = "git log (current file only)" })
 vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 vim.keymap.set("n", "<leader>gU", ":Git checkout -- %<cr>", { desc = "discard all uncommitted changes" })
 vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" })
+vim.keymap.set("n", "gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" }) -- :h gs is laughably useless
 vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
 local function commit_staged() -- {{{
