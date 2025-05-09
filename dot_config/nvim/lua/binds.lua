@@ -18,6 +18,7 @@ vim.keymap.set("n", "!", ":!")
 vim.keymap.set("n", "-", "~h") -- +/- are just j/k
 vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
 vim.keymap.set("n", "<c-c>", "<nop>")
+vim.keymap.set("n", "<c-t>", ":split|terminal<cr>") -- is actually good now
 vim.keymap.set("n", "<c-z>", "<nop>")
 vim.keymap.set("n", "<tab>", "<nop>") -- tab may be equivalent to c-i
 vim.keymap.set("n", "G", "G$zz") -- because of the InsertEnter zz autocmd
@@ -68,13 +69,13 @@ vim.keymap.set("n", "}", ":keepjumps normal! }<cr>zz", { silent = true })
 -- nmap ZF zfaft{blDkp$%bli<cR><esc>ld0<cR>zl|	" add folds around a func, like a real man, in any language
 -- tabs
 -- vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
+-- vim.keymap.set("n", "<c-t>", "<c-6>") -- overridden by wezterm!
 -- vim.keymap.set("n", "rH", ":silent! tabm -1<cr>", { silent = true }) -- do i need this?
 -- vim.keymap.set("n", "rL", ":silent! tabm +1<cr>", { silent = true })
 -- vim.keymap.set("n", "re", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
 vim.keymap.set("n", "<c-;>", "g<tab>")
 vim.keymap.set("n", "<c-h>", "gT")
 vim.keymap.set("n", "<c-l>", "gt")
--- vim.keymap.set("n", "<c-t>", "<c-6>")
 vim.keymap.set("n", "r", "<nop>")
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- unload all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other buffers/tabs (but not delete)
@@ -854,9 +855,9 @@ local function exec()
 			if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
 				-- ~/.cache/uv
 				return "uv run "
-			-- elseif root and vim.loop.fs_stat(root .. "/pyproject.toml") then
+			-- elseif root and vim.uv.fs_stat(root .. "/pyproject.toml") then
 			elseif vim.fs.root(0, "pyproject.toml") then
-				-- vim.loop.fs_stat(require("util"):root_directory() .. ".venv")
+				-- vim.uv.fs_stat(require("util"):root_directory() .. ".venv")
 				-- poetry install -vv
 				return "poetry run python3 "
 			else
@@ -871,7 +872,7 @@ local function exec()
 			vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
 			ts = vim.fn.expand("%:.") -- relative to child dir
 
-			-- if vim.loop.fs_stat(".env") and vim.fn.executable("node23") then
+			-- if vim.uv.fs_stat(".env") and vim.fn.executable("node23") then
 			-- 	return "node23 --no-warnings --import=tsx --env-file=.env " .. file
 
 			-- TODO: must use tsx if any file imports are needed; node imports must
@@ -884,7 +885,7 @@ local function exec()
 				return "node --no-warnings --experimental-strip-types --experimental-transform-types " .. curr_file
 			elseif node_version >= "v22.6.0" then
 				return "node --no-warnings --experimental-strip-types " .. curr_file
-			elseif vim.loop.fs_stat("./node_modules/tsx") then
+			elseif vim.uv.fs_stat("./node_modules/tsx") then
 				-- run with node directly (without transpilation); requires tsx
 				-- https://nodejs.org/api/typescript.html#full-typescript-support
 				-- --enable-source-maps doesn't seem to report source line number correctly
@@ -932,7 +933,7 @@ local function exec()
 		cpp = (function()
 			local base = vim.fn.fnamemodify(curr_file, ":r") .. ".cpp"
 
-			if vim.loop.fs_stat("Makefile") then
+			if vim.uv.fs_stat("Makefile") then
 				return string.format([[ make && ./%s ]], base)
 			end
 

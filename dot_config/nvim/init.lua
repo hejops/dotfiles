@@ -38,7 +38,7 @@ vim.api.nvim_create_autocmd({
 vim.api.nvim_create_autocmd({ "BufReadPost" }, {
 	pattern = { "*.sql" },
 	callback = function()
-		if not vim.loop.fs_stat("config.yml") then
+		if not vim.uv.fs_stat("config.yml") then
 			print("No config.yml found, sqls will not be started")
 		end
 
@@ -93,7 +93,7 @@ vim.api.nvim_create_autocmd({
 
 -- hacked together from exec
 local function tectonic_build() -- {{{
-	if not vim.loop.fs_stat("Tectonic.toml") then
+	if not vim.uv.fs_stat("Tectonic.toml") then
 		return
 	end
 
@@ -126,7 +126,7 @@ vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 	callback = function()
 		-- TODO: this autocmd stops once any non-sql file is loaded
 		if --vim.env.POSTGRES_URL and
-			vim.loop.fs_stat("sqlc.yaml") and vim.loop.fs_stat("Makefile")
+			vim.uv.fs_stat("sqlc.yaml") and vim.uv.fs_stat("Makefile")
 		then
 			-- to avoid needing to explicitly set and pass POSTGRES_URL, just use the
 			-- Makefile, which already takes care of this
@@ -442,7 +442,7 @@ local git_log_cmd = {
 	"--first-parent",
 }
 
-vim.keymap.set("n", "<leader>gl", function()
+local function git_log()
 	-- there is probably a native vim api for this, but whatever
 	local branch = require("util"):get_command_output("git branch --show-current", true)
 	local master =
@@ -451,9 +451,12 @@ vim.keymap.set("n", "<leader>gl", function()
 	telescope_b.git_commits({
 		git_command = vim.list_extend(git_log_cmd, branch ~= master and { master .. "...HEAD" } or {}),
 	})
-end, { desc = "git log (current branch only)" })
+end
 
-vim.keymap.set("n", "<leader>gL", function()
+vim.keymap.set("n", "<leader>gl", git_log, { desc = "git log (current branch only)" })
+vim.keymap.set("n", "gl", git_log, { desc = "git log (current branch only)" })
+
+vim.keymap.set("n", "gL", function()
 	telescope_b.git_commits({
 		git_command = vim.list_extend(git_log_cmd, { vim.fn.expand("%") }),
 	})
@@ -465,6 +468,7 @@ end, { desc = "git log (current file only)" })
 vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 vim.keymap.set("n", "<leader>gU", ":Git checkout -- %<cr>", { desc = "discard all uncommitted changes" })
 vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" })
+vim.keymap.set("n", "gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" }) -- :h gs is laughably useless
 vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
 local function commit_staged() -- {{{

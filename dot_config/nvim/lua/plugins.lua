@@ -7,7 +7,7 @@ local columns = 120 -- lualine, git-blame
 
 -- https://github.com/folke/lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
+if not vim.uv.fs_stat(lazypath) then
 	vim.fn.system({
 		"git",
 		"clone",
@@ -124,7 +124,7 @@ require("lazy").setup(
 		{
 			"lervag/vimtex",
 			ft = { "tex", "bib" },
-			enabled = vim.bo.filetype == "tex" and not vim.loop.fs_stat("Tectonic.toml"),
+			enabled = vim.bo.filetype == "tex" and not vim.uv.fs_stat("Tectonic.toml"),
 		},
 
 		{
@@ -522,8 +522,20 @@ require("lazy").setup(
 			dependencies = {
 
 				"williamboman/mason-lspconfig.nvim",
-				{ "folke/neodev.nvim", opts = {} }, -- for init.lua only
 				{ "j-hui/fidget.nvim", opts = {}, event = "LspAttach" }, -- status updates for LSP
+
+				{
+					"folke/lazydev.nvim",
+					ft = "lua",
+					opts = {
+						library = {
+							-- See the configuration section for more details
+							-- Load luvit types when the `vim.uv` word is found
+							{ path = "${3rd}/luv/library", words = { "vim%.uv" } },
+						},
+					},
+				},
+
 				{
 					"kosayoda/nvim-lightbulb",
 					event = "LspAttach",
@@ -771,14 +783,14 @@ require("lazy").setup(
 								["gk"] = "@function.outer",
 								["gK"] = "@class.outer",
 							},
-							goto_next_end = {
-								["gl"] = "@function.outer",
-								["gL"] = "@class.outer",
-							},
-							goto_previous_end = {
-								["gh"] = "@function.outer",
-								["gH"] = "@class.outer",
-							},
+							-- goto_next_end = {
+							-- 	["gl"] = "@function.outer",
+							-- 	["gL"] = "@class.outer",
+							-- },
+							-- goto_previous_end = {
+							-- 	["gh"] = "@function.outer",
+							-- 	["gH"] = "@class.outer",
+							-- },
 						},
 						-- swap = {
 						-- 	-- only works in params, not data structures (e.g. arrays)

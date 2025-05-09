@@ -47,8 +47,8 @@ end
 -- file reads / shell spawns as far as possible
 
 -- note: this func is constantly executed!
-local watcher = assert(vim.loop.new_fs_event())
-local watcher2 = assert(vim.loop.new_fs_event())
+local watcher = assert(vim.uv.new_fs_event())
+local watcher2 = assert(vim.uv.new_fs_event())
 local function update_branch()
 	watcher:stop()
 	watcher2:stop()

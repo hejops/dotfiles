@@ -361,7 +361,7 @@ function M:sql_connections()
 		neon = "postgres://postgres:postgres@localhost:5432/dvdrental?sslmode=disable",
 		work = vim.env.POSTGRES_URL,
 	}) do
-		if vim.loop.fs_stat(conn) or pg_connection_ok(conn) then
+		if vim.uv.fs_stat(conn) or pg_connection_ok(conn) then
 			connections[name] = conn
 		end
 	end

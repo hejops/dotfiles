@@ -47,7 +47,7 @@ require("conform").setup({
 			-- note: cwd must be a func, not a string
 			-- cwd = require("util").root_directory,
 			condition = function()
-				return not vim.loop.fs_stat(".prettierrc.json")
+				return not vim.uv.fs_stat(".prettierrc.json")
 			end,
 			args = (function()
 				local args = {
@@ -103,7 +103,7 @@ require("conform").setup({
 			-- https://clang.llvm.org/docs/ClangFormatStyleOptions.html#basedonstyle
 			-- https://github.com/motine/cppstylelineup
 			-- https://github.com/torvalds/linux/blob/master/.clang-format
-			prepend_args = vim.loop.fs_stat(".clang-format") and {} or { "--style", "google" },
+			prepend_args = vim.uv.fs_stat(".clang-format") and {} or { "--style", "google" },
 		},
 
 		["clang-tidy"] = {
