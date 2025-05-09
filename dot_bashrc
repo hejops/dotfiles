@@ -334,8 +334,18 @@ remsafe() {
 
 pacmir() {
 	: regenerate pacman mirrors
-	# TODO: test current speed; if ok, just return
+
+	curr=$(< /etc/pacman.d/mirrorlist grep -m1 '^Server' |
+		awk '{print $NF}' |
+		xargs curl -sL --head --verbose 2>&1 |
+		grep IPv4 |
+		awk '{print $NF}' |
+		xargs -I{} curl -sL ipinfo.io/{} |
+		jq -r .country)
+
 	country=$(curl -sL ipinfo.io | jq -r .country)
+	[[ $curr == "$country" ]] && return
+
 	url="https://archlinux.org/mirrorlist/?country=$country&protocol=https&use_mirror_status=on"
 	curl -s "$url" |
 		sed 's/^#Server/Server/; /^#/d' |
