@@ -150,12 +150,12 @@ end)
 
 -- close window if scratch
 local function update_or_close()
-	vim.cmd(
+	if vim.bo.buftype == "nofile" or vim.bo.buftype == "help" then
+		vim.cmd.bd()
+	else
 		-- expr must be false, else 'not allowed to change text'
-		(vim.bo.buftype == "nofile" or vim.bo.buftype == "help") and "bd"
-			-- see also: shortmess
-			or "silent update"
-	)
+		vim.cmd("silent update") -- see also: shortmess
+	end
 end
 
 vim.keymap.set("n", "<c-c>", update_or_close, { silent = true })
@@ -401,7 +401,8 @@ local ft_binds = { -- {{{
 	},
 
 	["sh,bash"] = {
-		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>" },
+		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g|w<cr>" },
+		{ "n", "<leader>H", [[:%s/\v -H/ \\\r&/g|w<cr>]] },
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
 	},
 
