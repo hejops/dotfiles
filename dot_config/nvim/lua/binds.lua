@@ -802,6 +802,15 @@ local function c_compiler_cmd()
 	return cmd .. " " .. table.concat(cmds[cmd], " ")
 end -- }}}
 
+local function is_wide()
+	local wide = vim.o.columns > 150
+	if wide then
+		return true, math.floor(vim.o.columns * 0.33)
+	else
+		return false, vim.o.lines * 0.2
+	end
+end
+
 -- run current file and dump stdout to scratch buffer
 local function exec()
 	-- {{{
@@ -954,17 +963,17 @@ local function exec()
 
 	-- TODO: async (Dispatch)
 	local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
-	local wide = vim.o.columns > 150
 
 	-- split dimensions -must- be declared in the [v]new command. attempting to
 	-- shrink a main split will not enlarge the secondary split!
-	if wide then -- vsplit if wide enough
-		local w = math.floor(vim.o.columns * 0.33)
-		front = w .. " v" .. front
-	else
-		local h = vim.o.lines * 0.2
-		front = h .. front
-	end
+
+	local wide, ratio = is_wide()
+	-- if wide then -- vsplit if wide enough
+	-- 	front = ratio .. " v" .. front
+	-- else
+	-- 	front = ratio .. front
+	-- end
+	front = ratio .. (wide and " v" or "") .. front
 
 	-- if true then
 	-- 	print(front .. runner)
