@@ -128,6 +128,8 @@ require("conform").setup({
 			},
 		},
 
+		sqruff = { exit_codes = { 0, 1 } },
+
 		dhall = { command = "dhall", args = { "format" } },
 
 		latexindent = { args = { "--logfile=/dev/null" } },
@@ -192,6 +194,7 @@ require("conform").setup({
 		html = { "prettier" },
 		htmldjango = { "djlint" },
 		jq = { "jqfmt" },
+		jsonl = { "jq" },
 		lua = { "stylua" },
 		markdown = { "mdslw", "prettier" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
