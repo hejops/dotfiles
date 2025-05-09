@@ -183,16 +183,6 @@ vim.api.nvim_create_autocmd("BufNewFile", {
 
 vim.api.nvim_create_autocmd("TermOpen", { command = "startinsert" })
 
--- silence 'process exited with', regardless of exit code
--- https://github.com/neovim/neovim/issues/14986#issuecomment-2066838327
-vim.api.nvim_create_autocmd("TermClose", {
-	callback = function()
-		if vim.bo.buftype == "terminal" then
-			vim.cmd("bdelete! " .. vim.fn.expand("<abuf>"))
-		end
-	end,
-})
-
 -- FileType {{{
 
 vim.api.nvim_create_autocmd("FileType", {

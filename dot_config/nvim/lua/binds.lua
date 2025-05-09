@@ -18,7 +18,6 @@ vim.keymap.set("n", "!", ":!")
 vim.keymap.set("n", "-", "~h") -- +/- are just j/k
 vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
 vim.keymap.set("n", "<c-c>", "<nop>")
-vim.keymap.set("n", "<c-t>", ":split|terminal<cr>") -- is actually good now
 vim.keymap.set("n", "<c-z>", "<nop>")
 vim.keymap.set("n", "<tab>", "<nop>") -- tab may be equivalent to c-i
 vim.keymap.set("n", "G", "G$zz") -- because of the InsertEnter zz autocmd
@@ -46,6 +45,11 @@ vim.keymap.set("v", "P", '"_dP')
 vim.keymap.set("v", "ZZ", "<esc>ZZ")
 vim.keymap.set("v", "x", '"_x')
 
+vim.keymap.set("t", "<c-t>", function()
+	-- bdelete bypasses annoying 'process exited with' message
+	vim.cmd("bdelete! " .. vim.fn.expand("<abuf>"))
+end)
+
 -- https://unix.stackexchange.com/a/356407
 -- large motions, jumps
 -- vim.keymap.set("n", "<leader>j", "<c-f>zz")
@@ -69,7 +73,6 @@ vim.keymap.set("n", "}", ":keepjumps normal! }<cr>zz", { silent = true })
 -- nmap ZF zfaft{blDkp$%bli<cR><esc>ld0<cR>zl|	" add folds around a func, like a real man, in any language
 -- tabs
 -- vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
--- vim.keymap.set("n", "<c-t>", "<c-6>") -- overridden by wezterm!
 -- vim.keymap.set("n", "rH", ":silent! tabm -1<cr>", { silent = true }) -- do i need this?
 -- vim.keymap.set("n", "rL", ":silent! tabm +1<cr>", { silent = true })
 -- vim.keymap.set("n", "re", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
@@ -144,12 +147,6 @@ vim.keymap.set("n", "<leader>T", function()
 	-- return ":tabe " .. vim.fn.expand("%:p:h") -- doesn't do anything
 	require("util"):literal_keys(":tabe " .. vim.fn.expand("%:p:h"))
 end)
-
--- vim.keymap.set("n", "<c-t>", function()
--- 	-- note: the drawback of spawning tab via cli is that tab position cannot be
--- 	-- controlled
--- 	vim.cmd(string.format("!wezterm start --new-tab --cwd %s 2>/dev/null", vim.fn.expand("%:p:h")))
--- end)
 
 -- context dependent binds
 -- https://github.com/neovim/neovim/blob/012cfced9b5/runtime/doc/lua-guide.txt#L450
@@ -811,10 +808,10 @@ local function is_wide()
 	end
 end
 
--- run current file and dump stdout to scratch buffer
-local function exec()
-	-- {{{
-	-- running tests is better left to the terminal itself (e.g. wezterm)
+vim.keymap.set("n", "<c-t>", function()
+	local wide, ratio = is_wide()
+	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal")
+end, { silent = true })
 
 	local ft = vim.bo.filetype
 	if ft == "nofile" then
