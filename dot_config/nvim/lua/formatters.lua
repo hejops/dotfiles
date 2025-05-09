@@ -183,6 +183,7 @@ require("conform").setup({
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" },
 		htmldjango = { "djlint" },
+		jsonl = { "jq" },
 		lua = { "stylua" },
 		markdown = { "mdslw", "prettier" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
