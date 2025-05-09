@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+	cat << EOF
+Usage: $(basename "$0") <-NUM|+NUM|--auto>
+	Control volume and display notification
+EOF
+	exit
+}
+
+[[ $# -eq 0 ]] && usage
+
+# WARN: in corner cases, buggy kernel (?) may cause lsusb to block eternally.
+# there is nothing we can do about this
+
+# if
+# 	pactl list | grep -q iec &&
+# 		! grep -q USB < /proc/asound/cards
+# then
+# 	notify-send 'need reboot'
+# 	exit 1
+# fi
+
+DEFAULT_VOL=40
+
+get_vol() {
+	# https://unix.stackexchange.com/a/89583
+	# awk -F"[][]" '/Left:/ { print $2 }' <(amixer sget Master)
+	# amixer -c 1 sget Master | awk -F"[][]" '/Left:/ { print $2 }'
+
+	pactl get-sink-volume @DEFAULT_SINK@ |
+		grep -Pom1 '\d+%' |
+		head -n1
+}
+
+auto() {
+
+	if
+		pidof mpv && ! pgrep -ax mpv | grep -Fq -e '--idle'
+	then
+		notify-send 'mpv running'
+		exit 1
+	fi
+
+	# TODO: distinguish ear/headphones and speakers? might not be necessary
+	# TODO: generic way to detect usb speakers?
+	if lsusb | grep -q EDIFIER; then
+		# TODO: unmute amixer
+		# amixer set Master 87%
+		amixer set Master 90%
+	else
+
+		# always force volume to 40%
+		pactl set-sink-mute @DEFAULT_SINK@ false
+		pactl set-sink-volume @DEFAULT_SINK@ "$DEFAULT_VOL"%
+	fi
+	exit 0
+}
+
+[[ $1 == --auto ]] && auto
+
+# speaker-test is not actually an accurate test for working pulseaudio, if it
+# arbitrarily decides to use alsa on boot; paplay is better (but does not have
+# fail cond)
+# https://www.baeldung.com/linux/pc-speaker-beep-in-linux
+[[ $1 == --test ]] && exec paplay /usr/share/sounds/freedesktop/stereo/bell.oga
+
+# TODO: --replace-id=ID?
+if lsusb | grep -q EDIFIER; then
+	# amixer syntax: X%[+-]
+	# below 87%, USB speakers produce no output
+	[[ $(get_vol) == 87% ]] && [[ $1 == -* ]] && exit
+	# TODO: first part should be "\d+, remove 0"
+	amixer set Master "${1:1:-1}%${1::1}"
+else
+	# pactl syntax: [+-]X%
+	pactl set-sink-volume @DEFAULT_SINK@ "$1"%
+
+fi
+
+notify-send -e -t 500 -u low Volume "$(get_vol)"
