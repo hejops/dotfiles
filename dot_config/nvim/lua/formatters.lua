@@ -145,6 +145,16 @@ require("conform").setup({
 			stdin = false,
 		},
 
+		-- blocked until jqfmt preserves `def`
+		-- https://github.com/noperator/jqfmt/issues/5
+		-- < ~/scripts/immo rgml -o "jq \S* '\n.+?'" | sed '1d;$d' | jqfmt -op pipe
+
+		jqfmt = {
+			command = "jqfmt",
+			args = { "-op", "pipe" },
+			stdin = true,
+		},
+
 		-- sqlfluff = {
 		-- 	-- format: more reliable; will format if no violations found
 		-- 	-- fix: does nothing if 'Unfixable violations detected'
@@ -181,6 +191,7 @@ require("conform").setup({
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" },
 		htmldjango = { "djlint" },
+		jq = { "jqfmt" },
 		lua = { "stylua" },
 		markdown = { "mdslw", "prettier" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
