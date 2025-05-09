@@ -74,7 +74,7 @@ vim.keymap.set("n", "}", ":keepjumps normal! }<cr>zz", { silent = true })
 vim.keymap.set("n", "<c-;>", "g<tab>")
 vim.keymap.set("n", "<c-h>", "gT")
 vim.keymap.set("n", "<c-l>", "gt")
-vim.keymap.set("n", "<c-t>", "<c-6>") -- overridden by wezterm!
+-- vim.keymap.set("n", "<c-t>", "<c-6>")
 vim.keymap.set("n", "r", "<nop>")
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- unload all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other buffers/tabs (but not delete)
@@ -143,6 +143,12 @@ vim.keymap.set("n", "<leader>T", function()
 	-- return ":tabe " .. vim.fn.expand("%:p:h") -- doesn't do anything
 	require("util"):literal_keys(":tabe " .. vim.fn.expand("%:p:h"))
 end)
+
+-- vim.keymap.set("n", "<c-t>", function()
+-- 	-- note: the drawback of spawning tab via cli is that tab position cannot be
+-- 	-- controlled
+-- 	vim.cmd(string.format("!wezterm start --new-tab --cwd %s 2>/dev/null", vim.fn.expand("%:p:h")))
+-- end)
 
 -- context dependent binds
 -- https://github.com/neovim/neovim/blob/012cfced9b5/runtime/doc/lua-guide.txt#L450
@@ -553,7 +559,7 @@ local ft_binds = { -- {{{
 
 		{
 			"n",
-			"<leader>R",
+			"<leader>:",
 			[[:'{+2,'}s/\v\t+(\w+).+/\1: foo.\1,/g<cr>]], -- struct def -> struct instantiation
 		},
 
@@ -580,7 +586,7 @@ local ft_binds = { -- {{{
 				local next_line = vim.fn.getline(lnum + 1)
 				lnum = lnum - 1 -- adjust for 0-indexing
 
-				local err_check = "if .*err [!=]= nil"
+				local err_check = "if %.*err [!=]= nil"
 				if curr_line:match(err_check) then
 					print("err already handled")
 					return
@@ -804,7 +810,7 @@ local function exec()
 		return
 	end
 
-	local curr_file = vim.fn.expand("%") -- relative to cwd
+	local curr_file = vim.fn.expand("%:p")
 	curr_file = vim.fn.shellescape(curr_file)
 	local cwd = vim.fn.getcwd() -- only for go
 
@@ -828,7 +834,7 @@ local function exec()
 		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
 		ocaml = "ocaml " .. curr_file,
 		ruby = "ruby " .. curr_file,
-		sh = "env bash " .. vim.fn.expand("%:t"), -- `new` usually cds to git dir (e.g. scripts), but why?
+		sh = "env bash " .. curr_file,
 		sql = string.format([[psql %s -f '%s']], require("util"):sql_connections().neon, curr_file),
 		zig = "zig run " .. curr_file,
 
@@ -958,7 +964,11 @@ local function exec()
 		front = h .. front
 	end
 
-	-- print(front .. runner)
+	-- if true then
+	-- 	print(front .. runner)
+	-- 	return
+	-- end
+
 	vim.cmd(front .. runner)
 
 	vim.cmd.norm("gg")
