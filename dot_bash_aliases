@@ -748,6 +748,8 @@ gA() {
 gc() {
 	: commit
 
+	local cmd=(git commit -v --untracked-files=no)
+
 	if [[ $# -gt 0 ]]; then
 
 		# 1. specified files, but excluding untracked files
@@ -767,7 +769,7 @@ gc() {
 				xargs git ls-files |
 				grep -q . && echo "$f"
 		done |
-			largs git commit -v
+			largs "${cmd[@]}"
 
 	# note: git commit -av stages -all- changes in the entire repo. this is
 	# almost never what i want
@@ -783,7 +785,7 @@ gc() {
 	# 		grep -P '^R' |
 	# 		# commit both the old (src) and new (dst) fname
 	# 		sed 's/^R[^ ]* //; s/->//' | # very iffy
-	# 		xargs git commit -v
+	# 		xargs ${cmd[@]}
 	# 	popd || return
 
 	elif
@@ -794,7 +796,7 @@ gc() {
 	then
 		echo "$rd" |
 			prepend "$(_get_repo_root)/" |
-			xargs git commit -v
+			xargs "${cmd[@]}"
 
 	elif
 		# 3. all staged changes
@@ -802,14 +804,14 @@ gc() {
 		! git diff --staged --diff-filter=AMD --quiet
 	then
 		: committing staged changes
-		git commit -v
+		"${cmd[@]}"
 
 	else
 		# 4. all files that have changed in the current dir
 		git diff --name-only . |
 			prepend "$(_get_repo_root)/" |
 			grep -v .gitignore |
-			xargs git commit -v
+			xargs "${cmd[@]}"
 
 	fi
 
