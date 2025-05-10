@@ -183,6 +183,14 @@ vim.api.nvim_create_autocmd("BufNewFile", {
 
 vim.api.nvim_create_autocmd("TermOpen", { command = "startinsert" })
 
+vim.api.nvim_create_autocmd("WinEnter", {
+	callback = function()
+		if vim.api.nvim_buf_get_name(0):match("^term") then
+			vim.cmd("startinsert")
+		end
+	end,
+})
+
 -- FileType {{{
 
 vim.api.nvim_create_autocmd("FileType", {

@@ -45,11 +45,6 @@ vim.keymap.set("v", "P", '"_dP')
 vim.keymap.set("v", "ZZ", "<esc>ZZ")
 vim.keymap.set("v", "x", '"_x')
 
-vim.keymap.set("t", "<c-t>", function()
-	-- bdelete bypasses annoying 'process exited with' message
-	vim.cmd("bdelete! " .. vim.fn.expand("<abuf>"))
-end)
-
 -- https://unix.stackexchange.com/a/356407
 -- large motions, jumps
 -- vim.keymap.set("n", "<c-b>", "<c-u>zz") -- <c-u/d> is more stable than <c-b/f>
@@ -83,13 +78,48 @@ vim.keymap.set("n", "r", "<nop>")
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- unload all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other buffers/tabs (but not delete)
 
--- splits are only used for exec
+-- splits are used for exec/term/Dispatch
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- delete all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rh", "<c-w><c-h>")
 vim.keymap.set("n", "ri", "<c-w>_") -- maximise current split height
 vim.keymap.set("n", "rj", "<c-w><c-j>")
 vim.keymap.set("n", "rk", "<c-w><c-k>")
 vim.keymap.set("n", "rl", "<c-w><c-l>")
+vim.keymap.set("t", "<c-x>", "<c-\\><c-n><c-w>_i") -- c-i conflicts with tab
+
+local function is_wide()
+	local wide = vim.o.columns > 150
+	if wide then
+		return true, math.floor(vim.o.columns * 0.33)
+	else
+		return false, vim.o.lines * 0.2
+	end
+end
+
+vim.keymap.set("n", "<c-t>", function()
+	local wide, ratio = is_wide()
+
+	-- if current tab contains a term, close it OR go to it
+	local wins = vim.api.nvim_tabpage_list_wins(0)
+	for _, w in pairs(wins) do
+		local b = vim.api.nvim_win_get_buf(w)
+		if vim.api.nvim_buf_get_name(b):match("^term") then
+			-- vim.cmd("bd! " .. b) -- close
+			vim.cmd.wincmd(wide and "l" or "j") -- go to
+			return
+		end
+	end
+
+	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal")
+end, { silent = true })
+
+vim.keymap.set("t", "<c-t>", function()
+	-- bdelete bypasses annoying 'process exited with' message
+	-- vim.cmd("bdelete! " .. vim.fn.expand("<abuf>"))
+
+	local wide, _ = is_wide()
+	vim.cmd.wincmd(wide and "h" or "k")
+end)
 
 -- folds
 vim.keymap.set("n", "zH", "zM")
@@ -799,20 +829,8 @@ local function c_compiler_cmd()
 	return cmd .. " " .. table.concat(cmds[cmd], " ")
 end -- }}}
 
-local function is_wide()
-	local wide = vim.o.columns > 150
-	if wide then
-		return true, math.floor(vim.o.columns * 0.33)
-	else
-		return false, vim.o.lines * 0.2
-	end
-end
-
-vim.keymap.set("n", "<c-t>", function()
-	local wide, ratio = is_wide()
-	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal")
-end, { silent = true })
-
+-- run current file and dump stdout to scratch buffer
+local function exec() -- {{{
 	local ft = vim.bo.filetype
 	if ft == "nofile" then
 		return
@@ -965,12 +983,7 @@ end, { silent = true })
 	-- shrink a main split will not enlarge the secondary split!
 
 	local wide, ratio = is_wide()
-	-- if wide then -- vsplit if wide enough
-	-- 	front = ratio .. " v" .. front
-	-- else
-	-- 	front = ratio .. front
-	-- end
-	front = ratio .. (wide and " v" or "") .. front
+	front = ratio .. (wide and "v" or "") .. front
 
 	-- if true then
 	-- 	print(front .. runner)
@@ -1014,6 +1027,9 @@ local function test()
 		return
 	end
 
+	-- TODO: if ./Makefile detected, close all Dispatch tabs, prompt for test,
+	-- then call Dispatch
+
 	local watchers = {
 
 		go = [[bash -c "find . -name '*.go' | entr -cr go test ./..."]],
@@ -1027,6 +1043,8 @@ local function test()
 		print("No test runner configured for " .. ft)
 		return
 	end
+
+	-- TODO: consider using Dispatch instead
 	local cmd = string.format("wezterm start --cwd=. %s 2>/dev/null", watcher)
 	-- print(cmd)
 	os.execute(cmd)
