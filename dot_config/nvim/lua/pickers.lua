@@ -80,6 +80,47 @@ function M:devdocs(opts) -- {{{
 		:find()
 end -- }}}
 
-return M
+function M:mail(opts) -- {{{
+	-- require must be deferred!
+	local action_state = require("telescope.actions.state")
+	local actions = require("telescope.actions")
+	local conf = require("telescope.config").values
+	local finders = require("telescope.finders")
+	local pickers = require("telescope.pickers")
+
+	opts = opts or {}
+
+	local cmd = "notmuch search --format=json date:24h.. and tag:inbox | jq"
+	local decoded = vim.json.decode(require("util"):get_command_output(cmd))
+
+	local results = {}
+
+	for _, m in ipairs(decoded) do
+		-- print(vim.inspect(m))
+		table.insert(results, string.format("%s\t%s", m.date_relative, m.subject))
+	end
+
+	pickers
+		.new(opts, {
+			prompt_title = slug,
+			finder = finders.new_table({ results = results }),
+
+			sorter = conf.generic_sorter(opts),
+
+			attach_mappings = function(prompt_bufnr, _)
+				actions[default_action]:replace(function()
+					actions.close(prompt_bufnr)
+					print(action_state.get_selected_entry()[1])
+					-- TODO: --part requires single match; thread is not specific enough!
+					-- notmuch show --limit=1 --part=1 thread=0000000000004de0
+				end)
+				return true
+			end,
+		})
+		:find()
+end -- }}}
 
 -- vim.keymap.set("n", "<leader>H", devdocs)
+vim.keymap.set("n", "<leader>m", M.mail)
+
+return M
