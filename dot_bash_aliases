@@ -671,7 +671,7 @@ gdm() { # {{{
 		# HACK: --diff-filter excludes files deleted by us, but does
 		# not exclude files deleted during a merge
 		while read -r f; do
-			[[ -f "$root/$f" ]] && echo "$f"
+			[[ -f "$root/$f" ]] && echo "$root/$f"
 		done |
 		# TODO: xargs: git: terminated by signal 13
 		xargs git diff "$span" 2> /dev/null
@@ -775,24 +775,16 @@ gc() {
 	# note: git commit -av stages -all- changes in the entire repo. this is
 	# almost never what i want
 
-	# elif
-	# 	# 2. file(s) that have been renamed (only)
-	# 	# this behaviour may not be desirable when modified files
-	# 	# should also be included in the commit
-	# 	git status --porcelain | grep -Pq '^R.+ -> '
-	# then
-	# 	pushd "$(_get_repo_root)" || return
-	# 	git status --porcelain |
-	# 		grep -P '^R' |
-	# 		# commit both the old (src) and new (dst) fname
-	# 		sed 's/^R[^ ]* //; s/->//' | # very iffy
-	# 		xargs ${cmd[@]}
-	# 	popd || return
+	elif
+		rd=$(git diff --diff-filter=RD --name-only --staged | grep .)
+	then
+		git commit -v
 
 	elif
 		# 2. file(s) that have been renamed/deleted
 		# this behaviour may not be desirable when modified files
 		# should also be included in the commit
+		# TODO: also check --staged
 		rd=$(git diff --diff-filter=RD --name-only | grep .)
 	then
 		echo "$rd" |
@@ -1059,9 +1051,12 @@ gb() { # {{{
 			# git diff --numstat "$1"...HEAD
 
 			git diff-index "$1" |
-				grep -F '00000 M	' | # conflict?
+				grep -F '00000 M	' |
 				cut -f2 |
-				xargs git diff
+				while read -r f; do
+					[[ -f $f ]] || continue
+					git commit -v "$f" || git checkout -- "$f"
+				done
 
 			# plain git switch can fail, if 'files would be
 			# overwritten by checkout'. with --conflict, switch
