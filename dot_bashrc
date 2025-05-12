@@ -314,6 +314,11 @@ elif command -v port > /dev/null; then
 fi
 
 rem() {
+	if command -v apt > /dev/null; then
+		sudo apt --purge remove "$@"
+		return
+	fi
+
 	[[ $# -ne 1 ]] && return
 	tree=$(pactree -r "$1") || return
 	if [[ $(<<< "$tree" wc -l) -eq 1 ]]; then
@@ -334,7 +339,14 @@ remsafe() {
 
 pacmir() {
 	: regenerate pacman mirrors
-	# TODO: test current speed; if ok, just return
+
+	# # general purpose speedtest is not really relevant; better (and faster)
+	# # to check if current top mirror (in mirrorlist) matches current
+	# # country
+	# curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py |
+	# 	python3 - --json |
+	# 	jq -r '.download / 1000000'
+
 	country=$(curl -sL ipinfo.io | jq -r .country)
 	url="https://archlinux.org/mirrorlist/?country=$country&protocol=https&use_mirror_status=on"
 	curl -s "$url" |
