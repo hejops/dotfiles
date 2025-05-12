@@ -77,15 +77,16 @@ vim.keymap.set("n", "<c-l>", "gt")
 vim.keymap.set("n", "r", "<nop>")
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- unload all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other buffers/tabs (but not delete)
+vim.keymap.set("t", "<c-.>", "<c-\\><c-n>gt")
+vim.keymap.set("t", "<c-x>", "<c-\\><c-n>gT")
 
 -- splits are used for exec/term/Dispatch
-vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- delete all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
+-- vim.keymap.set("t", "<c-x>", "<c-\\><c-n><c-w>_i") -- c-i conflicts with tab
 vim.keymap.set("n", "rh", "<c-w><c-h>")
 vim.keymap.set("n", "ri", "<c-w>_") -- maximise current split height
 vim.keymap.set("n", "rj", "<c-w><c-j>")
 vim.keymap.set("n", "rk", "<c-w><c-k>")
 vim.keymap.set("n", "rl", "<c-w><c-l>")
-vim.keymap.set("t", "<c-x>", "<c-\\><c-n><c-w>_i") -- c-i conflicts with tab
 
 local function is_wide()
 	local wide = vim.o.columns > 150
@@ -96,30 +97,55 @@ local function is_wide()
 	end
 end
 
-vim.keymap.set("n", "<c-t>", function()
-	local wide, ratio = is_wide()
+local last_win = nil
 
-	-- if current tab contains a term, close it OR go to it
-	local wins = vim.api.nvim_tabpage_list_wins(0)
-	for _, w in pairs(wins) do
-		local b = vim.api.nvim_win_get_buf(w)
-		if vim.api.nvim_buf_get_name(b):match("^term") then
-			-- vim.cmd("bd! " .. b) -- close
-			vim.cmd.wincmd(wide and "l" or "j") -- go to
-			return
+vim.keymap.set("n", "<c-t>", function()
+	-- check all bufs for a terminal. if one is found, get the tab (and window)
+	-- it belongs to, and switch to it. in other words, there can effectively
+	-- only ever be a single terminal in nvim
+
+	for _, t in pairs(vim.api.nvim_list_tabpages()) do
+		-- if current tab contains a term, close it OR go to it
+		for _, w in pairs(vim.api.nvim_tabpage_list_wins(t)) do
+			-- print(vim.inspect(vim.api.nvim_win_get_config(w)))
+			local b = vim.api.nvim_win_get_buf(w)
+			if vim.api.nvim_buf_get_name(b):match("^term") then
+				-- vim.cmd("bd! " .. b) -- close
+				-- vim.api.nvim_set_current_tabpage(t) -- go to tab (not necessary)
+				-- vim.cmd.wincmd(wide and "l" or "j") -- go to split (also not necessary)
+				last_win = vim.api.nvim_get_current_win()
+				vim.api.nvim_set_current_win(w)
+				return
+			end
 		end
 	end
 
+	local wide, ratio = is_wide()
 	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal")
 end, { silent = true })
 
-vim.keymap.set("t", "<c-t>", function()
-	-- bdelete bypasses annoying 'process exited with' message
-	-- vim.cmd("bdelete! " .. vim.fn.expand("<abuf>"))
+-- TODO: navigate tab from term; c-h/c-l are taken by readline
+-- scrollback is also nice (handled by terminal itself), but less important
 
-	local wide, _ = is_wide()
-	vim.cmd.wincmd(wide and "h" or "k")
-end)
+vim.keymap.set(
+	"t",
+	"<c-t>",
+	-- "<c-\\><c-n>g<tab>" -- always goes to another tab
+	-- "<c-\\><c-n><c-6>"
+	function()
+		-- bdelete bypasses annoying 'process exited with' message
+		-- vim.cmd("bdelete! " .. vim.fn.expand("<abuf>"))
+
+		-- decent?
+		if last_win then
+			vim.api.nvim_set_current_win(last_win)
+			return
+		end
+
+		local wide, _ = is_wide()
+		vim.cmd.wincmd(wide and "h" or "k")
+	end
+)
 
 -- folds
 vim.keymap.set("n", "zH", "zM")
