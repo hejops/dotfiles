@@ -181,16 +181,13 @@ vim.api.nvim_create_autocmd("BufNewFile", {
 	end,
 })
 
--- https://github.com/artart222/CodeArt/blob/3a419066140bc094aa170ac456daa704aa2e88a7/lua/maps.lua#L28
--- https://github.com/kutsan/dotfiles/blob/a1a608768c61c7aadf1fb160166d59a0214f80a6/.config/nvim/plugin/autocmds.lua#L8
--- https://github.com/Bekaboo/nvim/blob/92d103ad117388c877b63d8940e2463656ce9ab1/lua/plugin/term.lua#L9
--- TODO: silence 'process exited with'
-vim.api.nvim_create_autocmd("TermOpen", {
+vim.api.nvim_create_autocmd("TermOpen", { command = "startinsert" })
+
+vim.api.nvim_create_autocmd("WinEnter", {
 	callback = function()
-		vim.opt_local.number = false
-		vim.opt_local.relativenumber = false
-		vim.bo.bufhidden = "wipe"
-		vim.cmd.startinsert()
+		if vim.api.nvim_buf_get_name(0):match("^term") then
+			vim.cmd("startinsert")
+		end
 	end,
 })
 

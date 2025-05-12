@@ -18,7 +18,6 @@ vim.keymap.set("n", "!", ":!")
 vim.keymap.set("n", "-", "~h") -- +/- are just j/k
 vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
 vim.keymap.set("n", "<c-c>", "<nop>")
-vim.keymap.set("n", "<c-t>", ":split|terminal<cr>") -- is actually good now
 vim.keymap.set("n", "<c-z>", "<nop>")
 vim.keymap.set("n", "<tab>", "<nop>") -- tab may be equivalent to c-i
 vim.keymap.set("n", "G", "G$zz") -- because of the InsertEnter zz autocmd
@@ -48,16 +47,16 @@ vim.keymap.set("v", "x", '"_x')
 
 -- https://unix.stackexchange.com/a/356407
 -- large motions, jumps
+-- vim.keymap.set("n", "<c-b>", "<c-u>zz") -- <c-u/d> is more stable than <c-b/f>
+-- vim.keymap.set("n", "<c-d>", "<c-d>zz")
+-- vim.keymap.set("n", "<c-f>", "<c-d>zz")
+-- vim.keymap.set("n", "<c-u>", "<c-u>zz")
 -- vim.keymap.set("n", "<leader>j", "<c-f>zz")
 -- vim.keymap.set("n", "<leader>k", "<c-b>zz")
-vim.keymap.set("n", "<c-b>", "<c-u>zz") -- <c-u/d> is more stable than <c-b/f>
-vim.keymap.set("n", "<c-d>", "<c-d>zz")
-vim.keymap.set("n", "<c-f>", "<c-d>zz")
 vim.keymap.set("n", "<c-i>", "<c-o>zz") -- jumplist; o = forward is more intuitive
 vim.keymap.set("n", "<c-j>", "<c-d>zz")
 vim.keymap.set("n", "<c-k>", "<c-u>zz")
 vim.keymap.set("n", "<c-o>", "<c-i>zz")
-vim.keymap.set("n", "<c-u>", "<c-u>zz")
 vim.keymap.set("n", "N", ":keepjumps normal! N<cr>zzzv", { silent = true })
 vim.keymap.set("n", "n", ":keepjumps normal! n<cr>zzzv", { silent = true })
 vim.keymap.set("n", "{", ":keepjumps normal! {<cr>zz", { silent = true })
@@ -69,7 +68,6 @@ vim.keymap.set("n", "}", ":keepjumps normal! }<cr>zz", { silent = true })
 -- nmap ZF zfaft{blDkp$%bli<cR><esc>ld0<cR>zl|	" add folds around a func, like a real man, in any language
 -- tabs
 -- vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
--- vim.keymap.set("n", "<c-t>", "<c-6>") -- overridden by wezterm!
 -- vim.keymap.set("n", "rH", ":silent! tabm -1<cr>", { silent = true }) -- do i need this?
 -- vim.keymap.set("n", "rL", ":silent! tabm +1<cr>", { silent = true })
 -- vim.keymap.set("n", "re", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
@@ -80,13 +78,48 @@ vim.keymap.set("n", "r", "<nop>")
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- unload all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other buffers/tabs (but not delete)
 
--- splits are only used for exec
+-- splits are used for exec/term/Dispatch
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- delete all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rh", "<c-w><c-h>")
 vim.keymap.set("n", "ri", "<c-w>_") -- maximise current split height
 vim.keymap.set("n", "rj", "<c-w><c-j>")
 vim.keymap.set("n", "rk", "<c-w><c-k>")
 vim.keymap.set("n", "rl", "<c-w><c-l>")
+vim.keymap.set("t", "<c-x>", "<c-\\><c-n><c-w>_i") -- c-i conflicts with tab
+
+local function is_wide()
+	local wide = vim.o.columns > 150
+	if wide then
+		return true, math.floor(vim.o.columns * 0.33)
+	else
+		return false, vim.o.lines * 0.2
+	end
+end
+
+vim.keymap.set("n", "<c-t>", function()
+	local wide, ratio = is_wide()
+
+	-- if current tab contains a term, close it OR go to it
+	local wins = vim.api.nvim_tabpage_list_wins(0)
+	for _, w in pairs(wins) do
+		local b = vim.api.nvim_win_get_buf(w)
+		if vim.api.nvim_buf_get_name(b):match("^term") then
+			-- vim.cmd("bd! " .. b) -- close
+			vim.cmd.wincmd(wide and "l" or "j") -- go to
+			return
+		end
+	end
+
+	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal")
+end, { silent = true })
+
+vim.keymap.set("t", "<c-t>", function()
+	-- bdelete bypasses annoying 'process exited with' message
+	-- vim.cmd("bdelete! " .. vim.fn.expand("<abuf>"))
+
+	local wide, _ = is_wide()
+	vim.cmd.wincmd(wide and "h" or "k")
+end)
 
 -- folds
 vim.keymap.set("n", "zH", "zM")
@@ -145,23 +178,17 @@ vim.keymap.set("n", "<leader>T", function()
 	require("util"):literal_keys(":tabe " .. vim.fn.expand("%:p:h"))
 end)
 
--- vim.keymap.set("n", "<c-t>", function()
--- 	-- note: the drawback of spawning tab via cli is that tab position cannot be
--- 	-- controlled
--- 	vim.cmd(string.format("!wezterm start --new-tab --cwd %s 2>/dev/null", vim.fn.expand("%:p:h")))
--- end)
-
 -- context dependent binds
 -- https://github.com/neovim/neovim/blob/012cfced9b5/runtime/doc/lua-guide.txt#L450
 
 -- close window if scratch
 local function update_or_close()
-	vim.cmd(
+	if vim.bo.buftype == "nofile" or vim.bo.buftype == "help" then
+		vim.cmd.bd()
+	else
 		-- expr must be false, else 'not allowed to change text'
-		(vim.bo.buftype == "nofile" or vim.bo.buftype == "help") and "bd"
-			-- see also: shortmess
-			or "silent update"
-	)
+		vim.cmd("silent update") -- see also: shortmess
+	end
 end
 
 vim.keymap.set("n", "<c-c>", update_or_close, { silent = true })
@@ -407,7 +434,8 @@ local ft_binds = { -- {{{
 	},
 
 	["sh,bash"] = {
-		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g<cr>" },
+		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g|w<cr>" },
+		{ "n", "<leader>H", [[:%s/\v -H/ \\\r&/g|w<cr>]] },
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
 	},
 
@@ -802,10 +830,7 @@ local function c_compiler_cmd()
 end -- }}}
 
 -- run current file and dump stdout to scratch buffer
-local function exec()
-	-- {{{
-	-- running tests is better left to the terminal itself (e.g. wezterm)
-
+local function exec() -- {{{
 	local ft = vim.bo.filetype
 	if ft == "nofile" then
 		return
@@ -953,17 +978,12 @@ local function exec()
 
 	-- TODO: async (Dispatch)
 	local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
-	local wide = vim.o.columns > 150
 
 	-- split dimensions -must- be declared in the [v]new command. attempting to
 	-- shrink a main split will not enlarge the secondary split!
-	if wide then -- vsplit if wide enough
-		local w = math.floor(vim.o.columns * 0.33)
-		front = w .. " v" .. front
-	else
-		local h = vim.o.lines * 0.2
-		front = h .. front
-	end
+
+	local wide, ratio = is_wide()
+	front = ratio .. (wide and "v" or "") .. front
 
 	-- if true then
 	-- 	print(front .. runner)
@@ -1007,6 +1027,9 @@ local function test()
 		return
 	end
 
+	-- TODO: if ./Makefile detected, close all Dispatch tabs, prompt for test,
+	-- then call Dispatch
+
 	local watchers = {
 
 		go = [[bash -c "find . -name '*.go' | entr -cr go test ./..."]],
@@ -1020,6 +1043,8 @@ local function test()
 		print("No test runner configured for " .. ft)
 		return
 	end
+
+	-- TODO: consider using Dispatch instead
 	local cmd = string.format("wezterm start --cwd=. %s 2>/dev/null", watcher)
 	-- print(cmd)
 	os.execute(cmd)

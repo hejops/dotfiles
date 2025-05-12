@@ -147,6 +147,16 @@ require("conform").setup({
 			stdin = false,
 		},
 
+		-- blocked until jqfmt preserves `def`
+		-- https://github.com/noperator/jqfmt/issues/5
+		-- < ~/scripts/immo rgml -o "jq \S* '\n.+?'" | sed '1d;$d' | jqfmt -op pipe
+
+		jqfmt = {
+			command = "jqfmt",
+			args = { "-op", "pipe" },
+			stdin = true,
+		},
+
 		-- sqlfluff = {
 		-- 	-- format: more reliable; will format if no violations found
 		-- 	-- fix: does nothing if 'Unfixable violations detected'
@@ -183,6 +193,8 @@ require("conform").setup({
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" },
 		htmldjango = { "djlint" },
+		jq = { "jqfmt" },
+		json = { "jq" },
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		markdown = { "mdslw", "prettier" },
@@ -195,9 +207,9 @@ require("conform").setup({
 		toml = { "taplo" },
 		yaml = { "prettier" }, -- TODO: no .clangd parser
 
+		-- json = js_formatters,
 		javascript = js_formatters,
 		javascriptreact = js_formatters,
-		json = js_formatters,
 		jsonc = js_formatters, -- TODO: biome selects parser based on file ext if it is not "special" (e.g. tsconfig.json)
 		typescript = js_formatters,
 		typescriptreact = js_formatters,

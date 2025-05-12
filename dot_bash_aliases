@@ -748,6 +748,8 @@ gA() {
 gc() {
 	: commit
 
+	local cmd=(git commit -v --untracked-files=no)
+
 	if [[ $# -gt 0 ]]; then
 
 		# 1. specified files, but excluding untracked files
@@ -767,7 +769,7 @@ gc() {
 				xargs git ls-files |
 				grep -q . && echo "$f"
 		done |
-			largs git commit -v
+			largs "${cmd[@]}"
 
 	# note: git commit -av stages -all- changes in the entire repo. this is
 	# almost never what i want
@@ -786,7 +788,7 @@ gc() {
 	then
 		echo "$rd" |
 			prepend "$(_get_repo_root)/" |
-			xargs git commit -v
+			xargs "${cmd[@]}"
 
 	elif
 		# 3. all staged changes
@@ -794,14 +796,14 @@ gc() {
 		! git diff --staged --diff-filter=AMD --quiet
 	then
 		: committing staged changes
-		git commit -v
+		"${cmd[@]}"
 
 	else
 		# 4. all files that have changed in the current dir
 		git diff --name-only . |
 			prepend "$(_get_repo_root)/" |
 			grep -v .gitignore |
-			xargs git commit -v
+			xargs "${cmd[@]}"
 
 	fi
 
@@ -860,29 +862,22 @@ gsq() {
 }
 
 gcf() {
-	: make a new commit to be squashed with an earlier one
+	: like gc, but squash the new commit with an earlier one
 
 	# https://jordanelver.co.uk/blog/2020/06/04/fixing-commits-with-git-commit-fixup-and-git-rebase-autosquash/
 	old_sha=$(_git_log_fzf . | cut -d' ' -f1)
 	[[ -z $old_sha ]] && return
 
-	new_sha=$(_git_log_fzf . | cut -d' ' -f1)
-	[[ -z $new_sha ]] && return
-
-	# TODO:
-	# error: pathspec '55c82b4c1' did not match any file(s) known to git
-
 	# --fixup associates a new commit with an existing commit so that when
 	# you do an interactive rebase, you don't have to re-order any commits
 	# in order to squash them. And you don't have to change any commit
 	# messages
-	git commit --fixup "$old_sha" "$new_sha"
+	git commit -v --fixup "$old_sha" # "$new_sha"
 
 	# with no arg, defaults to curr branch (NEVER use gmaster; to avoid
 	# losing work, git rebase --abort immediately)
 	# --autostash required to avoid 'unstaged changes present'
-	# TODO: is -i necessary?
-	git rebase -i --autosquash --autostash || gC
+	git rebase --autosquash --autostash || gC
 }
 
 gapat() { # {{{
