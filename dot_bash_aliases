@@ -46,12 +46,13 @@ fi
 if ps --pid "$PPID" | grep -Fq wezterm; then
 
 	[[ -f /tmp/verse.json ]] && [[ -s /tmp/verse.json ]] &&
-		< /tmp/verse.json jq -r '.votd | .reference, .content' |
-		sed -e 's/<[^>]*>//g' |
-			fold -w 65 -s
+		< /tmp/verse.json cat
+	# jq -r '.votd | .reference, .content' |
+	# 	sed -e 's/<[^>]*>//g' |
+	# 		fold -w 65 -s
 
 	if [[ -d $SLSK ]]; then
-		x=$(du -csh "$SLSK" | head -n1)
+		x=$(du -csh "$SLSK" | head -n1 | grep G)
 		if <<< "$x" grep -Po '^\d+' | \xargs -I{} test {} -ge 3; then
 			echo -e "\n$x"
 		fi
@@ -289,10 +290,10 @@ ytm() {
 		.text |
 		.runs[]
 	' |
-			grep videoId |
+			grep -- videoId |
 			cut -d'"' -f4 |
 			while read -r id; do
-				<<< "$all_ids" grep -Fxq "$id" && continue
+				<<< "$all_ids" grep -Fxq -- "$id" && continue
 				all_ids+=$'\n'$id
 				echo "$id"
 			done |
@@ -610,7 +611,7 @@ _git_log_fzf() { # {{{
 	# alternatively, it may be good to indicate whether the commit was
 	# committed in this branch, or simply pulled from remote.
 
-	git log --oneline --no-merges "${args[@]}" |
+	git log --decorate --oneline --no-merges "${args[@]}" |
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }     # }}}
 v() { # {{{
@@ -2171,7 +2172,20 @@ get_cookie() {
 
 # }}}
 
-alias imm="notmuch show from:noreply@immobilienscout24.de | grep -Po 'Adresse: [^(]+' | sed -r 's/([a-z])([A-Z])/\1\t\2/' | sort -u"
+alias imm="notmuch show from:noreply@immobilienscout24.de |
+	grep -Po 'Adresse: [^(]+' |
+	sed -r 's/([a-z])([A-Z])/\1\t\2/' |
+	sort -u |
+	colt"
+
+geocode() {
+	: transform placename to coordinates
+	c "https://www.google.com/maps?q=$1" | # TODO: prone to 429
+		grep -Po 'center=[^&]+' |
+		head -n1 |
+		sed -r 's/center=//; s/%2C/,/' |
+		xargs -I{} firefox "https://www.instantstreetview.com/@{},h,p,z"
+}
 
 # df | grep '/$' | cut -d' ' -f1 | xargs sudo smartctl -a
 
