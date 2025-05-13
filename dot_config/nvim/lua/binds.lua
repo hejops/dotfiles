@@ -28,7 +28,6 @@ vim.keymap.set("n", "Q", ":bd<cr>")
 vim.keymap.set("n", "U", ":redo<cr>")
 vim.keymap.set("n", "X", '"_X')
 vim.keymap.set("n", "Y", "y$") -- default is redundant with yy
-vim.keymap.set("n", "Z?", ":wqa<cr>")
 vim.keymap.set("n", "ZX", ":wqa<cr>")
 vim.keymap.set("n", "co", "O<esc>jo<esc>k") -- surround current line with newlines
 vim.keymap.set("n", "gD", "<nop>")
@@ -44,6 +43,22 @@ vim.keymap.set("v", ">", ">gv")
 vim.keymap.set("v", "P", '"_dP')
 vim.keymap.set("v", "ZZ", "<esc>ZZ")
 vim.keymap.set("v", "x", '"_x')
+
+vim.keymap.set("n", "Z?", function()
+	-- close all terminals, possibly dangerous? safe behaviour is to switch to
+	-- first tab containing term
+	for _, b in pairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_get_name(b):match("^term") then
+			vim.cmd("bd! " .. b)
+		end
+	end
+
+	vim.cmd("wqa")
+end)
+
+for i = 1, 12 do -- lua ranges are inclusive (lol)
+	vim.keymap.set({ "i", "n" }, string.format("<f%d>", i), function() end)
+end
 
 -- https://unix.stackexchange.com/a/356407
 -- large motions, jumps
@@ -146,6 +161,24 @@ vim.keymap.set(
 		vim.cmd.wincmd(wide and "h" or "k")
 	end
 )
+
+vim.keymap.set("t", "<c-z>", function() end)
+
+vim.keymap.set("n", "<c-z>", function()
+	-- toggle split orientation
+	-- https://stackoverflow.com/a/1269631
+
+	-- local wins = vim.api.nvim_tabpage_list_wins(0)
+	-- for _, w in pairs(wins) do
+	-- 	local b = vim.api.nvim_win_get_buf(w)
+	-- 	if vim.api.nvim_buf_get_name(b):match("^term") then
+	-- 		print(vim.api.nvim_win_get_config(w))
+	-- 		return
+	-- 	end
+	-- end
+
+	-- vim.cmd.wincmd()
+end)
 
 -- folds
 vim.keymap.set("n", "zH", "zM")
