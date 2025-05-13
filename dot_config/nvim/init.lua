@@ -38,6 +38,7 @@ vim.api.nvim_create_autocmd({
 vim.api.nvim_create_autocmd({ "BufReadPost" }, {
 	pattern = { "*.sql" },
 	callback = function()
+		-- TODO: could replace fs_stat with vim.fn.filereadable()
 		if not vim.uv.fs_stat("config.yml") then
 			print("No config.yml found, sqls will not be started")
 		end
@@ -45,8 +46,8 @@ vim.api.nvim_create_autocmd({ "BufReadPost" }, {
 		-- somehow this works, even though we haven't `require`d formatters yet.
 		-- specifically, the option is set after buffer is loaded (so we can get
 		-- the lines), and (possibly) before conform:format is called
-		local d = require("util"):sql_dialect()
-		d = "postgres" -- TODO: check... something
+		-- local d = require("util"):sql_dialect()
+		local d = "postgres" -- TODO: check... something
 		-- table.insert(require("conform").formatters.sqlfluff.args, 2, "--dialect=" .. d)
 		table.insert(require("lint").linters.sqlfluff.args, 2, "--dialect=" .. d)
 		-- os.execute("notify-send -- " .. require("conform").formatters.sqlfluff.args[3])
@@ -426,7 +427,15 @@ vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
 
 -- }}}
 -- git {{{
-vim.keymap.set("n", "<leader>e", telescope_b.git_files, { desc = "git ls-files" })
+
+---@param f function
+local function wrap(f)
+	return function()
+		pcall(f)
+	end
+end
+
+vim.keymap.set("n", "<leader>e", wrap(telescope_b.git_files), { desc = "git ls-files" })
 vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" }) -- rare
 vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" }) -- rare
 
@@ -492,12 +501,14 @@ local function commit_staged() -- {{{
 end -- }}}
 vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit" })
 
+-- ga is not useful (:h ga), and can be safely overridden
+
 -- vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
 -- vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>", { desc = "stage all hunks in current buffer" }) -- same as :Gwrite, but without making the commit
-vim.keymap.set("n", "<leader>gab", ":Gwrite<cr>", { desc = "add current buffer (entire)" })
-vim.keymap.set("n", "<leader>gap", ":Git add %<cr>", { desc = "add current buffer (patch)" })
+vim.keymap.set("n", "gab", ":Gwrite<cr>", { desc = "add current buffer (entire)" })
+vim.keymap.set("n", "gap", ":Git add %<cr>", { desc = "add current buffer (patch)" })
 
-vim.keymap.set("n", "<leader>gaP", function()
+vim.keymap.set("n", "gaP", function()
 	local patt
 	vim.ui.input({ prompt = "pattern: " }, function(input) -- TODO: rg picker
 		patt = input
