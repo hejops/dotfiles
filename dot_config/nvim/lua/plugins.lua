@@ -180,10 +180,10 @@ require("lazy").setup(
 						watch = true, -- automatically apply on save.
 						force = true, -- force apply. Works only when watch = true.
 					},
-					notification = {
-						on_open = true,
-						on_apply = false,
-						on_watch = true, -- "This file will be automatically applied"; requires on_open = true
+					events = {
+						on_open = { notification = { enable = true } },
+						on_watch = { notification = { enable = true } },
+						on_apply = { notification = { enable = false } },
 					},
 				})
 			end,
