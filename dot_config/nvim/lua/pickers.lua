@@ -93,26 +93,29 @@ function M:mail(opts) -- {{{
 	local cmd = "notmuch search --format=json date:24h.. and tag:inbox | jq"
 	local decoded = vim.json.decode(require("util"):get_command_output(cmd))
 
-	local results = {}
-
+	local lines = {}
 	for _, m in ipairs(decoded) do
-		-- print(vim.inspect(m))
-		table.insert(results, string.format("%s\t%s", m.date_relative, m.subject))
+		table.insert(lines, string.format("%s\t%s\t%s", m.thread, m.date_relative, m.subject))
 	end
 
 	pickers
 		.new(opts, {
 			prompt_title = slug,
-			finder = finders.new_table({ results = results }),
+			finder = finders.new_table({ results = lines }),
 
 			sorter = conf.generic_sorter(opts),
 
 			attach_mappings = function(prompt_bufnr, _)
 				actions[default_action]:replace(function()
 					actions.close(prompt_bufnr)
-					print(action_state.get_selected_entry()[1])
-					-- TODO: --part requires single match; thread is not specific enough!
-					-- notmuch show --limit=1 --part=1 thread=0000000000004de0
+
+					local thread = action_state.get_selected_entry()[1]:match("^%w+")
+					print(
+						require("util"):get_command_output(
+							string.format("notmuch show --limit=1 --part=2 thread:%s | w3m", thread)
+						)
+					)
+					-- TODO: mark as read
 				end)
 				return true
 			end,
