@@ -80,8 +80,42 @@ function M:devdocs(opts) -- {{{
 		:find()
 end -- }}}
 
+---@param thread string
+local function show_mail(thread)
+	-- note: text/plain is always preferred, but not all emails have it. this
+	-- assumes that plain part is always listed before html
+
+	return require("util"):get_command_output(string.format(
+		[[
+set -euo pipefail
+thread=%s
+
+if
+	part=$(notmuch show --limit=1 thread:"$thread" |
+		grep -Px '\spart\{.+plain' |
+		grep -Pom1 '\d+')
+then
+	notmuch show --limit=1 --part="$part" thread:"$thread" |
+		fold |
+		# sed -r 's/^[ 	]+//g; :a;N;$!ba; s/\n{2,}/\n\n/g'
+		sed -r 's/^[ 	]+//g' |
+		sed -r ':a;N;$!ba; s/\n{2,}/\n\n/g'
+else
+	part=$(notmuch show --limit=1 thread:"$thread" |
+		grep -Px '\spart\{.+html' |
+		grep -Pom1 '\d+')
+	notmuch show --limit=1 --part="$part" thread:"$thread" |
+		# TODO: firefox readability
+		lynx -dump -nolist -stdin
+fi
+
+]],
+		thread
+	))
+end
+
+-- readonly
 function M:mail(opts) -- {{{
-	-- require must be deferred!
 	local action_state = require("telescope.actions.state")
 	local actions = require("telescope.actions")
 	local conf = require("telescope.config").values
@@ -110,12 +144,8 @@ function M:mail(opts) -- {{{
 					actions.close(prompt_bufnr)
 
 					local thread = action_state.get_selected_entry()[1]:match("^%w+")
-					print(
-						require("util"):get_command_output(
-							string.format("notmuch show --limit=1 --part=2 thread:%s | w3m", thread)
-						)
-					)
-					-- TODO: mark as read
+					print(show_mail(thread))
+					require("util"):get_command_output(string.format("notmuch tag -unread -- thread:%s", thread))
 				end)
 				return true
 			end,
