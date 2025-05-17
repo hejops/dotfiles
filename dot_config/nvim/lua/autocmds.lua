@@ -8,7 +8,11 @@ vim.api.nvim_create_autocmd("VimEnter", {
 		if vim.bo.filetype == "man" then
 			return
 		end
-		vim.fn.chdir(vim.fs.root(0, ".git") or vim.fn.expand("%:p:h"))
+		local root_files = {
+			go = "go.mod",
+			tex = "Tectonic.toml",
+		}
+		vim.fn.chdir(vim.fs.root(0, root_files[vim.bo.filetype] or ".git") or vim.fn.expand("%:p:h"))
 	end,
 })
 
@@ -319,23 +323,6 @@ vim.api.nvim_create_autocmd("FileType", {
 		else
 			print("error when installing sqruff")
 		end
-	end,
-})
-
--- golangci-lint is picky about where it can be run; this is trivial to expand
--- to other langs if needed
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "go" },
-	callback = function()
-		vim.fn.chdir(vim.fs.root(0, "go.mod"))
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "tex" },
-	callback = function()
-		-- could put chdir in tectonic_build, but this also disables vimtex
-		vim.fn.chdir(vim.fs.root(0, "Tectonic.toml"))
 	end,
 })
 
