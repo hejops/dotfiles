@@ -438,6 +438,7 @@ end
 vim.keymap.set("n", "<leader>e", wrap(telescope_b.git_files), { desc = "git ls-files" })
 vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" }) -- rare
 vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" }) -- rare
+vim.keymap.set("n", "gas", telescope_b.git_status, { desc = "git status" }) -- rare
 
 local git_log_cmd = {
 	"git",
@@ -481,20 +482,21 @@ vim.keymap.set("n", "gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk
 vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
 local function commit_staged() -- {{{
+	local cmd = "Git commit --untracked-files=no --quiet -v"
 	if not require("util"):in_git_repo() then
 		print("not in git repo")
 	elseif -- any changes have been staged (taken from gc)
 		-- commit currently staged chunk(s)
 		require("util"):get_command_output("git diff --name-only --cached --diff-filter=AM | grep .") ~= ""
 	then
-		vim.cmd("Git commit --quiet -v")
+		vim.cmd(cmd)
 	elseif -- current file has changes
 		-- commit entire file
 		-- exits with 1 if there were differences
 		not require("util"):command_ok("git diff --quiet " .. vim.api.nvim_buf_get_name(0))
 	then
 		-- do i ever need to commit a whole file while there are staged chunks? remains to be seen
-		vim.cmd("Git commit --quiet -v %")
+		vim.cmd(cmd .. " %")
 	else
 		print("no changes to stage")
 	end
