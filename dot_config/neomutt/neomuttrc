@@ -254,7 +254,21 @@ macro attach W "<save-entry><bol>~/mail<eol>" "Save to desktop"
 # https://github.com/neomutt/neomutt/blob/main/docs/config.c
 # https://github.com/neomutt/neomutt/blob/83a6c4b3ae842cf64918d23d374421d05b39bf32/mutt_config.c#L405 (concise)
 
-set index_format = "%4C %Z %{%b %d} %-15.15L %s"
+# set index_format = "%4C %Z %{%b %d} %-15.15L %s"
+
+# file:///usr/share/doc/neomutt/reference.html#index-format
+
+# set index_format += "%4C" # msg number
+set index_format = "%Z" # flags (len 3)
+# set index_format += "%S" # flags (len 1)
+set index_format += " %[%d/%m]" # date (len 6)
+# set index_format += " │ %g %-4.4c" # body size
+set index_format += " │ %-4.4c" # body size
+# set index_format += " │ %-25.25F" # from
+set index_format += " │ %-25.25A" # from (raw)
+set index_format += " │ %s" # subject
+# set index_format += " [%g]" # tags
+
 set mail_check_stats
 set sidebar_format = "%D%?F? [%F]?%* %?N?%N/?%S" # mailbox [F]            N/S
 set sidebar_short_path = yes
