@@ -87,7 +87,7 @@ local function show_mail(thread)
 
 	return require("util"):get_command_output(string.format(
 		[[
-set -euo pipefail
+set -eu #o pipefail
 thread=%s
 
 if
@@ -130,6 +130,11 @@ function M:mail(opts) -- {{{
 
 	local cmd = "notmuch search --format=json date:24h.. and tag:inbox | jq"
 	local decoded = vim.json.decode(require("util"):get_command_output(cmd))
+
+	if #decoded == 0 then
+		print("no new mail")
+		return
+	end
 
 	local lines = {}
 	for _, m in ipairs(decoded) do

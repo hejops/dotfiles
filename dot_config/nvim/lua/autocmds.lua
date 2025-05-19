@@ -329,7 +329,8 @@ vim.api.nvim_create_autocmd("FileType", {
 -- }}}
 
 vim.api.nvim_create_autocmd("TabClosed", {
-	-- stop lsps that no longer have any bufs
+	-- stop lsps that no longer have any bufs. note that this is called after the
+	-- tab is closed (duh)
 	callback = function()
 		-- print(vim.fn.expand("%")) -- invoked after the tab close, not before
 
@@ -337,6 +338,7 @@ vim.api.nvim_create_autocmd("TabClosed", {
 			dot_bash_aliases = "sh",
 		}
 
+		---@type {[string]: number}
 		local tab_fts = {}
 		for _, buf_num in pairs(require("util"):get_tabs_loaded()) do
 			local ft, _ = vim.filetype.match({ buf = buf_num }) -- TODO: match may fail
@@ -351,17 +353,26 @@ vim.api.nvim_create_autocmd("TabClosed", {
 		end
 		-- print(vim.inspect(tab_fts))
 
+		-- TODO: we assume that the closed tab is the current one, but we have no
+		-- way to tell whether it is a different one (e.g. via tabonly)
+
 		for _, client in pairs(vim.lsp.get_clients()) do
 			local lsp_fts = {}
-			for _, ft in pairs(client.config.filetypes) do
+			for _, ft in pairs(client.config.filetypes) do -- TODO: ignore lua_ls err
 				lsp_fts[ft] = true
 			end
 
 			if not require("util"):intersect(lsp_fts, tab_fts) then
-				-- vim.lsp.buf_detach_client is hard to get right
+				-- vim.lsp.buf_detach_client is hard to get right (because the buf num
+				-- must also be specified)
 				-- vim.lsp.buf_detach_client(0, client.id)
-				vim.cmd(string.format("LspStop %s", client.id))
-				print("closed", vim.inspect(client._log_prefix))
+				if not client:is_stopped() then
+					-- vim.cmd(string.format("LspStop %s", client.id))
+					client:stop()
+					-- x = client.get_language_id
+					print("closed", client._log_prefix)
+				end
+				-- TODO: clear/reset diagnostics
 			end
 		end
 	end,
