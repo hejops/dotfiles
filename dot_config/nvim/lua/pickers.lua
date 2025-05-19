@@ -124,12 +124,16 @@ function M:mail(opts) -- {{{
 
 	opts = opts or {}
 
+	-- TODO: opts.entry_maker
+	-- https://github.com/nvim-telescope/telescope.nvim/blob/b4da76be54691e854d3e0e02c36b0245f945c2c7/lua/telescope/builtin/__git.lua#L68
+	-- https://github.com/nvim-telescope/telescope.nvim/blob/master/lua/telescope/make_entry.lua#L414
+
 	local cmd = "notmuch search --format=json date:24h.. and tag:inbox | jq"
 	local decoded = vim.json.decode(require("util"):get_command_output(cmd))
 
 	local lines = {}
 	for _, m in ipairs(decoded) do
-		table.insert(lines, string.format("%s\t%s\t%s", m.thread, m.date_relative, m.subject))
+		table.insert(lines, string.format("%s\t%s\t[%s]\t%s", m.thread, m.date_relative, m.authors, m.subject))
 	end
 
 	pickers
