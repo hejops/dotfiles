@@ -373,6 +373,7 @@ require("lazy").setup(
 
 				opts.options = {
 					component_separators = "|",
+					globalstatus = true,
 					icons_enabled = false,
 					section_separators = "",
 					theme = "auto", -- https://github.com/nvim-lualine/lualine.nvim/blob/master/THEMES.md
