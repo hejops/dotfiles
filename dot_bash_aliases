@@ -1322,11 +1322,11 @@ gldiff() {
 
 		prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
 
-		n=$(glab mr list -F json | #--not-draft |
+		n=$(glab mr list --output=json --reviewer=@me | #--not-draft |
 			jq '.[:25][]' |
 			jqt updated_at iid title assignee.username source_branch |
 			sort -r |
-			fzh --preview="$prv_cmd" |
+			fzh -1 --preview="$prv_cmd" |
 			# fzf --preview="$prv_cmd" |
 			awk '{print $2}')
 
@@ -1335,17 +1335,8 @@ gldiff() {
 		n=$1
 	fi
 
-	url=$(_get_remote)
-	url=$(_git_http "$url")
-	url="$url/-/merge_requests/$n.diff"
+	glab mr diff "$n" | sed '/Subproject commit/d' | delta
 
-	# cannot use glab mr diff because diff is malformed
-	src=$(curl -sL -H "Cookie:_gitlab_session=$GL_SESSION" "$url")
-	if <<< "$src" grep -q "Sign in"; then
-		echo "_gitlab_session expired"
-		return
-	fi
-	echo "$src" | delta
 }
 
 gci() { watch -n 30 'glab ci list -P 10 | grep -P "^\(" | column -t'; }
