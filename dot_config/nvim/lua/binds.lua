@@ -92,8 +92,9 @@ vim.keymap.set("n", "<c-l>", "gt")
 vim.keymap.set("n", "r", "<nop>")
 vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- unload all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
 vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other buffers/tabs (but not delete)
-vim.keymap.set("t", "<c-.>", "<c-\\><c-n>gt")
-vim.keymap.set("t", "<c-x>", "<c-\\><c-n>gT")
+
+-- vim.keymap.set("t", "<c-.>", "<c-\\><c-n>gt") -- navigate tab from term; c-h/c-l are taken by readline
+-- vim.keymap.set("t", "<c-x>", "<c-\\><c-n>gT") -- not very ergonomic tbh
 
 -- splits are used for exec/term/Dispatch
 -- vim.keymap.set("t", "<c-x>", "<c-\\><c-n><c-w>_i") -- c-i conflicts with tab
@@ -114,11 +115,10 @@ end
 
 local last_win = nil
 
-vim.keymap.set("n", "<c-t>", function()
-	-- check all bufs for a terminal. if one is found, get the tab (and window)
-	-- it belongs to, and switch to it. in other words, there can effectively
-	-- only ever be a single terminal in nvim
-
+-- check all bufs for a terminal. if one is found, get the tab (and window) it
+-- belongs to, and switch to it. in other words, there can effectively only
+-- ever be a single terminal in nvim
+local function open_terminal()
 	for _, t in pairs(vim.api.nvim_list_tabpages()) do
 		-- if current tab contains a term, close it OR go to it
 		for _, w in pairs(vim.api.nvim_tabpage_list_wins(t)) do
@@ -137,9 +137,11 @@ vim.keymap.set("n", "<c-t>", function()
 
 	local wide, ratio = is_wide()
 	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal")
-end, { silent = true })
+end
 
--- TODO: navigate tab from term; c-h/c-l are taken by readline
+vim.keymap.set("n", "<c-e>", open_terminal, { silent = true })
+vim.keymap.set("n", "<c-t>", open_terminal, { silent = true })
+
 -- scrollback is also nice (handled by terminal itself), but less important
 
 vim.keymap.set(
@@ -147,6 +149,8 @@ vim.keymap.set(
 	"<c-t>",
 	-- "<c-\\><c-n>g<tab>" -- always goes to another tab
 	-- "<c-\\><c-n><c-6>"
+
+	-- switch to most recently used tab, basically like ctrl-6
 	function()
 		-- bdelete bypasses annoying 'process exited with' message
 		-- vim.cmd("bdelete! " .. vim.fn.expand("<abuf>"))
@@ -162,23 +166,15 @@ vim.keymap.set(
 	end
 )
 
-vim.keymap.set("t", "<c-z>", function() end)
-
-vim.keymap.set("n", "<c-z>", function()
-	-- toggle split orientation
-	-- https://stackoverflow.com/a/1269631
-
-	-- local wins = vim.api.nvim_tabpage_list_wins(0)
-	-- for _, w in pairs(wins) do
-	-- 	local b = vim.api.nvim_win_get_buf(w)
-	-- 	if vim.api.nvim_buf_get_name(b):match("^term") then
-	-- 		print(vim.api.nvim_win_get_config(w))
-	-- 		return
-	-- 	end
-	-- end
-
-	-- vim.cmd.wincmd()
+-- the previous bind usually works nicely the first time (since we remain in
+-- the same tab), but can become somewhat annoying once we start jumping
+-- between tabs. this ensures we remain in the same tab
+vim.keymap.set("t", "<c-e>", function()
+	local wide, _ = is_wide()
+	vim.cmd.wincmd(wide and "h" or "k")
 end)
+
+-- vim.keymap.set("t", "<c-z>", function() end)
 
 -- folds
 vim.keymap.set("n", "zH", "zM")
@@ -494,7 +490,7 @@ local ft_binds = { -- {{{
 
 	["sh,bash"] = {
 		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g|w<cr>" },
-		{ "n", "<leader>H", [[:%s/\v -H/ \\\r&/g|w<cr>]] },
+		{ "n", "<leader>H", [[:.s/\v -H/ \\\r&/g|w<cr>]] },
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
 	},
 
@@ -651,7 +647,7 @@ local ft_binds = { -- {{{
 			[[:'{+2,'}s/\v\t+(\w+).+/\1: foo.\1,/g<cr>]], -- struct def -> struct instantiation
 		},
 
-		{ "n", "<leader>B", ":!go build -x<cr>" }, -- could be a BufWritePost Dispatch
+		{ "n", "<leader>B", ":!go build -x<cr>" },
 		{ "n", "<leader>C", ":.s/\vif([^{]+)/case \1:/g<cr>" },
 
 		{
@@ -680,10 +676,10 @@ local ft_binds = { -- {{{
 					return
 				elseif next_line:match(err_check) then -- merge err decl and err check
 					vim.api.nvim_buf_set_lines(0, lnum, lnum + 2, false, { -- 0-indexed, [start,end)
-						string.format("if %s; err!= nil {", curr_line),
+						string.format("if %s; err!= nil {", curr_line), -- TODO: reuse [!=]=
 					})
 				else
-					vim.api.nvim_buf_set_lines(0, lnum + 1, lnum + 1, false, { "if err!= nil {panic(err)}" })
+					vim.api.nvim_buf_set_lines(0, lnum + 1, lnum + 1, false, { "if err!=nil{panic(err)}" })
 				end
 
 				vim.cmd.w()
@@ -956,7 +952,7 @@ local function exec() -- {{{
 			-- cd first, so that child's node_modules/tsx can be found
 			-- this assumes that node_modules and file.ts are at the same level
 			vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
-			ts = vim.fn.expand("%:.") -- relative to child dir
+			-- local ts = vim.fn.expand("%:.") -- relative to child dir
 
 			-- if vim.uv.fs_stat(".env") and vim.fn.executable("node23") then
 			-- 	return "node23 --no-warnings --import=tsx --env-file=.env " .. file
