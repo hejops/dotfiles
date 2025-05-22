@@ -111,7 +111,37 @@ alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tx="tectonic -X"
 alias tz=trizen # if gpg fail, gpg --recv-keys <key>
-alias y="bash ~/gripts/disq/ytm.sh"
+
+# alias y="bash ~/gripts/disq/ytm.sh"
+
+y() {
+	{
+		# force pause before playback (?)
+		playerctl play-pause
+
+		# wait for mpv to start
+		while
+			sink=$(pactl --format=json list sink-inputs | jq -r '.[] | select(.properties."application.name"=="mpv") | .sink')
+			[[ -z $sink ]]
+		do
+			sleep 0.5
+		done
+
+		# ensure mpv playing on headphones
+		# alsa.id=="Au" means connected via headphone jack (speakers are connected via "USB")
+		if
+			! pactl --format=json list sinks |
+				jq -e ".[] | select(.state==\"RUNNING\" and .index==$sink and .properties.\"alsa.id\"==\"Au\")" > /dev/null
+		then
+			notify-send -u critical 'playing on speakers'
+			# pgrep bash | grep ytm.sh | cut -d' ' -f1 | xargs kill
+			pavucontrol
+		else
+			playerctl play-pause
+		fi
+	} &
+	bash ~/gripts/disq/ytm.sh
+}
 
 EXA_ARGS=(
 
@@ -778,7 +808,7 @@ gc() {
 	elif
 		rd=$(git diff --diff-filter=RD --name-only --staged | grep .)
 	then
-		git commit -v
+		"${cmd[@]}"
 
 	elif
 		# 2. file(s) that have been renamed/deleted
@@ -987,8 +1017,7 @@ gb() { # {{{
 		git commit -v
 	}
 
-	# no remote branches
-	default_local_branch=$(_gmaster) #|| :
+	default_local_branch=$(_gmaster)
 	current_local_branch=$(_git_current_branch)
 
 	if [[ $# -eq 0 ]]; then
@@ -1013,7 +1042,7 @@ gb() { # {{{
 
 		# post checkout hook outputs to stderr
 		# but real errors are probably also written to stderr?
-		git checkout "${2:-$default_local_branch}" > /dev/null 2> /dev/null
+		# git checkout "${2:-$default_local_branch}" #> /dev/null 2> /dev/null
 
 		# git checkout --conflict=zdiff3 "${2:-$default_local_branch}"
 		# handle_conflicts
@@ -1031,9 +1060,11 @@ gb() { # {{{
 			git switch "$1" > /dev/null || return 1
 
 		elif
-			git switch --create "$1" > /dev/null 2> /dev/null
+			git switch --create "$1" "$default_local_branch" > /dev/null 2> /dev/null
 		then
-			:
+			# for some reason, newly created branches don't know
+			# which repo to pull from
+			git pull "$(_get_remote)" "$default_local_branch"
 
 		else
 
@@ -1055,7 +1086,7 @@ gb() { # {{{
 				cut -f2 |
 				while read -r f; do
 					[[ -f $f ]] || continue
-					git commit -v "$f" || git checkout -- "$f"
+					git commit -v --untracked-files=no "$f" || git checkout -- "$f"
 				done
 
 			# plain git switch can fail, if 'files would be
@@ -1076,10 +1107,13 @@ gb() { # {{{
 		fi
 	fi
 
+	# check if (dev) branch is behind remote
 	# rev-list probably wouldn't be useful if we don't fetch though
 	# note: rev-list errors if branch has no remote yet
-	[[ "$(git rev-list --left-right --count \
-		"origin/$1...HEAD" 2> /dev/null | cut -f1)" -gt 0 ]] && git pull
+	if [[ "$(git rev-list --left-right --count \
+		"origin/$1...HEAD" 2> /dev/null | cut -f1)" -gt 0 ]]; then
+		git pull
+	fi
 
 } # }}}
 
