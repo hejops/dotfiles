@@ -62,14 +62,8 @@ end
 
 -- https://unix.stackexchange.com/a/356407
 -- large motions, jumps
--- vim.keymap.set("n", "<c-b>", "<c-u>zz") -- <c-u/d> is more stable than <c-b/f>
--- vim.keymap.set("n", "<c-d>", "<c-d>zz")
--- vim.keymap.set("n", "<c-f>", "<c-d>zz")
--- vim.keymap.set("n", "<c-u>", "<c-u>zz")
--- vim.keymap.set("n", "<leader>j", "<c-f>zz")
--- vim.keymap.set("n", "<leader>k", "<c-b>zz")
 vim.keymap.set("n", "<c-i>", "<c-o>zz") -- jumplist; o = forward is more intuitive
-vim.keymap.set("n", "<c-j>", "<c-d>zz")
+vim.keymap.set("n", "<c-j>", "<c-d>zz") -- <c-u/d> is more stable than <c-b/f>
 vim.keymap.set("n", "<c-k>", "<c-u>zz")
 vim.keymap.set("n", "<c-o>", "<c-i>zz")
 vim.keymap.set("n", "N", ":keepjumps normal! N<cr>zzzv", { silent = true })
