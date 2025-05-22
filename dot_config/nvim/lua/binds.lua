@@ -232,7 +232,12 @@ end)
 
 -- close window if scratch
 local function update_or_close()
-	if vim.bo.buftype == "nofile" or vim.bo.buftype == "help" then
+	if vim.fn.getcmdwintype() == ":" then -- in cmdline (e.g. q:) -- quite rare
+		vim.cmd("q")
+	elseif
+		vim.bo.buftype == "nofile" -- scratch split
+		or vim.bo.buftype == "help"
+	then
 		vim.cmd.bd()
 	else
 		-- expr must be false, else 'not allowed to change text'
@@ -240,12 +245,8 @@ local function update_or_close()
 	end
 end
 
-vim.keymap.set("n", "<c-c>", update_or_close, { silent = true })
 vim.keymap.set("n", "<cr>", update_or_close, { silent = true })
-vim.keymap.set("n", "<leader><space>", update_or_close, { silent = true })
-vim.keymap.set("n", "x", function()
-	return vim.bo.modifiable == 0 and ":bd<cr>" or '"_x'
-end, { silent = true, expr = true })
+vim.keymap.set("n", "x", '"_x', { silent = true })
 
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
