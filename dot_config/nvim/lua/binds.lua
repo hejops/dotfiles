@@ -642,7 +642,7 @@ local ft_binds = { -- {{{
 		},
 
 		{ "n", "<leader>B", ":!go build -x<cr>" },
-		{ "n", "<leader>C", ":'<,'>s/\vif([^{]+)/case \1:/g<cr>" },
+		{ "n", "<leader>C", ":.s/\vif([^{]+)/case \1:/g<cr>" },
 
 		{
 			"n",
@@ -926,18 +926,20 @@ local function exec() -- {{{
 
 		python = function()
 			-- local root = require("util"):root_directory()
+			local cmd
 			if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
 				-- ~/.cache/uv
-				return "uv run "
+				cmd = "uv run "
 			-- elseif root and vim.uv.fs_stat(root .. "/pyproject.toml") then
 			elseif vim.fs.root(0, "pyproject.toml") then
 				-- vim.uv.fs_stat(require("util"):root_directory() .. ".venv")
 				-- poetry install -vv
-				return "poetry run python3 "
+				cmd = "poetry run python3 "
 			else
-				return "python3 "
+				cmd = "python3 "
 			end
-		end, --() .. curr_file,
+			return cmd .. curr_file
+		end,
 
 		-- local js = vim.fn.fnamemodify(curr_file, ":r") .. ".js"
 		typescript = function()

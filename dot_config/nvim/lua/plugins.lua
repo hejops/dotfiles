@@ -246,6 +246,28 @@ require("lazy").setup(
 			"nvim-lualine/lualine.nvim",
 
 			opts = function(_, opts)
+				-- -- if vim.api.nvim_buf_get_name(0):match("^term") then
+				-- if vim.bo.filetype == "c" then
+				-- 	os.execute("notify-send hi")
+				-- 	opts.sections = {
+				-- 		lualine_a = {},
+				-- 		lualine_b = {},
+				-- 		lualine_c = {},
+				-- 		lualine_x = {},
+				-- 		lualine_y = {},
+				-- 		lualine_z = {},
+				-- 	}
+				-- 	return
+				-- end
+
+				-- local function xx(x)
+				-- 	if vim.api.nvim_buf_get_name(0):match("^term") then
+				-- 		return {}
+				-- 	else
+				-- 		return x
+				-- 	end
+				-- end
+
 				-- local gitblame = require("gitblame")
 
 				opts.sections = {
@@ -254,7 +276,6 @@ require("lazy").setup(
 					-- https://github.com/nvim-lualine/lualine.nvim#component-specific-options
 
 					lualine_a = {
-						-- "branch",
 						require("git").foo,
 					},
 
@@ -312,6 +333,22 @@ require("lazy").setup(
 							-- return vim.fn.mode()
 						end,
 					},
+				}
+
+				opts.inactive_sections = {
+					lualine_a = {
+						function()
+							if vim.fn.expand("%") == "" then
+								return "[new file]"
+							end
+							return vim.fn.expand("%" .. (vim.o.columns > columns and ":p" or ""))
+						end,
+					},
+					lualine_b = {},
+					lualine_c = {},
+					lualine_x = {},
+					lualine_y = {},
+					lualine_z = {},
 				}
 
 				opts.winbar = {
@@ -373,6 +410,7 @@ require("lazy").setup(
 
 				opts.options = {
 					component_separators = "|",
+					globalstatus = true,
 					icons_enabled = false,
 					section_separators = "",
 					theme = "auto", -- https://github.com/nvim-lualine/lualine.nvim/blob/master/THEMES.md
