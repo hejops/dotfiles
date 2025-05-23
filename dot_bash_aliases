@@ -626,7 +626,9 @@ _git_log_fzf() { # {{{
 	then
 		: on master
 	elif [[ -n $m ]]; then # dev branch
-		args+=(--first-parent "$m...HEAD")
+		# note: use origin/master, because i tend to not actually
+		# update my local master
+		args+=(--first-parent "origin/$m...HEAD")
 	else
 		: no remote yet
 	fi
@@ -1006,19 +1008,42 @@ guns() {
 gb() { # {{{
 	: switch to new branch, or existing branch
 
-	handle_conflicts() {
-		_git_has_conflicts || return
-		# similar to gcon
-		while _git_has_conflicts; do
-			echo "Conflicts found!"
-			_git_get_conflicts | xargs nvim -p
-		done
-		_git_get_conflicts | xargs git add
-		git commit -v
-	}
+	# handle_conflicts() {
+	# 	_git_has_conflicts || return
+	# 	# similar to gcon
+	# 	while _git_has_conflicts; do
+	# 		echo "Conflicts found!"
+	# 		_git_get_conflicts | xargs nvim -p
+	# 	done
+	# 	_git_get_conflicts | xargs git add
+	# 	git commit -v
+	# }
 
 	default_local_branch=$(_gmaster)
 	current_local_branch=$(_git_current_branch)
+
+	foo() {
+		# TODO: keeping unstaged changes in the new branch is
+		# just annoying, because these changes are usually
+		# never meant to be committed. but --discard-changes is
+		# also unsafe
+
+		# note: .. and ... are NOT synonymous! ... is usually
+		# what we want
+
+		# presumably, ' M	' can be safely ignored?
+		# git diff-tree HEAD "$target"
+		# git diff-index "$target"
+		# git diff --numstat "$target"...HEAD
+
+		git diff-index "$1" |
+			grep -P '00000 [AM]	' |
+			cut -f2 |
+			while read -r f; do
+				[[ -f $f ]] || continue
+				git commit -v --untracked-files=no "$f" || git checkout -- "$f"
+			done
+	}
 
 	if [[ $# -eq 0 ]]; then
 		if [[ $default_local_branch == "$current_local_branch" ]]; then
@@ -1030,37 +1055,31 @@ gb() { # {{{
 		fi
 	else
 
+		target=$1
+
 		# generally, new branches should target master. however, this
 		# may not always be the case, so accept an optional 2nd arg to
 		# specify target branch (should be current)
-		#
-		# TODO: --conflict will fail if changes have been staged
 
-		# TODO: --conflict will cause conflict markers to appear in
-		# master. this is never desired, so conflicts should be
-		# resolved in the current branch (i.e. -before- the checkout)
-
-		# post checkout hook outputs to stderr
-		# but real errors are probably also written to stderr?
-		# git checkout "${2:-$default_local_branch}" #> /dev/null 2> /dev/null
-
-		# git checkout --conflict=zdiff3 "${2:-$default_local_branch}"
-		# handle_conflicts
+		# --conflict will cause conflict markers to appear in master.
+		# this is never desired, so conflicts should be resolved in the
+		# current branch (i.e. -before- the checkout)
 
 		# existing remote branch > create local branch > existing local branch
 		if
-			! git branch | grep -qPx "[ *] $1" &&
+			! git branch | grep -qPx "[ *] $target" &&
 				timeout 30 git pull &&
-				git branch -r | grep -q "origin/$1"
+				git branch -r | grep -q "origin/$target"
 		then
 			# note: git hook stdout cannot be suppressed
-			echo "Switching to remote branch $1"
+			echo "Switching to remote branch $target"
 
 			# TODO: --guess?
-			git switch "$1" > /dev/null || return 1
+			git switch "$target" > /dev/null || return 1
 
 		elif
-			git switch --create "$1" "$default_local_branch" > /dev/null 2> /dev/null
+			foo "$default_local_branch" #&&
+			git switch --create "$target" "$default_local_branch" > /dev/null 2> /dev/null
 		then
 			# for some reason, newly created branches don't know
 			# which repo to pull from
@@ -1068,35 +1087,13 @@ gb() { # {{{
 
 		else
 
-			# TODO: keeping unstaged changes in the new branch is
-			# just annoying, because these changes are usually
-			# never meant to be committed. but --discard-changes is
-			# also unsafe
-
-			# note: .. and ... are NOT synonymous! ... is usually
-			# what we want
-
-			# presumably, ' M	' can be safely ignored?
-			# git diff-tree HEAD "$1"
-			# git diff-index "$1"
-			# git diff --numstat "$1"...HEAD
-
-			git diff-index "$1" |
-				grep -F '00000 M	' |
-				cut -f2 |
-				while read -r f; do
-					[[ -f $f ]] || continue
-					git commit -v --untracked-files=no "$f" || git checkout -- "$f"
-				done
-
 			# plain git switch can fail, if 'files would be
 			# overwritten by checkout'. with --conflict, switch
 			# always succeeds, but may result in conflicts which
 			# must be resolved in the new branch
-			git switch "$1"
-			# --conflict=zdiff3 "$1" > /dev/null
-			#
-			# handle_conflicts
+
+			foo "$target"
+			git switch "$target"
 
 			# # alternatively, revert all unstaged changes, then
 			# # switch. this is probably more fragile
@@ -1111,7 +1108,7 @@ gb() { # {{{
 	# rev-list probably wouldn't be useful if we don't fetch though
 	# note: rev-list errors if branch has no remote yet
 	if [[ "$(git rev-list --left-right --count \
-		"origin/$1...HEAD" 2> /dev/null | cut -f1)" -gt 0 ]]; then
+		"origin/$target...HEAD" 2> /dev/null | cut -f1)" -gt 0 ]]; then
 		git pull
 	fi
 
