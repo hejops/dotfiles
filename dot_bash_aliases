@@ -5,6 +5,20 @@
 
 # startup {{{
 
+# https://wiki.archlinux.org/title/Systemd#Boot_time_increasing_over_time
+# systemd-analyze blame | grep -P '\ds'
+# systemd-analyze critical-chain
+#
+# sudo systemctl disable NetworkManager-wait-online.service # https://askubuntu.com/a/1018731
+#
+# journalctl --disk-usage                                                          # current usage
+# journalctl -b -u systemd-journald | grep max                                     # current max
+# sudo journalctl --vacuum-time=3d                                                 # truncate
+# sudo sed -i -r 's/#SystemMaxUse.+/SystemMaxUse=100M/' /etc/systemd/journald.conf # set max (should be done on arch install)
+
+# docker is disabled for now, because i literally never use it
+# sudo systemctl disable docker.service
+
 if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 
 	cat /tmp/updates
@@ -45,15 +59,13 @@ fi
 
 if ps --pid "$PPID" | grep -Fq wezterm; then
 
-	[[ -f /tmp/verse.json ]] && [[ -s /tmp/verse.json ]] &&
-		< /tmp/verse.json cat
-	# jq -r '.votd | .reference, .content' |
-	# 	sed -e 's/<[^>]*>//g' |
-	# 		fold -w 65 -s
+	[[ -f /tmp/verse ]] && [[ -s /tmp/verse ]] && cat /tmp/verse
 
 	if [[ -d $SLSK ]]; then
-		x=$(du -csh "$SLSK" | head -n1 | grep G)
-		if <<< "$x" grep -Po '^\d+' | \xargs -I{} test {} -ge 3; then
+		if
+			x=$(du -csh "$SLSK" | head -n1 | grep G) &&
+				<<< "$x" grep -Po '^\d+' | \xargs -I{} test {} -ge 3
+		then
 			echo -e "\n$x"
 		fi
 		unset x
@@ -248,7 +260,7 @@ sd() {
 	: shutdown
 	# uptime | grep hour || return/reboot
 
-	waitdie mpv pacman curl
+	waitdie mpv pacman curl yt-dlp
 
 	if [[ -n $HDD ]]; then
 
@@ -260,9 +272,9 @@ sd() {
 		killall firefox
 
 		while
-			f=$(files python | grep -m1 "$SLSK")
+			f=$(files python | grep "$SLSK")
 		do
-			inotifywait -e move_self "$f"
+			echo "$f" | xargs -n1 inotifywait -e move_self
 		done
 		killall nicotine
 
@@ -282,12 +294,9 @@ rt() {
 		while read -r d; do
 			files mpv | grep -Fq "$d" && waitdie mpv >&2
 			echo "$d"
-			# note: passing arbitrary num of args will probably be
-			# deprecated? but this is still needed for v/a fixing
-			# fix_tags "$d" < /dev/tty
 		done |
 		# to preserve the old behaviour (>1 args), remove -n1
-		largs -o -n1 fix_tags
+		largs -o fix_tags
 
 }
 
@@ -1190,7 +1199,7 @@ g,() {
 	git pull && return
 	git diff --name-only "$(_gmaster)..origin/$(_gmaster)" |
 		xargs -n1 git commit -v
-	git pull
+	git pull && git push
 }
 
 gcon() { # {{{
@@ -2196,13 +2205,24 @@ alias imm="notmuch show from:noreply@immobilienscout24.de |
 	colt"
 
 geocode() {
+
+	# https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=45.60343636072756,-73.72799336003183
+
 	: transform placename to coordinates
-	c "https://www.google.com/maps?q=$1" | # TODO: prone to 429
-		grep -Po 'center=[^&]+' |
-		head -n1 |
-		sed -r 's/center=//; s/%2C/,/' |
+	# TODO: handle places requiring resolution (e.g. alis peru)
+	c -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0' \
+		"https://www.google.com/maps?q=$1" | # WARN: prone to 429 (esp if no ua)
+		grep -Po '\d+\.\d+,\d+\.\d+\]' |
+		sed -r 's/(\.[0-9]{3})[0-9]*/\1/g' | # truncate to 3dp (if too specific, isv bails and renders nothing)
+		line 3 |                             # extremely arbitrary, need a better grep
+		tr -d ']' |
+		# when isv gets low-precision coords, it does best effort
+		# match, and can end up indoors
 		xargs -I{} firefox "https://www.instantstreetview.com/@{},h,p,z"
+
 }
+
+# < ~/geo/geo.csv shuf -n3 | cut -d, -f-2
 
 # df | grep '/$' | cut -d' ' -f1 | xargs sudo smartctl -a
 
@@ -2254,7 +2274,7 @@ subs() {
 		jq -r '.AllSubs[] | select(.Language.Title == "English") | .File[0].Url' |
 		sort |
 		# head -n1 |
-		fzf |
+		fzf --preview="curl -sL --globoff {} | head" |
 		sed -r 's/ /%20/g' | # url must be encoded
 		xargs curl --globoff # but also need globoff to ignore {}[]
 
