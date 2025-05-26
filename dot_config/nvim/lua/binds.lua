@@ -1,5 +1,7 @@
 -- https://vim.fandom.com/wiki/Unused_keys
 
+-- :!neomutt -i % -s <subj> -- <email>
+
 vim.g.mapleader = " " -- must be declared before declaring lazy plugins (citation needed)
 vim.g.maplocalleader = " "
 
@@ -133,7 +135,7 @@ local function open_terminal()
 	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal")
 end
 
-vim.keymap.set("n", "<c-e>", open_terminal, { silent = true })
+-- vim.keymap.set("n", "<c-e>", open_terminal, { silent = true })
 vim.keymap.set("n", "<c-t>", open_terminal, { silent = true })
 
 -- scrollback is also nice (handled by terminal itself), but less important
