@@ -737,11 +737,12 @@ git_log() {
 
 gxx() {
 	: show commits whose changes contain a pattern
-	prv_cmd="echo {} | cut -f1 | xargs git show --color=always"
+	prv_cmd="echo {} | cut -f1 | xargs git show -U1 | grepdiff \"$1\" --output-matching=hunk"
 	git log --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S "$1" | # WARN: slow with large histories
-		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' |     # --ansi
-		cut -f1 |
-		xargs git show
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border'
+	# |     # --ansi
+	# 	cut -f1 |
+	# 	xargs git show
 }
 
 gcoup() {
@@ -1366,7 +1367,7 @@ gldiff() {
 			jq '.[:25][]' |
 			jqt updated_at iid title assignee.username source_branch |
 			sort -r |
-			fzh -1 --preview="$prv_cmd" |
+			fzh -0 -1 --preview="$prv_cmd" |
 			# fzf --preview="$prv_cmd" |
 			awk '{print $2}')
 
