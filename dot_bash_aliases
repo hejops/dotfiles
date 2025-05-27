@@ -274,7 +274,7 @@ sd() {
 		while
 			f=$(files python | grep "$SLSK")
 		do
-			echo "$f" | xargs -n1 inotifywait -e move_self
+			echo "$f" | largs -n1 inotifywait -e move_self
 		done
 		killall nicotine
 
@@ -2178,13 +2178,14 @@ wifi() {
 getmail() {
 	mail 2>&1 | grep 'No new mail.'
 	[[ $(notmuch count tag:inbox and tag:unread and date:today) -eq 0 ]] && return
-	TERM=xterm-direct exec neomutt
+	# exec neomutt
+	neomutt -z
 }
 
 get_cookie() {
 	\cp ~/.mozilla/firefox/*default/cookies.sqlite tmp.db
 	sql="select value from moz_cookies where name = '$1' order by id desc limit 1"
-	sqlite3 tmp.db "$sql"
+	sqlite3 tmp.db "$sql" 2> /dev/null
 	rm tmp.db > /dev/null
 }
 
@@ -2199,11 +2200,36 @@ get_cookie() {
 
 # }}}
 
+# lp "$1" |
+# 	grep -Po "^local/$1\S+" |
+# 	cut -d/ -f2 |
+# 	while read -r pkg; do
+# 		pactree -r "$pkg" |
+# 			wc -l |
+# 			\xargs -I{} test {} -eq 1 &&
+# 			rem "$pkg" < /dev/tty
+# 	done
+
 alias imm="notmuch show from:noreply@immobilienscout24.de |
 	grep -Po 'Adresse: [^(]+' |
 	sed -r 's/([a-z])([A-Z])/\1\t\2/' |
 	sort -u |
 	colt"
+
+# curl -sL 'https://www.geoguessr.com/api/v3/users/6118c9f48db3190001c6d471' | jq
+# curl -sL 'https://www.geoguessr.com/api/v3/users/6118c9f48db3190001c6d471/stats' | jq
+# curl -sL 'https://www.geoguessr.com/api/v4/ranked-system/best/6118c9f48db3190001c6d471' | jq
+# curl -sL 'https://www.geoguessr.com/api/v4/ranked-system/progress/6118c9f48db3190001c6d471' | jq
+
+georank() {
+	curl -sL 'https://www.geoguessr.com/api/v4/ranked-team-duels/me/teams/6097bf310e78f000019d9747' \
+		--cookie "_ncfa=$(get_cookie _ncfa)" |
+		jq -e '
+		def cutoff: .bucket.promotionIndex;
+		def current: .bucket.teams[] | select(.teamId == "6097bf310e78f000019d9747-6118c9f48db3190001c6d471") | .position;
+		if .bucket then current<cutoff end
+	' > /dev/null && echo ok
+}
 
 geocode() {
 
@@ -2211,8 +2237,9 @@ geocode() {
 
 	: transform placename to coordinates
 	# TODO: handle places requiring resolution (e.g. alis peru)
+	# need ua to prevent 429
 	c -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0' \
-		"https://www.google.com/maps?q=$1" | # WARN: prone to 429 (esp if no ua)
+		"https://www.google.com/maps?q=$1" |
 		grep -Po '\d+\.\d+,\d+\.\d+\]' |
 		sed -r 's/(\.[0-9]{3})[0-9]*/\1/g' | # truncate to 3dp (if too specific, isv bails and renders nothing)
 		line 3 |                             # extremely arbitrary, need a better grep
