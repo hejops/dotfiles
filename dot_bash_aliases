@@ -63,7 +63,7 @@ if ps --pid "$PPID" | grep -Fq wezterm; then
 
 	if [[ -d $SLSK ]]; then
 		if
-			x=$(du -csh "$SLSK" | head -n1 | grep G) &&
+			x=$(du -csh "$SLSK/complete" | head -n1 | grep G) &&
 				<<< "$x" grep -Po '^\d+' | \xargs -I{} test {} -ge 3
 		then
 			echo -e "\n$x"
@@ -310,28 +310,14 @@ ytm() {
 	all_ids=
 	while read -r query; do
 		echo "$query"
-		curl -sL 'https://music.youtube.com/youtubei/v1/search' -H 'Content-Type: application/json' \
+		curl -sL 'https://music.youtube.com/youtubei/v1/search' \
+			-H 'Content-Type: application/json' \
 			--data-raw '{"context":{"client":{"clientName":"WEB_REMIX","clientVersion":"1.20240904.01.01"}},"query":"'"$query"'","params":"EgWKAQIIAWoSEAMQBBAJEA4QChAFEBEQEBAV"}' |
-			jq '
-		.contents |
-		.tabbedSearchResultsRenderer |
-		.tabs[] |
-		.tabRenderer |
-		.content |
-		.sectionListRenderer |
-		# .contents[] | # TODO: filter null
-		.contents[1] |
-		.musicShelfRenderer |
-		.contents[] |
-		.musicResponsiveListItemRenderer |
-		.flexColumns[] |
-		.musicResponsiveListItemFlexColumnRenderer |
-		.text |
-		.runs[]
-	' |
-			grep -- videoId |
-			cut -d'"' -f4 |
-			while read -r id; do
+			gron |
+			grep videoId |
+			cut -d'"' -f2 |
+			uniq |
+			while read -r id; do # deduplicate across queries; somewhat useful i guess?
 				<<< "$all_ids" grep -Fxq -- "$id" && continue
 				all_ids+=$'\n'$id
 				echo "$id"
@@ -2301,7 +2287,7 @@ subs() {
 		jq -r '.AllSubs[] | select(.Language.Title == "English") | .File[0].Url' |
 		sort |
 		# head -n1 |
-		fzf --preview="curl -sL --globoff {} | head" |
+		fzf -0 --preview="curl -sL --globoff {} | head" |
 		sed -r 's/ /%20/g' | # url must be encoded
 		xargs curl --globoff # but also need globoff to ignore {}[]
 
