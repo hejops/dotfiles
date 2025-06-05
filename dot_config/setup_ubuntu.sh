@@ -49,11 +49,13 @@ if ! command -v wezterm; then
 	echo 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' |
 		sudo tee /etc/apt/sources.list.d/wezterm.list
 fi
-
 # TODO: generate ssh key, add to gh
 
 cd
+
+# bash ~/.mozilla/restore.sh # TODO: how to detect if setup done?
+
 git clone https://github.com/hejops/dwm
 cd dwm
 sudo make install
-sudo cp dwm.desktop /usr/share/xsessions
+# sudo cp dwm.desktop /usr/share/xsessions
