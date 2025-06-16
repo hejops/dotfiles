@@ -8,11 +8,11 @@ else
 	MOZ_DIR=~/.mozilla
 fi
 
-rm -rf $MOZ_DIR/firefox
-rm -rf $MOZ_DIR/extensions
-rm -rf $MOZ_DIR/native-messaging-hosts
+rm -rf "$MOZ_DIR"/firefox
+rm -rf "$MOZ_DIR"/extensions
+rm -rf "$MOZ_DIR"/native-messaging-hosts
 
-mkdir -p $MOZ_DIR/firefox
+mkdir -p "$MOZ_DIR"/firefox
 
 cat << EOF > $MOZ_DIR/firefox/profiles.ini
 [Install4F96D1932A9F858E]
@@ -30,7 +30,7 @@ Default=default
 Locked=1
 EOF
 
-cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default $MOZ_DIR/firefox/default
+cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default "$MOZ_DIR"/firefox/default
 
 # https://askubuntu.com/a/73480
 # https://devicetests.com/install-firefox-addon-command-line
@@ -38,16 +38,21 @@ cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default $MOZ_DIR/firef
 # https://stackoverflow.com/a/37739112
 
 EXT_DIR=$MOZ_DIR/firefox/default/extensions
-mkdir -p $EXT_DIR
+mkdir -p "$EXT_DIR"
 
 addons=(
 
-	auto-tab-discard
+	# auto-tab-discard # native of ff 93 https://support.mozilla.org/en-US/kb/unload-inactive-tabs-save-system-memory-firefox
 	cookie-autodelete
 	tridactyl-vim
 	ublock-origin
-	tree-style-tab # TODO: consider sidebery or tabcenter-reborn
 )
+
+need_tst=
+if [[ $(firefox --version | grep -Po '\d[^.]+') -lt 136 ]]; then
+	need_tst=1
+	addons+=(tree-style-tab) # TODO: consider sidebery or tabcenter-reborn
+fi
 
 # note: addons still must be enabled (unless there's some about:config option
 # that allows skipping this)
@@ -78,7 +83,7 @@ done
 
 rm -rf "$tmpdir"
 
-if [ ! -f $MOZ_DIR/native-messaging-hosts/tridactyl.json ]; then
+if [ ! -f "$MOZ_DIR"/native-messaging-hosts/tridactyl.json ]; then
 	curl \
 		-fsSl https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh \
 		-o /tmp/trinativeinstall.sh &&
@@ -108,8 +113,8 @@ pkill firefox
 sed -i '
 	s/\(seen":\)false/\1true/g
 	s/\(active":\)false\(,"userDisabled":\)true/\1true\2false/g
-' $MOZ_DIR/firefox/default/extensions.json
-sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' $MOZ_DIR/firefox/default/pref.js
+' "$MOZ_DIR"/firefox/default/extensions.json
+sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' "$MOZ_DIR"/firefox/default/prefs.js
 
 # # TODO: cookies.sqlite -- block cookies on consent.youtube.com
 # sqlite3 $FF_PROFILE_DIR/cookies.sqlite "INSERT INTO moz_cookies VALUES(5593,'^firstPartyDomain=youtube.com','CONSENT','PENDING+447','.youtube.com','/',1723450203,1660378445948074,1660378204032779,1,0,0,1,0,2);"
@@ -120,21 +125,25 @@ sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' $MOZ_DIR/firefox/de
 search_lz4=$MOZ_DIR/firefox/default/search.json.mozlz4
 wget https://github.com/jusw85/mozlz4/releases/download/v0.1.0/mozlz4-linux
 chmod +x mozlz4-linux
+# disable all engines except ddg
 ./mozlz4-linux -x "$search_lz4" |
-	# sed 's/{}/{"hidden":true}/g' | # disables all, making google default
-	# sed 's/{}/{"hidden":true}/; s/\(Bing[^{]*{\)/\1"hidden":true/' | # disables 1st (google) and 3rd (bing)
-	jq '.engines[0,2,3]._metaData = {hidden:true}' | # disables all except ddg
+	jq '.engines[] | ._metaData.hidden = .id != "ddg"' |
 	./mozlz4-linux -z - "$search_lz4"
 rm mozlz4-linux
+
+# need gui startup to create xulstore
+firefox
 
 # autohide menu bar
 < ~/.mozilla/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."toolbar-menubar".autohide = true'
 
 # activate TST sidebar
-< ~/.mozilla/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."sidebar-title".value = "Tree Style Tab"'
+if [[ -n $need_tst ]]; then
+	< ~/.mozilla/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."sidebar-title".value = "Tree Style Tab"'
+fi
 
-sqlite3 $MOZ_DIR/firefox/default/places.sqlite "DELETE FROM moz_bookmarks;"
-sqlite3 $MOZ_DIR/firefox/default/places.sqlite "DELETE FROM moz_places;"
+sqlite3 "$MOZ_DIR"/firefox/default/places.sqlite "DELETE FROM moz_bookmarks;"
+sqlite3 "$MOZ_DIR"/firefox/default/places.sqlite "DELETE FROM moz_places;"
 
-# manual action required:
+# manual action required (why?):
 # customize toolbar (remove spaces, add search bar)
