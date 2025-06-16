@@ -8,11 +8,11 @@ else
 	MOZ_DIR=~/.mozilla
 fi
 
-rm -rf $MOZ_DIR/firefox
-rm -rf $MOZ_DIR/extensions
-rm -rf $MOZ_DIR/native-messaging-hosts
+rm -rf "$MOZ_DIR"/firefox
+rm -rf "$MOZ_DIR"/extensions
+rm -rf "$MOZ_DIR"/native-messaging-hosts
 
-mkdir -p $MOZ_DIR/firefox
+mkdir -p "$MOZ_DIR"/firefox
 
 cat << EOF > $MOZ_DIR/firefox/profiles.ini
 [Install4F96D1932A9F858E]
@@ -30,7 +30,7 @@ Default=default
 Locked=1
 EOF
 
-cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default $MOZ_DIR/firefox/default
+cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default "$MOZ_DIR"/firefox/default
 
 # https://askubuntu.com/a/73480
 # https://devicetests.com/install-firefox-addon-command-line
@@ -38,7 +38,7 @@ cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default $MOZ_DIR/firef
 # https://stackoverflow.com/a/37739112
 
 EXT_DIR=$MOZ_DIR/firefox/default/extensions
-mkdir -p $EXT_DIR
+mkdir -p "$EXT_DIR"
 
 addons=(
 
@@ -78,7 +78,7 @@ done
 
 rm -rf "$tmpdir"
 
-if [ ! -f $MOZ_DIR/native-messaging-hosts/tridactyl.json ]; then
+if [ ! -f "$MOZ_DIR"/native-messaging-hosts/tridactyl.json ]; then
 	curl \
 		-fsSl https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh \
 		-o /tmp/trinativeinstall.sh &&
@@ -108,8 +108,8 @@ pkill firefox
 sed -i '
 	s/\(seen":\)false/\1true/g
 	s/\(active":\)false\(,"userDisabled":\)true/\1true\2false/g
-' $MOZ_DIR/firefox/default/extensions.json
-sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' $MOZ_DIR/firefox/default/pref.js
+' "$MOZ_DIR"/firefox/default/extensions.json
+sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' "$MOZ_DIR"/firefox/default/pref.js
 
 # # TODO: cookies.sqlite -- block cookies on consent.youtube.com
 # sqlite3 $FF_PROFILE_DIR/cookies.sqlite "INSERT INTO moz_cookies VALUES(5593,'^firstPartyDomain=youtube.com','CONSENT','PENDING+447','.youtube.com','/',1723450203,1660378445948074,1660378204032779,1,0,0,1,0,2);"
@@ -133,8 +133,8 @@ rm mozlz4-linux
 # activate TST sidebar
 < ~/.mozilla/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."sidebar-title".value = "Tree Style Tab"'
 
-sqlite3 $MOZ_DIR/firefox/default/places.sqlite "DELETE FROM moz_bookmarks;"
-sqlite3 $MOZ_DIR/firefox/default/places.sqlite "DELETE FROM moz_places;"
+sqlite3 "$MOZ_DIR"/firefox/default/places.sqlite "DELETE FROM moz_bookmarks;"
+sqlite3 "$MOZ_DIR"/firefox/default/places.sqlite "DELETE FROM moz_places;"
 
 # manual action required:
 # customize toolbar (remove spaces, add search bar)
