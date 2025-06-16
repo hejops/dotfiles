@@ -369,7 +369,7 @@ local function keys()
 		{ mods = "CTRL", key = "Tab", action = act.DisableDefaultAssignment },
 		{ mods = "CTRL", key = "g", action = act(hint_url) },
 		-- { mods = "CTRL", key = "t", action = SpawnTabNext() },
-		{ mods = "CTRL", key = "z", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
+		-- { mods = "CTRL", key = "z", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
 		{ mods = "WIN", key = "f", action = act.DisableDefaultAssignment },
 
 		-- { mods = leader, key = "g", action = act(hint_file) },
