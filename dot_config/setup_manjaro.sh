@@ -10,6 +10,7 @@ pkgs=(
 	fzf
 	github-cli
 	go
+	jq
 	luacheck
 	make
 	npm
