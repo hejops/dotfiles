@@ -15,8 +15,6 @@
 // user_pref("browser.display.background_color", "#444");
 // user_pref("browser.display.background_color.dark", "#444");
 
-// user_pref("security.sandbox.content.tempDirSuffix", "3daba8cf-56ca-4e54-81bc-9bac11749eb8");
-// user_pref("security.sandbox.plugin.tempDirSuffix", "50e7dc2c-cc03-4fb4-9127-efc86bb56bb7");
 user_pref("accessibility.browsewithcaret", true);
 user_pref("accessibility.typeaheadfind.autostart", false);
 user_pref("accessibility.typeaheadfind.enablesound", false);
@@ -119,12 +117,19 @@ user_pref("browser.sessionstore.max_serialize_back", 3);
 user_pref("browser.sessionstore.max_serialize_forward", 3);
 user_pref("browser.sessionstore.max_tabs_undo", 5);
 user_pref("browser.sessionstore.max_windows_undo", 0);
-user_pref("browser.sessionstore.privacy_level", 2);
+// user_pref("browser.sessionstore.privacy_level", 2);
 user_pref("browser.sessionstore.restore_pinned_tabs_on_demand", true);
 user_pref("browser.shell.checkDefaultBrowser", true);
 user_pref("browser.shell.didSkipDefaultBrowserCheckOnFirstRun", true);
 user_pref("browser.startup.homepage", "about:blank");
 user_pref("browser.startup.page", 3); // restore previous sessions
+user_pref("sidebar.verticalTabs", true); // 136 -- https://support.mozilla.org/en-US/kb/use-sidebar-access-tools-and-vertical-tabs
+user_pref("sidebar.main.tools", "");
+user_pref("sidebar.visibility", "expand-on-hover");
+user_pref("sidebar.animation.enabled", false);
+user_pref("browser.startup.homepage_override.mstone", "ignore");
+user_pref("browser.uitour.enabled", false);
+user_pref("browser.urlbar.suggest.searches", false);
 user_pref("browser.tabs.allowTabDetach", false); // only for native tab bar; for TST, see https://github.com/piroor/treestyletab/issues/2629#issuecomment-1027715577
 user_pref("browser.tabs.closeWindowWithLastTab", false);
 user_pref("browser.tabs.drawInTitlebar", false);
@@ -160,6 +165,7 @@ user_pref("browser.urlbar.suggest.quicksuggest", false);
 user_pref("browser.urlbar.suggest.quicksuggest.sponsored", false);
 user_pref("browser.urlbar.suggest.searches", false);
 user_pref("browser.urlbar.suggest.topsites", false);
+user_pref("browser.urlbar.suggest.trending", false);
 user_pref("browser.urlbar.timesBeforeHidingSuggestionsHint", 2);
 user_pref("browser.urlbar.tipShownCount.tabToSearch", 2);
 user_pref("browser.urlbar.trimURLs", false);
@@ -381,12 +387,6 @@ user_pref("reader.content_width", 9);
 user_pref("reader.font_size", 8);
 user_pref("reader.font_type", "serif");
 user_pref("reader.line_height", 6);
-user_pref("security.dialog_enable_delay", 0);
-user_pref("security.sandbox.content.level", 3);
-user_pref("services.blocklist.clock_skew_seconds", 0);
-user_pref("services.settings.clock_skew_seconds", 0);
-user_pref("signon.importedFromSqlite", true);
-user_pref("signon.usage.hasEntry", true);
 user_pref("storage.vacuum.last.index", 1);
 user_pref("svg.context-properties.content.enabled", true);
 user_pref("toolkit.cosmeticAnimations.enabled", false);
@@ -405,6 +405,7 @@ user_pref("xpinstall.signatures.required", false);
 user_pref("xpinstall.whitelist.add", "");
 user_pref("xpinstall.whitelist.add.180", "");
 user_pref("xpinstall.whitelist.required", false);
+
 // https://support.mozilla.org/en-US/questions/1423347
 // https://support.mozilla.org/en-US/questions/1296613
 user_pref("browser.startup.couldRestoreSession.count", -1);
@@ -418,3 +419,18 @@ user_pref("media.webspeech.synth.enabled", false);
 user_pref("browser.translations.automaticallyPopup", false);
 user_pref("browser.translations.enable", false);
 user_pref("browser.translations.panelShown", false);
+
+user_pref("security.dialog_enable_delay", 0);
+user_pref("security.sandbox.content.level", 3);
+user_pref("services.blocklist.clock_skew_seconds", 0);
+user_pref("services.settings.clock_skew_seconds", 0);
+user_pref("signon.importedFromSqlite", true);
+user_pref("signon.usage.hasEntry", true);
+
+// none of these work
+// user_pref("browser.search.defaultenginename", "DuckDuckGo");
+// biome-ignore format:
+user_pref("browser.search.defaultenginename", "data:text/plain,browser.search.defaultenginename=DuckDuckGo");
+user_pref("browser.search.order.1", "DuckDuckGo");
+user_pref("browser.search.selectedEngine", "DuckDuckGo");
+user_pref("keyword.URL", "https://duckduckgo.com/?q=");
