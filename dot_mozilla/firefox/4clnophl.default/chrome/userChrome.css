@@ -24,18 +24,15 @@ moz-extension://b7530ee2-a124-4619-8050-33b1a50ffa7d/options/options.html#!
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
 *|*:root {
-  background-color: #121212;
-  --beige: #bfbfbf;
-}
-
-*|*:root {
   --autocomplete-popup-background: var(background-color) !important;
   --autocomplete-popup-color: white !important;
+  --beige: #bfbfbf;
   --browser-background: var(background-color) !important;
   --in-content-box-background: var(background-color);
   --in-content-page-background: var(background-color);
   --in-content-page-color: white;
   --main-bg-color: var(background-color);
+  background-color: #121212;
 }
 
 /* these are obviously extreme solutions */
@@ -60,15 +57,10 @@ scrollbar,
 
 /* hide items {{{*/
 
-/* warning: appearance might be weird if order is changed */
-
-#TabsToolbar,
-[class*="searchbar-engine-one-off-add-engine"], /* https://gist.github.com/e-t-l/bcc38e839b667afcb3ade08cb6b68122 */
-.searchbar-search-button[addengines="true"],
-.searchbar-search-button,
 #PanelUI-menu-button,
 #PopupAutoCompleteRichResult .autocomplete-richlistbox,
 #PopupAutoCompleteRichResult,
+#TabsToolbar,
 #adnauseam_rednoise_org_adnauseam-blockelement,
 #back-button,
 #context-back,	/* https://teddit.net/r/firefox/comments/9eteoj/help_how_to_edit_context_menu/e5rispn/ */
@@ -89,14 +81,11 @@ scrollbar,
 #context-sep-open,
 #context-stop,
 #forward-button,
-#identity-box,
 #inspect-separator,
 #page-action-buttons > :not([hidden]):not(toolbartabstop) ~ #pageActionSeparator,
 #pageActionButton,
 #reload-button,
 #searchbar-search-button,
-#sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] #sidebar-header,
-#sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] + #sidebar-splitter,
 #splitter,
 #star-button, /* v 89 */
 #star-button-box,
@@ -124,13 +113,16 @@ scrollbar,
 .search-setting-button,
 .searchbar-engine-button,
 .searchbar-search-button,
+.searchbar-search-button,
 .searchbar-search-button[addengines="true"],
 .urlbar-history-dropmarker,
 .urlbarView-row,
+/* #identity-box, */ /* disabling this leads to buggy popups! */
 [class*="searchbar-engine-one-off-add-engine"], /* https://gist.github.com/e-t-l/bcc38e839b667afcb3ade08cb6b68122 */
 panel#urlbar-results #urlbarView-row-0 {
   display: none !important;
 }
+
 /*}}}*/
 
 /* remove borders {{{*/

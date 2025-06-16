@@ -19,10 +19,9 @@ local function get_output(cmd)
 	assert(cmd)
 	---@type string
 	local out, _ = assert(io.popen(cmd)):read("*all")
+	out, _ = out:gsub("\n", "")
 	return out
 end
-
-local is_ubuntu = get_output("grep Ubuntu /etc/*-release") ~= ""
 
 -- local function extend(t1, t2)
 -- 	for _, v in ipairs(t2) do
@@ -44,6 +43,8 @@ config.default_cwd = wezterm.home_dir
 config.default_prog = { "bash" } -- source .bashrc
 config.pane_focus_follows_mouse = true
 config.switch_to_last_active_tab_when_closing_tab = true
+config.initial_cols = 200
+config.initial_rows = 50
 
 -- https://github.com/P1n3appl3/config/blob/46b4935f2a0d9cf88ebc444bac5b10c03e8c6df3/dotfiles/.config/wezterm/wezterm.lua#L46
 -- https://github.com/wez/wezterm/blob/main/docs/config/lua/wezterm/on.md#example-opening-whole-scrollback-in-vim
@@ -117,34 +118,30 @@ local fonts = {
 
 -- relying on xrdb dpi is unreliable, as ubuntu seems to ignore it
 local cell_width = 0.9
-local font_size
 
-if not is_ubuntu then
-	-- home, 4k
-	font_size = 10.0 -- scp
-	-- the main drawback is subpar non-ascii support (e.g. cyrillic), which is a slight problem at home
-	-- table.insert(fonts, 1, "NanumGothicCoding")
-	-- font_size = 12.0
-	-- -- underline 'disappears' at larger sizes in wezterm (works ootb in ghostty, regardless of size)
-	-- config.underline_position = -6
-elseif get_output("xdpyinfo | grep -F 3840x1200") then -- note: xrandr is unacceptably slow
-	-- dual 2k
+-- note: xrandr is unacceptably slow
+local dimensions = get_output("xdpyinfo | grep dimensions: | awk '{print $2}'")
+
+-- local is_work = get_output("grep Ubuntu /etc/*-release") ~= ""
+local is_work = not get_output("uname -r"):find("arch1")
+
+if is_work then
+	-- idk why i just prefer a different font at work. for home use, poor
+	-- non-latin support (and gross mismatch with adobe) is generally a
+	-- dealbreaker
 	table.insert(fonts, 1, "NanumGothicCoding")
-	font_size = 13.0
-elseif get_output("xdpyinfo | grep -F x1200") then
-	-- single 2k
-	table.insert(fonts, 1, "NanumGothicCoding")
-	font_size = 16.0
-elseif get_output("xdpyinfo | grep -F 1920x1080") then
-	-- laptop-only (2k)
-	font_size = 18.0
-elseif get_output("xdpyinfo | grep -F 3840x3240") then
-	table.insert(fonts, 1, "NanumGothicCoding")
-	font_size = 24.0
-else
-	-- home, 4k only
-	font_size = 18.0
+	-- else
+	-- 	-- at larger sizes, nanum underline 'disappears' in wezterm (works ootb
+	-- 	-- in ghostty, regardless of size)
+	-- 	config.underline_position = -6
 end
+
+local font_size = ({
+	["1920x1080"] = 16.0, -- work laptop, 2k
+	["3840x1200"] = 16.0, -- work dual, 2x2k
+	["3840x2160"] = 18.0, -- home, 4k
+	-- ["3840x3240"] = 24.0, -- ???
+})[dimensions] or 18.0
 
 -- note: source han sans is implicitly used as fallback for cn/jp/kr (which is
 -- why scp goes great with it). scp also has cyrillic
