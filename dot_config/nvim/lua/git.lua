@@ -21,7 +21,7 @@ local curr_branch = git_dir ~= nil and util:get_command_output(git .. "branch --
 
 -- this file will be watched for changes
 local head_file = string.format("%s/.git/refs/heads/%s", git_dir, curr_branch)
-local master_file = string.format("%s/.git/refs/remotes/origin/%s", git_dir, curr_branch)
+local master_file = string.format("%s/.git/refs/remotes/origin/%s", git_dir, "master")
 
 ---@type { [string]: number }
 M.cache = {}
