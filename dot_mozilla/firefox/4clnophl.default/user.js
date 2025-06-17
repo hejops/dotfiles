@@ -106,6 +106,7 @@ user_pref("browser.safebrowsing.malware.enabled", false);
 user_pref("browser.safebrowsing.phishing.enabled", false);
 user_pref("browser.search.highlightCount", 2);
 user_pref("browser.search.openintab", true);
+user_pref("browser.urlbar.openintab", true);
 user_pref("browser.search.removeEngineInfobar.enabled", true);
 user_pref("browser.search.showOneOffButtons", false);
 user_pref("browser.search.suggest.enabled.private", true);
@@ -125,8 +126,10 @@ user_pref("browser.startup.homepage", "about:blank");
 user_pref("browser.startup.page", 3); // restore previous sessions
 user_pref("sidebar.verticalTabs", true); // 136 -- https://support.mozilla.org/en-US/kb/use-sidebar-access-tools-and-vertical-tabs
 user_pref("sidebar.main.tools", "");
-user_pref("sidebar.visibility", "expand-on-hover");
+user_pref("sidebar.visibility", "always-show"); // expand-on-hover has buggy transparency, possibly due to css
 user_pref("sidebar.animation.enabled", false);
+// biome-ignore format:
+user_pref("sidebar.backupstate", '{"panelOpen":false,"launcherWidth":240,"expandedLauncherWidth":240,"launcherExpanded":true,"launcherVisible":true}');
 user_pref("browser.startup.homepage_override.mstone", "ignore");
 user_pref("browser.uitour.enabled", false);
 user_pref("browser.urlbar.suggest.searches", false);
@@ -434,3 +437,9 @@ user_pref("browser.search.defaultenginename", "data:text/plain,browser.search.de
 user_pref("browser.search.order.1", "DuckDuckGo");
 user_pref("browser.search.selectedEngine", "DuckDuckGo");
 user_pref("keyword.URL", "https://duckduckgo.com/?q=");
+
+user_pref("widget.content.allow-gtk-dark-theme", true);
+user_pref("extensions.activeThemeID", "firefox-compact-dark@mozilla.org");
+user_pref("lightweightThemes.isThemeSelected", false);
+user_pref("lightweightThemes.persisted.footerURL", false);
+user_pref("lightweightThemes.persisted.headerURL", false);
