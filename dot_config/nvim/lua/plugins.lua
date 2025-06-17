@@ -87,19 +87,19 @@ require("lazy").setup(
 			end,
 		},
 
-		{
-			"devkvlt/go-tags.nvim",
-			ft = "go",
-			enabled = vim.fn.executable("gomodifytags"),
-			config = function()
-				require("go-tags").setup({
-					commands = {
-						["GoTagsAddJSON"] = { "-add-tags", "json" },
-						["GoTagsRemoveJSON"] = { "-remove-tags", "json" },
-					},
-				})
-			end,
-		},
+		-- {
+		-- 	"devkvlt/go-tags.nvim", -- gone??
+		-- 	ft = "go",
+		-- 	enabled = vim.fn.executable("gomodifytags"),
+		-- 	config = function()
+		-- 		require("go-tags").setup({
+		-- 			commands = {
+		-- 				["GoTagsAddJSON"] = { "-add-tags", "json" },
+		-- 				["GoTagsRemoveJSON"] = { "-remove-tags", "json" },
+		-- 			},
+		-- 		})
+		-- 	end,
+		-- },
 
 		{
 			"jinh0/eyeliner.nvim", -- replaces quick-scope
@@ -228,14 +228,17 @@ require("lazy").setup(
 					"shellharden",
 					"shfmt",
 					"stylua",
+					-- "clang-format",
 
 					-- linters
 
+					"checkmake",
 					"gitlint",
 					"golangci-lint",
 					"markdownlint",
+					"proselint",
 					"ruff",
-					-- "shellcheck",
+					"shellcheck", -- should be included in bashls, but may not work ootb?
 				},
 
 				--
