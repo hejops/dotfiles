@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+. ~/.bashrc # required for EDITOR, WORK_DIRS
+
 if
 	command -v chezmoi > /dev/null
 then
@@ -8,7 +10,6 @@ then
 fi
 
 sel=$({
-	. ~/.bashrc # required for WORK_DIRS
 
 	# multiple dirs can be specified, but are sorted separately
 	# TODO: WORK_DIRS -> sort mtime
@@ -31,6 +32,9 @@ if [[ -d $sel ]]; then
 fi
 
 term_cmd=(wezterm start)
+
+# at work, restrict to single wezterm window
+uname -r | grep -Fq MANJARO && term_cmd+=(--new-tab)
 
 if <<< "$dotfiles" grep -Fx "$sel"; then
 
