@@ -7,6 +7,8 @@ pkgs=(
 	chezmoi
 	chromium
 	clang
+	docker
+	docker-compose
 	eza
 	fakeroot # for checkupdates
 	fzf
@@ -26,11 +28,27 @@ pkgs=(
 	wireless_tools # iwgetid
 	xclip
 	xorg-xsetroot # dwmstatus, wallpaper
+	yarn
 	yazi
 
 )
 
+if ! command -v trizen; then
+	git clone https://aur.archlinux.org/trizen.git
+	cd trizen
+	makepkg -si # NOT sudo
+	cd ..
+	rm -rf trizen
+fi
+
+chsh -s /bin/bash # $(which bash)
+
+find ~ -maxdepth 1 -type d -regex '^\./[A-Z].+' -regextype egrep -delete
+
 sudo pacman --sync --needed "${pkgs[@]}"
+
+# need non-oss version for devcontainer; this is non-negotiable
+trizen --sync visual-studio-code-bin
 
 chezmoi init hejops # git creds not required
 chezmoi apply
