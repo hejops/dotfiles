@@ -31,7 +31,7 @@ if git_dir and has_remote then
 
 	M.head_sha = util:read_file(head_file) -- nil if no commits made
 	if M.head_sha then
-		M.origin_master_sha = util:read_file(master_file)
+		M.origin_master_sha = util:read_file(master_file) or util:get_command_output("git rev-parse HEAD", true)
 		M.cache[M.origin_master_sha .. M.head_sha] = commits_ahead(M.origin_master_sha, M.head_sha)
 	end
 
@@ -72,7 +72,7 @@ local function update_branch()
 		M.head_sha = new_head_sha
 
 	-- pushed
-	elseif M.origin_master_sha ~= new_master_sha then
+	elseif new_master_sha and M.origin_master_sha ~= new_master_sha then
 		-- will probably be 0
 		-- M.cache[new_master_sha .. M.head_sha] = commits_ahead(new_master_sha, M.head_sha)
 		M.cache[new_master_sha .. M.head_sha] = 0
