@@ -47,16 +47,15 @@ user_pref("browser.display.background_color", "#282828");
 user_pref("browser.display.background_color.dark", "#282828");
 user_pref("browser.display.use_document_fonts", 0);
 user_pref("browser.displayedE10SNotice", 4);
+user_pref("browser.download.always_ask_before_handling_new_types", true);
 user_pref("browser.download.autohideButton", false);
 user_pref("browser.download.folderList", 2);
 user_pref("browser.download.importedFromSqlite", true);
+user_pref("browser.download.lastDir", "/home/joseph"); // TODO: set expected dir based on filetype
 user_pref("browser.download.manager.alertOnEXEOpen", false);
 user_pref("browser.download.panel.shown", true);
 user_pref("browser.download.save_converter_index", 2);
 user_pref("browser.download.useDownloadDir", false);
-user_pref("browser.download.viewableInternally.typeWasRegistered.svg", true);
-user_pref("browser.download.viewableInternally.typeWasRegistered.webp", true);
-user_pref("browser.download.viewableInternally.typeWasRegistered.xml", true);
 user_pref("browser.eme.ui.firstContentShown", true);
 user_pref("browser.engagement.ctrlTab.has-used", true);
 user_pref("browser.feeds.handler.default", "web");
