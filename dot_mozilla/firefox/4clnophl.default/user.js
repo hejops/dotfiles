@@ -126,10 +126,13 @@ user_pref("browser.startup.homepage", "about:blank");
 user_pref("browser.startup.page", 3); // restore previous sessions
 user_pref("sidebar.verticalTabs", true); // 136 -- https://support.mozilla.org/en-US/kb/use-sidebar-access-tools-and-vertical-tabs
 user_pref("sidebar.main.tools", "");
-user_pref("sidebar.visibility", "always-show"); // expand-on-hover has buggy transparency, possibly due to css
+user_pref("sidebar.visibility", "expand-on-hover");
 user_pref("sidebar.animation.enabled", false);
+user_pref("sidebar.animation.duration-ms", 0);
+user_pref("sidebar.animation.expand-on-hover.duration-ms", 0);
+user_pref("sidebar.expandOnHover", true);
 // biome-ignore format:
-user_pref("sidebar.backupstate", '{"panelOpen":false,"launcherWidth":240,"expandedLauncherWidth":240,"launcherExpanded":true,"launcherVisible":true}');
+user_pref("sidebar.backupState", '{"panelOpen":false,"launcherWidth":240,"expandedLauncherWidth":240,"launcherExpanded":true,"launcherVisible":true}');
 user_pref("browser.startup.homepage_override.mstone", "ignore");
 user_pref("browser.uitour.enabled", false);
 user_pref("browser.urlbar.suggest.searches", false);
@@ -279,7 +282,7 @@ user_pref("font.minimum-size.x-western", 12);
 user_pref("font.name.monospace.ja", "Source Han Sans JP");
 user_pref("font.name.monospace.x-western", "Source Code Pro");
 user_pref("font.name.sans-serif.ja", "Source Han Sans JP");
-user_pref("font.name.sans-serif.x-western", "Inter");
+user_pref("font.name.sans-serif.x-western", "Inter"); // TODO: may be Inter Variable
 user_pref("font.name.serif.ja", "Source Han Sans JP");
 user_pref("font.name.serif.x-western", "Source Serif 4"); // native reader ignores these settings!
 user_pref("full-screen-api.warning.timeout", 0);
