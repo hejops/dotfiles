@@ -138,7 +138,7 @@ end
 
 local font_size = ({
 	["1920x1080"] = 16.0, -- work laptop, 2k
-	["3840x1200"] = 16.0, -- work dual, 2x2k
+	["3840x1200"] = 13.0, -- work dual, 2x2k
 	["3840x2160"] = 18.0, -- home, 4k
 	-- ["3840x3240"] = 24.0, -- ???
 })[dimensions] or 18.0
