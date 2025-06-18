@@ -22,14 +22,17 @@ pkgs=(
 	npm
 	nvim
 	pacman-contrib # pactree
+	playerctl mpv-mpris
 	rofi
 	shellharden # mason install requires cargo (rustup)
+	slock
 	wezterm
 	wireless_tools # iwgetid
 	xclip
 	xorg-xsetroot # dwmstatus, wallpaper
 	yarn
 	yazi
+	yt-dlp
 
 )
 
@@ -41,21 +44,23 @@ if ! command -v trizen; then
 	rm -rf trizen
 fi
 
+sudo gpasswd -a "$USER" docker
+
 chsh -s /bin/bash # $(which bash)
 
 find ~ -maxdepth 1 -type d -regex '^\./[A-Z].+' -regextype egrep -delete
 
 sudo pacman --sync --needed "${pkgs[@]}"
 
+# WARN: removing manjaro-zsh-config WILL irreparably break login (not even tty
+# will work)
+sudo pacman --remove --recursive pamac-gtk3 manjaro-application-utility
+
 # need non-oss version for devcontainer; this is non-negotiable
 trizen --sync visual-studio-code-bin
 
 chezmoi init hejops # git creds not required
 chezmoi apply
-
-# WARN: removing manjaro-zsh-config WILL irreparably break login (not even tty
-# will work)
-sudo pacman --remove --recursive pamac-gtk3 manjaro-application-utility
 
 if ! ssh -T git@github.com 2>&1 | grep 'successfully authenticated'; then
 
