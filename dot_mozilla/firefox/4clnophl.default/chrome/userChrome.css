@@ -42,6 +42,7 @@ moz-extension://b7530ee2-a124-4619-8050-33b1a50ffa7d/options/options.html#!
   /* background-color: var(background-color) !important; */
   /* padding: 0px !important;  */
   /* nonsensically squished together */
+
   border: none !important;
 }
 
@@ -55,7 +56,7 @@ scrollbar,
   /* scrollbar-color: rgba(128, 128, 128, 0.2509803922) transparent !important; */
 }
 
-/* hide items {{{*/
+/* hide items {{{ */
 
 #PanelUI-menu-button,
 #PopupAutoCompleteRichResult .autocomplete-richlistbox,
@@ -92,6 +93,8 @@ scrollbar,
 #stop-button,
 #stop-reload-button,
 #tabbrowser-tabs .tabbrowser-tab .tab-close-button,
+#tabbrowser-tabs[orient="vertical"] #tabs-newtab-button, /* https://old.reddit.com/r/FirefoxCSS/comments/1hj6b03 */
+#tabbrowser-tabs[orient="vertical"] :is(#tabs-newtab-button, #vertical-tabs-newtab-button),
 #throbber-box,
 #unified-extensions-button,
 #urlbar .autocomplete-history-dropmarker,
@@ -112,7 +115,6 @@ scrollbar,
 .search-panel-header > label,
 .search-setting-button,
 .searchbar-engine-button,
-.searchbar-search-button,
 .searchbar-search-button,
 .searchbar-search-button[addengines="true"],
 .urlbar-history-dropmarker,
@@ -162,25 +164,13 @@ toolbar .toolbarbutton-1,
 #urlbar.megabar[focused="true"] > #urlbar-background {
   background: var(background-color) !important;
   background-color: var(background-color) !important;
-  border: none !important;
+  /* border: none !important; */
   color: var(--beige) !important;
 }
 
 /*}}}*/
 
-/* note: as of FF 130, either FF's or TST sidebar bg color changed. this was
-* fixed by switching to Photon color scheme in TST options
-* moz-extension://ff186869-a788-4c06-b149-2ec5b6d3f99e/options/options.html#!
-*/
-
-/* autocollapsable TST sidebar {{{ */
-/* https://teddit.net/r/FirefoxCSS/comments/en95ja/treestyletabs_autohiding_sidebar_having_some/ */
-
-*|*:root {
-  --thin-tab-width: 35px;
-  --wide-tab-width: 200px;
-}
-
+/*
 .tab {
   background-color: var(background-color) !important;
   color: var(--beige) !important;
@@ -189,36 +179,7 @@ toolbar .toolbarbutton-1,
   margin-left: -9px;
   padding: -2em;
 }
-
-/* https://github.com/piroor/treestyletab/wiki/Code-snippets-for-custom-style-rules#full-auto-showhide-theme */
-#sidebar {
-  max-width: none !important;
-  min-width: 0px !important;
-  border-right: 1px solid rgba(0, 0, 0, 0.25);
-}
-#sidebar-box:not(
-    [sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"]
-  ) {
-  min-width: var(--wide-tab-width) !important;
-  max-width: none !important;
-}
-#sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] {
-  position: relative !important;
-  transition: all 150ms !important;
-  min-width: var(--thin-tab-width) !important;
-  max-width: var(--thin-tab-width) !important;
-  /* large z-index required as of ff 133 */
-  /* https://github.com/piroor/treestyletab/issues/3635#issuecomment-2386360361 */
-  z-index: calc(var(--browser-area-z-index-tabbox, 10000) + 1) !important;
-}
-#sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"]:hover {
-  transition: all 150ms !important;
-  min-width: var(--wide-tab-width) !important;
-  max-width: var(--wide-tab-width) !important;
-  margin-right: calc(
-    (var(--wide-tab-width) - var(--thin-tab-width)) * -1
-  ) !important;
-}
+*/
 
 /*}}}*/
 
@@ -239,7 +200,7 @@ toolbar .toolbarbutton-1,
 toolbar .toolbarbutton-1 {
   background: var(background-color) !important;
   background-color: var(background-color) !important;
-  border: none !important;
+  /* border: none !important; */
   color: var(--beige) !important;
   margin-inline: 0px !important;
   padding-block: 0px !important;
@@ -259,7 +220,7 @@ toolbar .toolbarbutton-1 {
 
 .findbar-container {
   background-color: var(background-color);
-  border: none;
+  /* border: none; */
   color: var(--beige);
 }
 
@@ -275,13 +236,13 @@ toolbar .toolbarbutton-1 {
   color: var(--beige) !important;
   text-shadow: white !important;
   background-color: var(background-color) !important;
-  border: none !important;
+  /* border: none !important; */
 }
 
 tooltip * {
   background-color: var(background-color) !important;
   -moz-appearance: none !important;
-  border: none !important;
+  /* border: none !important; */
 }
 
 .tabbrowser-tab[selected] {
