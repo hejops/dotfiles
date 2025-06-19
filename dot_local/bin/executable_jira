@@ -3,7 +3,10 @@ set -euo pipefail
 
 . ~/.bash_aliases_work # JIRA, JIRA_TOKEN
 
-# https://id.atlassian.com/manage-profile/security/api-tokens
+if [[ -z ${JIRA:-} ]]; then
+	echo "Jira token required"
+	exec xdg-open 'https://id.atlassian.com/manage-profile/security/api-tokens'
+fi
 
 get_assigned_issues() {
 	# https://github.com/pol-rivero/github-desktop-plus/blob/4c7b34112ff/docs/branch-name-presets.md?plain=1#L65
@@ -35,16 +38,57 @@ get_assigned_issues() {
 	'
 }
 
-# summarise
-get_assigned_issues | jq -r '.[] | [.status,.url,.title] | @tsv'
+select_issue() {
+	get_assigned_issues |
+		jq -r '.[] | [.status,.url,.title] | @tsv' |
+		fzf |
+		cut -f2 |
+		xargs basename
+}
 
-# https://github.com/sbreining/logwork/blob/fe45bbf4f34e7b613ad3f482ed26be95fb5e04c7/logwork.sh#L113
+log_work() {
 
-# # log work
-# curl -s \
-# 	--user "$WORK_EMAIL:$JIRA_TOKEN" \
-# 	-X POST -H "Content-Type: application/json" \
-# 	-d '{"started":"'""$d'","timeSpentSeconds":'"$t"'}' \
-# 	"$JIRA/rest/api/2/issue/$n/worklog"
+	# https://github.com/sbreining/logwork/blob/fe45bbf4f34e7b613ad3f482ed26be95fb5e04c7/logwork.sh#L113
 
-# TODO: map git branch to jira issue id
+	n=$1
+	read -r -p 'Hours: ' hours < /dev/tty
+	secs=$((hours * 3600))
+	d=$(date --date="$hours hours ago" -I) # forgot what format they need
+	curl -s \
+		--user "$WORK_EMAIL:$JIRA_TOKEN" \
+		-X POST -H "Content-Type: application/json" \
+		-d '{"started":"'"""$d"'","timeSpentSeconds":'"$secs"'}' \
+		"$JIRA/rest/api/2/issue/$n/worklog"
+
+}
+
+transition() {
+
+	# https://docs.atlassian.com/software/jira/docs/api/REST/4.4.5/#id339616
+
+	n=$1
+
+	new_status=$(curl -s \
+		--user "$WORK_EMAIL:$JIRA_TOKEN" \
+		"$JIRA/rest/api/2/issue/$n/transitions" |
+		jq -c '.transitions[] | {id, name}' |
+		fzf |
+		jq .id) # keep as str
+
+	curl -s \
+		--user "$WORK_EMAIL:$JIRA_TOKEN" \
+		-X POST -H "Content-Type: application/json" \
+		-d "{ \"transition\" : $new_status }" \
+		"$JIRA/rest/api/2/issue/$n/transitions"
+
+}
+
+case ${1:-} in
+
+--log) log_work "$(select_issue)" ;;
+
+--transition) transition "$(select_issue)" ;;
+
+*) get_assigned_issues | jq -r '.[] | [.status,.url,.title] | @tsv' ;;
+
+esac
