@@ -2314,7 +2314,8 @@ kp() {
 		grep -Po '/release/\d+-[^"]+' |
 		cut -d'-' -f2- |
 		tr '-' ' ' |
-		# TODO: percent decode
+		sed 's@+@ @g;s@%@\\x@g' | # https://askubuntu.com/a/295312
+		xargs -0 printf "%b" |
 		sort -u |
 		while read -r rel; do
 			echo "$rel"
