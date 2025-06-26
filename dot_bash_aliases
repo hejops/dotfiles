@@ -25,15 +25,15 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 
 	if
 		< /tmp/updates grep -q '^python ' &&
-			! < /tmp/updates grep -P 'python (3\.\d+)\S+ -> \1'
+			! < /tmp/updates grep -Pq 'python (3\.\d+)\S+ -> \1'
 	then
 		echo -e "WARNING: major Python update\n"
-		# TODO: update globally installed pips (scrobblerh)
+		# TODO: update globally installed pips? (scrobblerh)
 	fi
 
 	if
 		< /tmp/updates grep -q '^postgresql ' &&
-			! < /tmp/updates grep -P 'postgresql (\d+)\S+ -> \1'
+			! < /tmp/updates grep -Pq 'postgresql (\d+)\S+ -> \1'
 	then
 		echo -e "WARNING: major postgresql update\n"
 	fi
