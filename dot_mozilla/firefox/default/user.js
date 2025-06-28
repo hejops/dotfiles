@@ -124,7 +124,7 @@ user_pref("browser.shell.didSkipDefaultBrowserCheckOnFirstRun", true);
 user_pref("browser.startup.homepage", "about:blank");
 user_pref("browser.startup.page", 3); // restore previous sessions
 user_pref("sidebar.verticalTabs", true); // 136 -- https://support.mozilla.org/en-US/kb/use-sidebar-access-tools-and-vertical-tabs
-user_pref("sidebar.main.tools", "");
+user_pref("sidebar.main.tools", "aichat"); // if "", reverts to default
 user_pref("sidebar.visibility", "expand-on-hover");
 user_pref("sidebar.animation.enabled", false);
 user_pref("sidebar.animation.duration-ms", 0);
