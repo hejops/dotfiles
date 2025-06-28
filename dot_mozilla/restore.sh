@@ -115,10 +115,15 @@ fi
 firefox --headless > /dev/null 2>&1 & # generate extensions.json
 sleep 10
 pkill firefox
-sed -i '
-	s/\(seen":\)false/\1true/g
-	s/\(active":\)false\(,"userDisabled":\)true/\1true\2false/g
-' "$MOZ_DIR"/firefox/default/extensions.json
+< "$MOZ_DIR"/firefox/default/extensions.json jq '
+
+	.addons[].active = true;
+	.addons[].appDisabled = false;
+	.addons[].embedderDisabled = false;
+	.addons[].softDisabled = false;
+	.addons[].userDisabled = false;
+'
+
 sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' "$MOZ_DIR"/firefox/default/prefs.js
 
 # pre-installed search engines can only be hidden, not removed (this is why the
@@ -156,3 +161,4 @@ sqlite3 "$MOZ_DIR"/firefox/default/places.sqlite "DELETE FROM moz_places;"
 # remove elements from toolbar (warn: removing 'list all tabs' also removes sidebar?)
 # set search engine
 # restore ublock
+# disable all themes except dark
