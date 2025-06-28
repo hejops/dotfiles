@@ -128,7 +128,11 @@ search_lz4=$MOZ_DIR/firefox/default/search.json.mozlz4
 # disable all engines except ddg
 # might not work? (reverts to google)
 mozlz4 -x "$search_lz4" |
-	jq '.engines[] | ._metaData.hidden = .id != "ddg"' |
+	# "defaultEngineIdHash": "nVbjzSsX6W+tHUrVamgarg//cmHv2Ul2ykTB2j5qPbE="
+	jq '
+		.engines[] | ._metaData.hideOneOffButton = .id != "ddg";
+		.metaData.defaultEngineId = "ddg"
+	' |
 	mozlz4 -z - "$search_lz4"
 
 # need gui startup to create xulstore
