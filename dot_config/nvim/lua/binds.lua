@@ -884,7 +884,7 @@ end -- }}}
 -- run current file and dump stdout to scratch buffer
 local function exec() -- {{{
 	local ft = vim.bo.filetype
-	if ft == "nofile" then
+	if ft == "nofile" or ft == "" then
 		return
 	end
 
