@@ -123,7 +123,7 @@ local cell_width = 0.9
 local dimensions = get_output("xdpyinfo | grep dimensions: | awk '{print $2}'")
 
 -- local is_work = get_output("grep Ubuntu /etc/*-release") ~= ""
-local is_work = not get_output("uname -r"):find("arch1")
+local is_work = not get_output("uname -r"):find("arch[12]")
 
 if is_work then
 	-- idk why i just prefer a different font at work. for home use, poor
@@ -139,7 +139,7 @@ end
 local font_size = ({
 	["1920x1080"] = 16.0, -- work laptop, 2k
 	["3840x1200"] = 13.0, -- work dual, 2x2k
-	["3840x2160"] = 18.0, -- home, 4k
+	["3840x2160"] = 10.0, -- home, 4k
 	-- ["3840x3240"] = 24.0, -- ???
 })[dimensions] or 18.0
 
