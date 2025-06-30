@@ -138,6 +138,23 @@ end
 -- vim.keymap.set("n", "<c-e>", open_terminal, { silent = true })
 vim.keymap.set("n", "<c-t>", open_terminal, { silent = true })
 
+-- local str = "qwertyuiopasdfghjklzxcvbm"
+-- for i = 1, #str do
+-- 	local c = str:sub(i, i)
+-- 	vim.api.nvim_set_keymap(
+-- 		"t",
+-- 		string.format("<cs-%s>", c),
+-- 		-- "<c-\\><c-n><c-b>",
+-- 		string.format([[<cmd>lua print('ctrl+shift+%s')<cr>]], c),
+-- 		{}
+-- 	)
+-- end
+
+for _, c in pairs({ "x", "," }) do
+	vim.keymap.set("t", string.format("<c-%s>", c), "<c-\\><c-n><c-b>") -- once in normal mode, just use c-j and c-k
+end
+-- vim.keymap.set("t", "<cs-k>", "<c-\\><c-n><c-b>") -- doesn't work
+
 -- scrollback is also nice (handled by terminal itself), but less important
 
 vim.keymap.set(
@@ -200,7 +217,7 @@ end
 -- vim.keymap.set("n", "<leader>T", ":tabe " .. vim.fn.expand("%:p:h")) -- expanded only once!
 -- vim.keymap.set("n", "cp", ":colo<cr>")
 -- vim.keymap.set("n", "cr", require("util").random_colorscheme)
-vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true }) -- vim's sort n is not at all like !sort -V
+vim.keymap.set("n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { silent = true }) -- TODO: 'error' if last paragraph is single line
 vim.keymap.set("n", "<leader>D", [[:g/\v/d<Left><Left>]])
 vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- remove all undos -- https://stackoverflow.com/a/47524696
 vim.keymap.set("n", "<leader>n", [[:%g/\v/norm <Left><Left><Left><Left><Left><Left>]])
@@ -378,6 +395,17 @@ end -- }}}
 
 -- mode: string|string[], lhs: string, rhs: string|function, opts?: vim.keymap.set.Opts
 
+---@param str string
+---@param backward boolean
+local function search_for(str, backward, recenter)
+	return function()
+		vim.fn.search(str, "W" .. (backward and "b" or ""))
+		if recenter then
+			vim.cmd.norm("zt")
+		end
+	end
+end
+
 -- TODO: move out to separate file (almost 400 lines!)
 -- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
 ---@type {[string]: { mode: string, lhs: string, rhs: string|function, opts: table? }[]}
@@ -390,62 +418,25 @@ local ft_binds = { -- {{{
 	},
 
 	["gitcommit,diff"] = {
-		{
-			"n",
-			"J",
-			function()
-				vim.fn.search("^@@", "W")
-				vim.cmd.norm("zt")
-			end,
-		},
-		{
-			"n",
-			"K",
-			function()
-				vim.fn.search("^@@", "Wb")
-				vim.cmd.norm("zt")
-			end,
-		},
-		{
-			"n",
-			"{",
-			function()
-				vim.fn.search("^diff", "Wb")
-				vim.cmd.norm("zt")
-			end,
-		},
-		{
-			"n",
-			"}",
-			function()
-				vim.fn.search("^diff", "W")
-				vim.cmd.norm("zt")
-			end,
-		},
+		{ "n", "J", search_for("^@@", false, true) },
+		{ "n", "K", search_for("^@@", true, true) },
+		{ "n", "{", search_for("^diff", false, true) },
+		{ "n", "}", search_for("^diff", true, true) },
+	},
+
+	yaml = {
+		{ "n", "(", search_for([[^\S\+:]], true) },
+		{ "n", ")", search_for([[^\S\+:]], false) },
+	},
+
+	csv = {
+		{ "n", "(", search_for(",", true) }, -- TODO: should not cross lines
+		{ "n", ")", search_for(",", false) },
 	},
 
 	man = {
 		{ "n", "J", "<c-f>zz" },
 		{ "n", "K", "<c-b>zz" },
-	},
-
-	yaml = {
-		{
-			"n",
-			")",
-			function()
-				vim.fn.search([[^\S\+:]], "W")
-				vim.cmd.norm("zt")
-			end,
-		},
-		{
-			"n",
-			"(",
-			function()
-				vim.fn.search([[^\S\+:]], "Wb")
-				vim.cmd.norm("zt")
-			end,
-		},
 	},
 
 	sql = {
@@ -773,6 +764,7 @@ local ft_binds = { -- {{{
 		},
 
 		{ "n", "<c-k>", "ysiw]Ea()<esc>Pgqq", { remap = true } }, -- wrap in hyperlink
+		{ "n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort n<cr>`z", { remap = true } },
 
 		{
 			"n",
