@@ -82,6 +82,17 @@ if ps --pid "$PPID" | grep -Fq wezterm; then
 
 fi
 
+if ! ls /tmp/ssh-XXXXX* > /dev/null; then
+	# pkill ssh-agent # deletes all existing sockets
+	eval "$(ssh-agent -s)"
+
+elif [[ -z $SSH_AUTH_SOCK ]]; then
+	SSH_AUTH_SOCK=$(\ls /tmp/ssh-XXXXXX*/agent.*)
+	export SSH_AUTH_SOCK
+	find ~/.ssh -name 'gitlab*' | grep -v .pub | \xargs ssh-add -q
+
+fi
+
 [[ -f ~/jira.txt ]] && < ~/jira.txt cut -f1,3
 
 # }}}
@@ -106,7 +117,10 @@ alias ram='exec yazi "$MU"'
 alias rat='exec yazi "$HDD/torrent" "$HDD/movies"'
 
 # alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
+# alias mem='top -b -n1 -o %MEM | grep -m10 $USER'
+# alias mem='top -bn1 | sed -rn "/PID/,$p" | sort -k10 -n | tail'
 # alias n="NO_COLOR=1 node --import=tsx"
+# top -bn1 | sed -rn '/PID/,$p' | sed 1d | awk '{print $10}' | sum
 alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && exec mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed" # TODO: handle >1 video device (just increment n until file not exist)
@@ -120,10 +134,10 @@ alias dA="dc artist:"
 alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias dc="discogs_collection filter"
 alias dt="discogs_collection top"
+alias eb="exec bash"
 alias fzh="fzf --height=~33% --reverse" # height=~X% means min(input rows, window height * X%);
 alias inw="inotifywait --monitor --recursive"
 alias li="exec chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg'"
-alias mem='top -b -n1 -o %MEM | grep -m10 $USER'
 alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out ; kp"
 alias pq="~/plaque/plaque"
 alias pss="ps -e --format=lstart,pid,cmd --sort=start_time | grep -Fv -e '[' -e '('"
@@ -132,6 +146,19 @@ alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tx="tectonic -X"
 alias tz=trizen # if gpg fail, gpg --recv-keys <key>
+
+mem() {
+	# https://unix.stackexchange.com/a/261252
+	# free memory
+	low=$(< /proc/zoneinfo grep low | awk '{print $NF}' | sum)
+	a=$(
+		cat <<- EOF
+			{a[\$1]=\$2} END{ print a["MemFree:"]+a["Active(file):"]+a["Inactive(file):"]+a["SReclaimable:"]-(12*low); }
+		EOF
+	)
+	free_mem=$(< /proc/meminfo awk -v low="$low" "$a") # kb
+	echo "$free_mem" | bc
+}
 
 # alias y="bash ~/gripts/disq/ytm.sh"
 
@@ -801,15 +828,6 @@ gdm() { # {{{
 
 	# https://gitlab.com/gitlab-org/cli/-/issues/7704
 
-	# if command -v glab > /dev/null; then
-	# 	glab mr diff |
-	# 		grep -v Subproject | # https://github.com/dandavison/delta/issues/1943
-	# 		delta
-	# else
-	# 	# includes merges (can be noisy)
-	# 	git diff "$(gmaster)...HEAD"
-	# fi
-
 } # }}}
 
 git_log() {
@@ -1008,15 +1026,17 @@ gcf() {
 gapat() { # {{{
 	: stage hunks matching some pattern
 
-	# grepdiff is more reliable than git diff -S/-G
-	# https://choly.ca/post/git-programmatic-staging/
-	# https://blog.paddlefish.net/git-tip-stage-lines-matching-a-regular-expression/
-	# https://old.reddit.com/r/git/comments/p1vltk
-	git diff -U0 |
-		grepdiff --output-matching=hunk -E "$1" |
-		# "By default, git apply expects that the patch being applied
-		# is a unified diff with at least one line of context."
-		git apply --cached --unidiff-zero
+	for patt in "$@"; do
+		# grepdiff is more reliable than git diff -S/-G
+		# https://choly.ca/post/git-programmatic-staging/
+		# https://blog.paddlefish.net/git-tip-stage-lines-matching-a-regular-expression/
+		# https://old.reddit.com/r/git/comments/p1vltk
+		git diff -U0 |
+			grepdiff --output-matching=hunk -E "$patt" |
+			# "By default, git apply expects that the patch being applied
+			# is a unified diff with at least one line of context."
+			git apply --cached --unidiff-zero
+	done
 
 	# # https://stackoverflow.com/a/52394658
 	# git diff --unified=1 --pickaxe-regex -S "$1" |
@@ -1056,7 +1076,7 @@ gun() {
 
 	git diff "$@" | cat
 	git checkout -- "$@"
-	echo "undid ${#@} files"
+	echo "undid ${#@} files" # TODO: if ., determine how many files changed?
 }
 
 guns() {
@@ -1398,49 +1418,23 @@ clocd() {
 
 # gitlab {{{
 
+# json output requires v1.37 (apt is 1.36 smh)
+# https://gitlab.com/gitlab-org/cli/-/commit/893f5c945a50cb8a6d674eb05923f87e46fa6150
+
+# https://gitlab.xyz.com/-/user_settings/personal_access_tokens
+# glab auth login
+
 alias gld=gldiff
+alias gmer='glab mr list --output=json --assignee=@me --merged | jq .[] | jqt iid source_branch title' # note: --output=json forcibly limits --per-page to 15?
 
 # apt 1.36
 # snap 1.43/1.54, but cannot read config file (lol)
 
-# gmr() {
-# 	: create or open mr in browser
-# 	branch=$(_git_current_branch)
-# 	url=$(_get_remote)
-# 	url=$(_git_http "$url")
-# 	if
-# 		n=$(glab mr list --source-branch "$branch" |
-# 			grep '^!' |
-# 			awk '{print $1}' |
-# 			tr -d '!')
-# 	then
-# 		echo "Opening MR $n"
-# 		url="$url/-/merge_requests/$n"
-# 	else
-# 		echo "Creating new MR"
-# 		url="$url/-/merge_requests/new?merge_request%5Bsource_branch%5D=$branch"
-# 	fi
-# 	xdg-open "$url" 2> /dev/null
-# }
-
 gldiff() {
 
-	# note: for current branch, just use gdm
+	# note: to see diff of current branch, just use gdm
 	if [[ $# -eq 0 ]]; then
-		# n=$(glab mr list |     #--reviewer=@me |
-		# 	sed -r 's/  +/\t/g' | # force tab delimiter
-		# 	cut -d$'\t' -f1,3- |  # remove useless column
-		# 	grep '^!' |           # remove useless lines
-		# 	colt |
-		# 	fzh |
-		# 	awk '{print $1}' |
-		# 	tr -d '!')
-
-		# json output requires v1.37 (apt is 1.36 smh)
-		# https://gitlab.com/gitlab-org/cli/-/commit/893f5c945a50cb8a6d674eb05923f87e46fa6150
-
 		prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
-
 		n=$(glab mr list --output=json --reviewer=@me | #--not-draft |
 			jq '.[:25][]' |
 			jqt updated_at iid title assignee.username source_branch |
@@ -1448,7 +1442,6 @@ gldiff() {
 			fzh -0 -1 --preview="$prv_cmd" |
 			# fzf --preview="$prv_cmd" |
 			awk '{print $2}')
-
 		[[ -z $n ]] && return
 	else
 		n=$1
@@ -1730,6 +1723,7 @@ jmake() {
 			< package.json jq -r '.scripts."'"$cmd"'"' |
 				sed 's/&& /\n/g; s/\"/"/g' |
 				prepend '\t'
+			echo
 		done)
 
 	cat << EOF | tee Makefile

@@ -8,6 +8,8 @@ else
 	MOZ_DIR=~/.mozilla
 fi
 
+PROFILE_DIR="$MOZ_DIR"/firefox/default
+
 # find "$MOZ_DIR" -name recovery.jsonlz4
 # mozlz4 -x ~/.mozilla/firefox/*default/sessionstore-backups/recovery.jsonlz4 |
 # 	jq -r '.windows[0].tabs[].entries[-1].url' |
@@ -17,7 +19,6 @@ fi
 # note: logins.json can never be restored
 
 # rm -rf "$MOZ_DIR" # would remove restore.sh
-
 rm -rf "$MOZ_DIR"/extensions
 rm -rf "$MOZ_DIR"/firefox
 rm -rf "$MOZ_DIR"/native-messaging-hosts
@@ -42,7 +43,7 @@ Default=default
 Locked=1
 EOF
 
-cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default "$MOZ_DIR"/firefox/default
+cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/default "$PROFILE_DIR"
 
 # https://askubuntu.com/a/73480
 # https://devicetests.com/install-firefox-addon-command-line
@@ -115,7 +116,7 @@ fi
 firefox --headless > /dev/null 2>&1 & # generate extensions.json
 sleep 10
 pkill firefox
-< "$MOZ_DIR"/firefox/default/extensions.json jq '
+< "$PROFILE_DIR"/extensions.json jq '
 
 	.addons[].active = true;
 	.addons[].appDisabled = false;
@@ -128,6 +129,7 @@ sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' "$MOZ_DIR"/firefox/
 
 # pre-installed search engines can only be hidden, not removed (this is why the
 # default engines can -always- be restored)
+# TODO: might not actually work?
 search_lz4=$MOZ_DIR/firefox/default/search.json.mozlz4
 
 # disable all engines except ddg
@@ -144,16 +146,16 @@ mozlz4 -x "$search_lz4" |
 firefox
 
 # autohide menu bar
-< "$MOZ_DIR"/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."toolbar-menubar".autohide = true'
+< "$PROFILE_DIR"/xulstore.json jq '."chrome://browser/content/browser.xhtml"."toolbar-menubar".autohide = true'
 
 # activate TST sidebar
 if [[ -n $need_tst ]]; then
 	# TODO: sidebar = tst (workaround: xdotool (which is already in tri))
-	< "$MOZ_DIR"/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."sidebar-title".value = "Tree Style Tab"'
+	< "$PROFILE_DIR"/xulstore.json jq '."chrome://browser/content/browser.xhtml"."sidebar-title".value = "Tree Style Tab"'
 fi
 
-sqlite3 "$MOZ_DIR"/firefox/default/places.sqlite "DELETE FROM moz_bookmarks;"
-sqlite3 "$MOZ_DIR"/firefox/default/places.sqlite "DELETE FROM moz_places;"
+sqlite3 "$PROFILE_DIR"/places.sqlite "DELETE FROM moz_bookmarks;"
+sqlite3 "$PROFILE_DIR"/places.sqlite "DELETE FROM moz_places;"
 
 # manual action required (why?):
 # disable, then enable addons (about:addons)
