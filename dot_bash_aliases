@@ -2196,11 +2196,26 @@ get_cookie() {
 # 			rem "$pkg" < /dev/tty
 # 	done
 
-alias imm="notmuch show from:noreply@immobilienscout24.de |
-	grep -Po 'Adresse: [^(]+' |
-	sed -r 's/([a-z])([A-Z])/\1\t\2/' |
-	sort -u |
-	colt"
+# alias imm="notmuch show from:noreply@immobilienscout24.de |
+# 	grep -Po 'Adresse: [^(]+' |
+# 	sed -r 's/([a-z])([A-Z])/\1\t\2/' |
+# 	sort -u |
+# 	colt"
+
+imm() {
+	notmuch show from:noreply@immobilienscout24.de |
+		grep -Po 'Adresse: [^(]+' |
+		sed -r 's/([a-z])([A-Z])/\1\t\2/' |
+		sort -u |
+		fzf |
+		cut -f2 |
+		xargs -I{} notmuch show "from:noreply@immobilienscout24.de and body:{}" |
+		grep -Fm1 'Scout-ID' |
+		awk '{print $NF}' |
+		prepend https://www.immobilienscout24.de/expose/ |
+		xargs xdg-open
+
+}
 
 # curl -sL 'https://www.geoguessr.com/api/v3/users/6118c9f48db3190001c6d471' | jq
 # curl -sL 'https://www.geoguessr.com/api/v3/users/6118c9f48db3190001c6d471/stats' | jq
