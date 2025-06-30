@@ -170,7 +170,9 @@ vim.keymap.set("t", "<c-e>", function()
 	vim.cmd.wincmd(wide and "h" or "k")
 end)
 
--- vim.keymap.set("t", "<c-z>", function() end)
+-- vim.keymap.set("t", "<c-z>", function() end) -- wezterm takes precedence
+vim.keymap.set("t", "<c-i>", "<nop>")
+vim.keymap.set("t", "<c-o>", "<nop>")
 
 -- folds
 vim.keymap.set("n", "zH", "zM")
@@ -536,6 +538,10 @@ local ft_binds = { -- {{{
 					{ pat = [[ !\= null(, [^)]+)?\).toBe\(true\)]], rep = [[\1).toBeTruthy()]] },
 
 					-- %s/\vexpect\((.+) instanceof ([^)]+)\)\.toBe\(true\)/expectTypeOf(\1).toBe\2()/g
+
+					-- within ava
+					-- %s/\vtrue\((\S+) !\= null\)/truthy(\1)/g
+					-- %s/\vtrue\((\S+) \=\= null\)/falsy(\1)/g
 				})
 			end,
 		},
@@ -900,6 +906,7 @@ local function exec() -- {{{
 		rust = "RUST_BACKTRACE=1 cargo run", -- TODO: if vim.fn.line(".") >= line num of first match of '#[cfg(test)]', run 'cargo test' instead
 
 		-- jq = string.format("jq -f %s %s", curr_file, curr_file:gsub(".jq", ".json")),
+		-- jsonl = "jq -r < " .. curr_file, -- -f just waits for stdin for some reason
 		-- lua = "luafile " .. curr_file,
 		-- the normal langs
 		d = "dmd -run " .. curr_file,
@@ -913,16 +920,28 @@ local function exec() -- {{{
 		ocaml = "ocaml " .. curr_file,
 		ruby = "ruby " .. curr_file,
 		sh = "env bash " .. curr_file,
-		sql = string.format([[psql %s -f '%s']], require("util"):sql_connections().neon, curr_file),
 		zig = "zig run " .. curr_file,
 
 		-- the iffy langs
 
+		sql = function()
+			return string.format(
+				[[psql %s --expanded --file='%s']],
+				assert(require("util"):sql_connections().work, "POSTGRES_URL not set"),
+				curr_file
+			)
+		end,
+
 		-- note that :new brings us to repo root (verify with :new|pwd), so we need
 		-- to not only know where we used to be, but also run the basename.go
 		-- correctly
-		-- inexplicably, go 1.24 (?) may no longer write to stdout from within nvim shell
-		go = string.format([[ cd %s; go run ./*.go 2>&1 | sponge /dev/stdout ]], cwd),
+		go = string.format(
+			-- inexplicably, go run may sometimes not write to stdout from within
+			-- nvim shell. this might just be an ubuntu problem?
+			-- [[ cd %s; go run ./*.go 2>&1 | sponge /dev/stdout ]],
+			[[ cd %s; go run ./*.go 2>&1 ]],
+			cwd
+		),
 		-- .. "ls *.go | " -- import functions from same package; https://stackoverflow.com/a/43953582
 		-- .. "grep -v _test | " -- ignore test files (ugh)
 		-- .. "xargs go run",
