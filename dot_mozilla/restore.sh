@@ -8,9 +8,20 @@ else
 	MOZ_DIR=~/.mozilla
 fi
 
+PROFILE_DIR="$MOZ_DIR"/firefox/default
+
+# chezmoi will still track files in the old 4cl... dir, but will no longer be
+# able to 'sync' changes to the new default dir. the correct migration strategy
+# is to just wipe all existing sessions, run this script, and update dotfiles
+# once and for all. it will probably take a while to clear my tab backlog
+# though...
 rm -rf "$MOZ_DIR"/firefox
 rm -rf "$MOZ_DIR"/extensions
 rm -rf "$MOZ_DIR"/native-messaging-hosts
+
+# in the meantime, just do
+# cp ~/.mozilla/firefox/default/user.js ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default/user.js
+# cp ~/.mozilla/firefox/default/chrome/* ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default/chrome
 
 mkdir -p "$MOZ_DIR"/firefox
 
@@ -30,7 +41,7 @@ Default=default
 Locked=1
 EOF
 
-cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default "$MOZ_DIR"/firefox/default
+cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default "$PROFILE_DIR"
 
 # https://askubuntu.com/a/73480
 # https://devicetests.com/install-firefox-addon-command-line
@@ -100,12 +111,6 @@ fi
 
 # ublock: google -- disable inline scripts
 
-# # something in my userchrome prevents addon popup from being clicked,
-# # apparently
-# sed -i -r '/legacyUserProfileCustomizations/ s#^#//#' $MOZ_DIR/firefox/default/user.js
-# firefox 'about:addons' # manually enable addons
-# sed -i -r '/legacyUserProfileCustomizations/ s#^// *##' $MOZ_DIR/firefox/default/user.js
-
 # https://github.com/BryceVandegrift/ffsetup/blob/4b17486ed6e1360076f3f8f297d9cde7adad5c9c/ffsetup.sh#L67
 firefox --headless > /dev/null 2>&1 & # generate extensions.json
 sleep 10
@@ -113,8 +118,8 @@ pkill firefox
 sed -i '
 	s/\(seen":\)false/\1true/g
 	s/\(active":\)false\(,"userDisabled":\)true/\1true\2false/g
-' "$MOZ_DIR"/firefox/default/extensions.json
-sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' "$MOZ_DIR"/firefox/default/prefs.js
+' "$PROFILE_DIR"/extensions.json
+sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' "$PROFILE_DIR"/prefs.js
 
 # # TODO: cookies.sqlite -- block cookies on consent.youtube.com
 # sqlite3 $FF_PROFILE_DIR/cookies.sqlite "INSERT INTO moz_cookies VALUES(5593,'^firstPartyDomain=youtube.com','CONSENT','PENDING+447','.youtube.com','/',1723450203,1660378445948074,1660378204032779,1,0,0,1,0,2);"
@@ -122,6 +127,7 @@ sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' "$MOZ_DIR"/firefox/
 
 # pre-installed search engines can only be hidden, not removed (this is why the
 # default engines can -always- be restored)
+# TODO: might not actually work?
 search_lz4=$MOZ_DIR/firefox/default/search.json.mozlz4
 wget https://github.com/jusw85/mozlz4/releases/download/v0.1.0/mozlz4-linux
 chmod +x mozlz4-linux
@@ -134,16 +140,22 @@ rm mozlz4-linux
 # need gui startup to create xulstore
 firefox
 
-# autohide menu bar
-< ~/.mozilla/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."toolbar-menubar".autohide = true'
+# < $MOZ_DIR/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."toolbar-menubar".autohide = true'
+
+# not sure if these are still relevant
+< "$PROFILE_DIR"/xulstore.json jq '
+{"chrome://browser/content/browser.xhtml": {
+	"toolbar-menubar": { "autohide": "true" }, # autohide menu bar
+	"PersonalToolbar": { "collapsed": "false" }
+}}'
 
 # activate TST sidebar
 if [[ -n $need_tst ]]; then
-	< ~/.mozilla/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."sidebar-title".value = "Tree Style Tab"'
+	< "$PROFILE_DIR"/xulstore.json jq '."chrome://browser/content/browser.xhtml"."sidebar-title".value = "Tree Style Tab"'
 fi
 
-sqlite3 "$MOZ_DIR"/firefox/default/places.sqlite "DELETE FROM moz_bookmarks;"
-sqlite3 "$MOZ_DIR"/firefox/default/places.sqlite "DELETE FROM moz_places;"
+sqlite3 "$PROFILE_DIR"/places.sqlite "DELETE FROM moz_bookmarks;"
+sqlite3 "$PROFILE_DIR"/places.sqlite "DELETE FROM moz_places;"
 
 # manual action required (why?):
 # customize toolbar (remove spaces, add search bar)
