@@ -42,7 +42,7 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 		rm /tmp/updates
 
 		# may get unset after update? not sure what causes it
-		setxkbmap -layout us -option -option compose:rctrl,caps:menu
+		setxkbmap -layout us -option -option compose:rctrl #,caps:menu
 
 	elif
 		# if pacman hasn't been run in a long time, keys in keyring
@@ -63,10 +63,19 @@ if ps --pid "$PPID" | grep -Fq wezterm; then
 
 	if [[ -d $SLSK ]]; then
 		if
-			x=$(du -csh "$SLSK/complete" | head -n1 | grep G) &&
-				<<< "$x" grep -Po '^\d+' | \xargs -I{} test {} -ge 3
+			# x=$(du -csh "$SLSK/complete" | head -n1 | grep G) &&
+			# 	<<< "$x" grep -Po '^\d+' | \xargs -I{} test {} -ge 3
+
+			# i like the idea of BASH_REMATCH, but it is
+			# unfortunate that \S (et al) is not supported. there
+			# is no noticeable performance difference
+			# https://www.bashsupport.com/bash/variables/bash_rematch/
+			[[ $(du -csh "$SLSK"/complete | tail -n1) =~ ^([0-9]+).+G ]] &&
+				# [0] = full line
+				# [@] = full line + all matches
+				((BASH_REMATCH[1] >= 3))
 		then
-			echo -e "\n$x"
+			echo -e "\n${BASH_REMATCH[0]}"
 		fi
 		unset x
 	fi
@@ -184,6 +193,9 @@ alias lsl="ls --sort=modified"
 # }}}
 # frequent {{{
 
+# copy cmd to clipboard
+# history | fzf --tac | awk '{$1=""; print $0}' | xclip -sel c
+
 # # show contents of most recent self-sent msg
 # notmuch show --limit=1 from:hejops1 |
 # 	grep -Po 'id:\S+' |
@@ -260,7 +272,7 @@ sd() {
 	: shutdown
 	# uptime | grep hour || return/reboot
 
-	waitdie mpv pacman curl yt-dlp
+	waitdie mpv pacman curl #python
 
 	if [[ -n $HDD ]]; then
 
@@ -330,6 +342,90 @@ ytm() {
 }
 
 # }}}
+
+fftabs() {
+	# if ! command -v mozlz4-linux; then
+	# 	wget https://github.com/jusw85/mozlz4/releases/download/v0.1.0/mozlz4-linux
+	# 	chmod +x mozlz4-linux
+	# fi
+
+	mozlz4 -x ~/.mozilla/firefox/*default/sessionstore-backups/recovery.jsonlz4 |
+		jq -r '.windows[0].tabs[].entries[-1].url' |
+		grep ^http |
+		sort -u
+}
+
+randalb() {
+
+	# generate list of random albums rated >=3 amounting to 50 gb
+	set -euo pipefail
+	sql=$(
+		# note: unlike select_random.sql, the ORDER BY random() is used
+		# in the outer query
+		cat <<- EOF
+			WITH rand AS (
+			    SELECT
+			        albums.id,
+			        albums.title
+			    FROM albums
+			    WHERE albums.rating >= 3
+			)
+
+			SELECT
+			    group_concat(artists.name, ' ') AS artist,
+			    rand.title AS album
+			FROM
+			    rand
+			INNER JOIN albums_artists
+			    ON rand.id = albums_artists.album_id
+			INNER JOIN artists
+			    ON albums_artists.artist_id = artists.id
+			GROUP BY album
+			ORDER BY random();
+		EOF
+	)
+
+	# size=0
+	((size = 0, max = 50 * 1024 ** 2)) # 50 gb
+	db=~/disq/collection2.db
+	dirs=()
+
+	rows=$(sqlite3 -json "$db" "$sql" 2> /dev/null | jq -c .[])
+
+	while read -r row; do
+
+		# TODO: bash_rematch
+		artist=$(<<< "$row" jq -r .artist | sed -r 's/ \([0-9]+\)$//')
+		album=$(<<< "$row" jq -r .album)
+
+		# double find: 1m40
+		# try: 30s (3x)
+		# lazy: 8s (4x)
+
+		# d=$(find "$MU/$artist" -mindepth 1 -iname "$album*" |
+		# 	grep . |
+		# 	head -n1) || continue
+
+		d=$({
+			if [[ -d $MU/$artist ]]; then
+				find "$MU/$artist" -mindepth 1 -iname "$album*"
+			else
+				find "$MU" -maxdepth 1 -iname "$artist" -print0 |
+					xargs -0 -I{} find {} -mindepth 1 -iname "$album*"
+			fi
+		} |
+			grep . |
+			head -n1) || continue
+
+		dirs+=("$d")
+		((size += $(du -cs "$d" | tail -n1 | cut -f1)))
+		((size >= max)) && break
+
+	done <<< "$rows"
+
+	printf "%s\n" "${dirs[@]}" | sort
+
+}
 
 # git
 
@@ -1161,16 +1257,6 @@ _gssh() { # {{{
 	ssh-keygen -t ed25519 -C hejops1@gmail.com -f "$HOME/.ssh/github_$(date -I)"
 	ssh -T git@github.com 2>&1 | grep -q success && echo ok
 
-	# to actually use the key on startup, add to .xinitrc (or similar);
-
-	# if [[ -z $SSH_AUTH_SOCK ]]; then
-	# 	{
-	# 		pkill ssh-agent
-	# 		eval "$(ssh-agent -s)"
-	# 		ssh-add "$HOME/.ssh/github_2024-06-17"
-	# 	} > /dev/null 2> /dev/null
-	# fi
-
 } # }}}
 
 gmm() {
@@ -1304,6 +1390,12 @@ gnew() { # {{{
 
 # }}}
 
+clocd() {
+	git log --until="$(date -I --date="$1")" -n1 --oneline |
+		awk '{print $1}' |
+		xargs -I{} cloc --diff {} HEAD
+}
+
 # gitlab {{{
 
 alias gld=gldiff
@@ -1374,8 +1466,8 @@ gci() { watch -n 30 'glab ci list -P 10 | grep -P "^\(" | column -t'; }
 
 genuv() {
 	: generate dependencies of a uv script
-	# would be better in vim, but i don't like writing python scripts these
-	# days anyway
+	# would be better in vim, but i don't like writing python scripts (let
+	# alone scripts with external deps) these days anyway
 
 	pydeps() {
 		: for a given file, list imports that are not in stdlib
@@ -1471,9 +1563,7 @@ alias cwr="cargo watch -x run" # web servers only
 # 	sqlx migrate run
 # }
 
-cw() {
-	cargo watch -x check -x "test $1"
-}
+cw() { cargo watch -x check -x "test $1"; }
 
 # rsmod() {
 # 	if [[ -f $1 ]]; then
@@ -1700,6 +1790,7 @@ mch() {
 	# f=$1
 
 	: [re]generate header files
+	# TODO: should be vim autocmd?
 	for f in *.c; do
 		[[ $f == main.c ]] && continue
 
@@ -2164,8 +2255,8 @@ wifi() {
 getmail() {
 	mail 2>&1 | grep 'No new mail.'
 	[[ $(notmuch count tag:inbox and tag:unread and date:today) -eq 0 ]] && return
-	# exec neomutt
-	neomutt -z
+	exec neomutt
+	# neomutt -z
 }
 
 get_cookie() {
@@ -2296,11 +2387,11 @@ subs() {
 	# https://www.azsubtitles.com/restful-api
 	# TODO: fname -> infer title
 	c "https://www.azsubtitles.com/api/search?q=${1// /+}" |
-		jq -r '.Items[0] | .UID' |
+		jq -er '.Items[0] | .UID' |
 		prepend 'https://www.azsubtitles.com/api/movie' |
 		xargs curl -sL |
 		# File can contain a list of episodes, but we usually just want the first element
-		jq -r '.AllSubs[] | select(.Language.Title == "English") | .File[0].Url' |
+		jq -er '.AllSubs[] | select(.Language.Title == "English") | .File[0].Url' |
 		sort |
 		# head -n1 |
 		fzf -0 --preview="curl -sL --globoff {} | head" |
@@ -2334,7 +2425,7 @@ kp() {
 		sort -u |
 		while read -r rel; do
 			echo "$rel"
-			ya "$rel"
+			mpv --profile=bcx --video=no "ytdl://ytsearch1:\'$*\'"
 		done
 }
 
