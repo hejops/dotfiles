@@ -10,20 +10,22 @@ fi
 
 PROFILE_DIR="$MOZ_DIR"/firefox/default
 
-# chezmoi will still track files in the old 4cl... dir, but will no longer be
-# able to 'sync' changes to the new default dir. the correct migration strategy
-# is to just wipe all existing sessions, run this script, and update dotfiles
-# once and for all. it will probably take a while to clear my tab backlog
-# though...
-rm -rf "$MOZ_DIR"/firefox
+# find "$MOZ_DIR" -name recovery.jsonlz4
+# mozlz4 -x ~/.mozilla/firefox/*default/sessionstore-backups/recovery.jsonlz4 |
+# 	jq -r '.windows[0].tabs[].entries[-1].url' |
+# 	grep ^http |
+# 	sort -u
+
+# note: logins.json can never be restored
+
+# rm -rf "$MOZ_DIR" # would remove restore.sh
 rm -rf "$MOZ_DIR"/extensions
+rm -rf "$MOZ_DIR"/firefox
 rm -rf "$MOZ_DIR"/native-messaging-hosts
 
-# in the meantime, just do
-# cp ~/.mozilla/firefox/default/user.js ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default/user.js
-# cp ~/.mozilla/firefox/default/chrome/* ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default/chrome
-
 mkdir -p "$MOZ_DIR"/firefox
+
+# TODO: random hex? can it be 1 char?
 
 cat << EOF > $MOZ_DIR/firefox/profiles.ini
 [Install4F96D1932A9F858E]
@@ -41,19 +43,20 @@ Default=default
 Locked=1
 EOF
 
-cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/4clnophl.default "$PROFILE_DIR"
+cp -r ~/.local/share/chezmoi/dot_mozilla/firefox/default "$PROFILE_DIR"
 
 # https://askubuntu.com/a/73480
 # https://devicetests.com/install-firefox-addon-command-line
 # https://github.com/LukeSmithxyz/LARBS/blob/master/static/larbs.sh#L232
 # https://stackoverflow.com/a/37739112
 
-EXT_DIR=$MOZ_DIR/firefox/default/extensions
+NEW_PROFILE_DIR=$MOZ_DIR/firefox/default
+EXT_DIR=$NEW_PROFILE_DIR/extensions
 mkdir -p "$EXT_DIR"
 
 addons=(
 
-	# auto-tab-discard # native of ff 93 https://support.mozilla.org/en-US/kb/unload-inactive-tabs-save-system-memory-firefox
+	# auto-tab-discard # native as of ff 93 https://support.mozilla.org/en-US/kb/unload-inactive-tabs-save-system-memory-firefox
 	cookie-autodelete
 	tridactyl-vim
 	ublock-origin
@@ -90,8 +93,6 @@ for addon in "${addons[@]}"; do
 	mv "$file" "$EXT_DIR/$id.xpi"
 done
 
-# TODO: sidebar = tst (workaround: xdotool (which is already in tri))
-
 rm -rf "$tmpdir"
 
 if [ ! -f "$MOZ_DIR"/native-messaging-hosts/tridactyl.json ]; then
@@ -115,42 +116,41 @@ fi
 firefox --headless > /dev/null 2>&1 & # generate extensions.json
 sleep 10
 pkill firefox
-sed -i '
-	s/\(seen":\)false/\1true/g
-	s/\(active":\)false\(,"userDisabled":\)true/\1true\2false/g
-' "$PROFILE_DIR"/extensions.json
-sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' "$PROFILE_DIR"/prefs.js
+< "$PROFILE_DIR"/extensions.json jq '
 
-# # TODO: cookies.sqlite -- block cookies on consent.youtube.com
-# sqlite3 $FF_PROFILE_DIR/cookies.sqlite "INSERT INTO moz_cookies VALUES(5593,'^firstPartyDomain=youtube.com','CONSENT','PENDING+447','.youtube.com','/',1723450203,1660378445948074,1660378204032779,1,0,0,1,0,2);"
-# INSERT INTO moz_cookies VALUES(2358,'^firstPartyDomain=youtube.com','CONSENT','PENDING+675','.youtube.com','/',1727208372,1664136373196881,1664136373196881,1,0,0,1,0,2);
+	.addons[].active = true;
+	.addons[].appDisabled = false;
+	.addons[].embedderDisabled = false;
+	.addons[].softDisabled = false;
+	.addons[].userDisabled = false;
+'
+
+sed -i 's/\(extensions\.pendingOperations", \)false/\1true/' "$MOZ_DIR"/firefox/default/prefs.js
 
 # pre-installed search engines can only be hidden, not removed (this is why the
 # default engines can -always- be restored)
 # TODO: might not actually work?
 search_lz4=$MOZ_DIR/firefox/default/search.json.mozlz4
-wget https://github.com/jusw85/mozlz4/releases/download/v0.1.0/mozlz4-linux
-chmod +x mozlz4-linux
+
 # disable all engines except ddg
-./mozlz4-linux -x "$search_lz4" |
-	jq '.engines[] | ._metaData.hidden = .id != "ddg"' |
-	./mozlz4-linux -z - "$search_lz4"
-rm mozlz4-linux
+# might not work? (reverts to google)
+mozlz4 -x "$search_lz4" |
+	# "defaultEngineIdHash": "nVbjzSsX6W+tHUrVamgarg//cmHv2Ul2ykTB2j5qPbE="
+	jq '
+		.engines[] | ._metaData.hideOneOffButton = .id != "ddg";
+		.metaData.defaultEngineId = "ddg"
+	' |
+	mozlz4 -z - "$search_lz4"
 
 # need gui startup to create xulstore
 firefox
 
-# < $MOZ_DIR/firefox/default/xulstore.json jq '."chrome://browser/content/browser.xhtml"."toolbar-menubar".autohide = true'
-
-# not sure if these are still relevant
-< "$PROFILE_DIR"/xulstore.json jq '
-{"chrome://browser/content/browser.xhtml": {
-	"toolbar-menubar": { "autohide": "true" }, # autohide menu bar
-	"PersonalToolbar": { "collapsed": "false" }
-}}'
+# autohide menu bar
+< "$PROFILE_DIR"/xulstore.json jq '."chrome://browser/content/browser.xhtml"."toolbar-menubar".autohide = true'
 
 # activate TST sidebar
 if [[ -n $need_tst ]]; then
+	# TODO: sidebar = tst (workaround: xdotool (which is already in tri))
 	< "$PROFILE_DIR"/xulstore.json jq '."chrome://browser/content/browser.xhtml"."sidebar-title".value = "Tree Style Tab"'
 fi
 
@@ -158,4 +158,9 @@ sqlite3 "$PROFILE_DIR"/places.sqlite "DELETE FROM moz_bookmarks;"
 sqlite3 "$PROFILE_DIR"/places.sqlite "DELETE FROM moz_places;"
 
 # manual action required (why?):
-# customize toolbar (remove spaces, add search bar)
+# disable, then enable addons (about:addons)
+# restore tabs (make sure tri is enabled first, else not grouped)
+# remove elements from toolbar (warn: removing 'list all tabs' also removes sidebar?)
+# set search engine
+# restore ublock
+# disable all themes except dark
