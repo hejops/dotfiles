@@ -108,6 +108,14 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 	command = [[exec "!crontab %"]],
 })
 
+vim.api.nvim_create_autocmd("BufWritePost", {
+	pattern = vim.fn.expand("~") .. "/.ssh/config",
+	callback = function()
+		os.execute([[sed -r -i 's/^[ \t]*/\t/g; s/^\t(Host .+)?$/\1/' ]] .. vim.fn.expand("%"))
+		vim.cmd("e")
+	end,
+})
+
 local function md_to_pdf()
 	local _in = vim.fn.expand("%") -- basename!
 	local out = string.gsub(_in, "%.md", ".pdf")
