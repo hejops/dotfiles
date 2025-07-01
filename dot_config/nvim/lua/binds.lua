@@ -171,8 +171,8 @@ vim.keymap.set("t", "<c-e>", function()
 end)
 
 -- vim.keymap.set("t", "<c-z>", function() end) -- wezterm takes precedence
-vim.keymap.set("t", "<c-i>", "<nop>")
-vim.keymap.set("t", "<c-o>", "<nop>")
+-- vim.keymap.set("t", "<c-i>", "<nop>")
+-- vim.keymap.set("t", "<c-o>", "<nop>")
 
 -- folds
 vim.keymap.set("n", "zH", "zM")
@@ -978,7 +978,11 @@ local function exec() -- {{{
 			-- imports)
 
 			local node_version = require("util"):get_command_output("node -v")
-			if node_version >= "v22.7.0" then -- 2x faster than tsx, but not guaranteed to work
+			local ts_node = vim.fs.root(0, "package.json") .. "/node_modules/.bin/ts-node" -- tsx doesn't handle import statements correctly
+
+			if vim.uv.fs_stat(ts_node) then
+				return ts_node .. " " .. curr_file
+			elseif node_version >= "v22.7.0" then -- 2x faster than ts-node, but not guaranteed to work
 				-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
 				return "node --no-warnings --experimental-strip-types --experimental-transform-types " .. curr_file
 			elseif node_version >= "v22.6.0" then
