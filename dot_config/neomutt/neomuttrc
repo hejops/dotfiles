@@ -158,7 +158,7 @@ auto_view text/plain text/html			# view html automatically
 
 # composing mail {{{
 set ask_cc                           # ask for CC:
-set attribution = "On %d, %n wrote:" # format of quoting header
+set attribution = "On %[%Y-%m-%d, %H:%M], %n wrote:" # format of quoting header
 set edit_headers                     # show headers when composing
 set editor = "$EDITOR"
 set fast_reply                       # skip to compose when replying
