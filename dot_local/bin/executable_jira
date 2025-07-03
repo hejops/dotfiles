@@ -56,13 +56,13 @@ log_work() {
 		--header 'Accept: application/json' \
 		--user "$WORK_EMAIL:$JIRA_TOKEN" \
 		"$JIRA/rest/api/3/issue/$n/worklog" |
-		jq .worklogs[].timeSpentSeconds/3600)
+		jq '[.worklogs[].timeSpentSeconds]|add/3600' || echo 0)
 
 	read -r -p "Hours (current: $curr): " hours < /dev/tty
 	d=$(date --date="$hours hours ago" +"%Y-%m-%dT%H:%M:%S.000%z")
 	secs=$((hours * 3600))
 	echo "$d"
-	curl --verbose -s \
+	curl -s \
 		--user "$WORK_EMAIL:$JIRA_TOKEN" \
 		-X POST -H "Content-Type: application/json" \
 		-d '{"started":"'"$d"'","timeSpentSeconds":'"$secs"'}' \
@@ -94,9 +94,9 @@ transition() {
 
 case ${1:-} in
 
---log) log_work "$(select_issue)" ;;
+-l | --log) log_work "$(select_issue)" ;;
 
---transition) transition "$(select_issue)" ;;
+-t | --transition) transition "$(select_issue)" ;;
 
 *) get_assigned_issues | jq -r '.[] | [.status,.url,.title] | @tsv' ;;
 
