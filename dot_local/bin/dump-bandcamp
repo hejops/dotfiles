@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# bandcamp doesn't let me login anymore???
+
+user=$1
+curl -sL "https://bandcamp.com/$user" |
+	grep -Po 'follow-unfollow_\d+' |
+	cut -d_ -f2 |
+	xargs -I{} curl -sL 'https://bandcamp.com/api/fancollection/1/following_bands' \
+		--compressed \
+		--data-raw '{"fan_id":{},"older_than_token":"9999999999","count":99999}' |
+	jq -r .followeers.[].url_hints.subdomain |
+	sort |
+	tee ~/.config/newsboat/bandcamp
