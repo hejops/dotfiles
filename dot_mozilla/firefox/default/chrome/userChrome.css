@@ -58,6 +58,9 @@ scrollbar,
 
 /* hide items {{{ */
 
+#identity-permission-box,
+#identity-icon, /* lock */
+#tracking-protection-icon-container, /* shield */
 #PanelUI-menu-button,
 #PopupAutoCompleteRichResult .autocomplete-richlistbox,
 #PopupAutoCompleteRichResult,
