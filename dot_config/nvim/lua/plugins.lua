@@ -910,6 +910,9 @@ require("lazy").setup(
 
 		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
 		"e-q/okcolors.nvim", -- few colors
+		"github-main-user/lytmode.nvim",
+		"sebasruiz09/fizz.nvim",
+		"sonya-sama/kawaii.nvim",
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
 		-- "iagorrr/noctis-high-contrast.nvim",
@@ -917,6 +920,11 @@ require("lazy").setup(
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
 		-- "olivercederborg/poimandres.nvim", -- dim line column
 		-- "thejian/nvim-moonwalk", -- unreadable git status
+
+		"datsfilipe/vesper.nvim", -- italic
+		"fynnfluegge/monet.nvim", -- italic
+		"honamduong/hybrid.nvim", -- italic
+		"samharju/synthweave.nvim", -- italic
 
 		{
 			"shawilly/ponokai",
