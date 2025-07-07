@@ -155,7 +155,7 @@ vim.api.nvim_create_autocmd({ "WinEnter" }, {
 		local filetype = event.match
 		if cc_filetypes[filetype] then
 			vim.wo.colorcolumn = cc_filetypes[filetype]
-		else
+			-- else
 			-- vim.wo.colorcolumn = ""
 		end
 	end,
@@ -204,6 +204,16 @@ vim.api.nvim_create_autocmd("WinEnter", {
 })
 
 -- FileType {{{
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "mail" },
+	callback = function()
+		-- very iffy; i want abbrev to expand immediately after i type the last
+		-- char of lhs, but the actual behaviour requires lhs+space or lhs+esc.
+		-- furthermore, autocomplete messes with abbrev expansion
+		vim.cmd(string.format("iabbrev %s %s", "bg", "Beste Grüße,<cr>"))
+	end,
+})
 
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "text", "mail", "rst" },

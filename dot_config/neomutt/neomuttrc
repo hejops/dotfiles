@@ -5,7 +5,7 @@
 # https://man.freebsd.org/cgi/man.cgi?query=mailcap&sektion=4&manpath=FreeBSD+8.0-RELEASE+and+Ports#end
 set mailcap_path = "~/.config/neomutt/mailcap"
 
-# TODO: this should really be conditional, or at least create empty file
+# colors are just too much trouble
 # source "~/.config/neomutt/color"
 
 # https://neomutt.org/guide/reference.html
@@ -21,7 +21,7 @@ set mailcap_path = "~/.config/neomutt/mailcap"
 # https://unix.stackexchange.com/a/223088
 # https://wiki.archlinux.org/index.php/Mutt#mailboxes
 
-# TODO: multi account -- moot point for now, since work only needs email ~1x/month, and microsoft imap isn't straightforward
+# TODO: multi account?
 # https://github.com/cweagans/dotfiles/tree/master/.config/mutt
 
 # fetching mail {{{
@@ -158,7 +158,7 @@ auto_view text/plain text/html			# view html automatically
 
 # composing mail {{{
 set ask_cc                           # ask for CC:
-set attribution = "On %d, %n wrote:" # format of quoting header
+set attribution = "On %[%Y-%m-%d, %H:%M], %n wrote:" # format of quoting header
 set edit_headers                     # show headers when composing
 set editor = "$EDITOR"
 set fast_reply                       # skip to compose when replying
@@ -183,30 +183,32 @@ unset record
 # bindings, macros {{{
 
 # TODO: mark all in limit?
+# bind editor ^T complete
 # bind index R imap-fetch-mail
-bind index R group-reply
 # bind index S sidebar-toggle-visible
 # bind index \cr imap-fetch-mail
 # bind index \cx delete-thread		# ctrl-shift not allowed
+# bind index,pager <down>   sidebar-next
+# bind index,pager <right>  sidebar-open
+# bind index,pager <up>     sidebar-prev
+# bind pager e view-attachments
 bind attach <return> view-mailcap
 bind attach e view-mailcap
-bind editor <Tab> complete-query
-bind editor ^T complete
+bind editor <tab> complete-query
 bind index - collapse-thread
 bind index F limit
 bind index G last-entry
 bind index J next-page
 bind index K previous-page
+bind index R group-reply
 bind index \cd delete-thread
 bind index g first-entry	# gg gives warning
 bind index i flag-message
 bind index l display-message
+bind index x quit
 bind index { sidebar-prev          # go to previous folder in sidebar
 bind index } sidebar-next         # go to next folder in sidebar
-bind index,pager <down>   sidebar-next
-bind index,pager <right>  sidebar-open
 bind index,pager <space>   sidebar-open
-bind index,pager <up>     sidebar-prev
 bind index,pager N search-opposite
 bind index,pager \cj   sidebar-next
 bind index,pager \ck   sidebar-prev
@@ -215,7 +217,7 @@ bind pager <return> view-attachments
 bind pager J next-page
 bind pager K previous-page
 bind pager \cd delete-message
-bind pager e view-attachments
+bind pager a view-attachments
 bind pager h exit
 bind pager j next-line
 bind pager k previous-line
@@ -227,7 +229,9 @@ unbind index h
 # https://neomutt.org/guide/configuration#10-%C2%A0keyboard-macros
 # doesn't work reliably from index, better from within attachment (text/plain)
 set wait_key = no	# skip "Press any key to continue..."
-macro index \cu "<display-message><view-attachments><search>plain<Enter><pipe-message>mailurl<Enter>"
+# plain fails sometimes (e.g. lufthansa)
+# macro index u "<display-message><view-attachments><search>plain<Enter><pipe-message>mailurl<Enter>"
+macro index u "<display-message><view-attachments><search>html<Enter><pipe-message>mailurl<Enter>"
 macro index L "<display-message><view-attachments><search>plain<Enter><pipe-message>less<Enter>"
 macro attach \cu "<pipe-message>mailurl<Enter>"
 
@@ -258,14 +262,15 @@ macro attach W "<save-entry><bol>~/mail<eol>" "Save to desktop"
 
 # file:///usr/share/doc/neomutt/reference.html#index-format
 
-# set index_format += "%4C" # msg number
+# set index_format = " "
 set index_format = "%Z" # flags (len 3)
-# set index_format += "%S" # flags (len 1)
-set index_format += " %[%d/%m]" # date (len 6)
-# set index_format += " │ %g %-4.4c" # body size
-set index_format += " │ %-4.4c" # body size
-# set index_format += " │ %-25.25F" # from
-set index_format += " │ %-25.25A" # from (raw)
+# set index_format += " %[%d/%m]" # date (len 6)
+set index_format += " %[%Y-%m-%d]" # date (len 11)
+# set index_format += " %-4.4c" # body size
+# set index_format += " │ %-4.4c" # body size
+set index_format += " │ %-25.25F" # from
+# set index_format += " │ %-25.25A" # from (raw)
+# set index_format += " %-4.4c" # body size
 set index_format += " │ %s" # subject
 # set index_format += " [%g]" # tags
 
@@ -275,4 +280,3 @@ set sidebar_short_path = yes
 set sidebar_visible = yes
 set sidebar_width = 20
 set status_format = " %r %f [Msgs:%?M?%M/?%m%?n? New:%n?%?o? Old:%o?%?d? Del:%d?%?F? Flag:%F?%?t? Tag:%t?%?p? Post:%p?%?b? Inc:%b?]    %> (%P)   "
-
