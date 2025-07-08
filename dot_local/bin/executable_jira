@@ -51,14 +51,23 @@ log_work() {
 	# https://github.com/sbreining/logwork/blob/fe45bbf4f34e7b613ad3f482ed26be95fb5e04c7/logwork.sh#L113
 
 	n=$1
-	read -r -p 'Hours: ' hours < /dev/tty
+
+	curr=$(curl -s \
+		--header 'Accept: application/json' \
+		--user "$WORK_EMAIL:$JIRA_TOKEN" \
+		"$JIRA/rest/api/3/issue/$n/worklog" |
+		jq '[.worklogs[].timeSpentSeconds]|add/3600' || echo 0)
+
+	read -r -p "Hours (current: $curr): " hours < /dev/tty
+	d=$(date --date="$hours hours ago" +"%Y-%m-%dT%H:%M:%S.000%z")
 	secs=$((hours * 3600))
-	d=$(date --date="$hours hours ago" -I) # forgot what format they need
+	echo "$d"
 	curl -s \
 		--user "$WORK_EMAIL:$JIRA_TOKEN" \
 		-X POST -H "Content-Type: application/json" \
-		-d '{"started":"'"""$d"'","timeSpentSeconds":'"$secs"'}' \
-		"$JIRA/rest/api/2/issue/$n/worklog"
+		-d '{"started":"'"$d"'","timeSpentSeconds":'"$secs"'}' \
+		"$JIRA/rest/api/2/issue/$n/worklog" |
+		jq
 
 }
 
@@ -85,9 +94,9 @@ transition() {
 
 case ${1:-} in
 
---log) log_work "$(select_issue)" ;;
+-l | --log) log_work "$(select_issue)" ;;
 
---transition) transition "$(select_issue)" ;;
+-t | --transition) transition "$(select_issue)" ;;
 
 *) get_assigned_issues | jq -r '.[] | [.status,.url,.title] | @tsv' ;;
 

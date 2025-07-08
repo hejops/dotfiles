@@ -235,10 +235,13 @@ require("lazy").setup(
 					"checkmake",
 					"gitlint",
 					"golangci-lint",
+					"hadolint",
 					"markdownlint",
 					"proselint",
 					"ruff",
 					"shellcheck", -- should be included in bashls, but may not work ootb?
+					"sqlfluff",
+					"sqruff",
 				},
 
 				--
