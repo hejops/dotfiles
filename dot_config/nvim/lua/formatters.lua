@@ -157,6 +157,8 @@ require("conform").setup({
 			stdin = true,
 		},
 
+		uniq = { command = "uniq" },
+
 		-- sqlfluff = {
 		-- 	-- format: more reliable; will format if no violations found
 		-- 	-- fix: does nothing if 'Unfixable violations detected'
@@ -197,6 +199,7 @@ require("conform").setup({
 		json = { "jq" },
 		jsonl = { "jq" },
 		lua = { "stylua" },
+		mail = { "trim_whitespace", "uniq" },
 		markdown = { "mdslw", "prettier" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },
