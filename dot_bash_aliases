@@ -2411,12 +2411,12 @@ tvll() {
 
 kp() {
 	url='https://www.discogs.com/search/?style_exact=K-pop&sort=hot%2Cdesc&ev=gs_ms'
-	curl -sL "$url" -H 'User-Agent: M' -H 'Upgrade-Insecure-Requests: 1' |
+	curl -sL "$url" -H 'User-Agent: Mozilla Firefox' -H 'Upgrade-Insecure-Requests: 1' |
 		grep -Po '/release/\d+-[^"]+' |
 		cut -d'-' -f2- |
 		tr '-' ' ' |
 		sed 's@+@ @g;s@%@\\x@g' | # https://askubuntu.com/a/295312
-		xargs -0 printf "%b" |
+		\xargs -0 printf "%b" |
 		sort -u |
 		while read -r rel; do
 			echo "$rel"
