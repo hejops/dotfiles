@@ -27,11 +27,9 @@
 # minute hour day(1-31) month day(1-7)
 
 # persistent (every n minutes = */n ...)
-*/10 7-23,0-2 * * *	env DISPLAY=:0 ~/gripts/wall/wall >/dev/null 2>/dev/null
-*/10 7-23,0-2 * * *	~/rust/fours/target/release/fours --board hr --subject LOONA
+*/10 * * * *	env DISPLAY=:0 ~/gripts/wall/wall
+*/15 * * * *	~/scripts/mail
 
-# * * * * *	env DISPLAY=:0 /bin/notify-send cron
-# */1 * * * *	/bin/sh ~/scripts/dwmstatus >/dev/null 2>/dev/null # now just an autostart with inf loop
 # */30 7-23,0-2 * * *	/bin/python3 ~/scripts/reddit.py loona red_velvet > /tmp/reddit
 # arecord -l | grep 'card 1' (or sth)
 
@@ -57,7 +55,6 @@
 30 */3 * * *	/usr/bin/nvim --headless "+Lazy! clean" +qa
 
 # 0 16 * * *	/bin/python3 ~/scripts/cargo_clean.py
-# 0 20 * * *	/bin/rm -rf "~/.config/teams-for-linux/Partitions/teams-4-linux/Service Worker/Cache"
 # daily (at n hours = 0 n ...)
 # https://gist.github.com/kkoomen/68319b08ab843ce67cf7b282b0b2fd24
 # https://github.com/junegunn/vim-plug/issues/493#issuecomment-226318571
