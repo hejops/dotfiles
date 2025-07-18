@@ -43,10 +43,11 @@
 # https://unix.stackexchange.com/a/536860
 
 # 0 */1 * * *	env DISPLAY=:0 /bin/sh ~/scripts/alert
+# 0 */6 * * *	~/dita/.venv/bin/dump_collection
 # every n hours (0 */n ...)
 0 */1 * * *	/bin/sh ~/scripts/nicowish
 0 */6 * * *	/usr/bin/pkill -f telegram-desktop
-0 */6 * * *	~/dita/.venv/bin/dump_collection
+0 */6 * * *	~/gripts/disq/disq -dump hejops
 0 */8 * * *	/bin/rm -r ~/.mozilla/firefox/*/storage/default/file*
 0 */8 * * *	/bin/rm -r ~/.mozilla/firefox/*/storage/default/http*
 0 */8 * * *	/bin/sh ~/scripts/cup
