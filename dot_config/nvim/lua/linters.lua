@@ -203,10 +203,21 @@ require("lint").linters.squawk = { -- {{{
 	end,
 } -- }}}
 
-require("lint").linters.luacheck.args = vim.list_extend(require("lint").linters.luacheck.args, {
-	"--globals",
-	"vim",
-})
+require("lint").linters.luacheck.args = vim.list_extend( --
+	require("lint").linters.luacheck.args,
+	{
+		"--globals",
+		"vim",
+	}
+)
+
+require("lint").linters.cspell.args = vim.list_extend( --
+	require("lint").linters.cspell.args,
+	{
+		"--config",
+		vim.env.HOME .. "/.config/cspell/config.yaml",
+	}
+)
 
 -- linters cannot be conditionally disabled at config time. they can only be
 -- disabled at runtime:
