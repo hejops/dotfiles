@@ -1454,6 +1454,37 @@ gldiff() {
 
 gci() { watch -n 30 'glab ci list -P 10 | grep -P "^\(" | column -t'; }
 
+gmrc() {
+	: find recent mr that is most likely the predecessor of the current mr
+
+	# current mr numstat
+	curr=$(git diff --numstat master..HEAD |
+		grep -Fvw -e 0 -e '=>' |
+		sort -rn)
+
+	# based on numstat of previous mrs, find max similarity (in terms of
+	# files changed)
+	git log --oneline --since="$(date -I --date='1 month ago')" |
+		grep 'Merge branch' |
+		cut -d' ' -f1 |
+		head |
+		while read -r sha; do
+
+			x=$(git show --format= --numstat "$sha" |
+				sort -rn |
+				while read -r _ _ f; do <<< "$curr" grep "$f" || :; done |
+				wc -l)
+
+			echo "$sha $x"
+
+		done |
+		sort -k2 -rn |
+		cut -d' ' -f1 |
+		head -n1 |
+		xargs git show |
+		grep -Po '!\d+'
+}
+
 # }}}
 
 # python {{{
