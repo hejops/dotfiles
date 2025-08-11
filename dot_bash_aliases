@@ -1227,6 +1227,63 @@ gb() { # {{{
 
 } # }}}
 
+_complete_gb() {
+	# https://mill-build.org/blog/14-bash-zsh-completion.html#_conclusion
+	# https://www.gnu.org/software/bash/manual/html_node/A-Programmable-Completion-Example.html
+
+	((COMP_CWORD > 1)) && return # gb only accepts 1 arg
+
+	_gen() {
+		local idx=$1
+		shift
+		local words=("$@")
+		local curr_fragment=${words[idx]}
+
+		# # note: bash automatically arranges items into columns
+		# git branch --list "$curr_fragment*" 2> /dev/null |
+		# 	sed -r 's/^\* //'
+
+		echo -e "aaa\nabb\nacc\nbcc" |
+			grep "^$curr_fragment"
+
+	}
+
+	local IFS=$'\n' # newline separator for displaying suggestions only
+
+	# COMP_CWORD: number of "completely typed" words (e.g. `$ foo b|` == 1 word, but `$ foo b |` == 2 words)
+	# COMP_WORDS: all words currently typed
+
+	# local raw
+	# mapfile -t raw < <(_gen "$COMP_CWORD" "${COMP_WORDS[@]}") # SC2207
+	# local matches=("${raw[@]}")
+	# if ((${#raw[@]} == 1)); then # 1 match, autocomplete
+	# 	# matches+=("${raw[0]%%:*}")  # strip from : onwards (could use \t, for example)
+	# 	matches+=("${raw[0]}")
+	# fi
+
+	local matches
+	mapfile -t matches < <(_gen "$COMP_CWORD" "${COMP_WORDS[@]}") # SC2207
+
+	# notify-send "${matches[*]}"
+
+	if
+		# if COMPREPLY is an array with only one unique element, the
+		# completion is accepted immediately (with trailing space)
+		((${#matches[@]} == 1))
+	then
+		COMPREPLY=("${matches[0]}")
+
+	else
+		# otherwise, the maximally left-matching prefix is
+		# autocompleted (if any), and all elements in the array are
+		# displayed (with the prefix highlighted)
+		COMPREPLY=("${matches[@]}")
+	fi
+
+}
+
+complete -F _complete_gb gb
+
 git_branch() {
 	: switch to branch
 	# https://stackoverflow.com/a/1441062
