@@ -164,31 +164,31 @@ mem() {
 # alias y="bash ~/gripts/disq/ytm.sh"
 
 y() {
-	{
-		# force pause before playback (?)
-		playerctl play-pause
-
-		# wait for mpv to start
-		while
-			sink=$(pactl --format=json list sink-inputs | jq -r '.[] | select(.properties."application.name"=="mpv") | .sink')
-			[[ -z $sink ]]
-		do
-			sleep 0.5
-		done
-
-		# ensure mpv playing on headphones
-		# alsa.id=="Au" means connected via headphone jack (speakers are connected via "USB")
-		if
-			! pactl --format=json list sinks |
-				jq -e ".[] | select(.state==\"RUNNING\" and .index==$sink and .properties.\"alsa.id\"==\"Au\")" > /dev/null
-		then
-			notify-send -u critical 'playing on speakers'
-			# pgrep bash | grep ytm.sh | cut -d' ' -f1 | xargs kill
-			pavucontrol
-		else
-			playerctl play-pause
-		fi
-	} &
+	# {
+	# 	# force pause before playback (?)
+	# 	playerctl play-pause
+	#
+	# 	# wait for mpv to start
+	# 	while
+	# 		sink=$(pactl --format=json list sink-inputs | jq -r '.[] | select(.properties."application.name"=="mpv") | .sink')
+	# 		[[ -z $sink ]]
+	# 	do
+	# 		sleep 0.5
+	# 	done
+	#
+	# 	# ensure mpv playing on headphones
+	# 	# alsa.id=="Au" means connected via headphone jack (speakers are connected via "USB")
+	# 	if
+	# 		! pactl --format=json list sinks |
+	# 			jq -e ".[] | select(.state==\"RUNNING\" and .index==$sink and .properties.\"alsa.id\"==\"Au\")" > /dev/null
+	# 	then
+	# 		notify-send -u critical 'playing on speakers'
+	# 		# pgrep bash | grep ytm.sh | cut -d' ' -f1 | xargs kill
+	# 		pavucontrol
+	# 	else
+	# 		playerctl play-pause
+	# 	fi
+	# } &
 	bash ~/gripts/disq/ytm.sh
 }
 
@@ -471,6 +471,7 @@ alias gl=git_log
 alias gs=git_status
 
 # alias gdnw="git diff --color-words --no-index"
+alias g..="git push --force-with-lease origin \$(_git_current_branch)"
 alias g.="git push"
 alias gC="git show HEAD | cat; git reset --soft HEAD~1"                                         # un-commit, but keep changes staged
 alias gCH="git show --oneline HEAD | cat; echo; read -r -p 'confirm?'; git reset --hard HEAD~1" # un-commit, and discard changes
@@ -480,6 +481,8 @@ alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced
 alias gig='$EDITOR $(_get_repo_root)/.gitignore'
 alias gu=gun
 alias gx='git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S' # TODO: colt would be nice, but then it can't be an alias anymore
+
+gdns() { gdn -U0 <(sort -u "$1") <(sort -u "$2"); }
 
 # git info {{{
 # functions that only report info
@@ -554,119 +557,6 @@ gL() {
 		fzf --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
-git_status() { # {{{
-	# 1. changed files (twice: porcelain, then diff stat)
-	# 2. untracked files
-	# 3. current number of staged commits
-
-	# Nothing staged. Current stat:
-	#
-	#  sqlc/artists.sql.go | 1 +
-	#  schema.sql          | 2 +-
-	#  queries/artists.sql | 4 ++--
-	#  main.go             | 5 +++++
-	#
-	# Your branch is ahead of 'origin/master' by 2 commits.
-
-	_in_git_repo || return
-
-	if
-		# new repo
-		git status | grep 'No commits yet'
-	then
-		echo "Files:"
-		echo
-		git ls-files --others --exclude-standard
-		return
-	fi
-
-	# shellcheck disable=SC2164
-	[[ $# -eq 1 ]] && [[ -d $1 ]] && pushd "$1" > /dev/null
-
-	# 1
-
-	if
-		staged=$(git status --porcelain . |
-			# grep '^A' | # only added files!
-			# grep -Fv '??' |
-			grep -P '^[A-Z]' |
-			awk '{print $NF}' |
-			# make paths absolute (default: relative to root)
-			prepend "$(_get_repo_root)/" |
-			# then relativise to cwd
-			largs realpath --relative-to=. 2> /dev/null) #&&
-		[[ -n $staged ]]
-	then
-		: diffing staged files
-
-		cat <<- EOF
-			Staged:
-
-		EOF
-
-		# TODO: can we not rely on pipefail?
-		set -o pipefail
-		<<< "$staged" \xargs git diff --stat --staged 2> /dev/null |
-			grep -F '|' | # ignore summary line
-			sort -n -k3 ||
-			# TODO: deleted files raise error
-			git status --porcelain | grep '^[A-Z]'
-		set +o pipefail
-
-	else
-		echo "Nothing staged."
-
-	fi
-
-	# note: colors are lost when piping, but sort is more useful than color
-	if
-		# git diff only diffs unstaged files
-		diffs=$(git diff --stat . | # generally, i only want to see the diff stat for current dir
-			grep -F '|' |              # ignore summary line
-			sort -n -k3)               # most changes last (more useful in short terminals)
-		[[ -n $diffs ]]
-	then
-		# [[ -n $staged ]] && echo
-		cat <<- EOF
-
-			Unstaged:
-
-			$diffs
-		EOF
-
-	# else
-	# 	: no files staged
-
-	fi
-
-	echo
-
-	# 2
-
-	if
-		untracked=$(git ls-files --others --exclude-standard) &&
-			num_untracked=$(<<< "$untracked" wc -l) &&
-			[[ $num_untracked -ge $LINES ]]
-	then
-		echo "[$num_untracked untracked files]"
-		echo
-	elif [[ -n $untracked ]]; then
-		echo "$untracked"
-		echo
-	fi
-
-	# 3
-
-	if ! git status | grep -q 'Your branch'; then
-		# TODO: could also mean no branch on remote yet
-		echo "No remote yet."
-	elif ! git status | grep -P '\d+ commits?'; then
-		echo 'No commits staged.'
-	fi
-
-	popd > /dev/null 2> /dev/null || :
-} # }}}
-
 gh() {
 	: open remote url
 
@@ -714,8 +604,11 @@ gd() {
 
 _git_log_fzf() { # {{{
 	_in_git_repo || return
-	# rather, if the heads dir is empty; but i don't want to ls/glob
-	if [[ ! -f $(_get_repo_root)/.git/refs/heads/master ]]; then
+
+	# TODO: heads may be 'cleared'
+	# https://stackoverflow.com/a/30143136
+
+	if ! ls "$(_get_repo_root)"/.git/refs/heads/* > /dev/null 2> /dev/null; then
 		echo "no commits yet" >&2
 		return 1
 	fi
@@ -724,14 +617,18 @@ _git_log_fzf() { # {{{
 
 	args=()
 
-	if [[ -f $1 ]] || [[ -d $1 ]]; then
+	if
+		[[ -f $1 ]] || [[ -d $1 ]]
+	then
 		args+=("$@")
 		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
+
 	elif
 		[[ $# -gt 1 ]] # probably arbitrary options to git log
 	then
 		# TODO: allow arbitrary options to fzf (this is a can of worms)
 		args+=("$@")
+
 	elif
 		# other dev branch
 		[[ $# -eq 1 ]] &&
@@ -739,15 +636,29 @@ _git_log_fzf() { # {{{
 	then
 		git pull > /dev/null 2> /dev/null
 		args+=("origin/$1")
+
 	elif
 		m=$(_gmaster) &&
 			[[ $(_git_current_branch) == "$m" ]]
 	then
 		: on master
+
 	elif [[ -n $m ]]; then # dev branch
 		# note: use origin/master, because i tend to not actually
 		# update my local master
+
+		# note: .. and ... are NOT synonymous!
+		#
+		# A..B = raw diff between A and B
+		#
+		# A...B = diff between B and "last shared ancestor of A and B"
+		# (almost always master); this is usually what we want
+		#
+		# https://i.sstatic.net/PboEt.png
+		# https://stackoverflow.com/a/24186641
+
 		args+=(--first-parent "origin/$m...HEAD")
+
 	else
 		: no remote yet
 	fi
@@ -838,6 +749,7 @@ git_log() {
 
 gxx() {
 	: show commits whose changes contain a pattern
+	# TODO: git show --color=always breaks grepdiff?
 	prv_cmd="echo {} | cut -f1 | xargs git show -U1 | grepdiff \"$1\" --output-matching=hunk"
 	git log --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S "$1" | # WARN: slow with large histories
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border'
@@ -955,6 +867,8 @@ gc() {
 
 gS() {
 	: like gs+gl, for files to stage/commit
+
+	# may be replaced by <leader>gS in vim
 
 	# # porcelain v1 is -always- relative to repo root, which makes
 	# # relativising to cwd needlessly tedious (this would probably involve
@@ -1095,15 +1009,15 @@ guns() {
 
 }
 
-# gpick() {
-# 	: cherry pick commit from other branch
-# 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
-# 	sha=$(git log --branches --remotes --tags --oneline --decorate |
-# 		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
-# 		awk '{print $1}')
-# 	# https://stackoverflow.com/a/29788254
-# 	[[ -n $sha ]] && git show "$sha" | git apply -
-# }
+gpick() {
+	: cherry pick commit from other branch
+	[[ $# -ne 1 ]] && return
+	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
+	sha=$(git log --branches --remotes --tags --oneline --decorate "$1" |
+		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
+		awk '{print $1}')
+	[[ -n $sha ]] && git cherry-pick --edit "$sha"
+}
 
 # gac() {
 # 	: append ALL changes to most recent unpushed commit
@@ -1135,27 +1049,38 @@ gb() { # {{{
 	default_local_branch=$(_gmaster)
 	current_local_branch=$(_git_current_branch)
 
-	foo() {
-		# TODO: keeping unstaged changes in the new branch is
-		# just annoying, because these changes are usually
-		# never meant to be committed. but --discard-changes is
-		# also unsafe
-
-		# note: .. and ... are NOT synonymous! ... is usually
-		# what we want
+	commit_unstaged_changes() {
+		# it is common to be prevented from switching branches due to
+		# the presence of uncommitted changes, which is highly
+		# disruptive.
+		#
+		# preserving currently unstaged changes in the new branch is
+		# just annoying, because these unstaged changes are usually
+		# throwaway code that was never meant to be committed. but
+		# --discard-changes is also unsafe, so ask for every file.
 
 		# presumably, ' M	' can be safely ignored?
 		# git diff-tree HEAD "$target"
 		# git diff-index "$target"
 		# git diff --numstat "$target"...HEAD
 
+		committed=
 		git diff-index "$1" |
 			grep -P '00000 [AM]	' |
 			cut -f2 |
+			# TODO: fzf better
 			while read -r f; do
 				[[ -f $f ]] || continue
-				git commit -v --untracked-files=no "$f" || git checkout -- "$f"
+				if
+					git commit -v --untracked-files=no "$f"
+				then
+					committed=1
+				else
+					git checkout -- "$f"
+				fi
 			done
+
+		[[ -n $committed ]] && git push
 	}
 
 	if [[ $# -eq 0 ]]; then
@@ -1191,7 +1116,7 @@ gb() { # {{{
 			git switch "$target" > /dev/null || return 1
 
 		elif
-			foo "$default_local_branch" #&&
+			commit_unstaged_changes "$default_local_branch" #&&
 			git switch --create "$target" "$default_local_branch" > /dev/null 2> /dev/null
 		then
 			# for some reason, newly created branches don't know
@@ -1205,7 +1130,7 @@ gb() { # {{{
 			# always succeeds, but may result in conflicts which
 			# must be resolved in the new branch
 
-			foo "$target"
+			commit_unstaged_changes "$target"
 			git switch "$target"
 
 			# # alternatively, revert all unstaged changes, then
@@ -1426,7 +1351,7 @@ clocd() {
 # glab auth login
 
 alias gld=gldiff
-alias gmer='glab mr list --output=json --assignee=@me --merged | jq .[] | jqt iid source_branch title' # note: --output=json forcibly limits --per-page to 15?
+alias gmer='seq 1 2 | parallel -n1 glab mr list --output=json --assignee=@me --merged --per-page=9999 -p | jq .[] | jqt iid source_branch title | sort -n'
 
 # apt 1.36
 # snap 1.43/1.54, but cannot read config file (lol)
@@ -1472,15 +1397,16 @@ gmrc() {
 
 			x=$(git show --format= --numstat "$sha" |
 				sort -rn |
+				# cut -f3 | xargs grep |
 				while read -r _ _ f; do <<< "$curr" grep "$f" || :; done |
 				wc -l)
 
-			echo "$sha $x"
+			echo "$x $sha"
 
 		done |
-		sort -k2 -rn |
-		cut -d' ' -f1 |
+		sort -rn |
 		head -n1 |
+		cut -d' ' -f2 |
 		xargs git show |
 		grep -Po '!\d+'
 }
@@ -1732,7 +1658,7 @@ jx() {
 	pkgmgr() {
 		if [[ -f yarn.lock ]]; then
 			echo yarn
-		elif [[ -f pnpm-lock.yaml ]]; then
+		elif [[ -f $(_get_repo_root)/pnpm-lock.yaml ]]; then
 			echo pnpm
 		else
 			echo npm
@@ -1758,7 +1684,7 @@ jmake() {
 			echo
 		done)
 
-	cat << EOF | tee Makefile
+	cat << EOF | tee -a Makefile
 .PHONY: $(<<< "$keys" tr : - | xargs)
 $cmds
 EOF
@@ -1946,8 +1872,7 @@ dps() {
 	docker ps -a --format=json |
 		# note: ID is usually just visual noise, but placing it any
 		# later in the seq will make it hard to extract (with cut/awk)
-		jqt 'Names[0:40]' State ID Status RunningFor |
-		# jq -r '[.Names[0:40], .State, .ID, .Ports, .Status, .RunningFor] | @tsv' |
+		jqt 'Names[0:50]' State ID Status RunningFor |
 		sort |
 		column -t -s $'\t' # https://unix.stackexchange.com/a/57235
 }
@@ -2017,6 +1942,12 @@ donuke() {
 	docker rm "${containers[@]}"
 }
 
+dodu() {
+	: inspect size of image
+	docker image history --no-trunc --format=json "$1" |
+		jqt Size CreatedBy
+}
+
 # # list docker containers responsible for a given high-memory/cpu process
 # top -bn1 |
 # 	grep -m5 python |
@@ -2054,7 +1985,7 @@ donuke() {
 zd() { zip -jr "${1%/}" "${1%/}"; }                         # zip directory (flat); stripping trailing slash is important
 zin() { < /dev/stdin zip --junk-paths --names-stdin "$1"; } # pipe files from stdin to zip
 
-f() {
+seconds_since() {
 	case $1 in
 
 	n | new | mtime) find "${2:-.}" -maxdepth 1 -type f -printf "%T+\t%p\n" |
@@ -2460,9 +2391,10 @@ rge() {
 	staged=$(rg --files-with-matches "$@" | sort -u)
 	if [[ $(<<< "$staged" wc -l) -gt 10 ]]; then
 		echo "More than 10 files found"
-		return
 	fi
-	echo "$staged" | xargs nvim -p
+	echo "$staged" |
+		head |
+		xargs nvim -p
 }
 
 _unused() {
