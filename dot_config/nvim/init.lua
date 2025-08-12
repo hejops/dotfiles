@@ -380,11 +380,7 @@ telescope.setup({
 				-- https://github.com/nvim-telescope/telescope.nvim/blob/a4ed82509/lua/telescope/actions/init.lua#L885
 				i = {
 					["<cr>"] = function()
-						local selection = require("telescope.actions.state").get_selected_entry()
-						if selection.status:sub(2) ~= " " then
-							-- starts in insert mode for some reason, which is nice
-							vim.cmd("Git commit -v " .. selection.value)
-						end
+						vim.cmd("Git commit -v")
 					end,
 				},
 				-- n = { ["<cr>"] = telescope_actions.git_staging_toggle },
