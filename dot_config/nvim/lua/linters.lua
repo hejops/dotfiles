@@ -1,5 +1,6 @@
 -- lua print(require("lint").get_running()[1])
 
+---@type {[string]: table}
 local linters = {
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 
@@ -11,6 +12,7 @@ local linters = {
 	["yaml.github"] = { "zizmor" },
 	c = { "clangtidy" },
 	cpp = { "clangtidy" },
+	css = { "stylelint" },
 	dockerfile = { "hadolint" }, -- can be quite noisy
 	gitcommit = { "gitlint" },
 	go = { "golangcilint" },
@@ -21,18 +23,24 @@ local linters = {
 	lua = { "luacheck" },
 	make = { "checkmake" },
 	python = { "ruff" }, -- may have duplicate with ruff lsp
+	sh = {},
+	typescript = { "biomejs" },
+	typescriptreact = { "biomejs" },
+
 	sql = {
 		"sqlfluff", -- slow lint is fine, since async
 		vim.fn.executable("squawk") == 1 and "squawk" or nil,
 	},
-	typescript = { "biomejs" },
-	typescriptreact = { "biomejs" },
 
 	markdown = {
 		"markdownlint", -- https://github.com/DavidAnson/markdownlint?tab=readme-ov-file#rules--aliases
 		"proselint", -- https://github.com/amperser/proselint?tab=readme-ov-file#checks
 	},
 }
+
+for _, t in pairs(linters) do
+	table.insert(t, "cspell")
+end
 
 if vim.fn["globpath"](".", "commitlint.config.js") ~= "" then
 	-- npm install --save-dev @commitlint/{cli,config-conventional}
@@ -195,10 +203,21 @@ require("lint").linters.squawk = { -- {{{
 	end,
 } -- }}}
 
-require("lint").linters.luacheck.args = vim.list_extend(require("lint").linters.luacheck.args, {
-	"--globals",
-	"vim",
-})
+require("lint").linters.luacheck.args = vim.list_extend( --
+	require("lint").linters.luacheck.args,
+	{
+		"--globals",
+		"vim",
+	}
+)
+
+require("lint").linters.cspell.args = vim.list_extend( --
+	require("lint").linters.cspell.args,
+	{
+		"--config",
+		vim.env.HOME .. "/.config/cspell/config.yaml",
+	}
+)
 
 -- linters cannot be conditionally disabled at config time. they can only be
 -- disabled at runtime:

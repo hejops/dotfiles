@@ -27,11 +27,9 @@
 # minute hour day(1-31) month day(1-7)
 
 # persistent (every n minutes = */n ...)
-*/10 7-23,0-2 * * *	env DISPLAY=:0 ~/gripts/wall/wall >/dev/null 2>/dev/null
-*/10 7-23,0-2 * * *	~/rust/fours/target/release/fours --board hr --subject LOONA
+*/10 * * * *	env DISPLAY=:0 ~/gripts/wall/wall
+*/15 * * * *	~/scripts/mail
 
-# * * * * *	env DISPLAY=:0 /bin/notify-send cron
-# */1 * * * *	/bin/sh ~/scripts/dwmstatus >/dev/null 2>/dev/null # now just an autostart with inf loop
 # */30 7-23,0-2 * * *	/bin/python3 ~/scripts/reddit.py loona red_velvet > /tmp/reddit
 # arecord -l | grep 'card 1' (or sth)
 
@@ -42,21 +40,25 @@
 # https://tk-sls.de/wp/3885
 # https://unix.stackexchange.com/a/536860
 
+# TODO: Lazy git doesn't work (permission denied)
+# TODO: how did collection2.db previously get updated without a cronjob?
+# TODO: when mbsync.service was removed, was mail still being updated?
+
 # 0 */1 * * *	env DISPLAY=:0 /bin/sh ~/scripts/alert
+# 0 */6 * * *	~/dita/.venv/bin/dump_collection
+# 2 */3 * * *	/usr/bin/nvim --headless "+Lazy! sync" +qa
 # every n hours (0 */n ...)
 0 */1 * * *	/bin/sh ~/scripts/nicowish
+0 */1 * * *	~/gripts/disq/disq -dump hejops
 0 */6 * * *	/usr/bin/pkill -f telegram-desktop
-0 */6 * * *	~/.cache/pypoetry/virtualenvs/dita-*/bin/dump_collection
 0 */8 * * *	/bin/rm -r ~/.mozilla/firefox/*/storage/default/file*
 0 */8 * * *	/bin/rm -r ~/.mozilla/firefox/*/storage/default/http*
 0 */8 * * *	/bin/sh ~/scripts/cup
-0 */8 * * *	~/.cache/pypoetry/virtualenvs/dita-*/bin/discogs_marketplace
+0 */8 * * *	~/dita/.venv/bin/discogs_marketplace
 1 */3 * * *	/usr/bin/nvim --headless +TSUpdate +qa
-2 */3 * * *	/usr/bin/nvim --headless "+Lazy! sync" +qa
 30 */3 * * *	/usr/bin/nvim --headless "+Lazy! clean" +qa
 
 # 0 16 * * *	/bin/python3 ~/scripts/cargo_clean.py
-# 0 20 * * *	/bin/rm -rf "~/.config/teams-for-linux/Partitions/teams-4-linux/Service Worker/Cache"
 # daily (at n hours = 0 n ...)
 # https://gist.github.com/kkoomen/68319b08ab843ce67cf7b282b0b2fd24
 # https://github.com/junegunn/vim-plug/issues/493#issuecomment-226318571
@@ -81,9 +83,9 @@
 # weekly
 0 12 * * 2,4,6	/bin/rm -r ~/.cargo/registry
 0 12 * * 2,4,6	/bin/rm ~/.config/trizen/sources/*
-0 12 * * 2,4,6	~/.cache/pypoetry/virtualenvs/dita-*/bin/dump_library
+0 12 * * 2,4,6	~/dita/.venv/bin/dump_library
 0 12 * * 3,6	/bin/rm -f /run/media/$USER/Elements/music_slsk/downloading/*
-0 12 * * 3,6	~/.cache/pypoetry/virtualenvs/dita-*/bin/convert_files
+0 12 * * 3,6	~/dita/.venv/bin/convert_files
 0 12 * * 6	/bin/find /run/media/$USER/Elements/music -type d -empty -exec rmdir {} \;
 1 12 * * 6	/bin/rm ~/.cache/ranger/*
 2 12 * * 6	/usr/bin/yarn cache clean

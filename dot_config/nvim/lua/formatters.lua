@@ -157,6 +157,13 @@ require("conform").setup({
 			stdin = true,
 		},
 
+		uniq = { command = "uniq" },
+
+		sanitize_nbsp = {
+			command = "sed",
+			args = { "s/\xC2\xA0//g" }, -- https://superuser.com/a/1781296
+		},
+
 		-- sqlfluff = {
 		-- 	-- format: more reliable; will format if no violations found
 		-- 	-- fix: does nothing if 'Unfixable violations detected'
@@ -197,6 +204,7 @@ require("conform").setup({
 		json = { "jq" },
 		jsonl = { "jq" },
 		lua = { "stylua" },
+		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
 		markdown = { "mdslw", "prettier" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },

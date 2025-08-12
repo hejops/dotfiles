@@ -924,10 +924,10 @@ require("lazy").setup(
 		-- "olivercederborg/poimandres.nvim", -- dim line column
 		-- "thejian/nvim-moonwalk", -- unreadable git status
 
-		"datsfilipe/vesper.nvim", -- italic
-		"fynnfluegge/monet.nvim", -- italic
 		"honamduong/hybrid.nvim", -- italic
 		"samharju/synthweave.nvim", -- italic
+		-- "datsfilipe/vesper.nvim", -- italic
+		-- "fynnfluegge/monet.nvim", -- italic
 
 		{
 			"shawilly/ponokai",

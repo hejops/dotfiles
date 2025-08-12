@@ -1,0 +1,37 @@
+$schema: https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json
+# patterns:
+#   - name: json-key
+#     pattern: >-
+#       /".*?":/g
+languageSettings:
+  # files whose language is not listed here will be checked in their entirety
+  # - languageId: json,jsonc
+  #   ignoreRegExpList:
+  #     - json-key
+  - languageId:
+      - c
+      - cpp
+      - go
+      - javascript
+      - typescript
+    includeRegExpList:
+      - string # singular or plural ok
+      - CStyleComment
+  - languageId:
+      - python
+    includeRegExpList:
+      - string
+      - /#.*/ # ^ seems to disable the regex entirely
+      # # doesn't match multiline str, so somewhat useless
+      # - /('''|\"\"\")[^\\1]+?\\1/g
+  - languageId:
+      - lua
+    includeRegExpList:
+      - string
+      - /--.*/
+  - languageId:
+      # https://github.com/streetsidesoftware/cspell/blob/59d9a1c23f/packages/cspell-filetypes/src/definitions.ts#L232
+      - shellscript # yeah...
+    includeRegExpList:
+      # - string
+      - /#.*/
