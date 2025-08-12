@@ -112,14 +112,28 @@ lsof ./build/default/default.pdf > /dev/null 2> /dev/null || zathura ./build/def
 ]])
 end -- }}}
 
-vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+-- vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+-- 	pattern = { "*.tex" },
+-- 	callback = tectonic_build,
+-- })
+
+vim.api.nvim_create_autocmd({ "VimEnter", "BufWritePost" }, {
 	pattern = { "*.tex" },
 	callback = tectonic_build,
 })
 
+vim.api.nvim_create_autocmd({ "VimEnter", "BufWritePost" }, {
+	pattern = { "*.typ" },
+	command = "Make",
+})
+
 vim.api.nvim_create_autocmd({ "VimEnter" }, {
-	pattern = { "*.tex" },
-	callback = tectonic_build,
+	pattern = { "*.typ" },
+	callback = function()
+		vim.fn.jobstart([[
+lsof ./cv.pdf > /dev/null 2> /dev/null || zathura ./cv.pdf 2> /dev/null &
+]])
+	end,
 })
 
 vim.api.nvim_create_autocmd({ "BufWritePost" }, {
@@ -315,7 +329,7 @@ telescope.setup({
 				["<c-j>"] = telescope_actions.move_selection_next,
 				["<c-k>"] = telescope_actions.move_selection_previous,
 				["<c-p>"] = require("telescope.actions.layout").toggle_preview,
-				["<c-t>"] = require("telescope.actions.layout").cycle_layout_next, -- TODO: why must input twice?
+				["<c-t>"] = require("telescope.actions.layout").cycle_layout_next, -- rarely used
 				["<cr>"] = telescope_actions.select_tab_drop, -- reuse tab, if buffer already open
 				["<esc>"] = telescope_actions.close,
 
@@ -335,7 +349,7 @@ telescope.setup({
 		},
 	},
 
-	-- https://github.com/RobinTruax/resolution/blob/63cbc5a50eee8df039f54e593ed377f04e60e583/lua/plugins/telescope/picker_opts.lua#L20
+	-- https://github.com/RobinTruax/resolution/blob/63cbc5a50e/lua/plugins/telescope/picker_opts.lua#L20
 
 	-- :h telescope.builtin
 	pickers = {
@@ -429,16 +443,24 @@ vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
 -- git {{{
 
 ---@param f function
+---@return function
 local function wrap(f)
 	return function()
 		pcall(f)
 	end
 end
 
-vim.keymap.set("n", "<leader>e", wrap(telescope_b.git_files), { desc = "git ls-files" })
-vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" }) -- rare
-vim.keymap.set("n", "<leader>gS", telescope_b.git_status, { desc = "git status" }) -- rare
-vim.keymap.set("n", "gas", telescope_b.git_status, { desc = "git status" }) -- rare
+vim.keymap.set("n", "<leader>e", wrap(telescope_b.git_files), { desc = "git ls-files" }) -- errors if not in git repo -- TODO: fallback to telescope_b.find_files
+vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" }) -- rare (run b in bash instead)
+
+for _, k in pairs({
+	"<leader>gS", -- TODO: figure out which is most convenient
+	"gS",
+	"gas",
+	"gs",
+}) do
+	vim.keymap.set("n", k, telescope_b.git_status, { desc = "git status" })
+end
 
 local git_log_cmd = {
 	"git",
@@ -475,10 +497,11 @@ end, { desc = "git log (current file only)" })
 -- requires user input (or visual selection):
 -- git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S
 
+-- vim.keymap.set("n", "gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" }) -- :h gs is laughably useless
 vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
-vim.keymap.set("n", "<leader>gU", ":Git checkout -- %<cr>", { desc = "discard all uncommitted changes" })
+vim.keymap.set("n", "<leader>gU", ":Git checkout -- %", { desc = "discard all uncommitted changes" }) -- note: need confirm
 vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" })
-vim.keymap.set("n", "gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" }) -- :h gs is laughably useless
+vim.keymap.set("n", "g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
 local function commit_staged() -- {{{
@@ -506,7 +529,6 @@ vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit" })
 -- ga is not useful (:h ga), and can be safely overridden
 
 -- vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
--- vim.keymap.set("n", "<leader>gS", ":Gitsigns stage_buffer<cr>", { desc = "stage all hunks in current buffer" }) -- same as :Gwrite, but without making the commit
 vim.keymap.set("n", "gab", ":Gwrite<cr>", { desc = "add current buffer (entire)" })
 vim.keymap.set("n", "gap", ":Git add %<cr>", { desc = "add current buffer (patch)" })
 
@@ -666,7 +688,7 @@ cmp.setup({
 		},
 		{ name = "luasnip" },
 		{ name = "buffer" },
-		{ name = "path" },
+		{ name = "path" }, --  TODO: don't complete large dirs? (or /run)
 		-- { name = "gitcommit" }, -- dunno how this is supposed to work -- https://github.com/Cassin01/cmp-gitcommit#usage
 	},
 })
