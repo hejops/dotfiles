@@ -221,7 +221,6 @@ da() {
 }
 
 cm() {
-
 	if [[ $# -eq 0 ]]; then
 		# note: files added to cm via `add -f <symlink>` are not
 		# automatically updated when the src file (target of the
@@ -313,7 +312,6 @@ rt() {
 }
 
 ytm() {
-
 	f=$(mktemp)
 	"$EDITOR" +startinsert "$f"
 
@@ -375,7 +373,6 @@ gdns() { gdn -U0 <(sort -u "$1") <(sort -u "$2"); }
 # git info {{{
 # functions that only report info
 
-# shellcheck disable=SC2120
 gls() { git ls-files "${1:-.}"; }
 
 _get_remote() { git config --get remote.origin.url; }
@@ -413,19 +410,6 @@ _git_http() {
 		tr <<< "$url" : / | sed -r 's|git@|https://|; s|.git$||'
 	fi
 
-}
-
-_git_has_conflicts() {
-	rg --hidden '^[<=>]{7}'
-	return $?
-}
-
-_git_get_conflicts() {
-	# submodule conflicts don't really need to be resolved?
-	git status --porcelain --ignore-submodules=all |
-		grep -P '^([^ ?])\1 ' |
-		sort -u |
-		cut -c3-
 }
 
 gauthors() {
@@ -526,8 +510,7 @@ _git_log_fzf() { # {{{
 		args+=("origin/$1")
 
 	elif
-		m=$(_gmaster) &&
-			[[ $(_git_current_branch) == "$m" ]]
+		m=$(_gmaster) && [[ $(_git_current_branch) == "$m" ]]
 	then
 		: on master
 
@@ -678,6 +661,7 @@ gcoup() {
 # }}}
 # git staging {{{
 # functions that modify files or the index
+# TODO: most of these would be more convenient if done in vim
 
 gA() {
 	: un-add, unstage
@@ -796,7 +780,7 @@ gS() {
 }
 
 gsq() {
-	: squash last n commits -- rewrites history!
+	: squash last n commits, starting from a given commit -- rewrites history!
 	# https://stackoverflow.com/a/5201642
 	sha=$(_git_log_fzf | cut -d' ' -f1)
 	# `git reset <sha>` brings us back to the commit -after- <sha>. this
@@ -907,32 +891,10 @@ gpick() {
 	[[ -n $sha ]] && git cherry-pick --edit "$sha"
 }
 
-# gac() {
-# 	: append ALL changes to most recent unpushed commit
-# 	git add "$@"
-# 	git commit --amend --no-edit
-# }
-
-# gapc() {
-# 	git add --patch "$@"
-# 	git commit --amend --no-edit
-# }
-
 # }}}
 # git branch # {{{
 gb() { # {{{
 	: switch to new branch, or existing branch
-
-	# handle_conflicts() {
-	# 	_git_has_conflicts || return
-	# 	# similar to gcon
-	# 	while _git_has_conflicts; do
-	# 		echo "Conflicts found!"
-	# 		_git_get_conflicts | xargs nvim -p
-	# 	done
-	# 	_git_get_conflicts | xargs git add
-	# 	git commit -v
-	# }
 
 	default_local_branch=$(_gmaster)
 	current_local_branch=$(_git_current_branch)
@@ -1170,6 +1132,19 @@ gcon() { # {{{
 
 	: resolve conflicts, if any, and merge
 
+	_git_has_conflicts() {
+		rg -q --hidden '^[<=>]{7}'
+		return $?
+	}
+
+	_git_get_conflicts() {
+		# submodule conflicts don't really need to be resolved?
+		git status --porcelain --ignore-submodules=all |
+			grep -P '^([A-Z])\1 ' |
+			sort -u |
+			cut -c3-
+	}
+
 	# git diff --name-only --diff-filter=U --relative
 
 	if ! conflicts=$(_git_get_conflicts); then
@@ -1214,14 +1189,6 @@ gcon() { # {{{
 gnew() { # {{{
 	: push to newly created remote
 
-	# if [[ -f files_to_add ]]; then
-	# 	if [[ -d .git ]] && [[ -d .git_old ]]; then
-	# 		echo 'new and old git histories found, remove new one first: rm -rf ./.git'
-	# 		return
-	# 	fi
-	# 	mv .git .git_old
-	# fi
-
 	if _get_remote; then
 		return
 
@@ -1252,11 +1219,6 @@ gnew() { # {{{
 	git remote set-head origin --auto
 
 } # }}}
-
-# gclone() {
-# 	ggiturl() { <<< "$1" sed 's|http://|git@|; s|/|:|; s/$/.git/'; }
-# 	ggiturl "$1" | xargs git clone
-# }
 
 # grbr() {
 # 	: rebase to remote, discarding all local changes that conflict with remote
@@ -1301,7 +1263,6 @@ alias gmer='seq 1 2 | parallel -n1 glab mr list --output=json --assignee=@me --m
 # snap 1.43/1.54, but cannot read config file (lol)
 
 gldiff() {
-
 	# note: to see diff of current branch, just use gdm
 	if [[ $# -eq 0 ]]; then
 		prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
@@ -1374,7 +1335,6 @@ cw() { cargo watch -x check -x "test $1"; }
 
 # https://gist.githubusercontent.com/alexedwards/3b40775846535d0014ab1ff477e4a568/raw/15f15b499f626a6e3949c237d52a3e8aace1b05b/Makefile
 
-# alias gor="\ls *.go | grep -v _test | xargs go run" # won't work with args; gob is probably better
 alias gobe="go test -bench=. -run=^$ ./..." # run benchmarks only -- https://stackoverflow.com/a/16161605
 
 gop() {
@@ -1395,23 +1355,30 @@ gopk() {
 }
 
 gon() {
-	[[ $# -ne 1 ]] && return
-	[[ -d $1 ]] && return
-	if [[ -f ./go.mod ]]; then
-		mkdir "$1"
-		echo -e "package $1\nfunc foo(){\n}" > "$1/$1.go"
-		vim + "$1/$1.go"
+	if (($# == 0)); then
+		pkg=foo
+		tmp
 	else
-		mcd "$1"
-		go mod init "$1"
-		echo "$1" > .gitignore
+		pkg=$1
+	fi
+
+	[[ -d $pkg ]] && return
+
+	if [[ -f ./go.mod ]]; then
+		mkdir "$pkg"
+		echo -e "package $pkg\nfunc foo(){\n}" > "$pkg/$pkg.go"
+		vim + "$pkg/$pkg.go"
+	else
+		mcd "$pkg"
+		go mod init "$pkg"
+		echo "$pkg" > .gitignore
 		echo -e "func main(){\n}" > main.go
 		go build # generate go.mod
 		vim + main.go
 	fi
 }
 
-gob() { # build and run (gor won't work with args)
+gob() { # build and run
 	name=$(< go.mod head -n1 | cut -d' ' -f2)
 	go build && ./"$name" "$@"
 }
@@ -1584,13 +1551,11 @@ psqlj() {
 alias jqc="jq -c" # basically just colors output
 
 jqk() {
-
 	: https://gist.github.com/pedroxs/f0ee8c515eea0dbce2e23eea7c048e10#file-jq-filters-sh-L2
 	jq < /dev/stdin -r '.. | objects | with_entries(select(.key | contains("'"$1"'"))) | select(. != {}) | .'"$1"
 }
 
 jqt() {
-
 	: select jq fields from a flat sequence of objects and format as tsv with alignment
 	fields=()
 	for x in "$@"; do
@@ -1634,10 +1599,11 @@ dolc() {
 	# dolf "$name"
 }
 
-# alias dps='docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.ID}}\t{{.RunningFor}}" | sort'
-
 dps() {
-	# docker ps adds too much padding, and cannot truncate long values
+	# # docker ps adds too much padding, and cannot truncate long values
+	# docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.ID}}\t{{.RunningFor}}" |
+	# 	sort
+
 	docker ps -a --format=json |
 		# note: ID is usually just visual noise, but placing it any
 		# later in the seq will make it hard to extract (with cut/awk)
@@ -1794,47 +1760,6 @@ if \"$MU\" in {x.rstrip('/') for x in sys.argv}:
 	}
 fi
 
-# rgo() {
-# 	: useful when you know what to look for but dont want to open vim
-# 	# https://blog.burntsushi.net/ripgrep
-# 	# https://github.com/nvim-telescope/telescope.nvim/blob/7b5c5f56a21e82fdcfe5b250278b8dfc4b1cbab4/lua/telescope/config.lua#L646
-# 	# $1 = fzf query generally more useful than $1 = file
-# 	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' . |
-# 		fzf -e -q "${1:-}")
-# 	[[ -z $match ]] && return
-#
-# 	# file:line:col:match
-# 	IFS=':' read -ra array <<< "$match"
-#
-# 	# TODO: --glob '!libs/*' (! must be single quoted)
-#
-# 	{
-# 		# force insert into history
-# 		echo "vim $(realpath "${array[0]}")"
-# 		echo "#$(date +%s)"
-# 	} >> ~/.bash_history
-#
-# 	# note: this won't go into history (only rgo will)
-# 	"$EDITOR" +"${array[1]}" "${array[0]}"
-#
-# }
-
-# j() {
-# 	: jump to frequently used file, should be used in conjunction with rgo
-# 	sel=$(< ~/.bash_history grep -P '^n?vim' |
-# 		awk '!seen[$0]++' |
-# 		while read -r cmd; do
-# 			f=$(<<< "$cmd" cut -d' ' -f2)
-# 			f=$(realpath "$f" 2> /dev/null) || continue
-# 			[[ ! -f $f ]] && continue
-# 			echo "$f"
-# 		done |
-# 		awk '!seen[$0]++' |
-# 		fzf --tac)
-# 	[[ -z $sel ]] && return
-# 	"$EDITOR" "$sel"
-# }
-
 files() {
 	: list files in use by a process
 	pidof "$1" |
@@ -1846,7 +1771,6 @@ files() {
 }
 
 mi() {
-
 	mediainfo --Output=JSON "$@" |
 		jq '.[] | {x:.media.track[0].OverallBitRate, y: .media.track[1].Height//0|tonumber, z:.media."@ref"}' |
 		jqt x y z |
@@ -2056,7 +1980,6 @@ fftabs() {
 }
 
 randalb() {
-
 	# generate list of random albums rated >=3 amounting to 50 gb
 	set -euo pipefail
 	sql=$(
@@ -2128,7 +2051,6 @@ randalb() {
 }
 
 lba() {
-
 	# curl -sL --fail "https://letterboxd.com/hejops$url" > /dev/null && continue
 
 	curl -sL 'https://letterboxd.com/ajax/activity-pagination/hejops/following/' |
@@ -2144,7 +2066,6 @@ lba() {
 }
 
 tsg() {
-
 	token=$(get_cookie remember_user_token)
 
 	pgs=$(curl -sL "https://app.thestorygraph.com/books-read/hejops" \
@@ -2196,7 +2117,6 @@ georank() {
 }
 
 geocode() {
-
 	# https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=45.60343636072756,-73.72799336003183
 
 	: transform placename to coordinates
