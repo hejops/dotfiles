@@ -98,16 +98,16 @@ fi
 # }}}
 # aliases {{{
 
-alias dr=discogs_rate
+# alias dr=discogs_rate
+# alias lc=leetcode.py # shadows lc binary (who?)
+# alias mb=musicbrainz
+# alias trk=trackratings.py
+# alias wd=waitdie
 alias ex=extract
 alias gm=getmail
-alias lc=leetcode.py # shadows lc binary (who?)
-alias mb=musicbrainz
 alias met=metronome
 alias ns=notify-send
-alias trk=trackratings.py
 alias tt=taptempo
-alias wd=waitdie
 alias xo=xdg-open
 
 alias rab='exec yazi "$HDD/books"'
@@ -116,36 +116,35 @@ alias rag='exec yazi "$HDD/guitar"'
 alias ram='exec yazi "$MU"'
 alias rat='exec yazi "$HDD/torrent" "$HDD/movies"'
 
+# alias dA="dc artist:"
+# alias dc="discogs_collection filter"
+# alias dt="discogs_collection top"
 # alias lock="[[ -d /sys/class/power_supply/BAT0 ]] && systemctl suspend && slock"
 # alias mem='top -b -n1 -o %MEM | grep -m10 $USER'
 # alias mem='top -bn1 | sed -rn "/PID/,$p" | sort -k10 -n | tail'
-# alias n="NO_COLOR=1 node --import=tsx"
+# alias pq="~/plaque/plaque"
+# alias tx="tectonic -X"
 # top -bn1 | sed -rn '/PID/,$p' | sed 1d | awk '{print $10}' | sum
 alias au="audacious -H"
 alias bh="vb -b"
 alias cam="ls /dev/video* && exec mpv --fs av://v4l2:/dev/video0 --profile=low-latency --untimed" # TODO: handle >1 video device (just increment n until file not exist)
 alias cdnp='cd "$(files mpv | grep mp3 | largs dirname)"'
 alias ci="chromium --incognito"
-alias colt="column -t -s$'\t'" # align tab-containing output
+alias colt="column -t -s$'\t'" # align tab-containing output -- https://unix.stackexchange.com/a/57235
 alias cpu='top -b -n1 -o %CPU | grep -m10 $USER'
 alias ctz='sudo timedatectl set-timezone $(timedatectl list-timezones | grep / | fzf)' # TODO: geolocate
-alias cv='exec $EDITOR ~/cv/src/index.tex'
-alias dA="dc artist:"
+alias cv='exec $EDITOR ~/cv/cv.typ'
 alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
-alias dc="discogs_collection filter"
-alias dt="discogs_collection top"
 alias eb="exec bash"
 alias fzh="fzf --height=~33% --reverse" # height=~X% means min(input rows, window height * X%);
 alias inw="inotifywait --monitor --recursive"
 alias li="exec chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg'"
-alias or="cd ~/gripts/oar && time ./oar && waitdie mpv && vol --auto && mpv --profile=bcx ./out && rm -rI ./out ; kp"
+alias or="bash ~/gripts/oar/run.sh"
 alias ports="netstat -tunlp | grep -P '^(udp|tcp)[^6]' | sort -k4 -V" # https://linuxize.com/post/check-listening-ports-linux/#check-listening-ports-with-netstat
-alias pq="~/plaque/plaque"
 alias pss="ps -e --format=lstart,pid,cmd --sort=start_time | grep -Fv -e '[' -e '('"
 alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
-alias tx="tectonic -X"
 alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 
 mem() {
@@ -163,34 +162,7 @@ mem() {
 
 # alias y="bash ~/gripts/disq/ytm.sh"
 
-y() {
-	# {
-	# 	# force pause before playback (?)
-	# 	playerctl play-pause
-	#
-	# 	# wait for mpv to start
-	# 	while
-	# 		sink=$(pactl --format=json list sink-inputs | jq -r '.[] | select(.properties."application.name"=="mpv") | .sink')
-	# 		[[ -z $sink ]]
-	# 	do
-	# 		sleep 0.5
-	# 	done
-	#
-	# 	# ensure mpv playing on headphones
-	# 	# alsa.id=="Au" means connected via headphone jack (speakers are connected via "USB")
-	# 	if
-	# 		! pactl --format=json list sinks |
-	# 			jq -e ".[] | select(.state==\"RUNNING\" and .index==$sink and .properties.\"alsa.id\"==\"Au\")" > /dev/null
-	# 	then
-	# 		notify-send -u critical 'playing on speakers'
-	# 		# pgrep bash | grep ytm.sh | cut -d' ' -f1 | xargs kill
-	# 		pavucontrol
-	# 	else
-	# 		playerctl play-pause
-	# 	fi
-	# } &
-	bash ~/gripts/disq/ytm.sh
-}
+y() { bash ~/gripts/disq/ytm.sh; }
 
 EXA_ARGS=(
 
@@ -237,7 +209,7 @@ m() {
 	{
 		find "$HDD/movies" -type f
 		cat ~/to_watch
-	} | fzf
+	} | fzf --preview=
 }
 
 da() {
@@ -370,90 +342,6 @@ ytm() {
 }
 
 # }}}
-
-fftabs() {
-	# if ! command -v mozlz4-linux; then
-	# 	wget https://github.com/jusw85/mozlz4/releases/download/v0.1.0/mozlz4-linux
-	# 	chmod +x mozlz4-linux
-	# fi
-
-	mozlz4 -x ~/.mozilla/firefox/*default/sessionstore-backups/recovery.jsonlz4 |
-		jq -r '.windows[0].tabs[].entries[-1].url' |
-		grep ^http |
-		sort -u
-}
-
-randalb() {
-
-	# generate list of random albums rated >=3 amounting to 50 gb
-	set -euo pipefail
-	sql=$(
-		# note: unlike select_random.sql, the ORDER BY random() is used
-		# in the outer query
-		cat <<- EOF
-			WITH rand AS (
-			    SELECT
-			        albums.id,
-			        albums.title
-			    FROM albums
-			    WHERE albums.rating >= 3
-			)
-
-			SELECT
-			    group_concat(artists.name, ' ') AS artist,
-			    rand.title AS album
-			FROM
-			    rand
-			INNER JOIN albums_artists
-			    ON rand.id = albums_artists.album_id
-			INNER JOIN artists
-			    ON albums_artists.artist_id = artists.id
-			GROUP BY album
-			ORDER BY random();
-		EOF
-	)
-
-	# size=0
-	((size = 0, max = 50 * 1024 ** 2)) # 50 gb
-	db=~/disq/collection2.db
-	dirs=()
-
-	rows=$(sqlite3 -json "$db" "$sql" 2> /dev/null | jq -c .[])
-
-	while read -r row; do
-
-		# TODO: bash_rematch
-		artist=$(<<< "$row" jq -r .artist | sed -r 's/ \([0-9]+\)$//')
-		album=$(<<< "$row" jq -r .album)
-
-		# double find: 1m40
-		# try: 30s (3x)
-		# lazy: 8s (4x)
-
-		# d=$(find "$MU/$artist" -mindepth 1 -iname "$album*" |
-		# 	grep . |
-		# 	head -n1) || continue
-
-		d=$({
-			if [[ -d $MU/$artist ]]; then
-				find "$MU/$artist" -mindepth 1 -iname "$album*"
-			else
-				find "$MU" -maxdepth 1 -iname "$artist" -print0 |
-					xargs -0 -I{} find {} -mindepth 1 -iname "$album*"
-			fi
-		} |
-			grep . |
-			head -n1) || continue
-
-		dirs+=("$d")
-		((size += $(du -cs "$d" | tail -n1 | cut -f1)))
-		((size >= max)) && break
-
-	done <<< "$rows"
-
-	printf "%s\n" "${dirs[@]}" | sort
-
-}
 
 # git
 
@@ -1207,10 +1095,9 @@ _complete_gb() {
 complete -F _complete_gb gb
 
 git_branch() {
-	: switch to branch
+	: switch to existing branch, aliased to b
 	# https://stackoverflow.com/a/1441062
 	# --pretty=format:'%h%x09%an%x09%ad%x09%s' # no color
-	# TODO: include date/author, but preserve color
 
 	_in_git_repo || return
 	if [[ $(git branch | wc -l) -eq 1 ]]; then
@@ -1467,88 +1354,6 @@ gmrc() {
 
 # }}}
 
-# python {{{
-
-genuv() {
-	: generate dependencies of a uv script
-	# would be better in vim, but i don't like writing python scripts (let
-	# alone scripts with external deps) these days anyway
-
-	pydeps() {
-		: for a given file, list imports that are not in stdlib
-
-		# note: this still includes first-party imports
-		< "$1" grep -P '^(from|import)' |
-			cut -d' ' -f2 |
-			sort -u |
-			# https://stackoverflow.com/a/75344709
-			xargs python -c 'import sys
-for i in sys.argv[1:]:
-    if i.split(".")[0] not in sys.stdlib_module_names:
-        print(i)' 2> /dev/null
-	}
-
-	# assumes there are no 1st party imports; when generating dependencies
-	# of a uv script, this is probably true
-	deps=$(pydeps "$1")
-	[[ -z $deps ]] && return
-
-	cat << EOF
-# /// script
-# dependencies = [
-$(echo "$deps" | while read -r dep; do echo "#   \"$dep\","; done)
-# ]
-# ///
-EOF
-
-}
-
-pget() {
-	pyp=$(_get_repo_root)/pyproject.toml
-
-	if [[ -f $pyp ]]; then
-		echo "not in python project"
-
-	elif < "$pyp" grep -Fq tool.poetry; then
-		poetry add "$@"
-
-	elif command -v uv > /dev/null; then
-		uv add "$@"
-	fi
-}
-
-# why can't they output json like sane people
-# what does ! even mean??
-# presumably, yellow is major, red is minor/patch?
-# poetry show --outdated | grep -F '!' | awk '{print $1}'
-
-pup() {
-	pyp=$(_get_repo_root)/pyproject.toml
-
-	if [[ ! -f $pyp ]]; then
-		echo "not in python project"
-
-	elif < "$pyp" grep -Fq tool.poetry; then
-		poetry update "$@"
-
-	elif command -v uv > /dev/null; then
-		# https://www.loopwerk.io/articles/2024/python-poetry-vs-uv/
-		# https://www.loopwerk.io/articles/2024/python-uv-revisited/
-		uv lock --upgrade-package "$@"
-	fi
-}
-
-# pentmd() {
-# 	: render entry points as markdown
-# 	# - [`poetry run XXX`](./path/to/script.py)
-# 	# shellcheck disable=SC2016
-# 	< pyproject.toml grep :main |
-# 		sed -r 's|^([^ ]+) = "([^:]+):main"|- [`poetry run \1`](./\2.py)|g' |
-# 		tr . / |
-# 		sed -r 's#/(/|py)#.\1#g'
-# }
-
-# }}}
 # rust {{{
 
 # alias sqp='cargo sqlx prepare --workspace; ga .sqlx; gc' # postgres only
@@ -1559,35 +1364,7 @@ alias cn="cargo new"
 alias ct="cargo test"
 alias cwr="cargo watch -x run" # web servers only
 
-# sqre() {
-# 	# regen sqlite db
-# 	# often required for sqlite, possibly when .sql files are modified are migration
-# 	# https://github.com/launchbadge/sqlx/discussions/1292#discussioncomment-3015486
-# 	sqlx database drop
-# 	sqlx database create
-# 	sqlx migrate run
-# }
-
 cw() { cargo watch -x check -x "test $1"; }
-
-# rsmod() {
-# 	if [[ -f $1 ]]; then
-# 		# convert foo/bar.rs -> foo/bar/mod.rs
-# 		rs=$1
-# 		base=${rs/.rs/}
-# 		mkdir -p "$base"
-# 		mv "$rs" "$base/mod.rs"
-# 		# TODO: update lib, pub use, etc
-# 	elif [[ -n $1 ]]; then
-# 		echo "Creating module $1"
-# 		echo "pub mod $1;" >> src/lib.rs # doesn't work?
-# 		mkdir -p "src/$1"
-# 		mod="src/$1/mod.rs"
-# 		# touch "$mod"
-# 		echo "mod foo;" >> "$mod"
-# 		echo "pub use foo::*;" >> "$mod"
-# 	fi
-# }
 
 # }}}
 # go {{{
@@ -1636,6 +1413,9 @@ gob() { # build and run (gor won't work with args)
 	go build && ./"$name" "$@"
 }
 
+# https://leg100.github.io/en/posts/building-bubbletea-programs/
+gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run app
+
 gorep() {
 	patt=$1
 	repl=$2
@@ -1653,27 +1433,6 @@ gorep() {
 	gofmt -r "$patt -> $repl" -w ./*.go
 	# TODO: gapat
 }
-
-# https://leg100.github.io/en/posts/building-bubbletea-programs/
-
-# ideally i would like gow to be spawned in a background tab (not window!),
-# then gowr in the main tab, BUT wezterm tabs mess with bubbletea dims
-gow() {
-	: watch code changes, trigger re-build, and kill process
-
-	# cr
-	find . -name '*.go' | entr -cr go test ./...
-
-	# [[ ! -f go.mod ]] && return
-	# name=$(< go.mod head -n1 | cut -d' ' -f2)
-	# while :; do
-	# 	go build && pkill "$name"
-	# 	# inotifywait --event attrib $(find . -name '*.go') > /dev/null || return
-	# 	find . -name '*.go' -print0 | xargs -0 inotifywait --event attrib > /dev/null || return
-	# done
-
-}
-gowr() { while :; do gob "$@" || break; done; } # in foreground, continously run app
 
 god() {
 	: generate documentation for file
@@ -1693,13 +1452,8 @@ god() {
 # js {{{
 
 tsc() {
-	if [[ -f node_modules/.bin/tsc ]]; then
-		cmd=node_modules/.bin/tsc
-	elif cmd=$(which tsc); then
-		:
-	else
-		return
-	fi
+	local cmd
+	cmd=$(ls ./node_modules/.bin/tsc || which tsc)
 	"$cmd" --version
 	"$cmd" "$@"
 }
@@ -1760,29 +1514,6 @@ jup() {
 	echo yarn upgrade "$pkg@^$target_ver"
 }
 
-jupall() {
-	: this is almost certainly a bad idea!
-	_js_pkgs | xargs -n1 -I{} yarn upgrade {}@latest
-}
-
-# perfnode() {
-# 	if [[ $# -gt 0 ]]; then
-# 		# creates perf.data
-# 		perf record -e cycles:u -g -- node --perf-basic-prof "$@"
-# 	elif [[ -f perf.data ]]; then
-# 		# https://nodejs.org/en/learn/diagnostics/flame-graphs#create-a-flame-graph-with-system-perf-tools
-# 		# https://speakerdeck.com/mrfoto/what-are-flame-graphs-and-how-to-read-them
-# 		perf script | # reads perf.data
-# 			# remove internal
-# 			sed -r -e "/( __libc_start| LazyCompile | v8::internal::| Builtin:| Stub:| LoadIC:|\[unknown\]| LoadPolymorphicIC:)/d" \
-# 				-e 's/ LazyCompile:[*~]?/ /' |
-# 			# show only user defined functions
-# 			grep -e "$USER" -e '^\S' -e '^$' |
-# 			stackvis perf > flamegraph.htm
-# 		chromium flamegraph.htm 2> /dev/null &
-# 	fi
-# }
-
 # }}}
 # c {{{
 
@@ -1824,7 +1555,7 @@ if [[ -n $POSTGRES_URL ]]; then
 fi
 
 sq() {
-
+	: sq file.sql sql-command
 	{
 		if [[ -f $1-wal ]]; then
 			cp "$1" tmp.db > /dev/null
@@ -1833,32 +1564,13 @@ sq() {
 			echo "$2" | sqlite3 "$1"
 		fi
 	} | jq '.[]'
-
-	# if [[ -f $1 ]]; then
-	# 	< "$2" sqlite3 "$1"
-	# else
-	# 	echo "$2" | sqlite3 "$1"
-	# fi
-	# # echo "Not a file: $1"
-
 }
-
-# sqbrk() {
-# 	: i have no idea what this was supposed to do
-# 	sqruff fix -f=json --force "$@" |
-# 		jq -r 'to_entries[] | .value=.value[].range.start.line | [.key, .value|tostring] | join("\t")' |
-# 		while read -r f lnum; do
-# 			# TODO: nothing can be done about url comments that are
-# 			# too long (other than removing them)
-# 			line=$(sed "${lnum}q;d" "$f")
-# 		done
-# }
 
 psqlj() {
 	: convert psql output to jq
 	# useful for times when it is easier to write jq than sql
 	# https://www.pgcasts.com/episodes/generating-json-from-sql
-	psql "$POSTGRES_URL" -c "select row_to_json(t) from ($1) t" |
+	psql -c "select row_to_json(t) from ($1) t" |
 		grep -Po '\{.+' |
 		jq
 }
@@ -1928,7 +1640,7 @@ dps() {
 		# later in the seq will make it hard to extract (with cut/awk)
 		jqt 'Names[0:50]' State ID Status RunningFor |
 		sort |
-		column -t -s $'\t' # https://unix.stackexchange.com/a/57235
+		colt
 }
 
 doslow() {
@@ -1979,15 +1691,13 @@ doslow() {
 }
 
 docl() {
-	docker system df
+	docker system df || return
 	docker system prune --all
 	docker volume ls -f dangling=true -q | xargs docker volume rm # usually not important
 
 }
 
-dostop() {
-	docker ps --all --quiet | xargs docker stop
-}
+dostop() { docker ps --all --quiet | xargs docker stop; }
 
 donuke() {
 	: stop and remove all containers
@@ -2081,46 +1791,46 @@ if \"$MU\" in {x.rstrip('/') for x in sys.argv}:
 	}
 fi
 
-rgo() {
-	: useful when you know what to look for but dont want to open vim
-	# https://blog.burntsushi.net/ripgrep
-	# https://github.com/nvim-telescope/telescope.nvim/blob/7b5c5f56a21e82fdcfe5b250278b8dfc4b1cbab4/lua/telescope/config.lua#L646
-	# $1 = fzf query generally more useful than $1 = file
-	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' . |
-		fzf -e -q "${1:-}")
-	[[ -z $match ]] && return
+# rgo() {
+# 	: useful when you know what to look for but dont want to open vim
+# 	# https://blog.burntsushi.net/ripgrep
+# 	# https://github.com/nvim-telescope/telescope.nvim/blob/7b5c5f56a21e82fdcfe5b250278b8dfc4b1cbab4/lua/telescope/config.lua#L646
+# 	# $1 = fzf query generally more useful than $1 = file
+# 	match=$(rg --color=never --no-heading --with-filename --line-number --column --smart-case '^.+$' . |
+# 		fzf -e -q "${1:-}")
+# 	[[ -z $match ]] && return
+#
+# 	# file:line:col:match
+# 	IFS=':' read -ra array <<< "$match"
+#
+# 	# TODO: --glob '!libs/*' (! must be single quoted)
+#
+# 	{
+# 		# force insert into history
+# 		echo "vim $(realpath "${array[0]}")"
+# 		echo "#$(date +%s)"
+# 	} >> ~/.bash_history
+#
+# 	# note: this won't go into history (only rgo will)
+# 	"$EDITOR" +"${array[1]}" "${array[0]}"
+#
+# }
 
-	# file:line:col:match
-	IFS=':' read -ra array <<< "$match"
-
-	# TODO: --glob '!libs/*' (! must be single quoted)
-
-	{
-		# force insert into history
-		echo "vim $(realpath "${array[0]}")"
-		echo "#$(date +%s)"
-	} >> ~/.bash_history
-
-	# note: this won't go into history (only rgo will)
-	"$EDITOR" +"${array[1]}" "${array[0]}"
-
-}
-
-j() {
-	: jump to frequently used file, should be used in conjunction with rgo
-	sel=$(< ~/.bash_history grep -P '^n?vim' |
-		awk '!seen[$0]++' |
-		while read -r cmd; do
-			f=$(<<< "$cmd" cut -d' ' -f2)
-			f=$(realpath "$f" 2> /dev/null) || continue
-			[[ ! -f $f ]] && continue
-			echo "$f"
-		done |
-		awk '!seen[$0]++' |
-		fzf --tac)
-	[[ -z $sel ]] && return
-	"$EDITOR" "$sel"
-}
+# j() {
+# 	: jump to frequently used file, should be used in conjunction with rgo
+# 	sel=$(< ~/.bash_history grep -P '^n?vim' |
+# 		awk '!seen[$0]++' |
+# 		while read -r cmd; do
+# 			f=$(<<< "$cmd" cut -d' ' -f2)
+# 			f=$(realpath "$f" 2> /dev/null) || continue
+# 			[[ ! -f $f ]] && continue
+# 			echo "$f"
+# 		done |
+# 		awk '!seen[$0]++' |
+# 		fzf --tac)
+# 	[[ -z $sel ]] && return
+# 	"$EDITOR" "$sel"
+# }
 
 files() {
 	: list files in use by a process
@@ -2132,10 +1842,23 @@ files() {
 		grep -P --color=never '^/(home|run)'
 }
 
-# TODO: firefox xcb problem; vscode can be ruled out. possibly chromium?
-# pidof firefox | tr ' ' , | \xargs lsof -p | grep --color=auto -Po '/[a-z].+' | sort -u | grep xcb
-# ls /snap/firefox/current/gnome-platform/*
-# "/snap/firefox/current/gnome-platform/*": No such file or directory (os error 2)
+mi() {
+
+	mediainfo --Output=JSON "$@" |
+		jq '.[] | {x:.media.track[0].OverallBitRate, y: .media.track[1].Height//0|tonumber, z:.media."@ref"}' |
+		jqt x y z |
+		sort -rn |
+		grep -v -e srt -e vtt
+
+}
+
+ffconcat() {
+	# cat *mp4 > out.mp4 does not work
+	# https://trac.ffmpeg.org/wiki/Concatenate#Automaticallygeneratingtheinputfile
+	glob=$1
+	# TODO: determine file ext
+	ffmpeg -f concat -safe 0 -i <(find . -name "$glob" -printf "file '$PWD/%p'\n" | sort) -c copy output.mp4
+}
 
 # }}}
 # stdout manipulation {{{
@@ -2150,24 +1873,18 @@ prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
 sum() { < /dev/stdin paste -sd+ | bc; }
 surround() { < /dev/stdin awk "{print \"$1\" \$0 \"$1\"}"; }
 tojson() { node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq; }
+urldec() { node --eval "console.log(decodeURIComponent(process.argv[1]))" "$1"; }
 
 # highlight query, but output the entire file
 # grep "$query\|$"
 
 ajoin() {
 	: join space-delimited array
-	# # https://stackoverflow.com/a/9429887
-
-	# stdin=$(< /dev/stdin)
-	# if [[ -n $stdin ]]; then
-	# 	# mapfile -t input < /dev/stdin
-	# 	mapfile -t input < <(echo "$stdin" | \xargs -n1) # bruh
-	# else
-	# 	input=("$@")
-	# fi
+	# ljoin takes lines (via stdin), this takes array (via arg)
+	# https://stackoverflow.com/a/9429887
 
 	input=("$@")
-	IFS=,
+	IFS=, # cannot be inlined into echo
 	echo "${input[*]}"
 }
 
@@ -2277,6 +1994,45 @@ get_cookie() {
 	rm tmp.db > /dev/null
 }
 
+sunpos() {
+	# azimuth 1.7 - 1.8(?)
+	# sun enters window as low as 1.35
+	{
+		curl -sL https://raw.githubusercontent.com/mourner/suncalc/refs/heads/master/suncalc.js |
+			sed -rn '$d; /easier/,$p'
+		echo "console.log(JSON.stringify(SunCalc.getPosition(new Date(), $(curl -sL "https://ipinfo.io" | jq -r .loc))))"
+	} | node
+}
+
+subs() {
+	# https://www.azsubtitles.com/restful-api
+	f=$(fzf)
+	c "https://www.azsubtitles.com/api/search?q=${1// /+}" | # TODO: fname -> infer title
+		jq -er '.Items[0] | .UID' |
+		prepend 'https://www.azsubtitles.com/api/movie' |
+		xargs curl -sL |
+		# File can contain a list of episodes, but we usually just want the first element
+		jq -er '.AllSubs[] | select(.Language.Title == "English") | .File[0].Url' |
+		sort |
+		# head -n1 |
+		fzf -0 --preview="curl -sL --globoff {} | head -n50" |
+		sed -r 's/ /%20/g' |            # url must be encoded
+		xargs curl --globoff > "$f".srt # but also need globoff to ignore {}[]
+
+	# # requires unzip
+	# c 'https://subf2m.co/subtitles/parivaar' |
+	# 	grep -Po "/subtitles/[^/]+/english/\d+" |
+	# 	prepend https://subf2m.co |
+	# 	append /download
+
+}
+
+inci() {
+	inci.js "$1" |
+		jq '.data.items[]' |
+		jqt year title director[0]
+}
+
 # seq 1 10 |
 # 	while read -r i; do
 # 		curl -sL "https://vimcolorschemes.com/i/new/b.dark/$([[ $i -gt 1 ]] && echo "p.$i")" |
@@ -2288,21 +2044,123 @@ get_cookie() {
 
 # }}}
 
-# lp "$1" |
-# 	grep -Po "^local/$1\S+" |
-# 	cut -d/ -f2 |
-# 	while read -r pkg; do
-# 		pactree -r "$pkg" |
-# 			wc -l |
-# 			\xargs -I{} test {} -eq 1 &&
-# 			rem "$pkg" < /dev/tty
-# 	done
+fftabs() {
+	# aur/mozlz4-bin
+	mozlz4 -x ~/.mozilla/firefox/*default/sessionstore-backups/recovery.jsonlz4 |
+		jq -r '.windows[0].tabs[].entries[-1].url' |
+		grep ^http |
+		sort -u
+}
 
-# alias imm="notmuch show from:noreply@immobilienscout24.de |
-# 	grep -Po 'Adresse: [^(]+' |
-# 	sed -r 's/([a-z])([A-Z])/\1\t\2/' |
-# 	sort -u |
-# 	colt"
+randalb() {
+
+	# generate list of random albums rated >=3 amounting to 50 gb
+	set -euo pipefail
+	sql=$(
+		# note: unlike select_random.sql, the ORDER BY random() is used
+		# in the outer query
+		cat <<- EOF
+			WITH rand AS (
+			    SELECT
+			        albums.id,
+			        albums.title
+			    FROM albums
+			    WHERE albums.rating >= 3
+			)
+
+			SELECT
+			    group_concat(artists.name, ' ') AS artist,
+			    rand.title AS album
+			FROM
+			    rand
+			INNER JOIN albums_artists
+			    ON rand.id = albums_artists.album_id
+			INNER JOIN artists
+			    ON albums_artists.artist_id = artists.id
+			GROUP BY album
+			ORDER BY random();
+		EOF
+	)
+
+	# size=0
+	((size = 0, max = 50 * 1024 ** 2)) # 50 gb
+	db=~/disq/collection2.db
+	dirs=()
+
+	rows=$(sqlite3 -json "$db" "$sql" 2> /dev/null | jq -c .[])
+
+	while read -r row; do
+
+		# TODO: bash_rematch
+		artist=$(<<< "$row" jq -r .artist | sed -r 's/ \([0-9]+\)$//')
+		album=$(<<< "$row" jq -r .album)
+
+		# double find: 1m40
+		# try: 30s (3x)
+		# lazy: 8s (4x)
+
+		# d=$(find "$MU/$artist" -mindepth 1 -iname "$album*" |
+		# 	grep . |
+		# 	head -n1) || continue
+
+		d=$({
+			if [[ -d $MU/$artist ]]; then
+				find "$MU/$artist" -mindepth 1 -iname "$album*"
+			else
+				find "$MU" -maxdepth 1 -iname "$artist" -print0 |
+					xargs -0 -I{} find {} -mindepth 1 -iname "$album*"
+			fi
+		} |
+			grep . |
+			head -n1) || continue
+
+		dirs+=("$d")
+		((size += $(du -cs "$d" | tail -n1 | cut -f1)))
+		((size >= max)) && break
+
+	done <<< "$rows"
+
+	printf "%s\n" "${dirs[@]}" | sort
+
+}
+
+lba() {
+
+	# curl -sL --fail "https://letterboxd.com/hejops$url" > /dev/null && continue
+
+	curl -sL 'https://letterboxd.com/ajax/activity-pagination/hejops/following/' |
+		grep -P 'rated-(8|9|10)' |
+		grep -Po '/film/[^/]+' |
+		sort -u |
+		while read -r x; do
+			curl -sL --fail "https://letterboxd.com/hejops$x" > /dev/null && continue
+			echo "https://letterboxd.com$x"
+		done |
+		fzf -m |
+		xargs -n1 xdg-open
+}
+
+tsg() {
+
+	token=$(get_cookie remember_user_token)
+
+	pgs=$(curl -sL "https://app.thestorygraph.com/books-read/hejops" \
+		-H "Cookie: remember_user_token=$token" |
+		grep search-results-count |
+		grep -Pom1 '\d+' |
+		tail -n1)
+
+	seq 1 $((pgs / 10)) |
+		parallel -q -I{} curl -sL "https://app.thestorygraph.com/books-read/hejops?page={}" \
+			-H "Cookie: remember_user_token=$token" |
+		grep 'rounded-sm shadow-lg dark:shadow-darkerGrey/40' |
+		# uniq |
+		cut -d'"' -f2 |
+		awk '{print $NF, $0}' |
+		sort -u |
+		awk '{$1="";print $0}' |
+		sed -r 's/(.+) by (.+)/\2\t\1/'
+}
 
 imm() {
 	notmuch show from:noreply@immobilienscout24.de |
@@ -2355,15 +2213,8 @@ geocode() {
 
 # < ~/geo/geo.csv shuf -n3 | cut -d, -f-2
 
-# df | grep '/$' | cut -d' ' -f1 | xargs sudo smartctl -a
-
-# clickhouse-local --file "$1" --query "$2 FORMAT PrettyCompact"
-
 # could replace xfer with this
 # python3 -m http.server -d .
-
-# # analyse complexity via indentation
-# < "$1" grep -Po '^\s+' | sed 's/\t/x/g' | sort | uniq -c
 
 # echo ${files[@]} | entr -cr $cmd
 
@@ -2394,23 +2245,6 @@ kb() {
 	fi
 }
 
-subs() {
-	# https://www.azsubtitles.com/restful-api
-	# TODO: fname -> infer title
-	c "https://www.azsubtitles.com/api/search?q=${1// /+}" |
-		jq -er '.Items[0] | .UID' |
-		prepend 'https://www.azsubtitles.com/api/movie' |
-		xargs curl -sL |
-		# File can contain a list of episodes, but we usually just want the first element
-		jq -er '.AllSubs[] | select(.Language.Title == "English") | .File[0].Url' |
-		sort |
-		# head -n1 |
-		fzf -0 --preview="curl -sL --globoff {} | head" |
-		sed -r 's/ /%20/g' | # url must be encoded
-		xargs curl --globoff # but also need globoff to ignore {}[]
-
-}
-
 tvll() {
 	: truncate vim lsp.log -- should be nvim autocmd, or session startup
 	i=90
@@ -2423,21 +2257,6 @@ tvll() {
 	done
 	echo "$d"
 	sed -i -r "1,/$d/d" ~/.local/state/nvim/lsp.log
-}
-
-kp() {
-	url='https://www.discogs.com/search/?style_exact=K-pop&sort=hot%2Cdesc&ev=gs_ms'
-	curl -sL "$url" -H 'User-Agent: Mozilla Firefox' -H 'Upgrade-Insecure-Requests: 1' |
-		grep -Po '/release/\d+-[^"]+' |
-		cut -d'-' -f2- |
-		tr '-' ' ' |
-		sed 's@+@ @g;s@%@\\x@g' | # https://askubuntu.com/a/295312
-		\xargs -0 printf "%b" |
-		sort -u |
-		while read -r rel; do
-			echo "$rel"
-			mpv --profile=bcx --video=no "ytdl://ytsearch1:\'$*\'"
-		done
 }
 
 rge() {
@@ -2482,9 +2301,9 @@ _unused() {
 pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill -9; }
 pkill1() { \pgrep "$1" | sed 1d | xargs kill; }                                            # kill all procs except 1st
 rng() { while read -r _; do echo $((1 + RANDOM % ${1:-100})); done < "$(seq "${2:-1}")"; } # shellharden
-ya() { mpv --video=no "ytdl://ytsearch10:\'$*\'"; }
+ya() { mpv --video=no "ytdl://ytsearch10:'$*'"; }
 yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '.title, .description, .webpage_url, .channel_url'; }
-yt() { mpv --force-window "ytdl://ytsearch10:\'$*\'"; }
+yt() { mpv --force-window "ytdl://ytsearch10:'$*'"; }
 
 ys() { # read youtube subs in less
 	yt-dlp -j "$1" |
@@ -2500,19 +2319,6 @@ ys() { # read youtube subs in less
 		tr '\n' ' ' |
 		fold --spaces |
 		less
-}
-
-yti() {
-	: get info for currently playing file with youtube id
-	# www-watch?v=bMEfWLA-V00.mp3
-	# TODO: pgrep mpv is probably easier innit
-	pactl list sink-inputs |
-		grep media.name |
-		cut -d= -f3 |
-		cut -d. -f1 |
-		prepend 'https://youtube.com/watch?v=' |
-		xargs yt-dlp -j 2> /dev/null |
-		jq -r .title
 }
 
 nico() {
@@ -2547,49 +2353,32 @@ epk() {
 	# that malformed epubs are still readable in zathura, so this is mainly
 	# to prevent yazi from treatting malformed epubs as zip.
 
-	tmpdir=tmp
-	tmpname=foo
-
 	for f in *.epub; do
+		{
+			# tmpdir=tmp
+			# tmpname=foo
+			tmpdir="$f.tmp"
+			tmpname="$f.tmpf"
 
-		# https://github.com/ikrukov/epub/blob/c663821de66d57b3d138dc9125251f40ea755c2c/script/pack_epub#L25
-		# https://www.mobileread.com/forums/showthread.php?t=299415
+			# https://github.com/ikrukov/epub/blob/c663821de66d57b3d138dc9125251f40ea755c2c/script/pack_epub#L25
+			# https://www.mobileread.com/forums/showthread.php?t=299415
 
-		unzip -l "$f" > /dev/null 2> /dev/null || continue                 # corrupt (unreadable)
-		file --mime-type "$f" | grep -q 'application/epub+zip' && continue # ok
+			unzip -l "$f" > /dev/null 2> /dev/null || return                 # corrupt (unreadable)
+			file --mime-type "$f" | grep -q 'application/epub+zip' && return # ok
 
-		unzip "$f" -d "$tmpdir"
-		cd "$tmpdir" || :
-		echo 'application/epub+zip' > mimetype
-		zip -X -0 --quiet "$tmpname" mimetype
-		zip -X -9 --quiet --no-dir-entries --recurse-paths "$tmpname" META-INF OEBPS
-		cd ..
-		\mv "$tmpdir/$tmpname.zip" "$f"
-		\rm -rf "$tmpdir"
-		echo "fixed $f"
-
+			unzip "$f" -d "$tmpdir"
+			cd "$tmpdir" || :
+			echo 'application/epub+zip' > mimetype
+			zip -X -0 --quiet "$tmpname" mimetype
+			zip -X -9 --quiet --no-dir-entries --recurse-paths "$tmpname" META-INF OEBPS
+			cd ..
+			\mv "$tmpdir/$tmpname.zip" "$f"
+			\rm -rf "$tmpdir"
+			echo "fixed $f"
+		} #&
 	done
-}
 
-watchmem() {
-	: watch memory usage of pid
-	pid="$(< /dev/stdin)"
-
-	if [[ $pid =~ ^[0-9]+$ ]]; then
-		watch -d ps -o %cpu,%mem,cmd -p "$pid"
-
-	# else
-	# 	pid=$(ps aux |
-	# 		grep "$1" |
-	# 		head -n1 |
-	# 		awk '{print $2}')
-	# 	while true; do
-	# 		pmap -x "$pid" | tail -n1
-	# 		sleep 2
-	# 	done
-
-	fi
-
+	# wait
 }
 
 gev() {
@@ -2599,7 +2388,7 @@ gev() {
 		\xargs -0 grep -Pi "$1" |
 		awk -F: '!a[$2]++' |
 		sed -r 's/:/	/' |
-		column -s '	' -t
+		colt
 }
 
 scan() {
@@ -2625,31 +2414,3 @@ scan() {
 # note: sendmail unresponsive
 # note: it is not known what set up is needed
 # echo "$body" | mail --subject="$subject" $email
-
-mdr() {
-	articles=$(c 'https://www.mdr.de/nachrichten/index.html' |
-		grep 'class="headline" ' |
-		prepend '<li>' |
-		html2markdown --domain https://www.mdr.de |
-		sort -u |
-		grep -v /podcast/ |
-		sed -r '1d; s/\[(.+)\]\((.+)\)/\1	\2/g')
-
-	urls=$(<<< "$articles" cut -f1 | fzf -m --reverse)
-
-	echo "$urls" |
-		while read -r t; do
-			<<< "$articles" grep -F "$t	"
-		done |
-		cut -f2 |
-		sort -u |
-		while read -r url; do
-			echo "# $url"
-			curl -sL "$url" |
-				sed -n '/<p class="text">/,/<\/p>/p' |
-				html2markdown
-		done |
-		lowdown -sTms |
-		pdfroff -tik -Kutf8 -mspdf |
-		zathura --mode=fullscreen -
-}
