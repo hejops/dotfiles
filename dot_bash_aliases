@@ -1164,12 +1164,9 @@ _complete_gb() {
 		local words=("$@")
 		local curr_fragment=${words[idx]}
 
-		# # note: bash automatically arranges items into columns
-		# git branch --list "$curr_fragment*" 2> /dev/null |
-		# 	sed -r 's/^\* //'
-
-		echo -e "aaa\nabb\nacc\nbcc" |
-			grep "^$curr_fragment"
+		# note: bash automatically arranges items into columns
+		git branch --list "$curr_fragment*" 2> /dev/null |
+			grep -Po '[a-z].+'
 
 	}
 
