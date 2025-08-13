@@ -236,7 +236,7 @@ vim.api.nvim_create_autocmd({ "VimResized" }, {
 	-- git blame should always be displayed inline, never in lualine
 	-- git blame should be disabled in narrow windows as it is not useful
 	callback = function()
-		vim.cmd(vim.o.columns > 170 and "GitBlameEnable" or "GitBlameDisable")
+		vim.cmd("GitBlame" .. (vim.o.columns > 170 and "Enable" or "Disable"))
 	end,
 })
 
@@ -582,14 +582,25 @@ vim.keymap.set("n", "<leader>go", function()
 		:gsub("git@", "https://")
 		:gsub("com:", "com/")
 		:gsub(".git$", "")
+
 	local branch = require("util"):get_command_output("git branch --show-current", true)
+
+	if require("util"):get_command_output("git ls-remote --heads origin refs/heads/" .. branch, true) == "" then
+		-- branch deleted on remote
+		branch = "master"
+	end
+
 	local path = require("util"):get_command_output("git ls-files --full-name " .. vim.fn.expand("%:p"), true)
 
-	local url = string.format("%s/blob/%s/%s", base, branch, path)
-	if base:match("gitlab") then
-		url = url:gsub("/blob/", "/-/blob/")
-	end
-	vim.fn.jobstart("xdg-open " .. url)
+	local url = string.format( --
+		"%s/%s/%s/%s#L%s",
+		base,
+		base:match("gitlab") and "/-/tree/" or "/blob/",
+		branch,
+		path,
+		vim.fn.line(".") -- note: may not be reliable
+	)
+	vim.fn.jobstart(string.format("xdg-open '%s'", url))
 
 	-- $url/-/blob/$branch/$path
 
