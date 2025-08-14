@@ -7,6 +7,9 @@ vim.g.maplocalleader = " "
 
 -- essentials
 -- vim.keymap.set("n", "?>", ":wqa<cr>")
+-- vim.keymap.set("n", "ZX", ":wqa<cr>")
+-- vim.keymap.set("n", "z/", "ZZ") -- lazy exit
+-- vim.keymap.set("v", "ZZ", "<esc>ZZ")
 vim.keymap.set("c", "<c-h>", "<s-left>")
 vim.keymap.set("c", "<c-j>", "<down>") -- defaults do nothing
 vim.keymap.set("c", "<c-k>", "<up>")
@@ -30,7 +33,6 @@ vim.keymap.set("n", "Q", ":bd<cr>")
 vim.keymap.set("n", "U", ":redo<cr>")
 vim.keymap.set("n", "X", '"_X')
 vim.keymap.set("n", "Y", "y$") -- default is redundant with yy
-vim.keymap.set("n", "ZX", ":wqa<cr>")
 vim.keymap.set("n", "co", "O<esc>jo<esc>k") -- surround current line with newlines
 vim.keymap.set("n", "gD", "<nop>")
 vim.keymap.set("n", "gf", "<c-W>gF") -- open file under cursor in new tab, jumping to line if possible; uncommonly used
@@ -42,8 +44,7 @@ vim.keymap.set("n", "x", '"_x')
 vim.keymap.set("n", "~", "~h")
 vim.keymap.set("v", "<", "<gv") -- vim puts you back in normal mode by default
 vim.keymap.set("v", ">", ">gv")
-vim.keymap.set("v", "P", '"_dP')
-vim.keymap.set("v", "ZZ", "<esc>ZZ")
+vim.keymap.set("v", "P", '"_dP') -- default behaviour is to just paste above selection
 vim.keymap.set("v", "x", '"_x')
 
 vim.keymap.set("n", "Z?", function()
@@ -114,6 +115,7 @@ local last_win = nil
 -- check all bufs for a terminal. if one is found, get the tab (and window) it
 -- belongs to, and switch to it. in other words, there can effectively only
 -- ever be a single terminal in nvim
+---@param cmd string?
 local function open_terminal()
 	for _, t in pairs(vim.api.nvim_list_tabpages()) do
 		-- if current tab contains a term, close it OR go to it
@@ -267,14 +269,12 @@ local function update_or_close()
 end
 
 vim.keymap.set("n", "<cr>", update_or_close, { silent = true })
-vim.keymap.set("n", "x", '"_x', { silent = true })
 
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
 vim.keymap.set("n", "<leader>I", [[:lua print(vim.inspect())<left><left>]])
 vim.keymap.set("n", "<leader>M", '"qp0dd') -- dump q buffer into a newline and cut it (for binding)
 vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
-vim.keymap.set("n", "z/", "ZZ") -- lazy exit
 
 -- substitutions are applied in sequential order
 ---@param subs { pat: string, rep: string }[]
@@ -301,56 +301,20 @@ end -- }}}
 
 -- note: this will fail the first time (after startup) selection a made, for
 -- unknown reasons
-local function surround_selection(left, right)
-	-- {{{
-	local line_start = vim.fn.getpos("'<")[2]
-	local line_end = vim.fn.getpos("'>")[2]
-	if line_start == 0 then
-		return
-	end
-
-	local lines = vim.fn.getline(line_start, line_end)
-	assert(type(lines) == "table")
-	table.insert(lines, 1, left)
-	table.insert(lines, right)
-	vim.api.nvim_buf_set_lines(0, line_start - 1, line_end, false, lines)
-end -- }}}
-
-local function serde_value_to_struct()
-	-- {{{
-	-- https://github.com/mfussenegger/dotfiles/blob/fa58149048/vim/dot-config/nvim/lua/me/term.lua#L180
-	local mode = vim.api.nvim_get_mode()
-	local pos1
-	local pos2
-	if vim.tbl_contains({ "v", "V", "" }, mode.mode) then
-		pos1 = vim.fn.getpos("v")
-		pos2 = vim.fn.getpos(".")
-	else
-		return
-	end
-
-	-- https://neovim.io/doc/user/builtin.html#getregion()
-	local lines = vim.fn.getregion(pos1, pos2, { type = mode.mode })
-
-	-- replace lines
-	local new = table.concat(lines, "\n")
-	local foo = [[\([^)]+\)]]
-	local types = {
-		-- TODO: serde type -> rust type
-		Number = "usize",
-		Array = "Vec",
-		["["] = "<",
-		["]"] = ">",
-		['"'] = "",
-		[foo] = "",
-	}
-	for k, v in pairs(types) do
-		new = vim.fn.substitute(new, k, v, "g")
-	end
-
-	-- replace current v selection with new lines
-	vim.api.nvim_paste(new .. "\n", false, -1)
-end -- }}}
+-- local function surround_selection(left, right)
+-- 	-- {{{
+-- 	local line_start = vim.fn.getpos("'<")[2]
+-- 	local line_end = vim.fn.getpos("'>")[2]
+-- 	if line_start == 0 then
+-- 		return
+-- 	end
+--
+-- 	local lines = vim.fn.getline(line_start, line_end)
+-- 	assert(type(lines) == "table")
+-- 	table.insert(lines, 1, left)
+-- 	table.insert(lines, right)
+-- 	vim.api.nvim_buf_set_lines(0, line_start - 1, line_end, false, lines)
+-- end -- }}}
 
 local function debug_print(cmd)
 	-- {{{
@@ -482,6 +446,11 @@ local ft_binds = { -- {{{
 		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g|w<cr>" },
 		{ "n", "<leader>H", [[:.s/\v -H/ \\\r&/g|w<cr>]] },
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
+	},
+
+	["typescriptreact,javascriptreact"] = {
+		-- { "n", "<leader>x", ":!npx shadcn@latest add -y " },
+		{ "n", "<leader>x", ":Dispatch pnpm vite<cr>" }, -- BufReadPost? lol
 	},
 
 	["typescript,javascript,typescriptreact,javascriptreact"] = {
@@ -770,7 +739,8 @@ local ft_binds = { -- {{{
 		},
 
 		{ "n", "<c-k>", "ysiw]Ea()<esc>Pgqq", { remap = true } }, -- wrap in hyperlink
-		{ "n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort n<cr>`z", { remap = true } },
+		-- sort n stops sorting in md?
+		{ "n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { remap = true } },
 
 		{
 			"n",
