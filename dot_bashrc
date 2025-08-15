@@ -323,41 +323,6 @@ rem() {
 	sudo pacman --remove --recursive "$1"
 }
 
-_complete_pacman_pkgs() {
-	((COMP_CWORD > 1)) && return # rem only accepts 1 arg
-
-	_gen() {
-		local idx=$1
-		shift
-		local words=("$@")
-		local curr_fragment=${words[idx]}
-
-		# for a func with 1 arg, only this func needs to change
-		pacman --query --search |
-			grep -P "^local/$curr_fragment" |
-			cut -d' ' -f1 |
-			cut -d/ -f2
-
-	}
-
-	local IFS=$'\n'
-	local matches
-	mapfile -t matches < <(_gen "$COMP_CWORD" "${COMP_WORDS[@]}")
-
-	if
-		((${#matches[@]} == 1))
-	then
-		COMPREPLY=("${matches[0]}")
-
-	else
-		COMPREPLY=("${matches[@]}")
-	fi
-
-}
-
-complete -F _complete_pacman_pkgs lp
-complete -F _complete_pacman_pkgs rem
-
 rema() { rem "$(lp "$1" | grep -Po '^\S+')"; } # remove all packages matching pattern
 
 remsafe() {
@@ -581,3 +546,17 @@ PS1+='> ' # prompt symbol
 [[ -f ~/.bash_aliases_work ]] && . ~/.bash_aliases_work
 # shellcheck disable=SC1090
 [[ -f ~/.config/readline/fzf.bash ]] && . ~/.config/readline/fzf.bash
+
+_complete_pacman_pkgs() {
+	f() {
+		# shellcheck disable=SC2317
+		pacman --query --search |
+			grep -P "^local/$1" |
+			cut -d' ' -f1 |
+			cut -d/ -f2
+	}
+	_base_completer f
+}
+
+complete -F _complete_pacman_pkgs lp
+complete -F _complete_pacman_pkgs rem

@@ -3,6 +3,54 @@
 # if possible, this file should remain under 1000 LOC. interactive shell
 # startup time should remain under 0.02 s
 
+_base_completer() {
+	# https://mill-build.org/blog/14-bash-zsh-completion.html#_conclusion
+	# https://www.gnu.org/software/bash/manual/html_node/A-Programmable-Completion-Example.html
+
+	local f=$1                   # func(string) string
+	((COMP_CWORD > 1)) && return # actual func should only accept 1 arg
+
+	_gen() {
+		local idx=$1
+		shift
+		local words=("$@")
+		local curr_fragment=${words[idx]}
+
+		# for a func with 1 arg, only this func needs to change
+		f "$curr_fragment"
+	}
+
+	# COMP_CWORD: number of "completely typed" words (e.g. `$ foo b|` == 1 word, but `$ foo b |` == 2 words)
+	# COMP_WORDS: all words currently typed
+
+	# local raw
+	# mapfile -t raw < <(_gen "$COMP_CWORD" "${COMP_WORDS[@]}") # SC2207
+	# local matches=("${raw[@]}")
+	# if ((${#raw[@]} == 1)); then # 1 match, autocomplete
+	# 	# matches+=("${raw[0]%%:*}")  # strip from : onwards (could use \t, for example)
+	# 	matches+=("${raw[0]}")
+	# fi
+
+	local IFS=$'\n'
+	local matches
+	mapfile -t matches < <(_gen "$COMP_CWORD" "${COMP_WORDS[@]}")
+
+	if
+		# if COMPREPLY is an array with only one unique element, the
+		# completion is accepted immediately (with trailing space)
+		((${#matches[@]} == 1))
+	then
+		COMPREPLY=("${matches[0]}")
+
+	else
+		# otherwise, the maximally left-matching prefix is
+		# autocompleted (if any), and all elements in the array are
+		# displayed (with the prefix highlighted)
+		COMPREPLY=("${matches[@]}")
+	fi
+
+}
+
 # startup {{{
 
 # https://wiki.archlinux.org/title/Systemd#Boot_time_increasing_over_time
@@ -267,6 +315,17 @@ replace() {
 	gapat "$replace"
 }
 
+rge() {
+	: edit files matching pattern
+	staged=$(rg --files-with-matches "$@" | sort -u)
+	if [[ $(<<< "$staged" wc -l) -gt 10 ]]; then
+		echo "More than 10 files found"
+	fi
+	echo "$staged" |
+		head |
+		xargs nvim -p
+}
+
 sd() {
 	: shutdown
 	# uptime | grep hour || return/reboot
@@ -343,29 +402,26 @@ ytm() {
 
 # git
 
+# alias bb=gb
+# alias gr=git_root
 alias S=gS
-alias b=git_branch # i could <leader>gB, but changing branch means context switching and probably closing vim anyway
-alias bb=gb
+alias b=git_branch
 alias cr=git_root
 alias e=v
-alias s=git_status # could be ported to vim maybe
+alias gl=git_log
+alias s=gS # should increasingly be done in vim
 
 # discouraged due to double index keypresses: gt gf gb
 
-# alias gr=git_root
-alias gl=git_log
-alias gs=git_status
-
+# alias ga="git add"
 # alias gdnw="git diff --color-words --no-index"
 alias g..="git push --force-with-lease origin \$(_git_current_branch)"
 alias g.="git push"
 alias gC="git show HEAD | cat; git reset --soft HEAD~1"                                         # un-commit, but keep changes staged
 alias gCH="git show --oneline HEAD | cat; echo; read -r -p 'confirm?'; git reset --hard HEAD~1" # un-commit, and discard changes
-alias ga="git add"
-alias gdn="git diff --no-index"                  # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
-alias gdnc="git diff --color-words=. --no-index" # diff by char; may be replaced with delta
+alias gdn="git diff --no-index"                                                                 # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
+alias gdnc="git diff --color-words=. --no-index"                                                # diff by char; may be replaced with delta
 alias gig='$EDITOR $(_get_repo_root)/.gitignore'
-alias gu=gun
 alias gx='git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S' # TODO: colt would be nice, but then it can't be an alias anymore
 
 gdns() { gdn -U0 <(sort -u "$1") <(sort -u "$2"); }
@@ -639,6 +695,12 @@ gcoup() {
 		sort -n
 }
 
+clocd() {
+	git log --until="$(date -I --date="$1")" -n1 --oneline |
+		awk '{print $1}' |
+		xargs -I{} cloc --diff {} HEAD
+}
+
 # gsdel() {
 # 	: show last state of a deleted file
 # 	# https://stackoverflow.com/a/19727752
@@ -659,9 +721,28 @@ gcoup() {
 # $url/-/blob/$branch/$path
 
 # }}}
-# git staging {{{
-# functions that modify files or the index
+# git staging -- functions that modify files or the index {{{
+#
 # TODO: most of these would be more convenient if done in vim
+
+commit_or_discard() {
+	: returns 0 if committed
+
+	# TODO: fzf better
+	committed=1
+	while read -r f; do
+		[[ -f $f ]] || continue
+		if
+			git commit -v --untracked-files=no "$f"
+		then
+			committed=0
+		else
+			git checkout -- "$f"
+		fi
+	done < /dev/stdin
+
+	return "$committed"
+}
 
 gA() {
 	: un-add, unstage
@@ -852,7 +933,7 @@ gRev() {
 	git commit -av
 }
 
-gun() {
+gu() {
 	if
 		[[ $# -eq 0 ]] ||
 			[[ $(_git_current_branch) == $(_gmaster) ]] && [[ $1 == . ]]
@@ -914,23 +995,10 @@ gb() { # {{{
 		# git diff-index "$target"
 		# git diff --numstat "$target"...HEAD
 
-		committed=
 		git diff-index "$1" |
 			grep -P '00000 [AM]	' |
 			cut -f2 |
-			# TODO: fzf better
-			while read -r f; do
-				[[ -f $f ]] || continue
-				if
-					git commit -v --untracked-files=no "$f"
-				then
-					committed=1
-				else
-					git checkout -- "$f"
-				fi
-			done
-
-		[[ -n $committed ]] && git push
+			commit_or_discard && git push
 	}
 
 	if [[ $# -eq 0 ]]; then
@@ -1003,55 +1071,12 @@ gb() { # {{{
 } # }}}
 
 _complete_gb() {
-	# https://mill-build.org/blog/14-bash-zsh-completion.html#_conclusion
-	# https://www.gnu.org/software/bash/manual/html_node/A-Programmable-Completion-Example.html
-
-	((COMP_CWORD > 1)) && return # gb only accepts 1 arg
-
-	_gen() {
-		local idx=$1
-		shift
-		local words=("$@")
-		local curr_fragment=${words[idx]}
-
-		# note: bash automatically arranges items into columns
-		git branch --list "$curr_fragment*" 2> /dev/null |
+	f() {
+		# shellcheck disable=SC2317
+		git branch --list "$1*" 2> /dev/null |
 			grep -Po '[a-z].+'
-
 	}
-
-	local IFS=$'\n' # newline separator for displaying suggestions only
-
-	# COMP_CWORD: number of "completely typed" words (e.g. `$ foo b|` == 1 word, but `$ foo b |` == 2 words)
-	# COMP_WORDS: all words currently typed
-
-	# local raw
-	# mapfile -t raw < <(_gen "$COMP_CWORD" "${COMP_WORDS[@]}") # SC2207
-	# local matches=("${raw[@]}")
-	# if ((${#raw[@]} == 1)); then # 1 match, autocomplete
-	# 	# matches+=("${raw[0]%%:*}")  # strip from : onwards (could use \t, for example)
-	# 	matches+=("${raw[0]}")
-	# fi
-
-	local matches
-	mapfile -t matches < <(_gen "$COMP_CWORD" "${COMP_WORDS[@]}") # SC2207
-
-	# notify-send "${matches[*]}"
-
-	if
-		# if COMPREPLY is an array with only one unique element, the
-		# completion is accepted immediately (with trailing space)
-		((${#matches[@]} == 1))
-	then
-		COMPREPLY=("${matches[0]}")
-
-	else
-		# otherwise, the maximally left-matching prefix is
-		# autocompleted (if any), and all elements in the array are
-		# displayed (with the prefix highlighted)
-		COMPREPLY=("${matches[@]}")
-	fi
-
+	_base_completer f
 }
 
 complete -F _complete_gb gb
@@ -1092,8 +1117,7 @@ gbd() {
 }
 
 # }}}
-# git remote {{{
-# functions that involve remote repository
+# git remote -- functions that involve remote repository {{{
 
 _gssh() { # {{{
 	: init github ssh key
@@ -1119,8 +1143,7 @@ gmm() {
 
 g,() {
 	git pull && return
-	git diff --name-only "$(_gmaster)..origin/$(_gmaster)" |
-		xargs -n1 git commit -v
+	git diff --name-only "$(_gmaster)..origin/$(_gmaster)" | commit_or_discard
 	git pull && git push
 }
 
@@ -1166,7 +1189,7 @@ gcon() { # {{{
 
 	# in case of submodule conflict:
 	# cd $submodule
-	# gun .
+	# gu .
 	# git merge $hash (git should tell you which hash -- how to script?)
 	# git add $submodule
 	# git commit
@@ -1238,12 +1261,6 @@ gnew() { # {{{
 # }
 
 # }}}
-
-clocd() {
-	git log --until="$(date -I --date="$1")" -n1 --oneline |
-		awk '{print $1}' |
-		xargs -I{} cloc --diff {} HEAD
-}
 
 # gitlab {{{
 
@@ -1573,6 +1590,25 @@ jqt() {
 
 alias dolf='docker logs --tail=1 -f'
 
+dps() {
+	# # docker ps adds too much padding, and cannot truncate long values
+	# docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.ID}}\t{{.RunningFor}}" |
+	# 	sort
+
+	docker ps -a --format=json |
+		# note: ID is usually just visual noise, but placing it any
+		# later in the seq will make it hard to extract (with cut/awk)
+		jqt 'Names[0:50]' State ID Status RunningFor |
+		sort |
+		colt
+}
+
+docl() {
+	docker system df || return
+	docker system prune --all
+	docker volume ls -f dangling=true -q | xargs docker volume rm # usually not important
+}
+
 dolc() {
 	: clear logs of docker image without restart
 	# https://stackoverflow.com/a/42510314
@@ -1594,19 +1630,6 @@ dolc() {
 		done
 
 	# dolf "$name"
-}
-
-dps() {
-	# # docker ps adds too much padding, and cannot truncate long values
-	# docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.ID}}\t{{.RunningFor}}" |
-	# 	sort
-
-	docker ps -a --format=json |
-		# note: ID is usually just visual noise, but placing it any
-		# later in the seq will make it hard to extract (with cut/awk)
-		jqt 'Names[0:50]' State ID Status RunningFor |
-		sort |
-		colt
 }
 
 doslow() {
@@ -1642,25 +1665,17 @@ doslow() {
 			awk '!a[$1]++') &&
 			[[ -n $steps ]]
 	then
-		paste <(echo "$steps") <(
-			<<< "$steps" cut -d' ' -f1 |
+		paste <(echo "$steps") \
+			<(<<< "$steps" cut -d' ' -f1 |
 				while read -r n; do
 					< "$1" grep "$n" |
 						tac |
 						grep -Pm1 "$n \[" |
 						cut -d' ' -f2-
-				done
-		)
+				done)
 	else
 		echo all ok
 	fi
-}
-
-docl() {
-	docker system df || return
-	docker system prune --all
-	docker volume ls -f dangling=true -q | xargs docker volume rm # usually not important
-
 }
 
 dostop() { docker ps --all --quiet | xargs docker stop; }
@@ -1844,39 +1859,6 @@ plot() {
 # }}}
 # web {{{
 
-,c() {
-	# note: arch's prettier may hold back node versions, so it is usually
-	# better to use mason's one and symlink it to .local/bin
-	c "$1" | prettier --parser html
-	# c "$1" | lynx -stdin -dump
-	# tidy injects extra stuff
-}
-
-,,c() {
-	# uses a different user agent from curl. in most cases, it is probably
-	# better to just get ua from firefox
-	: alternative to curl
-	python3 -c '
-import codecs
-import sys
-
-from bs4 import BeautifulSoup
-import cloudscraper
-
-byt = cloudscraper.create_scraper().get(sys.argv[1]).content
-s = BeautifulSoup(byt, "html.parser").prettify()
-
-# print(s)
-
-# forcefully decode "unicode-strings" e.g. u002F
-print(codecs.decode(s, "unicode-escape"))
-
-' "$1"
-
-}
-
-alias C=,,c
-
 upload() {
 	: upload file to catbox.moe, copy link to clipboard
 
@@ -1957,16 +1939,21 @@ inci() {
 		jqt year title director[0]
 }
 
+# }}}
+
 # seq 1 10 |
 # 	while read -r i; do
-# 		curl -sL "https://vimcolorschemes.com/i/new/b.dark/$([[ $i -gt 1 ]] && echo "p.$i")" |
+# 		curl -sL "https://vimcolorschemes.com/i/new/b.dark/$( ((i > 1)) && echo "p.$i")" |
 # 			grep -Po 'href="[^"]+' |
 # 			tail -n20
 # 	done |
 # 	cut -d/ -f2- |
-# 	sort -u
+# 	sort -u |
+# 	while read -r x; do
+# 		< ~/.local/share/chezmoi/dot_config/nvim/lua/plugins.lua grep -Fq "$x" || echo "$x"
+# 	done
 
-# }}}
+# nvim --headless "+Lazy! clean" +qa ; vim foo.{sh,js,py,lua,ts}
 
 fftabs() {
 	# aur/mozlz4-bin
@@ -1976,7 +1963,14 @@ fftabs() {
 		sort -u
 }
 
-randalb() {
+topa() {
+	< ~/gripts/disq/queries/top_artists_by_avg_rating.sql sqlite3 -tabs \
+		disq/collection2.db 2> /dev/null |
+		sort -k2 -t$'\t' -k1 |
+		colt
+}
+
+randalb() { # {{{
 	# generate list of random albums rated >=3 amounting to 50 gb
 	set -euo pipefail
 	sql=$(
@@ -2045,7 +2039,7 @@ randalb() {
 
 	printf "%s\n" "${dirs[@]}" | sort
 
-}
+} # }}}
 
 lba() {
 	# curl -sL --fail "https://letterboxd.com/hejops$url" > /dev/null && continue
@@ -2113,24 +2107,6 @@ georank() {
 	' > /dev/null && echo ok
 }
 
-geocode() {
-	# https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=45.60343636072756,-73.72799336003183
-
-	: transform placename to coordinates
-	# TODO: handle places requiring resolution (e.g. alis peru)
-	# need ua to prevent 429
-	c -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0' \
-		"https://www.google.com/maps?q=$1" |
-		grep -Po '\d+\.\d+,\d+\.\d+\]' |
-		sed -r 's/(\.[0-9]{3})[0-9]*/\1/g' | # truncate to 3dp (if too specific, isv bails and renders nothing)
-		line 3 |                             # extremely arbitrary, need a better grep
-		tr -d ']' |
-		# when isv gets low-precision coords, it does best effort
-		# match, and can end up indoors
-		xargs -I{} firefox "https://www.instantstreetview.com/@{},h,p,z"
-
-}
-
 # < ~/geo/geo.csv shuf -n3 | cut -d, -f-2
 
 # could replace xfer with this
@@ -2177,17 +2153,6 @@ tvll() {
 	done
 	echo "$d"
 	sed -i -r "1,/$d/d" ~/.local/state/nvim/lsp.log
-}
-
-rge() {
-	: edit files matching pattern
-	staged=$(rg --files-with-matches "$@" | sort -u)
-	if [[ $(<<< "$staged" wc -l) -gt 10 ]]; then
-		echo "More than 10 files found"
-	fi
-	echo "$staged" |
-		head |
-		xargs nvim -p
 }
 
 _unused() {
@@ -2330,7 +2295,3 @@ scan() {
 	pdfunite "$(find . -name "$f-*" | sort -V)" "$f.pdf"
 	rm -I "$f"-*
 }
-
-# note: sendmail unresponsive
-# note: it is not known what set up is needed
-# echo "$body" | mail --subject="$subject" $email
