@@ -908,26 +908,40 @@ require("lazy").setup(
 
 		-- above average contrast
 		-- line column visible
-		-- no font styling
+		-- no font styling (acceptable only in strings and comments)
 		-- not mono tabline
 
-		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
-		"e-q/okcolors.nvim", -- few colors
+		"bgwdotdev/gleam-theme-nvim",
 		"github-main-user/lytmode.nvim",
+		"maya-sama/kawaii.nvim",
+		"michaelfresco/space-terminal.nvim",
 		"sebasruiz09/fizz.nvim",
-		"sonya-sama/kawaii.nvim",
+		"t3rmn/ghostty_dark_nvim",
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
+		-- "e-q/okcolors.nvim", -- few colors, italic methods
 		-- "iagorrr/noctis-high-contrast.nvim",
 		-- "miikanissi/modus-themes.nvim", -- very good, but has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
 		-- "olivercederborg/poimandres.nvim", -- dim line column
+		-- "sonya-sama/kawaii.nvim", -- dims current line
 		-- "thejian/nvim-moonwalk", -- unreadable git status
 
-		"honamduong/hybrid.nvim", -- italic
-		"samharju/synthweave.nvim", -- italic
-		-- "datsfilipe/vesper.nvim", -- italic
-		-- "fynnfluegge/monet.nvim", -- italic
+		-- italic comments
+
+		-- "devoc09/lflops.nvim",
+		-- "fynnfluegge/monet.nvim",
+		-- "honamduong/hybrid.nvim",
+		-- "mitch1000/backpack.nvim",
+		-- "pustota-theme/pustota.nvim",
+		-- "wurli/cobalt.nvim",
+
+		-- "2giosangmitom/nightfall.nvim", -- italic keywords
+		-- "bartekjaszczak/finale-nvim", -- bold keywords
+		-- "khoido2003/classic_monokai.nvim", -- italic vars
+		-- "lancewilhelm/horizon-extended.nvim", -- italic keywords
+		-- "ph1losof/morta.nvim", -- italic keywords
+		-- "samharju/synthweave.nvim", -- italic vars
 
 		{
 			"shawilly/ponokai",
