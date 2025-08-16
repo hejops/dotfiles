@@ -910,17 +910,17 @@ require("lazy").setup(
 		-- line column visible
 		-- no font styling (acceptable only in strings and comments)
 		-- not mono tabline
+		-- underline current word (not highlight, not bold)
 
 		"bgwdotdev/gleam-theme-nvim",
-		"github-main-user/lytmode.nvim",
 		"maya-sama/kawaii.nvim",
-		"michaelfresco/space-terminal.nvim",
 		"sebasruiz09/fizz.nvim",
-		"t3rmn/ghostty_dark_nvim",
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
 		-- "e-q/okcolors.nvim", -- few colors, italic methods
+		-- "github-main-user/lytmode.nvim", -- highlight current (dim)
 		-- "iagorrr/noctis-high-contrast.nvim",
+		-- "michaelfresco/space-terminal.nvim", -- highlight current
 		-- "miikanissi/modus-themes.nvim", -- very good, but has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
 		-- "olivercederborg/poimandres.nvim", -- dim line column
@@ -948,6 +948,7 @@ require("lazy").setup(
 			lazy = true,
 			config = function()
 				vim.g.ponokai_disable_italic_comment = true
+				vim.g.ponokai_current_word = "underline"
 			end,
 		},
 
