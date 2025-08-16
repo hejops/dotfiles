@@ -772,7 +772,7 @@ require("lazy").setup(
 						"gosum",
 						"html",
 						"htmldjango",
-						"javascript",
+						"javascript", -- includes jsx (probably)
 						"jsdoc",
 						"json",
 						"jsonc",
@@ -785,6 +785,7 @@ require("lazy").setup(
 						"rust",
 						"sql",
 						"toml",
+						"tsx",
 						"typescript",
 						"vim",
 						"vimdoc",
@@ -827,14 +828,6 @@ require("lazy").setup(
 								["gk"] = "@function.outer",
 								["gK"] = "@class.outer",
 							},
-							-- goto_next_end = {
-							-- 	["gl"] = "@function.outer",
-							-- 	["gL"] = "@class.outer",
-							-- },
-							-- goto_previous_end = {
-							-- 	["gh"] = "@function.outer",
-							-- 	["gH"] = "@class.outer",
-							-- },
 						},
 						-- swap = {
 						-- 	-- only works in params, not data structures (e.g. arrays)
@@ -869,23 +862,6 @@ require("lazy").setup(
 				})
 
 				vim.cmd.set("foldexpr=nvim_treesitter#foldexpr()") -- https://www.jmaguire.tech/img/code_folding.png
-
-				-- local ts_repeat_move = require("nvim-treesitter.textobjects.repeatable_move")
-				--
-				-- -- -- Repeat TS movements with ; and ,
-				-- -- -- ensure ; goes forward and , goes backward regardless of the last direction
-				-- -- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move_next)
-				-- -- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_previous)
-				--
-				-- -- vim way: ; goes to the direction you were moving.
-				-- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
-				-- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
-				--
-				-- -- the above keymaps make fFtT non-repeatable; correct that
-				-- vim.keymap.set({ "n", "x", "o" }, "F", ts_repeat_move.builtin_F)
-				-- vim.keymap.set({ "n", "x", "o" }, "T", ts_repeat_move.builtin_T)
-				-- vim.keymap.set({ "n", "x", "o" }, "f", ts_repeat_move.builtin_f)
-				-- vim.keymap.set({ "n", "x", "o" }, "t", ts_repeat_move.builtin_t)
 			end,
 		},
 		{
