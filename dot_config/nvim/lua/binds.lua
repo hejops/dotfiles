@@ -454,6 +454,7 @@ local ft_binds = { -- {{{
 	},
 
 	["typescript,javascript,typescriptreact,javascriptreact"] = {
+		{ "n", "<leader>B", ":Dispatch pnpm tsc -b<cr>" },
 		{ "n", "<leader>a", ":!npm install " }, -- TODO: yarn.lock -> yarn
 		{ "n", "<leader>d", "O/**  */<left><left><left>" }, -- neogen always documents class, not field
 
@@ -708,6 +709,7 @@ local ft_binds = { -- {{{
 					{ pat = [[os.remove\((.+)\)]], rep = [[Path(\1).unlink()]] },
 					-- os.path.isdir\((.+)\)/Path(\1).is_dir()
 					-- os.path.isfile\((.+)\)/Path(\1).is_file()
+					-- os.path.join\((\w+), ([^)]+)\)/(Path(\1)\/\2).as_posix()
 				})
 			end,
 		},
@@ -932,40 +934,41 @@ local function exec() -- {{{
 			vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
 			-- local ts = vim.fn.expand("%:.") -- relative to child dir
 
-			-- if vim.uv.fs_stat(".env") and vim.fn.executable("node23") then
-			-- 	return "node23 --no-warnings --import=tsx --env-file=.env " .. file
-
 			-- TODO: must use tsx if any file imports are needed; node imports must
 			-- specify file ext (fixable at top-level imports, but not at subsequent
 			-- imports)
 
-			local node_version = require("util"):get_command_output("node -v")
-			local ts_node = vim.fs.root(0, "package.json") .. "/node_modules/.bin/ts-node" -- tsx doesn't handle import statements correctly
+			-- tsx doesn't handle import statements correctly (?)
+			local ts_node = (vim.fs.root(0, "package.json") or "") .. "/node_modules/.bin/ts-node"
 
 			if vim.uv.fs_stat(ts_node) then
 				return ts_node .. " " .. curr_file
-			elseif node_version >= "v22.7.0" then -- 2x faster than ts-node, but not guaranteed to work
-				-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
-				return "node --no-warnings --experimental-strip-types --experimental-transform-types " .. curr_file
-			elseif node_version >= "v22.6.0" then
-				return "node --no-warnings --experimental-strip-types " .. curr_file
 			elseif vim.uv.fs_stat("./node_modules/tsx") then
-				-- run with node directly (without transpilation); requires tsx
-				-- https://nodejs.org/api/typescript.html#full-typescript-support
-				-- --enable-source-maps doesn't seem to report source line number correctly
-				-- node --import=tsx is significantly faster than yarn tsx (avoids unnecessary overhead)
 				return "node --no-warnings --import=tsx " .. curr_file
-			elseif vim.fs.root(0, "package.json") then
-				-- TODO: print is shown after execute
-				-- print("installing tsx...") -- ts-node is not just single binary
-				-- npm install --save-dev tsx
-				-- os.execute("yarn add --dev tsx >/dev/null")
-				error("need install tsx")
-				-- vim.fn.jobstart("yarn add --dev tsx") -- possibly bad recursion, high memory
-				-- return get_ts_runner(file)
-			else
-				error("no package.json found; need npm init")
+				-- elseif vim.fs.root(0, "package.json") then
+				-- 	-- TODO: print is shown after execute
+				-- 	-- print("installing tsx...") -- ts-node is not just single binary
+				-- 	-- npm install --save-dev tsx
+				-- 	-- os.execute("yarn add --dev tsx >/dev/null")
+				-- 	error("need install tsx")
+				-- 	-- vim.fn.jobstart("yarn add --dev tsx") -- possibly bad recursion, high memory
+				-- 	-- return get_ts_runner(file)
+				-- else
+				-- 	error("no package.json found; need npm init")
 			end
+
+			local args = { "node" }
+			local node_version = require("util"):get_command_output("node -v")
+			if node_version < "v23.6.0" then
+				table.insert(args, "--experimental-strip-types")
+			end
+			if node_version >= "v22.7.0" then
+				-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
+				table.insert(args, "--experimental-transform-types")
+			end
+			table.insert(args, curr_file)
+
+			return table.concat(args, " ")
 		end, --(curr_file),
 
 		["javascript.mongo"] = string.format(
