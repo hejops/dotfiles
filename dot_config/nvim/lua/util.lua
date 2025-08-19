@@ -287,7 +287,7 @@ end
 -- attempt to get git repo root, ignoring all possible child directories
 ---@return string|nil
 function M:root_directory()
-	return vim.fs.root(0, ".git")
+	return vim.fs.root(0, ".git") or "."
 	-- local cmd = "git -C " .. vim.fn.shellescape(vim.fn.expand("%:p:h")) .. " rev-parse --show-toplevel"
 	-- local toplevel = vim.fn.system(cmd)
 	-- if not toplevel or #toplevel == 0 or toplevel:match("fatal") then
