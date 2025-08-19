@@ -359,6 +359,13 @@ local function debug_print(cmd)
 	vim.cmd.startinsert()
 end -- }}}
 
+vim.keymap.set("n", "<leader>p", debug_print, { silent = true })
+vim.keymap.set("n", "<leader>P", function()
+	vim.cmd.norm("0D")
+	debug_print()
+	require("util"):literal_keys("p")
+end, { silent = true })
+
 -- mode: string|string[], lhs: string, rhs: string|function, opts?: vim.keymap.set.Opts
 
 ---@param str string
@@ -446,6 +453,7 @@ local ft_binds = { -- {{{
 		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g|w<cr>" },
 		{ "n", "<leader>H", [[:.s/\v -H/ \\\r&/g|w<cr>]] },
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
+		{ "n", "@", "Ehciw{[@]}<esc>F[P" }, -- string var to array
 	},
 
 	["typescriptreact,javascriptreact"] = {
@@ -1039,8 +1047,6 @@ local function exec() -- {{{
 	require("util"):resize_2_splits()
 end -- }}}
 vim.keymap.set("n", "<leader>x", exec, { silent = true })
-
-vim.keymap.set("n", "<leader>p", debug_print, { silent = true })
 
 local function yank_path()
 	local path = vim.fn.expand("%:p")
