@@ -261,11 +261,9 @@ m() {
 }
 
 da() {
-	if [[ $# -eq 1 ]]; then
-		~/disq/disq -artist "$1"
-	else
-		~/disq/disq
-	fi
+	local args=()
+	[[ $# -eq 1 ]] && args+=(-artist "$1")
+	~/disq/disq "${args[@]}"
 }
 
 cm() {
@@ -1446,6 +1444,16 @@ tsc() {
 _js_pkg_ver() { < package.json jq -r "[.dependencies, .devDependencies] | add | .$1" | tr -d '^~'; }
 _js_pkgs() { < package.json jq -r '[.dependencies, .devDependencies] | add | keys[]'; }
 
+jimp() {
+	rg -t ts -Io ' from "[^:/]+";$' |
+		sort -u |
+		cut -d'"' -f2 |
+		while read -r pkg; do
+			< package.json grep -Fq "\"$pkg\"" || echo "$pkg"
+		done |
+		xargs pnpm add
+}
+
 jx() {
 	pkgmgr() {
 		if [[ -f yarn.lock ]]; then
@@ -1497,6 +1505,10 @@ jup() {
 	# npm install (update?) / yarn upgrade
 	echo yarn upgrade "$pkg@^$target_ver"
 }
+
+# pnpm depcheck --ignore-bin-package --json |
+# 	jq .devDependencies[] |
+# 	xargs pnpm remove
 
 # }}}
 # c {{{
@@ -1580,7 +1592,15 @@ jqt() {
 	# query="[$(echo "$@" | sjoin ,)]"
 
 	# note: jq knows how to if read from stdin if no file passed
-	< /dev/stdin jq -r "[$query] | @tsv" | colt
+	{
+		echo "${fields[@]}" | tr ' ' '\t'
+
+		# this is the 'pure' way to do it (select and format are 2 different steps)
+		# < /dev/stdin jq "[$query]" |
+		# 	jq -r 'map(tostring) | @tsv'
+
+		< /dev/stdin jq -r "[$query] | @tsv"
+	} | colt
 
 }
 
@@ -1895,8 +1915,13 @@ getmail() {
 
 get_cookie() {
 	\cp ~/.mozilla/firefox/*default/cookies.sqlite tmp.db
-	sql="select value from moz_cookies where name = '$1' order by id desc limit 1"
-	sqlite3 tmp.db "$sql" 2> /dev/null
+	if <<< "$1" grep -q ' '; then
+		sql="select value from moz_cookies where $1 order by id desc"
+		sqlite3 -json tmp.db "$sql" 2> /dev/null | jq
+	else
+		sql="select value from moz_cookies where name = '$1' order by id desc limit 1"
+		sqlite3 tmp.db "$sql" 2> /dev/null
+	fi
 	rm tmp.db > /dev/null
 }
 
@@ -1965,7 +1990,7 @@ fftabs() {
 
 topa() {
 	< ~/gripts/disq/queries/top_artists_by_avg_rating.sql sqlite3 -tabs \
-		disq/collection2.db 2> /dev/null |
+		~/gripts/disq/collection2.db 2> /dev/null |
 		sort -k2 -t$'\t' -k1 |
 		colt
 }
