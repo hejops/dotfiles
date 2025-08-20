@@ -40,9 +40,11 @@ function M:keys(t)
 	return _keys
 end
 
---- @param s string
-function M:literal_keys(s)
-	vim.api.nvim_feedkeys(s, "n", false) -- .. '/'
+-- Should only be used when leaving normal mode (or returning to it). In most
+-- other situations, vim.cmd.norm(seq) should yield more correct behaviour.
+--- @param seq string
+function M:literal_keys(seq)
+	vim.api.nvim_feedkeys(seq, "n", false) -- .. '/'
 end
 
 -- buffers {{{
@@ -184,6 +186,9 @@ end
 -- vim.keymap.set("n", "<leader>X", , { silent = true })
 
 function M:random_colorscheme() -- {{{
+	-- in case light theme is needed (sunset), zellner is decent
+	-- https://tilde.club/~woland/vim-colorschemes/
+
 	-- sliced and diced from tssm/nvim-random-colors
 
 	-- ~/.local/share/nvim/lazy/*/colors/*.(lua|vim)
