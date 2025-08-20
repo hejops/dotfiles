@@ -913,11 +913,11 @@ require("lazy").setup(
 
 		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
 		"e-q/okcolors.nvim", -- few colors
-		"github-main-user/lytmode.nvim",
 		"sebasruiz09/fizz.nvim",
 		"sonya-sama/kawaii.nvim",
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
+		-- "github-main-user/lytmode.nvim", -- does not impl some lsp underlines (e.g. Go %s <> value)
 		-- "iagorrr/noctis-high-contrast.nvim",
 		-- "miikanissi/modus-themes.nvim", -- very good, but has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
