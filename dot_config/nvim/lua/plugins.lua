@@ -744,6 +744,7 @@ require("lazy").setup(
 
 				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
 				{ "danymat/neogen", opts = {} }, -- docs generator
+				{ "ravsii/tree-sitter-d2", build = "make nvim-install" },
 			},
 
 			config = function()

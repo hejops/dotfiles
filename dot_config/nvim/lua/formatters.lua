@@ -164,6 +164,17 @@ require("conform").setup({
 			args = { "s/\xC2\xA0//g" }, -- https://superuser.com/a/1781296
 		},
 
+		sanitize_inner_semicolons = {
+			command = "sed",
+			args = { [[ \|;.*;$| s/;//g ]] },
+		},
+
+		d2fmt = {
+			-- https://d2lang.com/tour/auto-formatter/
+			command = "d2",
+			args = { "fmt", "-" },
+		},
+
 		-- sqlfluff = {
 		-- 	-- format: more reliable; will format if no violations found
 		-- 	-- fix: does nothing if 'Unfixable violations detected'
@@ -194,6 +205,7 @@ require("conform").setup({
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
 		css = { "prettier" },
+		d2 = { "d2fmt" },
 		dhall = { "dhall" },
 		dockerfile = { "dockerfmt" },
 		elixir = { "mix" }, -- slow (just like elixir)
