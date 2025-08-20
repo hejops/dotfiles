@@ -1,7 +1,8 @@
 local js_formatters = {
+	"sanitize_inner_semicolons",
 	"biome",
-	"prettier",
-	stop_after_first = true,
+	-- "prettier",
+	-- stop_after_first = true,
 }
 
 require("conform").setup({
@@ -20,6 +21,8 @@ require("conform").setup({
 			-- https://github.com/stevearc/conform.nvim/blob/master/lua/conform/formatters/ruff_fix.lua
 			args = {
 				"check",
+
+				-- TODO: autofix ANN201? (i.e. generate type hints)
 
 				-- opt-out for now
 				"--select=ALL",
@@ -51,7 +54,8 @@ require("conform").setup({
 			end,
 			args = (function()
 				local args = {
-					"format",
+					"check", -- includes import sorting
+					"--write",
 					"--stdin-file-path",
 					"$FILENAME",
 				}
@@ -225,6 +229,7 @@ require("conform").setup({
 		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
+		typst = { "typstyle" },
 		yaml = { "prettier" }, -- TODO: no .clangd parser
 
 		-- json = js_formatters,
