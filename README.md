@@ -1,10 +1,17 @@
 # dotfiles
 
-- Window manager: [`dwm`](https://github.com/hejops/dwm)
-- Terminal emulator: [`wezterm`](./dot_config/wezterm)
-- Text editor: [`neovim`](./dot_config/nvim)
-- File manager: [`yazi`](./dot_config/yazi)
-- Web browser: [`firefox`](./dot_mozilla/firefox) + [`tridactyl`](./dot_config/tridactyl)
+![nvim btw](./dot_config/image.png)
+
+- Window manager:
+  [`dwm`](https://github.com/hejops/dwm)
+- Terminal emulator:
+  [`wezterm`](./dot_config/wezterm)
+- Text editor:
+  [`neovim`](./dot_config/nvim)
+- File manager:
+  [`yazi`](./dot_config/yazi)
+- Web browser:
+  [`firefox`](./dot_mozilla/firefox) + [`tridactyl`](./dot_config/tridactyl)
 
 ## Installation
 

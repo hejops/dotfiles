@@ -115,7 +115,7 @@ export VD_CONFIG=$XDG_CONFIG_HOME/visidata/config
 # user variables {{{
 
 export FIREFOX_PROFILE=4clnophl.default
-export INVID=vid.puffyan.us
+export INVID=invidious.nerdvpn.de
 export NTFS_ILLEGAL='<>:"/\|?*'
 
 # alias time='(TIMEFORMAT="  %1Uu  %1Ss  %1Re"; time m)'
@@ -252,6 +252,7 @@ alias journalctl="journalctl --boot --output=short-iso" # journalctl | sort -k3 
 alias ln="ln -v"
 alias mkdir="mkdir -p"
 alias mv="mv -v"
+alias parallel="parallel --quote"
 alias pgrep="pgrep --list-full --exact"
 alias python=python3
 alias reset="reset; exec \$SHELL"                                       # reset undoes C-w; bind -f doesn't fix it
@@ -276,13 +277,6 @@ alias rgml="rg --multiline --multiline-dotall"
 alias sqj="sqlite3 -json"
 alias tmp="cd \$(mktemp -d)"
 alias xargs1="xargs --max-args=1"
-
-# # peak of laziness
-# alias c,=cd # WARN: ,c is also a function
-# alias dk=lsl
-# alias k=cd
-# alias kd=lsl
-# alias lk=lsl
 
 if command -v pacman > /dev/null; then
 
@@ -326,7 +320,7 @@ rem() {
 	[[ $# -ne 1 ]] && return
 	tree=$(pactree -r "$1") || return
 	if [[ $(<<< "$tree" wc -l) -eq 1 ]]; then
-		lp "$1"
+		lp "^$1$"
 	else
 		echo "$tree"
 	fi
@@ -537,7 +531,8 @@ last_exit() {
 PS1=''
 PS1+='\n' # newline
 PS1+='$(last_exit)'
-ps --pid "$PPID" | grep -Pwq '(yazi|sh$)' && PS1+="📁" # current shell was spawned from within file manager
+# TODO: parent can also be nvim
+ps --pid "$PPID" | grep -Pwq '(yazi|sh)$' && PS1+="📁" # current shell was spawned from within file manager
 PS1+='[\A] '                                          # time
 PS1+='$(GIT_PROMPT)'
 PS1+='\n'  # newline
@@ -559,3 +554,17 @@ PS1+='> ' # prompt symbol
 [[ -f ~/.bash_aliases_work ]] && . ~/.bash_aliases_work
 # shellcheck disable=SC1090
 [[ -f ~/.config/readline/fzf.bash ]] && . ~/.config/readline/fzf.bash
+
+_complete_pacman_pkgs() {
+	f() {
+		# shellcheck disable=SC2317
+		pacman --query --search |
+			grep -P "^local/$1" |
+			cut -d' ' -f1 |
+			cut -d/ -f2
+	}
+	_base_completer f
+}
+
+complete -F _complete_pacman_pkgs lp
+complete -F _complete_pacman_pkgs rem

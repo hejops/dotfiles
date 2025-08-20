@@ -7,6 +7,9 @@ vim.g.maplocalleader = " "
 
 -- essentials
 -- vim.keymap.set("n", "?>", ":wqa<cr>")
+-- vim.keymap.set("n", "ZX", ":wqa<cr>")
+-- vim.keymap.set("n", "z/", "ZZ") -- lazy exit
+-- vim.keymap.set("v", "ZZ", "<esc>ZZ")
 vim.keymap.set("c", "<c-h>", "<s-left>")
 vim.keymap.set("c", "<c-j>", "<down>") -- defaults do nothing
 vim.keymap.set("c", "<c-k>", "<up>")
@@ -30,7 +33,6 @@ vim.keymap.set("n", "Q", ":bd<cr>")
 vim.keymap.set("n", "U", ":redo<cr>")
 vim.keymap.set("n", "X", '"_X')
 vim.keymap.set("n", "Y", "y$") -- default is redundant with yy
-vim.keymap.set("n", "ZX", ":wqa<cr>")
 vim.keymap.set("n", "co", "O<esc>jo<esc>k") -- surround current line with newlines
 vim.keymap.set("n", "gD", "<nop>")
 vim.keymap.set("n", "gf", "<c-W>gF") -- open file under cursor in new tab, jumping to line if possible; uncommonly used
@@ -42,8 +44,7 @@ vim.keymap.set("n", "x", '"_x')
 vim.keymap.set("n", "~", "~h")
 vim.keymap.set("v", "<", "<gv") -- vim puts you back in normal mode by default
 vim.keymap.set("v", ">", ">gv")
-vim.keymap.set("v", "P", '"_dP')
-vim.keymap.set("v", "ZZ", "<esc>ZZ")
+vim.keymap.set("v", "P", '"_dP') -- default behaviour is to just paste above selection
 vim.keymap.set("v", "x", '"_x')
 
 vim.keymap.set("n", "Z?", function()
@@ -114,6 +115,7 @@ local last_win = nil
 -- check all bufs for a terminal. if one is found, get the tab (and window) it
 -- belongs to, and switch to it. in other words, there can effectively only
 -- ever be a single terminal in nvim
+---@param cmd string?
 local function open_terminal()
 	for _, t in pairs(vim.api.nvim_list_tabpages()) do
 		-- if current tab contains a term, close it OR go to it
@@ -267,14 +269,12 @@ local function update_or_close()
 end
 
 vim.keymap.set("n", "<cr>", update_or_close, { silent = true })
-vim.keymap.set("n", "x", '"_x', { silent = true })
 
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
 vim.keymap.set("n", "<leader>I", [[:lua print(vim.inspect())<left><left>]])
 vim.keymap.set("n", "<leader>M", '"qp0dd') -- dump q buffer into a newline and cut it (for binding)
 vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
-vim.keymap.set("n", "z/", "ZZ") -- lazy exit
 
 -- substitutions are applied in sequential order
 ---@param subs { pat: string, rep: string }[]
@@ -301,56 +301,20 @@ end -- }}}
 
 -- note: this will fail the first time (after startup) selection a made, for
 -- unknown reasons
-local function surround_selection(left, right)
-	-- {{{
-	local line_start = vim.fn.getpos("'<")[2]
-	local line_end = vim.fn.getpos("'>")[2]
-	if line_start == 0 then
-		return
-	end
-
-	local lines = vim.fn.getline(line_start, line_end)
-	assert(type(lines) == "table")
-	table.insert(lines, 1, left)
-	table.insert(lines, right)
-	vim.api.nvim_buf_set_lines(0, line_start - 1, line_end, false, lines)
-end -- }}}
-
-local function serde_value_to_struct()
-	-- {{{
-	-- https://github.com/mfussenegger/dotfiles/blob/fa58149048/vim/dot-config/nvim/lua/me/term.lua#L180
-	local mode = vim.api.nvim_get_mode()
-	local pos1
-	local pos2
-	if vim.tbl_contains({ "v", "V", "" }, mode.mode) then
-		pos1 = vim.fn.getpos("v")
-		pos2 = vim.fn.getpos(".")
-	else
-		return
-	end
-
-	-- https://neovim.io/doc/user/builtin.html#getregion()
-	local lines = vim.fn.getregion(pos1, pos2, { type = mode.mode })
-
-	-- replace lines
-	local new = table.concat(lines, "\n")
-	local foo = [[\([^)]+\)]]
-	local types = {
-		-- TODO: serde type -> rust type
-		Number = "usize",
-		Array = "Vec",
-		["["] = "<",
-		["]"] = ">",
-		['"'] = "",
-		[foo] = "",
-	}
-	for k, v in pairs(types) do
-		new = vim.fn.substitute(new, k, v, "g")
-	end
-
-	-- replace current v selection with new lines
-	vim.api.nvim_paste(new .. "\n", false, -1)
-end -- }}}
+-- local function surround_selection(left, right)
+-- 	-- {{{
+-- 	local line_start = vim.fn.getpos("'<")[2]
+-- 	local line_end = vim.fn.getpos("'>")[2]
+-- 	if line_start == 0 then
+-- 		return
+-- 	end
+--
+-- 	local lines = vim.fn.getline(line_start, line_end)
+-- 	assert(type(lines) == "table")
+-- 	table.insert(lines, 1, left)
+-- 	table.insert(lines, right)
+-- 	vim.api.nvim_buf_set_lines(0, line_start - 1, line_end, false, lines)
+-- end -- }}}
 
 local function debug_print(cmd)
 	-- {{{
@@ -484,7 +448,13 @@ local ft_binds = { -- {{{
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
 	},
 
+	["typescriptreact,javascriptreact"] = {
+		-- { "n", "<leader>x", ":!npx shadcn@latest add -y " },
+		{ "n", "<leader>x", ":Dispatch pnpm vite<cr>" }, -- BufReadPost? lol
+	},
+
 	["typescript,javascript,typescriptreact,javascriptreact"] = {
+		{ "n", "<leader>B", ":Dispatch pnpm tsc -b<cr>" },
 		{ "n", "<leader>a", ":!npm install " }, -- TODO: yarn.lock -> yarn
 		{ "n", "<leader>d", "O/**  */<left><left><left>" }, -- neogen always documents class, not field
 
@@ -739,6 +709,7 @@ local ft_binds = { -- {{{
 					{ pat = [[os.remove\((.+)\)]], rep = [[Path(\1).unlink()]] },
 					-- os.path.isdir\((.+)\)/Path(\1).is_dir()
 					-- os.path.isfile\((.+)\)/Path(\1).is_file()
+					-- os.path.join\((\w+), ([^)]+)\)/(Path(\1)\/\2).as_posix()
 				})
 			end,
 		},
@@ -770,7 +741,8 @@ local ft_binds = { -- {{{
 		},
 
 		{ "n", "<c-k>", "ysiw]Ea()<esc>Pgqq", { remap = true } }, -- wrap in hyperlink
-		{ "n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort n<cr>`z", { remap = true } },
+		-- sort n stops sorting in md?
+		{ "n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { remap = true } },
 
 		{
 			"n",
@@ -962,40 +934,41 @@ local function exec() -- {{{
 			vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
 			-- local ts = vim.fn.expand("%:.") -- relative to child dir
 
-			-- if vim.uv.fs_stat(".env") and vim.fn.executable("node23") then
-			-- 	return "node23 --no-warnings --import=tsx --env-file=.env " .. file
-
 			-- TODO: must use tsx if any file imports are needed; node imports must
 			-- specify file ext (fixable at top-level imports, but not at subsequent
 			-- imports)
 
-			local node_version = require("util"):get_command_output("node -v")
-			local ts_node = vim.fs.root(0, "package.json") .. "/node_modules/.bin/ts-node" -- tsx doesn't handle import statements correctly
+			-- tsx doesn't handle import statements correctly (?)
+			local ts_node = (vim.fs.root(0, "package.json") or "") .. "/node_modules/.bin/ts-node"
 
 			if vim.uv.fs_stat(ts_node) then
 				return ts_node .. " " .. curr_file
-			elseif node_version >= "v22.7.0" then -- 2x faster than ts-node, but not guaranteed to work
-				-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
-				return "node --no-warnings --experimental-strip-types --experimental-transform-types " .. curr_file
-			elseif node_version >= "v22.6.0" then
-				return "node --no-warnings --experimental-strip-types " .. curr_file
 			elseif vim.uv.fs_stat("./node_modules/tsx") then
-				-- run with node directly (without transpilation); requires tsx
-				-- https://nodejs.org/api/typescript.html#full-typescript-support
-				-- --enable-source-maps doesn't seem to report source line number correctly
-				-- node --import=tsx is significantly faster than yarn tsx (avoids unnecessary overhead)
 				return "node --no-warnings --import=tsx " .. curr_file
-			elseif vim.fs.root(0, "package.json") then
-				-- TODO: print is shown after execute
-				-- print("installing tsx...") -- ts-node is not just single binary
-				-- npm install --save-dev tsx
-				-- os.execute("yarn add --dev tsx >/dev/null")
-				error("need install tsx")
-				-- vim.fn.jobstart("yarn add --dev tsx") -- possibly bad recursion, high memory
-				-- return get_ts_runner(file)
-			else
-				error("no package.json found; need npm init")
+				-- elseif vim.fs.root(0, "package.json") then
+				-- 	-- TODO: print is shown after execute
+				-- 	-- print("installing tsx...") -- ts-node is not just single binary
+				-- 	-- npm install --save-dev tsx
+				-- 	-- os.execute("yarn add --dev tsx >/dev/null")
+				-- 	error("need install tsx")
+				-- 	-- vim.fn.jobstart("yarn add --dev tsx") -- possibly bad recursion, high memory
+				-- 	-- return get_ts_runner(file)
+				-- else
+				-- 	error("no package.json found; need npm init")
 			end
+
+			local args = { "node" }
+			local node_version = require("util"):get_command_output("node -v")
+			if node_version < "v23.6.0" then
+				table.insert(args, "--experimental-strip-types")
+			end
+			if node_version >= "v22.7.0" then
+				-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
+				table.insert(args, "--experimental-transform-types")
+			end
+			table.insert(args, curr_file)
+
+			return table.concat(args, " ")
 		end, --(curr_file),
 
 		["javascript.mongo"] = string.format(

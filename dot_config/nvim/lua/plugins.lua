@@ -772,7 +772,7 @@ require("lazy").setup(
 						"gosum",
 						"html",
 						"htmldjango",
-						"javascript",
+						"javascript", -- includes jsx (probably)
 						"jsdoc",
 						"json",
 						"jsonc",
@@ -785,6 +785,7 @@ require("lazy").setup(
 						"rust",
 						"sql",
 						"toml",
+						"tsx",
 						"typescript",
 						"vim",
 						"vimdoc",
@@ -827,14 +828,6 @@ require("lazy").setup(
 								["gk"] = "@function.outer",
 								["gK"] = "@class.outer",
 							},
-							-- goto_next_end = {
-							-- 	["gl"] = "@function.outer",
-							-- 	["gL"] = "@class.outer",
-							-- },
-							-- goto_previous_end = {
-							-- 	["gh"] = "@function.outer",
-							-- 	["gH"] = "@class.outer",
-							-- },
 						},
 						-- swap = {
 						-- 	-- only works in params, not data structures (e.g. arrays)
@@ -869,23 +862,6 @@ require("lazy").setup(
 				})
 
 				vim.cmd.set("foldexpr=nvim_treesitter#foldexpr()") -- https://www.jmaguire.tech/img/code_folding.png
-
-				-- local ts_repeat_move = require("nvim-treesitter.textobjects.repeatable_move")
-				--
-				-- -- -- Repeat TS movements with ; and ,
-				-- -- -- ensure ; goes forward and , goes backward regardless of the last direction
-				-- -- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move_next)
-				-- -- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_previous)
-				--
-				-- -- vim way: ; goes to the direction you were moving.
-				-- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
-				-- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
-				--
-				-- -- the above keymaps make fFtT non-repeatable; correct that
-				-- vim.keymap.set({ "n", "x", "o" }, "F", ts_repeat_move.builtin_F)
-				-- vim.keymap.set({ "n", "x", "o" }, "T", ts_repeat_move.builtin_T)
-				-- vim.keymap.set({ "n", "x", "o" }, "f", ts_repeat_move.builtin_f)
-				-- vim.keymap.set({ "n", "x", "o" }, "t", ts_repeat_move.builtin_t)
 			end,
 		},
 		{
@@ -908,32 +884,47 @@ require("lazy").setup(
 
 		-- above average contrast
 		-- line column visible
-		-- no font styling
+		-- no font styling (acceptable only in strings and comments)
 		-- not mono tabline
+		-- underline current word (not highlight, not bold)
 
 		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
-		"e-q/okcolors.nvim", -- few colors
+		"maya-sama/kawaii.nvim",
 		"sebasruiz09/fizz.nvim",
-		"sonya-sama/kawaii.nvim",
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
-		-- "github-main-user/lytmode.nvim", -- does not impl some lsp underlines (e.g. Go %s <> value)
+		-- "e-q/okcolors.nvim", -- few colors, italic methods
+		-- "github-main-user/lytmode.nvim", -- highlight current (dim)
 		-- "iagorrr/noctis-high-contrast.nvim",
+		-- "michaelfresco/space-terminal.nvim", -- highlight current
 		-- "miikanissi/modus-themes.nvim", -- very good, but has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
 		-- "olivercederborg/poimandres.nvim", -- dim line column
+		-- "sonya-sama/kawaii.nvim", -- dims current line
 		-- "thejian/nvim-moonwalk", -- unreadable git status
 
-		"honamduong/hybrid.nvim", -- italic
-		"samharju/synthweave.nvim", -- italic
-		-- "datsfilipe/vesper.nvim", -- italic
-		-- "fynnfluegge/monet.nvim", -- italic
+		-- italic comments
+
+		-- "devoc09/lflops.nvim",
+		-- "fynnfluegge/monet.nvim",
+		-- "honamduong/hybrid.nvim",
+		-- "mitch1000/backpack.nvim",
+		-- "pustota-theme/pustota.nvim",
+		-- "wurli/cobalt.nvim",
+
+		-- "2giosangmitom/nightfall.nvim", -- italic keywords
+		-- "bartekjaszczak/finale-nvim", -- bold keywords
+		-- "khoido2003/classic_monokai.nvim", -- italic vars
+		-- "lancewilhelm/horizon-extended.nvim", -- italic keywords
+		-- "ph1losof/morta.nvim", -- italic keywords
+		-- "samharju/synthweave.nvim", -- italic vars
 
 		{
 			"shawilly/ponokai",
 			lazy = true,
 			config = function()
 				vim.g.ponokai_disable_italic_comment = true
+				vim.g.ponokai_current_word = "underline"
 			end,
 		},
 
