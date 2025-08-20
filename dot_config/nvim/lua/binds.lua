@@ -361,9 +361,15 @@ end -- }}}
 
 vim.keymap.set("n", "<leader>p", debug_print, { silent = true })
 vim.keymap.set("n", "<leader>P", function()
-	vim.cmd.norm("0D")
+	vim.cmd.norm("0DVx")
+	if vim.fn.line(".") ~= vim.fn.line("$") then
+		vim.cmd.norm("k")
+	end
 	debug_print()
-	require("util"):literal_keys("p")
+	vim.cmd.stopinsert() -- unlike <esc>, cursor is not moved back
+	vim.cmd.norm("P")
+	vim.cmd.w()
+	vim.cmd.norm("$")
 end, { silent = true })
 
 -- mode: string|string[], lhs: string, rhs: string|function, opts?: vim.keymap.set.Opts
@@ -380,6 +386,7 @@ local function search_for(str, backward, recenter)
 end
 
 -- TODO: move out to separate file (almost 400 lines!)
+--
 -- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
 ---@type {[string]: { mode: string, lhs: string, rhs: string|function, opts: table? }[]}
 local ft_binds = { -- {{{
