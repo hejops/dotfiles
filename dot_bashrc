@@ -37,6 +37,8 @@ done
 # echo "${paths[@]}";
 unset p paths
 
+export PATH=$HOME/go125/go/bin:$PATH # why is arch taking so long to update go
+
 # # exported by default -- check with 'go env'
 # # https://github.com/golang/wiki/blob/master/GOPATH.md#gopath-variable
 # # https://go.dev/wiki/SettingGOPATH#bash
@@ -223,6 +225,8 @@ export STREAMLIT_SERVER_RUN_ON_SAVE=true
 # going to ~/.cache/pypoetry/virtualenvs is annoying
 export POETRY_VIRTUALENVS_IN_PROJECT=true
 
+export RIPGREP_CONFIG_PATH=$HOME/.config/ripgrep/config
+
 # }}}
 
 # when sourced from a script, stop here
@@ -333,6 +337,10 @@ remsafe() {
 
 pacmir() {
 	: regenerate pacman mirrors
+
+	# TODO: pacman-mirrors may be more portable
+
+	# sudo pacman-mirrors --geoip
 
 	# # general purpose speedtest is not really relevant; better (and faster)
 	# # to check if current top mirror (in mirrorlist) matches current

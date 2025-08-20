@@ -889,7 +889,7 @@ require("lazy").setup(
 		-- not mono tabline
 		-- underline current word (not highlight, not bold)
 
-		"bgwdotdev/gleam-theme-nvim",
+		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
 		"maya-sama/kawaii.nvim",
 		"sebasruiz09/fizz.nvim",
 		-- "bakageddy/alduin.nvim", -- some keywords too dim

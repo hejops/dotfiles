@@ -94,7 +94,8 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 
 	elif
 		# if pacman hasn't been run in a long time, keys in keyring
-		# will expire. updating archlinux-keyring should fix this
+		# will expire. pacman -Syyu OR updating archlinux-keyring
+		# should fix this
 		command -v expac > /dev/null &&
 			last_update=$(expac --timefmt '%s' "%l" | sort -n | tail -n1) &&
 			# https://stackoverflow.com/a/6948865
@@ -1652,6 +1653,18 @@ dolc() {
 	# dolf "$name"
 }
 
+# alias dps='docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.ID}}\t{{.RunningFor}}" | sort'
+
+dps() {
+	# docker ps adds too much padding, and cannot truncate long values
+	docker ps -a --format=json |
+		# note: ID is usually just visual noise, but placing it any
+		# later in the seq will make it hard to extract (with cut/awk)
+		jqt 'Names[0:50]' State ID Status RunningFor Ports |
+		sort |
+		colt
+}
+
 doslow() {
 	: list slowest steps in a docker log
 
@@ -1833,6 +1846,7 @@ sum() { < /dev/stdin paste -sd+ | bc; }
 surround() { < /dev/stdin awk "{print \"$1\" \$0 \"$1\"}"; }
 tojson() { node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq; }
 urldec() { node --eval "console.log(decodeURIComponent(process.argv[1]))" "$1"; }
+urlenc() { node --eval "console.log(encodeURIComponent(process.argv[1]))" "$1"; }
 
 # highlight query, but output the entire file
 # grep "$query\|$"
