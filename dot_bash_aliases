@@ -1259,6 +1259,37 @@ gnew() { # {{{
 # 	# git push -f
 # }
 
+review() {
+	# https://news.ycombinator.com/item?id=44968785
+	if
+		[[ -n "$(git status -s)" ]]
+	then
+		echo 'must start with clean tree!'
+		return 1
+	fi
+
+	[[ $# -eq 1 ]] && return
+
+	git checkout pristine # a branch that I never commit to
+	git rebase origin/master
+
+	branch="$1"
+	git branch -D "$branch"
+	git checkout "$branch"
+
+	git rebase origin/master
+	git reset --soft origin/master
+	git reset
+
+	nvim -c ':G'
+
+	git reset --hard
+	git status -s | awk '{ print $2 }' | xargs rm # seems dangerous...
+	git checkout pristine
+	git branch -D "$branch"
+
+}
+
 # }}}
 
 # gitlab {{{
@@ -1429,6 +1460,12 @@ god() {
 		xargs -n1 go doc 2> /dev/null |
 		grep -Pv '^package'
 	popd || :
+}
+
+god2() {
+	rgl -x '\t"(plaque|github.com)[^"]+"' |
+		sed -r 's/:/ ->/; s/\.go/\\&/' |
+		d2 - foo.svg
 }
 
 # }}}
