@@ -1,7 +1,8 @@
 local js_formatters = {
+	"sanitize_inner_semicolons",
 	"biome",
-	"prettier",
-	stop_after_first = true,
+	-- "prettier",
+	-- stop_after_first = true,
 }
 
 require("conform").setup({
@@ -20,6 +21,8 @@ require("conform").setup({
 			-- https://github.com/stevearc/conform.nvim/blob/master/lua/conform/formatters/ruff_fix.lua
 			args = {
 				"check",
+
+				-- TODO: autofix ANN201? (i.e. generate type hints)
 
 				-- opt-out for now
 				"--select=ALL",
@@ -51,7 +54,8 @@ require("conform").setup({
 			end,
 			args = (function()
 				local args = {
-					"format",
+					"check", -- includes import sorting
+					"--write",
 					"--stdin-file-path",
 					"$FILENAME",
 				}
@@ -164,6 +168,17 @@ require("conform").setup({
 			args = { "s/\xC2\xA0//g" }, -- https://superuser.com/a/1781296
 		},
 
+		sanitize_inner_semicolons = {
+			command = "sed",
+			args = { [[ \|;.*;$| s/;//g ]] },
+		},
+
+		d2fmt = {
+			-- https://d2lang.com/tour/auto-formatter/
+			command = "d2",
+			args = { "fmt", "-" },
+		},
+
 		-- sqlfluff = {
 		-- 	-- format: more reliable; will format if no violations found
 		-- 	-- fix: does nothing if 'Unfixable violations detected'
@@ -194,6 +209,7 @@ require("conform").setup({
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
 		css = { "prettier" },
+		d2 = { "d2fmt" },
 		dhall = { "dhall" },
 		dockerfile = { "dockerfmt" },
 		elixir = { "mix" }, -- slow (just like elixir)
@@ -213,6 +229,7 @@ require("conform").setup({
 		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
+		typst = { "typstyle" },
 		yaml = { "prettier" }, -- TODO: no .clangd parser
 
 		-- json = js_formatters,

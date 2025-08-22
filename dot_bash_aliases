@@ -262,11 +262,9 @@ m() {
 }
 
 da() {
-	if [[ $# -eq 1 ]]; then
-		~/disq/disq -artist "$1"
-	else
-		~/disq/disq
-	fi
+	local args=()
+	[[ $# -eq 1 ]] && args+=(-artist "$1")
+	~/disq/disq "${args[@]}"
 }
 
 cm() {
@@ -1261,6 +1259,37 @@ gnew() { # {{{
 # 	# git push -f
 # }
 
+review() {
+	# https://news.ycombinator.com/item?id=44968785
+	if
+		[[ -n "$(git status -s)" ]]
+	then
+		echo 'must start with clean tree!'
+		return 1
+	fi
+
+	[[ $# -eq 1 ]] && return
+
+	git checkout pristine # a branch that I never commit to
+	git rebase origin/master
+
+	branch="$1"
+	git branch -D "$branch"
+	git checkout "$branch"
+
+	git rebase origin/master
+	git reset --soft origin/master
+	git reset
+
+	nvim -c ':G'
+
+	git reset --hard
+	git status -s | awk '{ print $2 }' | xargs rm # seems dangerous...
+	git checkout pristine
+	git branch -D "$branch"
+
+}
+
 # }}}
 
 # gitlab {{{
@@ -1433,6 +1462,12 @@ god() {
 	popd || :
 }
 
+god2() {
+	rgl -x '\t"(plaque|github.com)[^"]+"' |
+		sed -r 's/:/ ->/; s/\.go/\\&/' |
+		d2 - foo.svg
+}
+
 # }}}
 # js {{{
 
@@ -1446,6 +1481,16 @@ tsc() {
 # https://stackoverflow.com/a/47948461
 _js_pkg_ver() { < package.json jq -r "[.dependencies, .devDependencies] | add | .$1" | tr -d '^~'; }
 _js_pkgs() { < package.json jq -r '[.dependencies, .devDependencies] | add | keys[]'; }
+
+jimp() {
+	rg -t ts -Io ' from "[^:/]+";$' |
+		sort -u |
+		cut -d'"' -f2 |
+		while read -r pkg; do
+			< package.json grep -Fq "\"$pkg\"" || echo "$pkg"
+		done |
+		xargs pnpm add
+}
 
 jx() {
 	pkgmgr() {
@@ -1498,6 +1543,10 @@ jup() {
 	# npm install (update?) / yarn upgrade
 	echo yarn upgrade "$pkg@^$target_ver"
 }
+
+# pnpm depcheck --ignore-bin-package --json |
+# 	jq .devDependencies[] |
+# 	xargs pnpm remove
 
 # }}}
 # c {{{
@@ -1581,7 +1630,15 @@ jqt() {
 	# query="[$(echo "$@" | sjoin ,)]"
 
 	# note: jq knows how to if read from stdin if no file passed
-	< /dev/stdin jq -r "[$query] | @tsv" | colt
+	{
+		echo "${fields[@]}" | tr ' ' '\t'
+
+		# this is the 'pure' way to do it (select and format are 2 different steps)
+		# < /dev/stdin jq "[$query]" |
+		# 	jq -r 'map(tostring) | @tsv'
+
+		< /dev/stdin jq -r "[$query] | @tsv"
+	} | colt
 
 }
 
@@ -1631,18 +1688,6 @@ dolc() {
 		done
 
 	# dolf "$name"
-}
-
-# alias dps='docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.ID}}\t{{.RunningFor}}" | sort'
-
-dps() {
-	# docker ps adds too much padding, and cannot truncate long values
-	docker ps -a --format=json |
-		# note: ID is usually just visual noise, but placing it any
-		# later in the seq will make it hard to extract (with cut/awk)
-		jqt 'Names[0:50]' State ID Status RunningFor Ports |
-		sort |
-		colt
 }
 
 doslow() {
@@ -1909,8 +1954,13 @@ getmail() {
 
 get_cookie() {
 	\cp ~/.mozilla/firefox/*default/cookies.sqlite tmp.db
-	sql="select value from moz_cookies where name = '$1' order by id desc limit 1"
-	sqlite3 tmp.db "$sql" 2> /dev/null
+	if <<< "$1" grep -q ' '; then
+		sql="select value from moz_cookies where $1 order by id desc"
+		sqlite3 -json tmp.db "$sql" 2> /dev/null | jq
+	else
+		sql="select value from moz_cookies where name = '$1' order by id desc limit 1"
+		sqlite3 tmp.db "$sql" 2> /dev/null
+	fi
 	rm tmp.db > /dev/null
 }
 
@@ -1979,7 +2029,7 @@ fftabs() {
 
 topa() {
 	< ~/gripts/disq/queries/top_artists_by_avg_rating.sql sqlite3 -tabs \
-		disq/collection2.db 2> /dev/null |
+		~/gripts/disq/collection2.db 2> /dev/null |
 		sort -k2 -t$'\t' -k1 |
 		colt
 }

@@ -4,16 +4,17 @@
 local linters = {
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 
-	-- bash = { "shellcheck" }, -- now in bashls
+	-- bashls now includes shellcheck
 	-- elixir = { "credo" }, -- where da binary at
 	-- lua = { "selene" }, -- disabled until i can get condition to work
-	-- ruby = { "rubocop" },
 	-- rust = { "clippy" }, -- part of the lsp
 	["yaml.github"] = { "zizmor" },
 	c = { "clangtidy" },
 	cpp = { "clangtidy" },
 	css = { "stylelint" },
+	d2 = { "d2" },
 	dockerfile = { "hadolint" }, -- can be quite noisy
+	dotenv = { "dotenv_linter" },
 	gitcommit = { "gitlint" },
 	go = { "golangcilint" },
 	html = { "markuplint" },
@@ -23,13 +24,12 @@ local linters = {
 	lua = { "luacheck" },
 	make = { "checkmake" },
 	python = { "ruff" }, -- may have duplicate with ruff lsp
-	sh = {},
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
 
 	sql = {
 		"sqlfluff", -- slow lint is fine, since async
-		vim.fn.executable("squawk") == 1 and "squawk" or nil,
+		vim.fn.executable("squawk") == 1 and "squawk" or nil, -- https://squawkhq.com/
 	},
 
 	markdown = {
@@ -218,6 +218,42 @@ require("lint").linters.luacheck.args = vim.list_extend( --
 -- 		vim.env.HOME .. "/.config/cspell/config.yaml",
 -- 	}
 -- )
+
+require("lint").linters.d2 = { -- {{{
+	cmd = "d2",
+	args = { "validate" },
+
+	ignore_exitcode = true,
+	stdin = false,
+	stream = "stderr",
+
+	parser = function(output, _)
+		if output:find("Success!") then
+			return {}
+		end
+
+		local items = {}
+
+		-- local bufpath = vim.fn.expand("%:p")
+
+		for line in output:gmatch("%d+:%d+: [^\n]+") do
+			-- err: oss.terrastruct.com/d2/d2cli.validateCmd: 2:12: missing value after colon
+			-- err: 7:1: unexpected map termination character } in file map
+			local _, _, lnum, col, msg = string.find(line, "(%d+):(%d+): ([^\n]+)")
+
+			table.insert(items, {
+				source = "d2",
+				lnum = tonumber(lnum) - 1,
+				col = tonumber(col),
+				end_col = 999,
+				message = msg,
+				severity = vim.diagnostic.severity.ERROR,
+			})
+		end
+
+		return items
+	end,
+} -- }}}
 
 -- linters cannot be conditionally disabled at config time. they can only be
 -- disabled at runtime:

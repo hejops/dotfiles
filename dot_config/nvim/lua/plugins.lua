@@ -66,9 +66,8 @@ require("lazy").setup(
 
 		-- }}}
 
-		"yochem/jq-playground.nvim",
+		"terrastruct/d2-vim",
 		-- "martineausimon/nvim-lilypond-suite",
-
 		-- { "tadmccorkle/markdown.nvim", ft = "markdown", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
 		{ "ecridge/vim-kinesis", ft = "kinesis" }, -- KA2, *_qwerty.txt
 		{ "jbyuki/quickmath.nvim", cmd = { "Quickmath" } },
@@ -79,6 +78,7 @@ require("lazy").setup(
 		{ "tpope/vim-dotenv", cmd = { "Dotenv" } },
 		{ "tridactyl/vim-tridactyl", ft = "tridactyl" }, -- syntax highlighting
 		{ "wansmer/treesj", opts = {}, cmd = { "TSJToggle", "TSJSplit", "TSJJoin" } }, -- very slow
+		{ "yochem/jq-playground.nvim", ft = "json" },
 
 		{
 			"norcalli/nvim-colorizer.lua",
@@ -744,6 +744,7 @@ require("lazy").setup(
 
 				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
 				{ "danymat/neogen", opts = {} }, -- docs generator
+				{ "ravsii/tree-sitter-d2", build = "make nvim-install" },
 			},
 
 			config = function()
