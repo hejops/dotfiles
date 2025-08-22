@@ -38,9 +38,9 @@ local linters = {
 	},
 }
 
-for _, t in pairs(linters) do
-	table.insert(t, "cspell")
-end
+-- for _, t in pairs(linters) do
+-- 	table.insert(t, "cspell")
+-- end
 
 if vim.fn["globpath"](".", "commitlint.config.js") ~= "" then
 	-- npm install --save-dev @commitlint/{cli,config-conventional}
@@ -211,13 +211,13 @@ require("lint").linters.luacheck.args = vim.list_extend( --
 	}
 )
 
-require("lint").linters.cspell.args = vim.list_extend( --
-	require("lint").linters.cspell.args,
-	{
-		"--config",
-		vim.env.HOME .. "/.config/cspell/config.yaml",
-	}
-)
+-- require("lint").linters.cspell.args = vim.list_extend( --
+-- 	require("lint").linters.cspell.args,
+-- 	{
+-- 		"--config",
+-- 		vim.env.HOME .. "/.config/cspell/config.yaml",
+-- 	}
+-- )
 
 -- linters cannot be conditionally disabled at config time. they can only be
 -- disabled at runtime:
