@@ -211,13 +211,13 @@ require("lint").linters.luacheck.args = vim.list_extend( --
 	}
 )
 
-require("lint").linters.cspell.args = vim.list_extend( --
-	require("lint").linters.cspell.args,
-	{
-		"--config",
-		vim.env.HOME .. "/.config/cspell/config.yaml",
-	}
-)
+-- require("lint").linters.cspell.args = vim.list_extend( --
+-- 	require("lint").linters.cspell.args,
+-- 	{
+-- 		"--config",
+-- 		vim.env.HOME .. "/.config/cspell/config.yaml",
+-- 	}
+-- )
 
 require("lint").linters.d2 = { -- {{{
 	cmd = "d2",
