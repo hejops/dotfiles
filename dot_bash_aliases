@@ -730,6 +730,7 @@ commit_or_discard() {
 	# TODO: fzf better
 	committed=1
 	while read -r f; do
+		f=$(_get_repo_root)/$f
 		[[ -f $f ]] || continue
 		if
 			git commit -v --untracked-files=no "$f"
