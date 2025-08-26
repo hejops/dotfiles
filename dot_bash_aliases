@@ -1166,26 +1166,6 @@ gcon() { # {{{
 
 	# git diff --name-only --diff-filter=U --relative
 
-	if ! conflicts=$(_git_get_conflicts); then
-		echo "No conflicts detected"
-		return
-	fi
-
-	# all conflicts are due to lock files
-	if ! <<< "$conflicts" grep -v yarn.lock; then
-		<<< "$conflicts" cut -c3- |
-			xargs dirname |
-			while read -r d; do
-				pushd "$d" || return
-				yarn install || return
-				git add yarn.lock
-				popd || return
-			done
-		_git_has_conflicts && return
-		git commit -v
-		return
-	fi
-
 	# in case of submodule conflict:
 	# cd $submodule
 	# gu .
@@ -1284,7 +1264,7 @@ review() {
 	nvim -c ':G'
 
 	git reset --hard
-	git status -s | awk '{ print $2 }' | xargs rm # seems dangerous...
+	git status -s | awk '{ print $2 }' | xargs 'rm' # seems dangerous...
 	git checkout pristine
 	git branch -D "$branch"
 
