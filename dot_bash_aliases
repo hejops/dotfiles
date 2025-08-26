@@ -1666,7 +1666,7 @@ dps() {
 	docker ps -a --format=json |
 		# note: ID is usually just visual noise, but placing it any
 		# later in the seq will make it hard to extract (with cut/awk)
-		jqt 'Names[0:50]' State ID Status RunningFor |
+		jqt 'Names[0:50]' State ID Status RunningFor Ports |
 		sort |
 		colt
 }
