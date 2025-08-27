@@ -1433,8 +1433,18 @@ god() {
 }
 
 god2() {
-	rgl -x '\t"(plaque|github.com)[^"]+"' |
-		sed -r 's/:/ ->/; s/\.go/\\&/' |
+	# TODO: label arrows by number of connections
+	gomod=$(find . -name go.mod | head -n1)
+	basedir=$(dirname "$gomod" | sed -r 's|^\./||')
+	modname=$(< "$gomod" grep ^module | cut -d' ' -f2) # foo/bar/baz
+	rgl -x "\t(\w+ )?\"${modname}[^\"]+\"" |
+		sed -r "
+			s@($basedir|$modname)/?@@g	# strip lhs path and rhs modname
+			s/\t[^\"]+/\t/			# remove import aliases
+			s/:/ ->/			# d2 arrow (space required)
+			s|/[^ /]+\.go||			# strip filename (else too many boxes)
+		" |
+		sort -u |
 		d2 - foo.svg
 }
 
@@ -1626,7 +1636,7 @@ dps() {
 	docker ps -a --format=json |
 		# note: ID is usually just visual noise, but placing it any
 		# later in the seq will make it hard to extract (with cut/awk)
-		jqt 'Names[0:50]' State ID Status RunningFor |
+		jqt 'Names[0:50]' State ID Status RunningFor Ports |
 		sort |
 		colt
 }
