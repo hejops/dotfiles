@@ -106,30 +106,20 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 	fi
 fi
 
-if ps --pid "$PPID" | grep -Fq wezterm; then
+ps --pid "$PPID" | grep -Fq wezterm &&
+	[[ -s /tmp/verse ]] &&
+	cat /tmp/verse
 
-	[[ -f /tmp/verse ]] && [[ -s /tmp/verse ]] && cat /tmp/verse
-
-	if [[ -d $SLSK ]]; then
-		if
-			# x=$(du -csh "$SLSK/complete" | head -n1 | grep G) &&
-			# 	<<< "$x" grep -Po '^\d+' | \xargs -I{} test {} -ge 3
-
-			# i like the idea of BASH_REMATCH, but it is
-			# unfortunate that \S (et al) is not supported. there
-			# is no noticeable performance difference
-			# https://www.bashsupport.com/bash/variables/bash_rematch/
-			[[ $(du -csh "$SLSK"/complete | tail -n1) =~ ^([0-9]+).+G ]] &&
-				# [0] = full line
-				# [@] = full line + all matches
-				((BASH_REMATCH[1] >= 3))
-		then
-			echo -e "\n${BASH_REMATCH[0]}"
-		fi
-		unset x
-	fi
-
-fi
+[[ -d $SLSK ]] &&
+	# i like the idea of BASH_REMATCH, but it is unfortunate that
+	# \S (et al) is not supported. there is no noticeable performance
+	# difference
+	# https://www.bashsupport.com/bash/variables/bash_rematch/
+	[[ $(du -csh "$SLSK"/complete | tail -n1) =~ ^([0-9]+).+G ]] &&
+	# [0] = full line (like awk)
+	# [@] = full line + all matches
+	((BASH_REMATCH[1] >= 3)) &&
+	echo -e "\n${BASH_REMATCH[0]}"
 
 if ! ls /tmp/ssh-XXXXX* > /dev/null; then
 	# pkill ssh-agent # deletes all existing sockets
@@ -189,7 +179,7 @@ alias fzh="fzf --height=~33% --reverse" # height=~X% means min(input rows, windo
 alias inw="inotifywait --monitor --recursive"
 alias li="exec chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg'"
 alias or="bash ~/gripts/oar/run.sh"
-alias ports="netstat -tunlp | grep -P '^(udp|tcp)[^6]' | sort -k4 -V" # https://linuxize.com/post/check-listening-ports-linux/#check-listening-ports-with-netstat
+alias ports="netstat -tunlp | grep -Pw '^(udp|tcp)' | sort -k4 -V" # https://linuxize.com/post/check-listening-ports-linux/#check-listening-ports-with-netstat
 alias pss="ps -e --format=lstart,pid,cmd --sort=start_time | grep -Fv -e '[' -e '('"
 alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
@@ -1458,10 +1448,6 @@ tsc() {
 	"$cmd" "$@"
 }
 
-# https://stackoverflow.com/a/47948461
-_js_pkg_ver() { < package.json jq -r "[.dependencies, .devDependencies] | add | .$1" | tr -d '^~'; }
-_js_pkgs() { < package.json jq -r '[.dependencies, .devDependencies] | add | keys[]'; }
-
 jimp() {
 	rg -t ts -Io ' from "[^:/]+";$' |
 		sort -u |
@@ -1502,13 +1488,17 @@ jmake() {
 			echo
 		done)
 
-	cat << EOF | tee -a Makefile
-.PHONY: $(<<< "$keys" tr : - | xargs)
-$cmds
-EOF
+	cat <<- EOF | tee -a Makefile
+		.PHONY: $(<<< "$keys" tr : - | xargs)
+		$cmds
+	EOF
 }
 
 jup() {
+	# https://stackoverflow.com/a/47948461
+	_js_pkgs() { < package.json jq -r '[.dependencies, .devDependencies] | add | keys[]'; }
+	_js_pkg_ver() { < package.json jq -r "[.dependencies, .devDependencies] | add | .$1" | tr -d '^~'; }
+
 	: upgrade npm package
 	pkg=$(_js_pkgs | fzf)
 	curr_ver=$(_js_pkg_ver "$pkg")
@@ -1675,8 +1665,6 @@ doslow() {
 
 	if [[ $# -eq 0 ]]; then
 		# devc logs
-
-		# prev=''
 		grep -RPh '\d+/\d+\]' .config/Code/logs/*/window1/exthost/ms-vscode-remote.remote-containers |
 			grep -P '\d{3,}\.\ds$' |
 			cut -d= -f2- |
@@ -1767,20 +1755,6 @@ dodu() {
 
 zd() { zip -jr "${1%/}" "${1%/}"; }                         # zip directory (flat); stripping trailing slash is important
 zin() { < /dev/stdin zip --junk-paths --names-stdin "$1"; } # pipe files from stdin to zip
-
-seconds_since() {
-	case $1 in
-
-	n | new | mtime) find "${2:-.}" -maxdepth 1 -type f -printf "%T+\t%p\n" |
-		sort |
-		cut -f2 ;;
-
-	# https://unix.stackexchange.com/a/22448
-	s | sz | size) find "${2:-.}" -type f -exec du -a {} + |
-		sort -n ;;
-
-	esac
-}
 
 mcd() {
 	: mkdir any number of paths, cd to last
@@ -2171,6 +2145,9 @@ kb() {
 
 		ci https://usevia.app/design
 
+	elif lsusb | grep -qw Elora; then
+		/opt/vial-appimage/vial-appimage.AppImage
+
 	elif lsusb | grep -q Kinesis; then
 		f=/run/media/"$USER"/ADV360/layouts/layout1.txt
 		if [[ ! -f $f ]]; then
@@ -2179,24 +2156,23 @@ kb() {
 		fi
 		vim "$f"
 
-	# elif lsusb | grep -iq elora; then
-	# 	exec /opt/vial-appimage/vial-appimage.AppImage
-
 	fi
 }
 
 tvll() {
 	: truncate vim lsp.log -- should be nvim autocmd, or session startup
-	i=90
+	# TODO: figure out which lsp(s) produce the most logs
+	f=~/.local/state/nvim/lsp.log
+	i=14 # keep 7-14 days (~ 5 MB)
 	while
-		[[ $i -ge 60 ]] &&
+		[[ $i -ge 7 ]] &&
 			d=$(date --date="$i days ago" -I) &&
 			! < ~/.local/state/nvim/lsp.log grep -q "$d"
 	do
-		((i--))
+		((--i))
 	done
-	echo "$d"
-	sed -i -r "1,/$d/d" ~/.local/state/nvim/lsp.log
+	sed -i -r "1,/$d/d" "$f"
+	echo "truncated $f to $d"
 }
 
 _unused() {
