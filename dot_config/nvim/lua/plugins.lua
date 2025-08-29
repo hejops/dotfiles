@@ -579,6 +579,7 @@ require("lazy").setup(
 
 				{
 					"kosayoda/nvim-lightbulb",
+					enabled = false,
 					event = "LspAttach",
 					opts = {
 						autocmd = { enabled = true },
