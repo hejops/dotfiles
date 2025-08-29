@@ -430,15 +430,12 @@ require("lazy").setup(
 
 				"LukasPietzschmann/telescope-tabs", -- do i use this?
 				"nvim-lua/plenary.nvim", -- backend
-				"nvim-telescope/telescope-file-browser.nvim", -- netrw-like
-				"nvim-telescope/telescope-frecency.nvim",
 				-- "MaximilianLloyd/adjacent.nvim",
 				-- "aznhe21/actions-preview.nvim", -- https://github.com/aznhe21/actions-preview.nvim/issues/54
 				-- "fcying/telescope-ctags-outline.nvim",
 				-- "nvim-telescope/telescope-ui-select.nvim", -- https://github.com/nvim-telescope/telescope-ui-select.nvim/issues/44
 				-- "rachartier/tiny-code-action.nvim",
 				-- "tsakirist/telescope-lazy.nvim",
-				{ "AckslD/nvim-neoclip.lua", opts = {} }, -- yank history; do i use this?
 				{ "crispgm/telescope-heading.nvim", ft = "markdown" }, -- headings in markdown
 				{ "hejops/adjacent.nvim", branch = "ignore-binary" },
 			},
