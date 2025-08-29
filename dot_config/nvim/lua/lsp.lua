@@ -135,7 +135,10 @@ local function on_attach(_, bufnr)
 
 	nmap("<leader>i", tele_lsp_incoming_custom, "incoming calls")
 	nmap("<leader>s", telescope_b.lsp_dynamic_workspace_symbols, "document symbols") -- all project files
-	nmap("K", vim.lsp.buf.hover, "hover documentation")
+	nmap("K", function()
+		-- :h vim.lsp.util.open_floating_preview.Opts
+		vim.lsp.buf.hover({ max_width = tonumber(vim.o.colorcolumn) })
+	end, "hover documentation")
 	nmap("R", vim.lsp.buf.rename, "rename")
 
 	nmap("<leader>S", function()
@@ -162,6 +165,7 @@ local servers = { -- {{{
 	marksman = {}, -- why should md ever have any concept of root_dir?
 	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5/nvim/lua/plugins/lsp_init.lua#L90
 	taplo = {},
+	tinymist = {},
 	zls = {},
 
 	clangd = { -- mason versions are usually newer than arch
