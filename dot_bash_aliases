@@ -394,7 +394,7 @@ ytm() {
 # alias bb=gb
 # alias gr=git_root
 alias S=gS
-alias b=git_branch
+alias b=_git_branch
 alias cr=git_root
 alias e=v
 alias gl=git_log
@@ -706,7 +706,7 @@ clocd() {
 #
 # TODO: most of these would be more convenient if done in vim
 
-commit_or_discard() {
+_commit_or_discard() {
 	: returns 0 if committed
 
 	# TODO: fzf better
@@ -979,7 +979,7 @@ gb() { # {{{
 		git diff-index "$1" |
 			grep -P '00000 [AM]	' |
 			cut -f2 |
-			commit_or_discard && git push
+			_commit_or_discard && git push
 	}
 
 	if [[ $# -eq 0 ]]; then
@@ -1062,7 +1062,7 @@ _complete_gb() {
 
 complete -F _complete_gb gb
 
-git_branch() {
+_git_branch() {
 	: switch to existing branch, aliased to b
 	# https://stackoverflow.com/a/1441062
 	# --pretty=format:'%h%x09%an%x09%ad%x09%s' # no color
@@ -1124,7 +1124,7 @@ gmm() {
 
 g,() {
 	git pull && return
-	git diff --name-only "$(_gmaster)..origin/$(_gmaster)" | commit_or_discard
+	git diff --name-only "$(_gmaster)..origin/$(_gmaster)" | _commit_or_discard
 	git pull && git push
 }
 
@@ -2185,10 +2185,11 @@ _unused() {
 			< ~/.bash_history grep -wq "$cmd" && continue
 			< ~/.bash_aliases grep -Pq "^$cmd\(\) \{.+; \}" && continue # ignore one-liners
 			# len=$(< ~/.bash_aliases sed -rn "/^$cmd\(/,/^\}/p" | wc -l)
-			len=$(type "$cmd" | wc -l) # more compact, 'neutralises' linebreaks
-			echo "$len:$cmd"
+			len=$(type "$cmd" | sed '1,3d;$d' | wc -l) # more compact, 'neutralises' linebreaks
+			echo -e "$len\t$cmd"
 		done |
-		sort -n
+		sort -n |
+		colt
 
 	# # scripts explicitly called from cli
 	# \ls ~/scripts | while read -r f; do
