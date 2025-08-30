@@ -16,6 +16,9 @@
 // user_pref("browser.display.background_color.dark", "#444");
 
 // user_pref("browser.sessionstore.privacy_level", 2);
+// user_pref("browser.tabs.tabMaxWidth", 150);
+// user_pref("browser.urlbar.placeholderName", "fjsdkl"); // Search with XXX or enter address
+// user_pref("browser.urlbar.placeholderName.private", "fjsdkl");
 // user_pref("extensions.pendingOperations", false); // false prevents scripted extension install?
 user_pref("accessibility.browsewithcaret", true);
 user_pref("accessibility.typeaheadfind.autostart", false);
@@ -25,6 +28,7 @@ user_pref("app.normandy.enabled", false);
 user_pref("app.shield.optoutstudies.enabled", false);
 user_pref("beacon.enabled", false);
 user_pref("browser.aboutConfig.showWarning", false);
+user_pref("browser.aboutwelcome.enabled", false); // https://support.mozilla.org/en-US/questions/1296613
 user_pref("browser.autofocus", false);
 user_pref("browser.bookmarks.defaultLocation", "unfiled");
 user_pref("browser.bookmarks.editDialog.confirmationHintShowCount", 1);
@@ -45,8 +49,6 @@ user_pref("browser.contentblocking.introCount", 20);
 user_pref("browser.ctrlTab.migrated", true);
 user_pref("browser.ctrlTab.recentlyUsedOrder", false);
 user_pref("browser.discovery.enabled", false);
-user_pref("browser.display.background_color", "#282828");
-user_pref("browser.display.background_color.dark", "#282828");
 user_pref("browser.display.use_document_fonts", 0);
 user_pref("browser.displayedE10SNotice", 4);
 user_pref("browser.download.always_ask_before_handling_new_types", true);
@@ -67,10 +69,11 @@ user_pref("browser.hotfix.v20141211.applied", true);
 user_pref("browser.link.open_newwindow.restriction", 0);
 user_pref("browser.messaging-system.whatsNewPanel.enabled", false);
 user_pref("browser.migrated-sync-button", true);
+user_pref("browser.ml.chat.enabled", false);
 user_pref("browser.newtab.extensionControlled", true);
 user_pref("browser.newtab.privateAllowed", true);
 user_pref("browser.newtab.url", "about:blank");
-user_pref("browser.newtabpage.activity-stream.asrouter.providers.cfr", "null");
+user_pref("browser.newtabpage.activity-stream.asrouter.providers.cfr", "null"); // TODO: null?
 user_pref("browser.newtabpage.activity-stream.asrouter.providers.message-groups", "null"); // biome-ignore format:x
 user_pref("browser.newtabpage.activity-stream.asrouter.providers.messaging-experiments", "null"); // biome-ignore format:x
 user_pref("browser.newtabpage.activity-stream.asrouter.providers.whats-new-panel", "null"); // biome-ignore format:x
@@ -115,22 +118,25 @@ user_pref("browser.sessionstore.max_windows_undo", 0);
 user_pref("browser.sessionstore.restore_pinned_tabs_on_demand", true);
 user_pref("browser.shell.checkDefaultBrowser", true);
 user_pref("browser.shell.didSkipDefaultBrowserCheckOnFirstRun", true);
+user_pref("browser.startup.couldRestoreSession.count", -1); // https://support.mozilla.org/en-US/questions/1423347
 user_pref("browser.startup.homepage", "about:blank");
 user_pref("browser.startup.homepage_override.mstone", "ignore");
 user_pref("browser.startup.page", 3); // restore previous sessions
 user_pref("browser.tabs.allowTabDetach", false); // only for native tab bar; for TST, see https://github.com/piroor/treestyletab/issues/2629#issuecomment-1027715577
 user_pref("browser.tabs.closeWindowWithLastTab", false);
 user_pref("browser.tabs.drawInTitlebar", false);
-user_pref("browser.tabs.remote.autostart", false);
+user_pref("browser.tabs.remote.autostart", false); // disable e10s
 user_pref("browser.tabs.remote.autostart.2", false);
-user_pref("browser.tabs.tabMaxWidth", 150);
 user_pref("browser.tabs.warnOnClose", false);
 user_pref("browser.tabs.warnOnOpen", false);
 user_pref("browser.toolbarbuttons.introduced.pocket-button", true);
 user_pref("browser.toolbars.bookmarks.visibility", "never");
 user_pref("browser.topsites.migratedToRemoteSetting.id", 1);
+user_pref("browser.translations.automaticallyPopup", false);
+user_pref("browser.translations.enable", false);
+user_pref("browser.translations.panelShown", false);
 user_pref("browser.turbo.enabled", true);
-user_pref("browser.uidensity", 1);
+user_pref("browser.uidensity", 1); // compact
 user_pref("browser.uitour.enabled", false);
 user_pref("browser.urlbar.autocomplete.enabled", false);
 user_pref("browser.urlbar.clickSelectsAll", true);
@@ -139,8 +145,6 @@ user_pref("browser.urlbar.matchBuckets", "general:5,suggestion:Infinity");
 user_pref("browser.urlbar.maxRichResults", 0);
 user_pref("browser.urlbar.openViewOnFocus", false);
 user_pref("browser.urlbar.openintab", true);
-user_pref("browser.urlbar.placeholderName", "Google");
-user_pref("browser.urlbar.placeholderName.private", "Google");
 user_pref("browser.urlbar.quantumbar", false);
 user_pref("browser.urlbar.searchSuggestionsChoice", false);
 user_pref("browser.urlbar.shortcuts.bookmarks", false);
@@ -164,6 +168,7 @@ user_pref("content.interrupt.parsing", true);
 user_pref("content.max.tokenizing.time", 2250000);
 user_pref("content.switch.threshold", 750000);
 user_pref("datareporting.healthreport.uploadEnabled", false);
+user_pref("datareporting.policy.dataSubmissionPolicyBypassNotification", true); // https://github.com/Carm01/Mozilla.cfg/blob/07118683d0ef3037a5977a5e2f34e92c297f3b4d/mozilla.cfg#L29
 user_pref("devtools.aboutdebugging.collapsibilities.processes", false);
 user_pref("devtools.chrome.enabled", true);
 user_pref("devtools.command-button-rulers.enabled", true);
@@ -192,8 +197,9 @@ user_pref("devtools.webconsole.input.editorOnboarding", false);
 user_pref("devtools.webconsole.timestampMessages", true);
 user_pref("devtools.webextensions.https-everywhere-eff@eff.org.enabled", true);
 user_pref("distribution.iniFile.exists.value", true);
-user_pref("doh-rollout.balrog-migration-done", true);
+user_pref("doh-rollout.balrog-migration-done", true); // https://wiki.mozilla.org/Trusted_Recursive_Resolver
 user_pref("doh-rollout.doneFirstRun", true);
+user_pref("dom.apps.lastUpdate.mstone", "48.0.2"); // https://hg-edge.mozilla.org/mozilla-central/rev/03f0242deea7
 user_pref("dom.apps.reset-permissions", true);
 user_pref("dom.battery.enabled", false);
 user_pref("dom.event.clipboardevents.enabled", false);
@@ -211,6 +217,8 @@ user_pref("extensions.e10s.rollout.policy", "50allmpc");
 user_pref("extensions.e10sBlockedByAddons", false);
 user_pref("extensions.e10sMultiBlockedByAddons", false);
 user_pref("extensions.etp_search_volume_study.channel_cohort_prefix", "c");
+user_pref("extensions.formautofill.addresses.enabled", false);
+user_pref("extensions.formautofill.creditCards.enabled", false);
 user_pref("extensions.fxmonitor.firstAlertShown", true);
 user_pref("extensions.getAddons.databaseSchema", 6);
 user_pref("extensions.incognito.migrated", true);
@@ -244,7 +252,7 @@ user_pref("extensions.ui.experiment.hidden", true);
 user_pref("extensions.ui.extension.hidden", false);
 user_pref("extensions.ui.locale.hidden", true);
 user_pref("extensions.ui.plugin.hidden", false);
-user_pref("extensions.unifiedExtensions.enabled", false); // FF 109
+user_pref("extensions.unifiedExtensions.enabled", false); // https://connect.mozilla.org/t5/discussions/version-109-0-new-extensions-icon/td-p/23072
 user_pref("extensions.webcompat.enable_picture_in_picture_overrides", true);
 user_pref("extensions.webcompat.enable_shims", true);
 user_pref("extensions.webcompat.perform_injections", true);
@@ -266,7 +274,6 @@ user_pref("font.name.serif.ja", "Source Han Sans JP");
 user_pref("font.name.serif.x-western", "Source Serif 4"); // native reader ignores these settings!
 user_pref("full-screen-api.warning.timeout", 0);
 user_pref("gecko.handlerService.migrated", true);
-user_pref("gecko.mstone", "48.0.2");
 user_pref("general.autoScroll", true);
 user_pref("general.smoothScroll.mouseWheel.durationMaxMS", 150);
 user_pref("general.smoothScroll.mouseWheel.durationMinMS", 75);
@@ -291,8 +298,9 @@ user_pref("media.peerconnection.enabled", false);
 user_pref("media.peerconnection.ice.default_address_only", true);
 user_pref("media.peerconnection.ice.no_host", true);
 user_pref("media.videocontrols.picture-in-picture.video-toggle.enabled", false);
+user_pref("media.webspeech.synth.enabled", false);
 user_pref("mousewheel.min_line_scroll_amount", 40);
-user_pref("network.IDN_show_punycode", true);
+user_pref("network.IDN_show_punycode", true); // https://kb.mozillazine.org/Network.IDN_show_punycode
 user_pref("network.cookie.cookieBehavior", 1);
 user_pref("network.cookie.prefsMigrated", true);
 user_pref("network.dns.disablePrefetch", true);
@@ -314,6 +322,7 @@ user_pref("network.protocol-handler.warn-external.apt", true);
 user_pref("network.protocol-handler.warn-external.apt+http", true);
 user_pref("network.proxy.type", 2);
 user_pref("network.trr.blocklist_cleanup_done", true);
+user_pref("network.trr.mode", 5); // don't let cloudflare resolve dns -- https://wiki.mozilla.org/Trusted_Recursive_Resolver
 user_pref("nglayout.initialpaint.delay", 0);
 user_pref("pdfjs.defaultZoomValue", "page-fit");
 user_pref("pdfjs.enableScripting", false);
@@ -367,11 +376,12 @@ user_pref("privacy.userContext.enabled", true);
 user_pref("privacy.userContext.extension", "tridactyl.vim.betas@cmcaine.co.uk");
 user_pref("privacy.userContext.longPressBehavior", 2);
 user_pref("privacy.userContext.ui.enabled", true);
-user_pref("reader.color_scheme", "dark");
+user_pref("reader.color_scheme", "dark"); // i don't use reader mode any more
 user_pref("reader.content_width", 9);
 user_pref("reader.font_size", 8);
 user_pref("reader.font_type", "serif");
 user_pref("reader.line_height", 6);
+user_pref("reader.parse-on-load.enabled", false);
 user_pref("security.dialog_enable_delay", 0);
 user_pref("security.sandbox.content.level", 3);
 user_pref("services.blocklist.clock_skew_seconds", 0);
@@ -394,6 +404,7 @@ user_pref("toolkit.scrollbox.clickToScroll.scrollDelay", 0);
 user_pref("toolkit.scrollbox.smoothScroll", false);
 user_pref("toolkit.telemetry.pioneer-new-studies-available", true);
 user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);
+user_pref("trailhead.firstrun.branches", "nofirstrun-empty");
 user_pref("tridactyl.unfixedamo_removed", true);
 user_pref("ui.prefersReducedMotion", 1);
 user_pref("ui.submenuDelay", 0);
@@ -405,19 +416,8 @@ user_pref("xpinstall.whitelist.add", "");
 user_pref("xpinstall.whitelist.add.180", "");
 user_pref("xpinstall.whitelist.required", false);
 
-// https://support.mozilla.org/en-US/questions/1423347
-// https://support.mozilla.org/en-US/questions/1296613
-user_pref("browser.startup.couldRestoreSession.count", -1);
-user_pref("trailhead.firstrun.branches", "nofirstrun-empty");
-user_pref("browser.aboutwelcome.enabled", false);
-// https://github.com/Carm01/Mozilla.cfg/blob/07118683d0ef3037a5977a5e2f34e92c297f3b4d/mozilla.cfg#L29
-user_pref("datareporting.policy.dataSubmissionPolicyBypassNotification", true);
-user_pref("browser.ml.chat.enabled", false);
-user_pref("reader.parse-on-load.enabled", false);
-user_pref("media.webspeech.synth.enabled", false);
-user_pref("browser.translations.automaticallyPopup", false);
-user_pref("browser.translations.enable", false);
-user_pref("browser.translations.panelShown", false);
+user_pref("browser.display.background_color", "#282828");
+user_pref("browser.display.background_color.dark", "#282828");
 
 // none of these work
 // user_pref("browser.search.defaultenginename", "DuckDuckGo");
