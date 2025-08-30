@@ -770,7 +770,6 @@ require("lazy").setup(
 						"gomod",
 						"gosum",
 						"html",
-						"htmldjango",
 						"javascript", -- includes jsx (probably)
 						"jsdoc",
 						"json",
@@ -779,6 +778,7 @@ require("lazy").setup(
 						"markdown",
 						"markdown_inline",
 						"muttrc",
+						"nginx",
 						"python",
 						"rasi",
 						"rust",
@@ -790,6 +790,7 @@ require("lazy").setup(
 						"vimdoc",
 						"yaml",
 						"zig",
+						-- "htmldjango",
 						-- "latex", -- requires tree-sitter-cli
 						-- "scheme",
 					},
