@@ -1,7 +1,12 @@
--- Lazy Startuptime should remain under 200 ms
+-- Lazy Startuptime should remain under 200 ms (opening a file in a repo)
 -- (need a few good benchmark files, e.g. md, py, sh)
 
 -- :Lazy profile, filter > 10 ms
+
+-- https://lazy.folke.io/spec
+-- https://lazy.folke.io/configuration
+
+local in_git = require("util"):command_ok("git rev-parse --is-inside-work-tree 2>/dev/null")
 
 local columns = 120 -- lualine, git-blame
 
@@ -20,8 +25,7 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 local cfg = { -- {{{
-	-- https://github.com/folke/lazy.nvim#%EF%B8%8F-configuration
-	-- https://github.com/ecosse3/nvim/blob/e8418eb65af4471891ea9a5b74a94205804c49aa/lua/config/lazy.lua#L14C41-L34C2
+	-- https://github.com/ecosse3/nvim/blob/e8418eb65af447/lua/config/lazy.lua#L14C41-L34C2
 	checker = {
 		enabled = true,
 		notify = false,
@@ -60,24 +64,24 @@ require("lazy").setup(
 		"tpope/vim-fugitive",
 		"tpope/vim-repeat",
 		"tpope/vim-surround",
-		{ "akinsho/git-conflict.nvim", version = "*", opts = {} }, -- TODO: only if file contains conflict markers?
 		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} },
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
 
 		-- }}}
 
-		"terrastruct/d2-vim",
 		-- "martineausimon/nvim-lilypond-suite",
 		-- { "tadmccorkle/markdown.nvim", ft = "markdown", opts = { mappings = false } }, -- https://github.com/tadmccorkle/markdown.nvim?tab=readme-ov-file#usage
+		{ "akinsho/git-conflict.nvim", version = "*", opts = {}, cond = in_git }, -- TODO: only if file contains conflict markers (/repo has conflicts)?
 		{ "ecridge/vim-kinesis", ft = "kinesis" }, -- KA2, *_qwerty.txt
 		{ "jbyuki/quickmath.nvim", cmd = { "Quickmath" } },
 		{ "johnelliott/vim-kinesis-kb900", ft = "kb900" }, -- KA FP (and 360?), layout*.txt
 		{ "mbbill/undotree", cmd = { "UndoTreeToggle" } },
 		{ "rhysd/vim-go-impl", ft = "go" }, -- :GoImpl m Model tea.Model (requires https://github.com/josharian/impl)
+		{ "terrastruct/d2-vim", ft = "d2" },
 		{ "tpope/vim-dispatch", cmd = { "Dispatch", "Make" } }, -- run async processes
 		{ "tpope/vim-dotenv", cmd = { "Dotenv" } },
 		{ "tridactyl/vim-tridactyl", ft = "tridactyl" }, -- syntax highlighting
-		{ "wansmer/treesj", opts = {}, cmd = { "TSJToggle", "TSJSplit", "TSJJoin" } }, -- very slow
+		{ "wansmer/treesj", opts = {}, cmd = { "TSJToggle", "TSJSplit", "TSJJoin" } }, -- very slow; TODO: <leader>j conflicts with trouble
 		{ "yochem/jq-playground.nvim", ft = "json" },
 
 		{
@@ -109,7 +113,7 @@ require("lazy").setup(
 		},
 
 		{
-			"ray-x/lsp_signature.nvim",
+			"ray-x/lsp_signature.nvim", -- highlight func args in insert mode
 			lazy = true,
 			-- event = "LspAttach", -- the config func will NOT be run (properly), so using an event is pointless
 			-- config = function()
@@ -142,8 +146,8 @@ require("lazy").setup(
 		},
 
 		{
-			"FabijanZulj/blame.nvim",
-			lazy = false,
+			"FabijanZulj/blame.nvim", -- full blame view (like gh/gl)
+			cond = in_git,
 			config = function()
 				require("blame").setup({
 					date_format = "%Y-%m-%d",
@@ -188,16 +192,6 @@ require("lazy").setup(
 				})
 			end,
 		},
-
-		-- {
-		-- 	"oxy2dev/markview.nvim",
-		-- 	cmd = { "Markview" },
-		-- 	config = function()
-		-- 		require("markview").setup({ initial_state = true })
-		-- 		vim.cmd("Markview")
-		-- 		-- vim.cmd("Markview disableAll")
-		-- 	end,
-		-- },
 
 		{ -- mason-null-ls {{{
 			-- https://roobert.github.io/2022/12/03/Extending-Neovim/#neovim-plugins-which-solve-problems
@@ -250,6 +244,9 @@ require("lazy").setup(
 		{ -- lualine {{{
 			-- https://github.com/nvim-lualine/lualine.nvim#default-configuration
 			"nvim-lualine/lualine.nvim",
+			-- base: < 0.1 ms
+			-- +init: 5-6 ms
+			-- +git: 10-11 ms
 
 			opts = function(_, opts)
 				-- -- if vim.api.nvim_buf_get_name(0):match("^term") then
@@ -282,7 +279,7 @@ require("lazy").setup(
 					-- https://github.com/nvim-lualine/lualine.nvim#component-specific-options
 
 					lualine_a = {
-						require("git").foo,
+						require("git").foo, -- TODO: ~ 5 ms
 					},
 
 					lualine_b = {
@@ -428,7 +425,7 @@ require("lazy").setup(
 			dependencies = {
 				-- https://github.com/nvim-telescope/telescope.nvim/wiki/Extensions#different-plugins-with-telescope-integration
 
-				"LukasPietzschmann/telescope-tabs", -- do i use this?
+				"LukasPietzschmann/telescope-tabs", -- do i use this? TODO: cond = >1 tab open
 				"nvim-lua/plenary.nvim", -- backend
 				-- "MaximilianLloyd/adjacent.nvim",
 				-- "aznhe21/actions-preview.nvim", -- https://github.com/aznhe21/actions-preview.nvim/issues/54
@@ -538,7 +535,7 @@ require("lazy").setup(
 		}, -- }}}
 		{ -- git-blame {{{
 			"f-person/git-blame.nvim",
-
+			cond = in_git,
 			opts = {
 				-- https://github.com/f-person/git-blame.nvim/blob/master/lua/gitblame/config.lua
 
@@ -635,69 +632,9 @@ require("lazy").setup(
 				"cassin01/cmp-gitcommit",
 			},
 		}, -- }}}
-		{ -- nvim-dap {{{
-			"mfussenegger/nvim-dap",
-			dependencies = {
-				"mfussenegger/nvim-dap-python",
-				"thehamsta/nvim-dap-virtual-text",
-			},
-			-- ft = { "python" },
-			lazy = true,
-			config = function()
-				-- https://github.com/mfussenegger/dotfiles/blob/da93d1f7f52ea50b00199696a6977dd70a84736e/vim/dot-config/nvim/lua/me/dap.lua
-
-				-- i am usually forced to use vsc*de for debugging anyway
-				if true then
-					return
-				end
-
-				local dap = require("dap")
-
-				-- vim.keymap.set({ "n", "v" }, "<leader>dh", require("dap.ui.widgets").hover)
-				vim.keymap.set("n", "<leader>dj", dap.continue)
-				vim.keymap.set("n", "<leader>dt", dap.toggle_breakpoint)
-				-- vim.keymap.set({ "n", "v" }, "<leader>dp", require("dap.ui.widgets").preview)
-
-				-- -- race condition: when calling continue and preview sequentially, continue
-				-- -- will advance to next breakpoint, but because preview is 'faster', it will
-				-- -- display whichever the line the cursor was at when `continue` was called
-				-- -- (usually not useful). as a result, preview must be called separately, which
-				-- -- is annoying.
-				-- vim.keymap.set("n", "<leader>dj", function()
-				-- 	dap.continue()
-				-- 	require("dap.ui.widgets").preview() -- more useful than hover since it doesn't grab focus, and the split is always reused
-				-- end)
-
-				vim.keymap.set("n", "<leader>dr", dap.repl.open) -- not terribly useful?
-
-				vim.keymap.set("n", "<leader>di", dap.step_into) -- https://stackoverflow.com/a/3580851
-				vim.keymap.set("n", "<leader>do", dap.step_out)
-				vim.keymap.set("n", "<leader>dv", dap.step_over)
-
-				-- https://github.com/mfussenegger/nvim-dap/wiki/Debug-Adapter-installation#python
-				-- https://github.com/mfussenegger/nvim-dap-python?tab=readme-ov-file#usage
-
-				require("dap-python").setup("/usr/bin/python3") -- `python3 -m debugpy --version` must work in the shell
-
-				dap.configurations.python = {
-					{
-						type = "python",
-						request = "launch",
-						name = "Launch file",
-						program = "${file}",
-						-- pythonPath = "/usr/bin/python",
-					},
-				}
-
-				require("nvim-dap-virtual-text").setup({
-					virt_text_pos = "eol", -- inline is very hard to read
-					-- note: current value will always be placed at the initial declaration
-				})
-			end,
-		}, -- }}}
-
 		{ -- gitsigns {{{
 			"lewis6991/gitsigns.nvim",
+			cond = in_git,
 			opts = {
 				-- See `:help gitsigns.txt`
 				signs = {
