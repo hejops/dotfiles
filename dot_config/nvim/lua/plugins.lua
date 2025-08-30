@@ -6,7 +6,8 @@
 -- https://lazy.folke.io/spec
 -- https://lazy.folke.io/configuration
 
-local in_git = require("util"):command_ok("git rev-parse --is-inside-work-tree 2>/dev/null")
+-- local in_git = require("util"):command_ok("git rev-parse --is-inside-work-tree 2>/dev/null") -- messes with window resize
+local in_git = true
 
 local columns = 120 -- lualine, git-blame
 
