@@ -64,6 +64,9 @@ _base_completer() {
 # sudo journalctl --vacuum-time=3d                                                 # truncate
 # sudo sed -i -r 's/#SystemMaxUse.+/SystemMaxUse=100M/' /etc/systemd/journald.conf # set max (should be done on arch install)
 
+# TODO: SystemMaxUse only affects system.journal? does not prevent
+# /var/log/journal from filling up
+
 # docker is disabled for now, because i literally never use it
 # sudo systemctl disable docker.service
 
@@ -153,7 +156,7 @@ alias rab='exec yazi "$HDD/books"'
 alias rad='exec yazi "$SLSK/complete"' # TODO: investigate `ya pub`
 alias rag='exec yazi "$HDD/guitar"'
 alias ram='exec yazi "$MU"'
-alias rat='exec yazi "$HDD/torrent" "$HDD/movies"'
+alias rat='exec yazi "$HDD/movies"' # "$HDD/torrent"
 
 # alias dA="dc artist:"
 # alias dc="discogs_collection filter"
@@ -489,24 +492,21 @@ gh() {
 	url=${repo%*.git}
 	url=$(_git_http "$url")
 	echo "$url"
-	# ubuntu is a pita:
-	# gio: ...: Failed to find default application for content type ‘text/html’
-	xdg-open "$url" ||
-		firefox "$url"
+	xdg-open "$url"
 }
 
-gd() {
-	if [[ $# -eq 0 ]]; then
-		git diff
-	elif
-		# file with no local changes (or hash?)
-		[[ $# -eq 1 ]] && git diff --exit-code "$1" > /dev/null
-	then
-		git diff HEAD^^ "$1" # check against last commit
-	else
-		git diff "$@"
-	fi
-}
+# gd() {
+# 	if [[ $# -eq 0 ]]; then
+# 		git diff
+# 	elif
+# 		# file with no local changes (or hash?)
+# 		[[ $# -eq 1 ]] && git diff --exit-code "$1" > /dev/null
+# 	then
+# 		git diff HEAD^^ "$1" # check against last commit
+# 	else
+# 		git diff "$@"
+# 	fi
+# }
 
 # }}}
 # git history {{{
@@ -1451,6 +1451,7 @@ tsc() {
 }
 
 jimp() {
+	: add all found dependencies -- use with caution
 	rg -t ts -Io ' from "[^:/]+";$' |
 		sort -u |
 		cut -d'"' -f2 |
@@ -1843,11 +1844,11 @@ ajoin() {
 }
 
 dehtml() {
-	# https://stackoverflow.com/a/19878198
-	< /dev/stdin sed -e 's/<br[^>]*>/\n/g; s/<[^>]*>//g' |
-		# recode xml..utf8 |
-		# https://stackoverflow.com/a/13161719
-		perl -MHTML::Entities -pe 'decode_entities($_);'
+	< /dev/stdin perl -MHTML::Entities -pe '
+			binmode(STDOUT, ":encoding(UTF-8)");	# https://stackoverflow.com/a/47940728
+			s/<br[^>]*>/\n/g; s/<[^>]*>//g;		# https://stackoverflow.com/a/19878198
+			decode_entities($_);			# https://stackoverflow.com/a/13161719
+		'
 }
 
 plot() {
@@ -2317,4 +2318,16 @@ scan() {
 	done
 	pdfunite "$(find . -name "$f-*" | sort -V)" "$f.pdf"
 	rm -I "$f"-*
+}
+
+gcpd() {
+	# german cities by population density
+	curl -sL https://www.citypopulation.de/en/germany/cities/ |
+		grep City |
+		sed -r 's|td>|&\t|g' |
+		dehtml | #2> /dev/null |
+		tr -d , |
+		awk -F$'\t' '{print $8/$9,$3,$1,$8,$9}' |
+		sort -n |
+		colt
 }
