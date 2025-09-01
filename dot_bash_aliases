@@ -743,6 +743,7 @@ commit_or_discard() {
 		then
 			committed=0
 		else
+			# TODO: checkout fails if f is staged; must gA
 			git checkout -- "$f"
 		fi
 	done < /dev/stdin
@@ -1186,7 +1187,7 @@ gcon() { # {{{
 			return
 		fi
 		echo "Unresolved conflicts remaining!"
-		_git_get_conflicts | xargs nvim -p
+		_git_get_conflicts | xargs nvim -p +'/\v^[<=>]{7}'
 	done
 
 	_git_get_conflicts | xargs git add
@@ -1626,16 +1627,16 @@ jqt() {
 
 	# query="[$(echo "$@" | sjoin ,)]"
 
+	>&2 echo "${fields[@]}" | tr ' ' '\t'
+
 	# note: jq knows how to if read from stdin if no file passed
-	{
-		echo "${fields[@]}" | tr ' ' '\t'
 
-		# this is the 'pure' way to do it (select and format are 2 different steps)
-		# < /dev/stdin jq "[$query]" |
-		# 	jq -r 'map(tostring) | @tsv'
+	# this is the 'pure' way to do it (select and format are 2 different steps)
+	# < /dev/stdin jq "[$query]" |
+	# 	jq -r 'map(tostring) | @tsv'
 
-		< /dev/stdin jq -r "[$query] | @tsv"
-	} | colt
+	< /dev/stdin jq -r "[$query] | @tsv" |
+		colt
 
 }
 
