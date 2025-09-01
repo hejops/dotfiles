@@ -310,7 +310,7 @@ local servers = { -- {{{
 
 		-- if nil, reverts to default value
 		-- root_dir is important for loading tsconfig.json correctly!
-		root_dir = require("util"):root_directory(), -- .. "/src",
+		root_dir = require("util"):root_directory() or ".", -- .. "/src",
 
 		settings = {
 			javascript = { inlayHints = js_ts_hints },
