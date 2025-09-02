@@ -439,29 +439,31 @@ vim.keymap.set("n", "<leader>?", telescope_b.keymaps, { desc = "keymaps" })
 -- git {{{
 
 ---@param f function
+---@param err string?
 ---@return function
-local function wrap(f)
+local function wrap(f, err)
 	return function()
-		pcall(f)
+		if not pcall(f) then
+			print(err or "unknown error")
+		end
 	end
 end
 
 vim.keymap.set("n", "<leader>e", wrap(telescope_b.git_files), { desc = "git ls-files" }) -- errors if not in git repo -- TODO: fallback to telescope_b.find_files
-vim.keymap.set("n", "<leader>gB", telescope_b.git_branches, { desc = "git branches" }) -- rare (run b in bash instead)
+vim.keymap.set("n", "gs", telescope_b.git_status, { desc = "git status" })
 
-for _, k in pairs({
-	"<leader>gS", -- TODO: figure out which is most convenient
-	"gS",
-	"gas",
-	"gs",
-}) do
-	vim.keymap.set("n", k, telescope_b.git_status, { desc = "git status" })
-end
+-- switching branches within vim would be ideal, but ultimately, dealing with
+-- unstaged/uncommitted files before a branch switch will always be annoying,
+-- no matter where we are. furthermore, the `git log --oneline` preview cannot
+-- be overridden, so we are stuck with the ugly graph (which i never care
+-- about)
+vim.keymap.set("n", "<leader>gb", telescope_b.git_branches, { desc = "git branches" }) -- rare (run b in bash instead)
 
 local git_log_cmd = {
 	"git",
 	"log",
-	-- -- oneline lacks date, but it is much harder to impl decorate in pretty
+	-- --oneline lacks date, but --decorate is far more important than date, and
+	-- it is much harder to impl decoration via --pretty
 	-- "--pretty=%h \t %ad \t %s",
 	-- "--abbrev-commit",
 	"--oneline",
@@ -481,7 +483,6 @@ local function git_log()
 	})
 end
 
-vim.keymap.set("n", "<leader>gl", git_log, { desc = "git log (current branch only)" })
 vim.keymap.set("n", "gl", git_log, { desc = "git log (current branch only)" })
 
 vim.keymap.set("n", "gL", function()
@@ -493,10 +494,9 @@ end, { desc = "git log (current file only)" })
 -- requires user input (or visual selection):
 -- git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S
 
--- vim.keymap.set("n", "gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" }) -- :h gs is laughably useless
 vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
-vim.keymap.set("n", "<leader>gU", ":Git checkout -- %", { desc = "discard all uncommitted changes" }) -- note: need confirm
 vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" })
+vim.keymap.set("n", "<leader>gu", ":Git checkout -- %", { desc = "discard all uncommitted changes" }) -- note: need confirm
 vim.keymap.set("n", "g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
 vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
