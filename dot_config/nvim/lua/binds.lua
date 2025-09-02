@@ -23,6 +23,7 @@ vim.keymap.set("n", "!", ":!")
 vim.keymap.set("n", "-", "~h") -- +/- are just j/k
 vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
 vim.keymap.set("n", "<c-c>", "<nop>")
+vim.keymap.set("n", "<c-e>", "<nop>")
 vim.keymap.set("n", "<c-z>", "<nop>")
 vim.keymap.set("n", "<tab>", "<nop>") -- tab may be equivalent to c-i
 vim.keymap.set("n", "G", "G$zz") -- because of the InsertEnter zz autocmd
@@ -48,8 +49,8 @@ vim.keymap.set("v", "P", '"_dP') -- default behaviour is to just paste above sel
 vim.keymap.set("v", "x", '"_x')
 
 vim.keymap.set("n", "Z?", function()
-	-- close all terminals, possibly dangerous? safe behaviour is to switch to
-	-- first tab containing term
+	-- close all terminals (:wqa does not close terminals). destructive if
+	-- terminal output is valuable, but this is rarely the case
 	for _, b in pairs(vim.api.nvim_list_bufs()) do
 		if vim.api.nvim_buf_get_name(b):match("^term") then
 			vim.cmd("bd! " .. b)
@@ -77,18 +78,13 @@ vim.keymap.set("n", "}", ":keepjumps normal! }<cr>zz", { silent = true })
 -- TODO: close all other splits (not tabs)
 
 -- default r behaviour is useless (cl)
--- nmap ZF zfaft{blDkp$%bli<cR><esc>ld0<cR>zl|	" add folds around a func, like a real man, in any language
 -- tabs
--- vim.keymap.set("n", "<c-m>", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
--- vim.keymap.set("n", "rH", ":silent! tabm -1<cr>", { silent = true }) -- do i need this?
--- vim.keymap.set("n", "rL", ":silent! tabm +1<cr>", { silent = true })
--- vim.keymap.set("n", "re", ':silent! exe "tabn ".g:lasttab<cr>', { silent = true })
-vim.keymap.set("n", "<c-;>", "g<tab>")
 vim.keymap.set("n", "<c-h>", "gT")
 vim.keymap.set("n", "<c-l>", "gt")
+vim.keymap.set("n", "<c-r>", "g<tab>") -- moving tabs left/right is an antipattern; close them instead
 vim.keymap.set("n", "r", "<nop>")
-vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- unload all other buffers/tabs -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
-vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other buffers/tabs (but not delete)
+vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- close all other tabs and unload buffers -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
+vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other tabs (without unloading buffers)
 
 -- vim.keymap.set("t", "<c-.>", "<c-\\><c-n>gt") -- navigate tab from term; c-h/c-l are taken by readline
 -- vim.keymap.set("t", "<c-x>", "<c-\\><c-n>gT") -- not very ergonomic tbh
@@ -115,7 +111,6 @@ local last_win = nil
 -- check all bufs for a terminal. if one is found, get the tab (and window) it
 -- belongs to, and switch to it. in other words, there can effectively only
 -- ever be a single terminal in nvim
----@param cmd string?
 local function open_terminal()
 	for _, t in pairs(vim.api.nvim_list_tabpages()) do
 		-- if current tab contains a term, close it OR go to it
@@ -884,6 +879,7 @@ local function exec() -- {{{
 		gleam = "gleam run",
 		rust = "RUST_BACKTRACE=1 cargo run", -- TODO: if vim.fn.line(".") >= line num of first match of '#[cfg(test)]', run 'cargo test' instead
 
+		-- d2 = string.format("d2 --stdout-format=ascii '%s' -", curr_file), -- D2Preview more convenient
 		-- jq = string.format("jq -f %s %s", curr_file, curr_file:gsub(".jq", ".json")),
 		-- jsonl = "jq -r < " .. curr_file, -- -f just waits for stdin for some reason
 		-- lua = "luafile " .. curr_file,
@@ -892,10 +888,12 @@ local function exec() -- {{{
 		dhall = "dhall-to-json --file " .. curr_file,
 		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 		elvish = "elvish " .. curr_file,
+		fennel = "fennel " .. curr_file,
 		haskell = "runghc " .. curr_file,
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
 		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
+		lisp = "sbcl --script " .. curr_file,
 		ocaml = "ocaml " .. curr_file,
 		ruby = "ruby " .. curr_file,
 		sh = "env bash " .. curr_file,
