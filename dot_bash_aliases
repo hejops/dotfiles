@@ -1141,6 +1141,17 @@ gcon() { # {{{
 
 	: resolve conflicts, if any, and merge
 
+	if
+		# only conflict is lock file
+		! git status --porcelain |
+			grep ^UU |
+			grep -vx 'UU pnpm-lock.yaml'
+	then
+		pnpm install
+		_git_get_conflicts | xargs git add
+		git commit -v
+	fi
+
 	_git_has_conflicts() {
 		rg -q --hidden '^[<=>]{7}'
 		return $?
