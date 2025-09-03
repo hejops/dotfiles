@@ -595,7 +595,8 @@ vim.keymap.set("n", "<leader>go", function()
 	local url = string.format( --
 		"%s/%s/%s/%s#L%s",
 		base,
-		base:match("gitlab") and "/-/tree/" or "/blob/",
+		-- base:match("gitlab") and "/-/tree/" or "/blob/",
+		"/blame/",
 		branch,
 		path,
 		vim.fn.line(".") -- note: may not be reliable
