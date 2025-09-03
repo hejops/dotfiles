@@ -7,9 +7,14 @@ _base_completer() {
 	# https://mill-build.org/blog/14-bash-zsh-completion.html#_conclusion
 	# https://www.gnu.org/software/bash/manual/html_node/A-Programmable-Completion-Example.html
 
-	local f=$1                   # func(string) string
-	((COMP_CWORD > 1)) && return # actual func should only accept 1 arg
+	# fallback to default file completion after 1st completion
+	# https://stackoverflow.com/a/22827323
+	if ((COMP_CWORD > 1)); then
+		COMPREPLY=()
+		return
+	fi
 
+	local f=$1 # func(string) string
 	_gen() {
 		local idx=$1
 		shift
@@ -52,10 +57,10 @@ _base_completer() {
 }
 
 _complete_make() {
-	f() { < Makefile grep -Po "^${1:-[a-z]}[a-z-]*:" | tr -d :; }
+	f() { < ./Makefile grep -Po "^${1:-[a-z]}[a-z-]*:" | tr -d :; }
 	_base_completer f
 }
-complete -F _complete_make make
+complete -o bashdefault -o default -F _complete_make make # not sure if option order is significant
 
 # startup {{{
 
