@@ -7,6 +7,8 @@ _base_completer() {
 	# https://mill-build.org/blog/14-bash-zsh-completion.html#_conclusion
 	# https://www.gnu.org/software/bash/manual/html_node/A-Programmable-Completion-Example.html
 
+	# TODO: if n args >=1, use default file completer
+
 	local f=$1                   # func(string) string
 	((COMP_CWORD > 1)) && return # actual func should only accept 1 arg
 
@@ -688,12 +690,12 @@ clocd() {
 		xargs -I{} cloc --diff {} HEAD
 }
 
-# gsdel() {
-# 	: show last state of a deleted file
-# 	# https://stackoverflow.com/a/19727752
-# 	f=$1
-# 	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
-# }
+gsdel() {
+	: show last state of a deleted file
+	# https://stackoverflow.com/a/19727752
+	f=$1
+	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
+}
 
 # git diff blame
 # inherently, this means git diff must operate on a time range that spans more
