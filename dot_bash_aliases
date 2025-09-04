@@ -62,6 +62,14 @@ _complete_make() {
 }
 complete -o bashdefault -o default -F _complete_make make # not sure if option order is significant
 
+# lint makefile
+# {
+# 	echo '#!/usr/bin/env bash'
+# 	< ./Makefile grep -P '^\t'
+# } |
+# 	sed -r 's/\$\$/$/g' |
+# 	~/.local/share/nvim/mason/bin/shellcheck -
+
 # startup {{{
 
 # https://wiki.archlinux.org/title/Systemd#Boot_time_increasing_over_time
