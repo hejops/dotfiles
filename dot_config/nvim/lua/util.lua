@@ -178,9 +178,11 @@ function M:close_unnamed_splits()
 	end
 end
 
-function M:open_float(lines)
+---@param lines string[]
+function M:open_float(lines, ft)
 	-- https://github.com/neovim/neovim/blob/51ccd12b3db/runtime/lua/vim/lsp/buf.lua#L133
-	vim.lsp.util.open_floating_preview(lines, "text")
+	-- possibly uses default highlighting (not TS)
+	vim.lsp.util.open_floating_preview(lines, ft or vim.bo.filetype or "text")
 end
 
 -- vim.keymap.set("n", "<leader>X", , { silent = true })

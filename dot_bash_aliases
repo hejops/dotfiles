@@ -701,12 +701,12 @@ clocd() {
 		xargs -I{} cloc --diff {} HEAD
 }
 
-# gsdel() {
-# 	: show last state of a deleted file
-# 	# https://stackoverflow.com/a/19727752
-# 	f=$1
-# 	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
-# }
+gsdel() {
+	: show last state of a deleted file
+	# https://stackoverflow.com/a/19727752
+	f=$1
+	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
+}
 
 # git diff blame
 # inherently, this means git diff must operate on a time range that spans more

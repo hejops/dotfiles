@@ -456,6 +456,27 @@ local ft_binds = { -- {{{
 		{ "n", "<leader>H", [[:.s/\v -H/ \\\r&/g|w<cr>]] },
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
 		{ "n", "@", "Ehciw{[@]}<esc>F[P" }, -- string var to array
+
+		{
+			"n",
+			"M", -- K is set after this file
+			function()
+				local cword = vim.fn.expand("<cword>")
+				local body = require("util"):get_command_output(string.format( --
+					-- "< %s sed -rn '/^%s\\(/,/^\\}/p'", -- excessive match for 1-line funcs (/a/,/b/p always matches >1 line)
+					[[< %s rg --multiline --multiline-dotall '%s\(.+?(; \}|^\})$']],
+					vim.fn.expand("%"),
+					cword
+				))
+				-- TODO: if cmd/builtin, do nothing? (K instead)
+				-- TODO: if func definition (i.e. curr line is [[^cword() {]]), do nothing?
+				if body == "" then
+					print("not found: " .. cword)
+					return
+				end
+				require("util"):open_float({ body }, "sh")
+			end,
+		},
 	},
 
 	["typescriptreact,javascriptreact"] = {
