@@ -462,14 +462,21 @@ local ft_binds = { -- {{{
 			"M", -- K is set after this file
 			function()
 				local cword = vim.fn.expand("<cword>")
+
+				if
+					not cword:match("^[a-z]") -- not valid func name, e.g. () {
+					or vim.fn.getline("."):match("^" .. cword .. "\\(") -- already on func definition
+				then
+					return
+				end
+
 				local body = require("util"):get_command_output(string.format( --
 					-- "< %s sed -rn '/^%s\\(/,/^\\}/p'", -- excessive match for 1-line funcs (/a/,/b/p always matches >1 line)
-					[[< %s rg --multiline --multiline-dotall '%s\(.+?(; \}|^\})$']],
+					[[ < %s rg --multiline --multiline-dotall '%s\(.+?(; \}|^\})$' 2>/dev/null ]],
 					vim.fn.expand("%"),
 					cword
 				))
 				-- TODO: if cmd/builtin, do nothing? (K instead)
-				-- TODO: if func definition (i.e. curr line is [[^cword() {]]), do nothing?
 				if body == "" then
 					print("not found: " .. cword)
 					return
