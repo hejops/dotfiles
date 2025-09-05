@@ -36,7 +36,6 @@ vim.keymap.set("n", "X", '"_X')
 vim.keymap.set("n", "Y", "y$") -- default is redundant with yy
 vim.keymap.set("n", "co", "O<esc>jo<esc>k") -- surround current line with newlines
 vim.keymap.set("n", "gD", "<nop>")
-vim.keymap.set("n", "gf", "<c-W>gF") -- open file under cursor in new tab, jumping to line if possible; uncommonly used
 vim.keymap.set("n", "gg", "gg0")
 vim.keymap.set("n", "j", [[v:count == 0 ? 'gj' : 'j']], { expr = true, silent = true }) -- use g[jk] smartly
 vim.keymap.set("n", "k", [[v:count == 0 ? 'gk' : 'k']], { expr = true, silent = true })
@@ -47,6 +46,33 @@ vim.keymap.set("v", "<", "<gv") -- vim puts you back in normal mode by default
 vim.keymap.set("v", ">", ">gv")
 vim.keymap.set("v", "P", '"_dP') -- default behaviour is to just paste above selection
 vim.keymap.set("v", "x", '"_x')
+
+vim.keymap.set(
+	"n",
+	"gf",
+	-- open file under cursor in new tab, jumping to line if possible, -and-
+	-- using tab drop (otherwise same file is repeatedly opened)
+	function()
+		local word = vim.fn.expand("<cWORD>")
+		if
+			word ~= "//" -- corner case
+			and vim.uv.fs_stat(word)
+		then
+			-- print(word)
+			vim.cmd("tab drop <cfile>")
+			return
+		end
+
+		local f, l = word:match("(.+):(%d+)")
+		-- print(word, f, l)
+
+		if f and l and vim.uv.fs_stat(f) then
+			-- vim.cmd("tab drop <cfile>|" .. l) -- opens file named `$l`
+			vim.cmd(string.format("tab drop %s|%d", f, l))
+		end
+		-- vim.cmd.wincmd("gF") -- <c-w>gF
+	end
+)
 
 vim.keymap.set("n", "Z?", function()
 	-- close all terminals (:wqa does not close terminals). destructive if
