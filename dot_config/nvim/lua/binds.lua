@@ -315,7 +315,7 @@ local function debug_print(cmd)
 	-- {{{
 	local filetypes = {
 
-		bash = 'echo "$@"',
+		-- bash = 'echo "$@"',
 		c = "printf(@);",
 		elixir = "IO.puts(@)",
 		gleam = "io.debug(@)",
@@ -451,7 +451,7 @@ local ft_binds = { -- {{{
 		{ "n", "<esc>", "ZZ" },
 	},
 
-	["sh,bash"] = {
+	sh = {
 		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g|w<cr>" },
 		{ "n", "<leader>H", [[:.s/\v -H/ \\\r&/g|w<cr>]] },
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
@@ -464,7 +464,7 @@ local ft_binds = { -- {{{
 				local cword = vim.fn.expand("<cword>")
 
 				if
-					not cword:match("^[a-z]") -- not valid func name, e.g. () {
+					not cword:match("^[a-z_]") -- not valid func name, e.g. () {
 					or vim.fn.getline("."):match("^" .. cword .. "\\(") -- already on func definition
 				then
 					return
@@ -481,7 +481,7 @@ local ft_binds = { -- {{{
 					print("not found: " .. cword)
 					return
 				end
-				require("util"):open_float({ body }, "sh")
+				require("util"):open_float({ body })
 			end,
 		},
 	},

@@ -201,11 +201,19 @@ require("conform").setup({
 		-- Conform will run multiple formatters sequentially
 		-- all formatters will be run non-async
 
+		-- filetypes known to vim:
+		-- https://github.com/vim/vim/tree/master/runtime/ftplugin
+		-- https://github.com/vim/vim/tree/master/runtime/syntax (larger than ftplugin)
+
+		-- bash is not a real filetype, but an 'alias' to sh:
+		-- https://github.com/vim/vim/blob/master/runtime/ftplugin/bash.vim
+		-- sh dialect is only relevant to shellcheck (?), which is a linter (and part of bashls anyway?)
+		-- bash = { "shfmt", "shellharden" }, -- bash ft is only via modeline (?)
+
 		-- jq = { "jq" }, -- jq only formats json (duh)
 		-- ocaml = { "ocamlformat" },
 		-- xml = { "xmlformat" }, -- ModuleNotFoundError: No module named 'xmlformatter'
 		["_"] = { "trim_whitespace", "trim_newlines" },
-		bash = { "shfmt", "shellharden" }, -- bash ft is only via modeline (?)
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
 		css = { "prettier" },

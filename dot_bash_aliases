@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# vim:ft=bash
+# vim:ft=sh
 # if possible, this file should remain under 1000 LOC. interactive shell
 # startup time should remain under 0.02 s
 
