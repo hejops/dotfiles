@@ -825,6 +825,16 @@ for ft, binds in pairs(ft_binds) do
 end
 
 local function c_compiler_cmd()
+	if
+		require("util"):buf_contains("// fil%-c") -- i keep forgetting that `-` is always magic
+	then
+		-- fil-c's clang is a drop-in replacement; for normal applications, it is
+		-- never necessary to import stdfil.h
+		-- https://fil-c.org/installation
+		-- https://fil-c.org/invisicaps_by_example
+		return vim.env.HOME .. "/filc-0.670-linux-x86_64/build/bin/clang -O2 -g"
+	end
+
 	-- {{{
 	-- if vim.fn.executable("tcc") then
 	-- 	return "tcc"
@@ -1028,7 +1038,7 @@ local function exec() -- {{{
 		-- optional: strace ./main
 
 		c = string.format(
-			[[ %s %s -o %s && ./%s 2>&1 ]],
+			[[ %s %s -o %s && %s 2>&1 ]],
 			c_compiler_cmd(),
 			curr_file,
 			string.gsub(curr_file, ".c", ""),
