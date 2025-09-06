@@ -1,5 +1,6 @@
 local js_formatters = {
 	"sanitize_inner_semicolons",
+	"biome_remove_unused_imports",
 	"biome",
 	-- "prettier",
 	-- stop_after_first = true,
@@ -58,7 +59,7 @@ require("conform").setup({
 			end,
 			args = (function()
 				local args = {
-					"check", -- includes import sorting
+					"check", -- includes import sorting, but lint only uses default settings with no overrides
 					"--write",
 					"--stdin-file-path",
 					"$FILENAME",
@@ -70,6 +71,18 @@ require("conform").setup({
 				-- end
 				return args
 			end)(),
+		},
+
+		biome_remove_unused_imports = {
+			command = "biome",
+			args = {
+				"lint",
+				"--write",
+				"--unsafe",
+				"--only=lint/correctness/noUnusedImports",
+				"--stdin-file-path",
+				"$FILENAME",
+			},
 		},
 
 		-- note: for <script> to be formatted properly, type= is required
