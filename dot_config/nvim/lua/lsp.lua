@@ -306,9 +306,9 @@ local servers = { -- {{{
 				symbolMatcher = "fuzzy",
 				vulncheck = "imports",
 
-				-- not needed, apparently (/v2 import is enough)
+				-- /v2 import is not enough; either env or build flag is required
 				-- env = { GOEXPERIMENT = "jsonv2" },
-				-- buildFlags = { "-tags=goexperiment.jsonv2" },
+				buildFlags = { "-tags=goexperiment.jsonv2" },
 
 				hints = { -- https://github.com/golang/tools/blob/master/gopls/doc/inlayHints.md
 					assignVariableTypes = true,
