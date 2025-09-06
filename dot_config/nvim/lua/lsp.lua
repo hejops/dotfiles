@@ -4,6 +4,8 @@
 -- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
 -- https://neovim.io/doc/user/lsp.html#vim.lsp.ClientConfig
 
+vim.env.GOEXPERIMENT = "jsonv2" -- consider moving to FileType autocmd, or bashrc
+
 -- https://github.com/fatih/dotfiles/blob/52e459c991e1fa8125fb28d4930f13244afecd17/init.lua#L748
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("UserLspConfig", {}),
@@ -306,8 +308,10 @@ local servers = { -- {{{
 				symbolMatcher = "fuzzy",
 				vulncheck = "imports",
 
-				-- /v2 import is not enough; either env or build flag is required
-				-- env = { GOEXPERIMENT = "jsonv2" },
+				-- either env or build flag is enough for gopls to not raise error, but
+				-- still raises cryptic `build constraints exclude ...` warnings, and
+				-- only real env var allows go run
+				env = { GOEXPERIMENT = "jsonv2" },
 				buildFlags = { "-tags=goexperiment.jsonv2" },
 
 				hints = { -- https://github.com/golang/tools/blob/master/gopls/doc/inlayHints.md
