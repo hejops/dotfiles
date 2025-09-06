@@ -830,9 +830,13 @@ gS() {
 		EOF
 	)
 
+	status=$(git status --porcelain=2 --untracked-files=all)
+
+	[[ -z $status ]] && return
+
 	# by default, git status does not enter dirs containing only 1
 	# (untracked) file
-	sel=$(git status --porcelain=2 --untracked-files=all |
+	sel=$(
 		# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
 		#   $2					       $NF
 		# ? README.md
@@ -845,8 +849,9 @@ gS() {
 		#
 		# HACK: i have no idea how to 'return' multiple columns inside
 		# a ternary, so concat with a space as an ugly workaround
-		awk '{print ($1=="?") ? $0 : $2" "$NF}' |
-		fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
+		<<< "$status" awk '{print ($1=="?") ? $0 : $2" "$NF}' |
+			fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+	)
 	# fzh --multi --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
 
 	# add untracked files first
@@ -1188,8 +1193,10 @@ gcon() { # {{{
 		_git_get_conflicts | xargs nvim -p +'/\v^[<=>]{7}'
 	done
 
-	_git_get_conflicts | xargs git add
-	git commit -v
+	# _git_get_conflicts | xargs git add
+	# git commit -v
+
+	_git_get_conflicts | xargs git commit -iv
 }        # }}}
 gnew() { # {{{
 	: push to newly created remote
@@ -1500,6 +1507,12 @@ jx() {
 	cmd=$(< package.json jq -r .scripts | grep : | fzh | cut -d'"' -f2)
 	[[ -n $cmd ]] && "$(pkgmgr)" "$cmd"
 }
+
+_complete_jx() {
+	f() { < ./package.json jq -r '.scripts|keys[]'; }
+	_base_completer f
+}
+complete -o bashdefault -o default -F _complete_jx jx
 
 jmake() {
 	: convert scripts to Makefile
