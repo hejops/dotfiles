@@ -223,25 +223,12 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "json" },
-	callback = function()
-		-- note: if the file is not jsonc, comments are a syntax error anyway, so
-		-- this is not terribly useful
-		vim.opt_local.commentstring = "// %s"
-		-- if vim.fn.executable("jq") == 1 then
-		-- vim.opt_local.formatprg = "jq ." -- doesn't prettier take care of formatting?
-		-- end
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	-- should i do this for go? hmm...
-	pattern = { "lua", "javascript", "typescript" },
+	pattern = { "lua" },
 	callback = function()
 		-- defaults: false, 8, 0, 8
 		-- note that these settings only affect how vim displays the text. the
-		-- formatter still determines what text the file actually contains
-		-- TODO: bash files may set their own values somehow, must be some plugin
+		-- formatter still determines what text the file actually
+		-- contains; in the case of lua, this is still usually tabs
 
 		vim.opt_local.expandtab = true
 		vim.opt_local.shiftwidth = 2
@@ -325,6 +312,8 @@ vim.api.nvim_create_autocmd("FileType", {
 			return
 		end
 
+		-- TODO: sqruff-bin now on aur
+
 		-- may need nightly install https://github.com/quarylabs/sqruff?tab=readme-ov-file#for-other-platforms
 		print("installing sqruff...")
 		-- v0.25.5 is the last version that has an asset (lol)
@@ -343,6 +332,32 @@ vim.api.nvim_create_autocmd("FileType", {
 		end
 	end,
 })
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "proto" },
+	callback = function()
+		if not vim.uv.fs_stat(vim.env.HOME .. "/.local/share/nvim/mason/bin/protols") then
+			os.execute("rustup default nightly")
+		end
+	end,
+})
+
+-- vim.api.nvim_create_autocmd("FileType", {
+-- 	pattern = { "sh", "bash" },
+-- 	callback = function()
+-- 		-- -- https://utcc.utoronto.ca/~cks/space/blog/programming/BashGoodSetEReports
+-- 		-- [[
+-- 		--   #!/usr/bin/env bash
+-- 		-- set -euo pipefail
+-- 		-- trap 'echo \`"$BASH_COMMAND"\` exited with $? \(line $LINENO\)' ERR
+-- 		-- ]]
+-- 	end,
+-- })
+
+-- vim.api.nvim_create_autocmd("FileType", {
+-- 	pattern = { "sh", "bash" },
+-- 	command = [[%g/\v^[^#].+\{\n\n/norm jdd]],
+-- })
 
 -- }}}
 

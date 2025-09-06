@@ -10,6 +10,10 @@ require("conform").setup({
 	-- :h conform-formatters
 	formatters = {
 
+		cbfmt = {
+			prepend_args = { "--config", vim.env.HOME .. "/.config/cbfmt.toml" },
+		},
+
 		["goimports-reviser"] = { args = { "$FILENAME" } }, -- '-format' introduces additional formatting, which i don't like
 
 		golines = {
@@ -59,11 +63,11 @@ require("conform").setup({
 					"--stdin-file-path",
 					"$FILENAME",
 				}
-				if not vim.fs.root(0, "biome.json") then
-					-- default is tab (although this may not be noticeable due to the
-					-- tabstop autocmd)
-					table.insert(args, "--indent-style=space")
-				end
+				-- if not vim.fs.root(0, "biome.json") then
+				-- 	-- default is tab (although this may not be noticeable due to the
+				-- 	-- tabstop autocmd)
+				-- 	table.insert(args, "--indent-style=space")
+				-- end
 				return args
 			end)(),
 		},
@@ -221,7 +225,7 @@ require("conform").setup({
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
-		markdown = { "mdslw", "prettier" },
+		markdown = { "mdslw", "cbfmt", "prettier" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },
 		scss = { "prettier" },
