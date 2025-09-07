@@ -31,8 +31,8 @@ if git_dir and has_remote then
 
 	M.head_sha = util:read_file(head_file) -- nil if no commits made
 	if M.head_sha then
-		M.origin_master_sha = util:read_file(master_file) or util:get_command_output("git rev-parse HEAD", true)
-		M.cache[M.origin_master_sha .. M.head_sha] = commits_ahead(M.origin_master_sha, M.head_sha)
+		M.origin_master_sha = util:read_file(master_file) or util:get_command_output(git .. " rev-parse HEAD", true)
+		M.cache[(M.origin_master_sha or "") .. M.head_sha] = commits_ahead(M.origin_master_sha, M.head_sha)
 	end
 
 	-- ["origin/" .. M.curr_branch .. M.head_sha] = commits_ahead(M.origin_master_sha, M.head_sha),
@@ -100,8 +100,8 @@ function M:foo()
 	local v = M.cache[k]
 
 	if v > 0 then
-		return string.format(
-			"%s[%s+%s]", --
+		return string.format( --
+			"%s[%s+%s]",
 			curr_branch,
 			curr_branch == "master" and "" or "b",
 			v
