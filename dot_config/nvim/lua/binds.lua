@@ -480,7 +480,7 @@ local ft_binds = { -- {{{
 		{ "n", "<esc>", "ZZ" },
 	},
 
-	["sh,bash"] = {
+	sh = {
 		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g|w<cr>" },
 		{ "n", "<leader>H", [[:.s/\v -H/ \\\r&/g|w<cr>]] },
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
@@ -967,6 +967,17 @@ local function exec() -- {{{
 		zig = "zig run " .. curr_file,
 
 		-- the iffy langs
+
+		make = function()
+			local curr = vim.fn.line(".")
+			for cmd in require("util"):get_command_output([[< Makefile grep -Pn '^[a-z][^:]+:']]):gmatch("(.-)\n") do
+				local l, cmd = cmd:match("^(%d):([^ :]+)")
+				if curr >= tonumber(l) then
+					return "make " .. cmd
+				end
+			end
+			error("unreachable")
+		end,
 
 		sql = function()
 			return string.format(
