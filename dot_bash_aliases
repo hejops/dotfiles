@@ -1655,14 +1655,6 @@ jqt() {
 # }}}
 # 'bash' {{{
 
-# lint makefile
-# {
-# 	echo '#!/usr/bin/env bash'
-# 	< ./Makefile grep -P '^\t'
-# } |
-# 	sed -r 's/\$\$/$/g' |
-# 	~/.local/share/nvim/mason/bin/shellcheck -
-
 # lint yaml
 # {
 # 	echo '#!/usr/bin/env bash'
