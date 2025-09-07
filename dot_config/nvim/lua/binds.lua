@@ -786,6 +786,8 @@ local ft_binds = { -- {{{
 		-- TODO: if checkbox item (`- [ ]`), toggle check
 		-- https://github.com/tadmccorkle/markdown.nvim#lists
 
+		{ "n", "<leader>x", ":Dispatch zola serve<cr>" },
+
 		{
 			"n",
 			"(",
@@ -970,10 +972,10 @@ local function exec() -- {{{
 
 		make = function()
 			local curr = vim.fn.line(".")
-			for cmd in require("util"):get_command_output([[< Makefile grep -Pn '^[a-z][^:]+:']]):gmatch("(.-)\n") do
-				local l, cmd = cmd:match("^(%d):([^ :]+)")
+			for c in require("util"):get_command_output([[grep -Pn '^[a-z][^:]+:' ]] .. curr_file):gmatch("(.-)\n") do
+				local l, c = c:match("^(%d):([^ :]+)")
 				if curr >= tonumber(l) then
-					return "make " .. cmd
+					return "make " .. c
 				end
 			end
 			error("unreachable")
