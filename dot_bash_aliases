@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# vim:ft=bash
+# vim:ft=sh
 # if possible, this file should remain under 1000 LOC. interactive shell
 # startup time should remain under 0.02 s
 
@@ -1872,13 +1872,14 @@ ffconcat() {
 # }}}
 # stdout manipulation {{{
 
+# ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; } # lines to comma-delimited str (rare?)
 append() { < /dev/stdin awk "{print \$0 \"$1\"}"; }
-desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # for ease of filtering logs
+desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # remove seconds, for ease of filtering logs
 largs() { < /dev/stdin xargs --delimiter='\n' "$@"; }        # split xargs by newline instead of space
 line() { < /dev/stdin sed -n "${1}p"; }
-ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; } # lines to comma-delimited str
 paren() { < /dev/stdin prepend '(' | append ')'; }
 prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
+seen() { < /dev/stdin awk '!a[$0]++'; } # https://paweldu.dev/posts/awk-clever-way-to-remove-duplicate-lines/
 sum() { < /dev/stdin paste -sd+ | bc; }
 surround() { < /dev/stdin awk "{print \"$1\" \$0 \"$1\"}"; }
 tojson() { node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq; }
@@ -1950,11 +1951,10 @@ upload() {
 
 wifi() {
 	: connect to wifi network without nmtui
-	ssid=$(nmcli --terse device wifi list |
+	nmcli --terse device wifi list |
 		fzf --reverse |
 		cut -d: -f8 |
-		xargs)
-	nmcli --ask device wifi connect "$ssid" # password $password
+		xargs nmcli --ask device wifi connect #"$ssid" # password $password
 }
 
 getmail() {
