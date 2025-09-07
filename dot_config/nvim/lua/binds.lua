@@ -51,7 +51,10 @@ vim.keymap.set(
 	"n",
 	"gf",
 	-- open file under cursor in new tab, jumping to line if possible, -and-
-	-- using tab drop (otherwise same file is repeatedly opened)
+	-- using tab drop (otherwise same file is repeatedly opened).
+	--
+	-- it is generally easier to manipulate cWORD (and let tab drop do its thing)
+	-- than to attempt to deduplicate tabs through the chaos of bufs/tabs/wins
 	function()
 		local word = vim.fn.expand("<cWORD>")
 		if
@@ -498,7 +501,7 @@ local ft_binds = { -- {{{
 
 				local body = require("util"):get_command_output(string.format( --
 					-- "< %s sed -rn '/^%s\\(/,/^\\}/p'", -- excessive match for 1-line funcs (/a/,/b/p always matches >1 line)
-					[[ < %s rg --multiline --multiline-dotall '%s\(.+?(; \}|^\})$' 2>/dev/null ]],
+					[[ < %s rg --multiline --multiline-dotall '^%s\(.+?(; \}|^\})$' 2>/dev/null ]],
 					vim.fn.expand("%"),
 					cword
 				))
