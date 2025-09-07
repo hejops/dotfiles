@@ -1619,6 +1619,19 @@ psqlj() {
 		jq
 }
 
+sqt() {
+	: list tables
+
+	prv_cmd="rg -m1 --line-number --multiline --multiline-dotall '{}.+?;$' | grep -Pv ':(\s*(--)?)$'" # horrendous
+
+	# if `CREATE TABLE` statements are guaranteed to be on one line,
+	# this multiline hackery can be removed
+	rgml -I 'CREATE TABLE.+?\(' |
+		sed -rz 's/\n/ /g; s/\( /\n/g' |
+		awk '{print $NF}' |
+		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+}
+
 # }}}
 # jq {{{
 
