@@ -208,6 +208,10 @@ vim.api.nvim_create_autocmd("WinEnter", {
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "mail" },
 	callback = function()
+		if require("util"):buf_contains("@[^.]+%.de", 2) then
+			vim.o.spelllang = "en,de" -- no opt_local?
+		end
+
 		-- very iffy; i want abbrev to expand immediately after i type the last
 		-- char of lhs, but the actual behaviour requires lhs+space or lhs+esc.
 		-- furthermore, autocomplete messes with abbrev expansion
