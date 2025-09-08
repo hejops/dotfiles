@@ -927,6 +927,13 @@ local function exec() -- {{{
 		sh = "env bash " .. curr_file,
 		zig = "zig run " .. curr_file,
 
+		-- TODO: should be Dispatch
+		proto = string.format(
+			"cd %s ; protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative %s",
+			vim.fn.expand("%:p:h"),
+			vim.fn.expand("%:p:t") -- must be basename
+		),
+
 		-- the iffy langs
 
 		sql = function()
