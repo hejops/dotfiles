@@ -235,6 +235,19 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "dotenv" },
+	callback = function()
+		vim.opt_local.commentstring = "# %s"
+	end,
+})
+
+-- FileType is buggy if d2 plugin is lazy loaded
+vim.api.nvim_create_autocmd("VimEnter", {
+	pattern = { "*.d2" },
+	command = "D2Preview",
+})
+
+vim.api.nvim_create_autocmd("FileType", {
 	-- should i do this for go? hmm...
 	pattern = { "lua", "javascript", "typescript" },
 	callback = function()
