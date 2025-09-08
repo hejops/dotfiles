@@ -207,7 +207,7 @@ require("conform").setup({
 
 		-- bash is not a real filetype, but an 'alias' to sh:
 		-- https://github.com/vim/vim/blob/master/runtime/ftplugin/bash.vim
-		-- sh dialect is only relevant to shellcheck (?), which is a linter (and part of bashls anyway?)
+		-- sh dialect is only relevant to shellcheck (?), which is a linter (and part of bashls anyway?), and treesitter?
 		-- bash = { "shfmt", "shellharden" }, -- bash ft is only via modeline (?)
 
 		-- jq = { "jq" }, -- jq only formats json (duh)
@@ -230,10 +230,11 @@ require("conform").setup({
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
 		markdown = { "mdslw", "prettier" },
+		proto = { "buf" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },
 		scss = { "prettier" },
-		sh = { "shfmt", "shellharden" },
+		sh = { "shfmt", "shellharden" }, -- TODO: consider shellcheck -f diff (similar to shellharden, but does not apply)
 		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
