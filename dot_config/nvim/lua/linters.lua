@@ -23,6 +23,7 @@ local linters = {
 	javascriptreact = { "biomejs" },
 	lua = { "luacheck" },
 	make = { "checkmake" },
+	proto = { "buf_lint" },
 	python = { "ruff" }, -- may have duplicate with ruff lsp
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
