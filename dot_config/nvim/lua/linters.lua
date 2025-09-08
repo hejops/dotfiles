@@ -22,7 +22,7 @@ local linters = {
 	javascript = { "biomejs" }, -- should resolve to repo root
 	javascriptreact = { "biomejs" },
 	lua = { "luacheck" },
-	make = { "checkmake" },
+	make = { "checkmake", "checkmake2" },
 	proto = { "buf_lint" },
 	python = { "ruff" }, -- may have duplicate with ruff lsp
 	typescript = { "biomejs" },
@@ -249,6 +249,44 @@ require("lint").linters.d2 = { -- {{{
 				end_col = 999,
 				message = msg,
 				severity = vim.diagnostic.severity.ERROR,
+			})
+		end
+
+		return items
+	end,
+} -- }}}
+
+require("lint").linters.checkmake2 = { -- {{{
+	cmd = "bash",
+	args = {
+		"-c",
+		[[ < "$1" sed -r '/^[^\t]/ s/^/#/; s/\$\$/$/g' | ~/.local/share/nvim/mason/bin/shellcheck --shell=bash -f json - ]],
+		vim.fn.expand("%"),
+		-- doesn't work
+		-- string.format(
+		-- 	[[ < "%s" sed -r '/^[^\t]/ s/^/#/' | sed -r 's/\$\$/$/g' | ~/.local/share/nvim/mason/bin/shellcheck --shell=bash -f json - ]],
+		-- 	vim.fn.expand("%")
+		-- ),
+	},
+
+	stdin = false,
+	ignore_exitcode = true,
+
+	parser = function(output, _)
+		local items = {}
+
+		if output == "" then
+			return items
+		end
+
+		for _, diag in ipairs(vim.json.decode(output) or {}) do
+			table.insert(items, {
+				source = "shellcheck",
+				lnum = diag.line - 1,
+				col = diag.column,
+				end_col = diag.endColumn,
+				message = diag.message,
+				severity = vim.diagnostic.severity.WARN,
 			})
 		end
 

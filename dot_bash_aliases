@@ -830,9 +830,13 @@ gS() {
 		EOF
 	)
 
+	status=$(git status --porcelain=2 --untracked-files=all)
+
+	[[ -z $status ]] && return
+
 	# by default, git status does not enter dirs containing only 1
 	# (untracked) file
-	sel=$(git status --porcelain=2 --untracked-files=all |
+	sel=$(
 		# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
 		#   $2					       $NF
 		# ? README.md
@@ -845,8 +849,9 @@ gS() {
 		#
 		# HACK: i have no idea how to 'return' multiple columns inside
 		# a ternary, so concat with a space as an ugly workaround
-		awk '{print ($1=="?") ? $0 : $2" "$NF}' |
-		fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
+		<<< "$status" awk '{print ($1=="?") ? $0 : $2" "$NF}' |
+			fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+	)
 	# fzh --multi --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
 
 	# add untracked files first
@@ -1188,8 +1193,10 @@ gcon() { # {{{
 		_git_get_conflicts | xargs nvim -p +'/\v^[<=>]{7}'
 	done
 
-	_git_get_conflicts | xargs git add
-	git commit -v
+	# _git_get_conflicts | xargs git add
+	# git commit -v
+
+	_git_get_conflicts | xargs git commit -iv
 }        # }}}
 gnew() { # {{{
 	: push to newly created remote
@@ -1501,6 +1508,12 @@ jx() {
 	[[ -n $cmd ]] && "$(pkgmgr)" "$cmd"
 }
 
+_complete_jx() {
+	f() { < ./package.json jq -r '.scripts|keys[]'; }
+	_base_completer f
+}
+complete -o bashdefault -o default -F _complete_jx jx
+
 jmake() {
 	: convert scripts to Makefile
 
@@ -1606,6 +1619,19 @@ psqlj() {
 		jq
 }
 
+sqt() {
+	: list tables
+
+	prv_cmd="rg -m1 --line-number --multiline --multiline-dotall '{}.+?;$' | grep -Pv ':(\s*(--)?)$'" # horrendous
+
+	# if `CREATE TABLE` statements are guaranteed to be on one line,
+	# this multiline hackery can be removed
+	rgml -I 'CREATE TABLE.+?\(' |
+		sed -rz 's/\n/ /g; s/\( /\n/g' |
+		awk '{print $NF}' |
+		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+}
+
 # }}}
 # jq {{{
 
@@ -1641,14 +1667,6 @@ jqt() {
 
 # }}}
 # 'bash' {{{
-
-# lint makefile
-# {
-# 	echo '#!/usr/bin/env bash'
-# 	< ./Makefile grep -P '^\t'
-# } |
-# 	sed -r 's/\$\$/$/g' |
-# 	~/.local/share/nvim/mason/bin/shellcheck -
 
 # lint yaml
 # {
@@ -1859,13 +1877,14 @@ ffconcat() {
 # }}}
 # stdout manipulation {{{
 
+# ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; } # lines to comma-delimited str (rare?)
 append() { < /dev/stdin awk "{print \$0 \"$1\"}"; }
-desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # for ease of filtering logs
+desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # remove seconds, for ease of filtering logs
 largs() { < /dev/stdin xargs --delimiter='\n' "$@"; }        # split xargs by newline instead of space
 line() { < /dev/stdin sed -n "${1}p"; }
-ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; } # lines to comma-delimited str
 paren() { < /dev/stdin prepend '(' | append ')'; }
 prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
+seen() { < /dev/stdin awk '!a[$0]++'; } # https://paweldu.dev/posts/awk-clever-way-to-remove-duplicate-lines/
 sum() { < /dev/stdin paste -sd+ | bc; }
 surround() { < /dev/stdin awk "{print \"$1\" \$0 \"$1\"}"; }
 tojson() { node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq; }
@@ -1937,11 +1956,10 @@ upload() {
 
 wifi() {
 	: connect to wifi network without nmtui
-	ssid=$(nmcli --terse device wifi list |
+	nmcli --terse device wifi list |
 		fzf --reverse |
 		cut -d: -f8 |
-		xargs)
-	nmcli --ask device wifi connect "$ssid" # password $password
+		xargs nmcli --ask device wifi connect #"$ssid" # password $password
 }
 
 getmail() {

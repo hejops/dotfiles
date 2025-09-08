@@ -1,5 +1,6 @@
 local js_formatters = {
 	"sanitize_inner_semicolons",
+	"biome_remove_unused_imports",
 	"biome",
 	-- "prettier",
 	-- stop_after_first = true,
@@ -9,6 +10,10 @@ require("conform").setup({
 	-- :h conform-options
 	-- :h conform-formatters
 	formatters = {
+
+		cbfmt = {
+			prepend_args = { "--config", vim.env.HOME .. "/.config/cbfmt.toml" },
+		},
 
 		["goimports-reviser"] = { args = { "$FILENAME" } }, -- '-format' introduces additional formatting, which i don't like
 
@@ -54,18 +59,30 @@ require("conform").setup({
 			end,
 			args = (function()
 				local args = {
-					"check", -- includes import sorting
+					"check", -- includes import sorting, but lint only uses default settings with no overrides
 					"--write",
 					"--stdin-file-path",
 					"$FILENAME",
 				}
-				if not vim.fs.root(0, "biome.json") then
-					-- default is tab (although this may not be noticeable due to the
-					-- tabstop autocmd)
-					table.insert(args, "--indent-style=space")
-				end
+				-- if not vim.fs.root(0, "biome.json") then
+				-- 	-- default is tab (although this may not be noticeable due to the
+				-- 	-- tabstop autocmd)
+				-- 	table.insert(args, "--indent-style=space")
+				-- end
 				return args
 			end)(),
+		},
+
+		biome_remove_unused_imports = {
+			command = "biome",
+			args = {
+				"lint",
+				"--write",
+				"--unsafe",
+				"--only=lint/correctness/noUnusedImports",
+				"--stdin-file-path",
+				"$FILENAME",
+			},
 		},
 
 		-- note: for <script> to be formatted properly, type= is required
@@ -229,7 +246,7 @@ require("conform").setup({
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
-		markdown = { "mdslw", "prettier" },
+		markdown = { "mdslw", "cbfmt", "prettier" },
 		proto = { "buf" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },

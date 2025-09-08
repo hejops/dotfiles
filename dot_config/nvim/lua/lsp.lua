@@ -2,6 +2,9 @@
 -- :h vim.lsp.ClientConfig
 -- https://github.com/williamboman/mason-lspconfig.nvim#available-lsp-servers
 -- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
+-- https://neovim.io/doc/user/lsp.html#vim.lsp.ClientConfig
+
+vim.env.GOEXPERIMENT = "jsonv2" -- consider moving to FileType autocmd, or bashrc
 
 -- https://github.com/fatih/dotfiles/blob/52e459c991e1fa8125fb28d4930f13244afecd17/init.lua#L748
 vim.api.nvim_create_autocmd("LspAttach", {
@@ -62,7 +65,7 @@ local function tele_lsp_incoming_custom()
 	-- this                                            -- tui.go	L385	Update	func (p Post) ...
 
 	-- https://github.com/nvim-telescope/telescope.nvim/blob/master/developers.md#entry-maker
-	-- https://github.com/yuepaang/dotfiles/blob/5272e1aef2b0255535d7f575d9a5e32cd75e2cd8/nvim/lua/doodleVim/extend/lsp.lua#L3
+	-- https://github.com/yuepaang/dotfiles/blob/5272e1aef2b02/nvim/lua/doodleVim/extend/lsp.lua#L3
 	local function entry_maker(entry)
 		-- file at line; note: line will only be displayed in the selection window
 		-- if the buffer has been loaded, otherwise it is empty. the line will
@@ -163,6 +166,7 @@ local servers = { -- {{{
 	dockerls = {},
 	lexical = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
+	protols = {}, -- rename quite slow on lsp start
 	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5/nvim/lua/plugins/lsp_init.lua#L90
 	taplo = {},
 	tinymist = {},
@@ -292,6 +296,24 @@ local servers = { -- {{{
 				symbolScope = "workspace", -- don't show ~/go, /usr/lib
 				usePlaceholders = false,
 
+				-- https://github.com/jarmex/nvim/blob/0c3876069aa7f7/lua/plugins/coding/lsp/langs/gopls.lua#L16
+
+				-- buildFlags = { "-tags", "integration" },
+				-- diagnosticsDelay = "500ms",
+				-- directoryFilters = { "-**/node_modules", "-**/.git", "-.vscode", "-.idea", "-.vscode-test" },
+				analysisProgressReporting = true,
+				completeUnimported = true,
+				matcher = "Fuzzy",
+				semanticTokens = false, -- disabling this enables treesitter injections (for sql, json etc)
+				symbolMatcher = "fuzzy",
+				vulncheck = "imports",
+
+				-- either env or build flag is enough for gopls to not raise error, but
+				-- still raises cryptic `build constraints exclude ...` warnings, and
+				-- only real env var allows go run
+				env = { GOEXPERIMENT = "jsonv2" },
+				buildFlags = { "-tags=goexperiment.jsonv2" },
+
 				hints = { -- https://github.com/golang/tools/blob/master/gopls/doc/inlayHints.md
 					assignVariableTypes = true,
 					compositeLiteralFields = true,
@@ -300,6 +322,31 @@ local servers = { -- {{{
 					functionTypeParameters = true,
 					parameterNames = true,
 					rangeVariableTypes = true,
+				},
+
+				codelenses = {
+					gc_details = true, -- Show a code lens toggling the display of gc's choices.
+					generate = true, -- show the `go generate` lens.
+					regenerate_cgo = true,
+					run_govulncheck = true,
+					test = true,
+					tidy = true,
+					upgrade_dependency = true,
+					vendor = true,
+				},
+
+				analyses = {
+					fieldalignment = false,
+					fillreturns = true,
+					nilness = true,
+					nonewvars = true,
+					shadow = true,
+					undeclaredname = true,
+					unreachable = true,
+					unusedparams = true,
+					unusedvariable = true,
+					unusedwrite = true,
+					useany = true,
 				},
 			},
 		},

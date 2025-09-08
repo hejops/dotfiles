@@ -36,7 +36,6 @@ vim.keymap.set("n", "X", '"_X')
 vim.keymap.set("n", "Y", "y$") -- default is redundant with yy
 vim.keymap.set("n", "co", "O<esc>jo<esc>k") -- surround current line with newlines
 vim.keymap.set("n", "gD", "<nop>")
-vim.keymap.set("n", "gf", "<c-W>gF") -- open file under cursor in new tab, jumping to line if possible; uncommonly used
 vim.keymap.set("n", "gg", "gg0")
 vim.keymap.set("n", "j", [[v:count == 0 ? 'gj' : 'j']], { expr = true, silent = true }) -- use g[jk] smartly
 vim.keymap.set("n", "k", [[v:count == 0 ? 'gk' : 'k']], { expr = true, silent = true })
@@ -47,6 +46,36 @@ vim.keymap.set("v", "<", "<gv") -- vim puts you back in normal mode by default
 vim.keymap.set("v", ">", ">gv")
 vim.keymap.set("v", "P", '"_dP') -- default behaviour is to just paste above selection
 vim.keymap.set("v", "x", '"_x')
+
+vim.keymap.set(
+	"n",
+	"gf",
+	-- open file under cursor in new tab, jumping to line if possible, -and-
+	-- using tab drop (otherwise same file is repeatedly opened).
+	--
+	-- it is generally easier to manipulate cWORD (and let tab drop do its thing)
+	-- than to attempt to deduplicate tabs through the chaos of bufs/tabs/wins
+	function()
+		local word = vim.fn.expand("<cWORD>")
+		if
+			word ~= "//" -- corner case
+			and vim.uv.fs_stat(word)
+		then
+			-- print(word)
+			vim.cmd("tab drop <cfile>")
+			return
+		end
+
+		local f, l = word:match("(.+):(%d+)")
+		-- print(word, f, l)
+
+		if f and l and vim.uv.fs_stat(f) then
+			-- vim.cmd("tab drop <cfile>|" .. l) -- opens file named `$l`
+			vim.cmd(string.format("tab drop %s|%d", f, l))
+		end
+		-- vim.cmd.wincmd("gF") -- <c-w>gF
+	end
+)
 
 vim.keymap.set("n", "Z?", function()
 	-- close all terminals (:wqa does not close terminals). destructive if
@@ -472,7 +501,7 @@ local ft_binds = { -- {{{
 
 				local body = require("util"):get_command_output(string.format( --
 					-- "< %s sed -rn '/^%s\\(/,/^\\}/p'", -- excessive match for 1-line funcs (/a/,/b/p always matches >1 line)
-					[[ < %s rg --multiline --multiline-dotall '%s\(.+?(; \}|^\})$' 2>/dev/null ]],
+					[[ < %s rg --multiline --multiline-dotall '^%s\(.+?(; \}|^\})$' 2>/dev/null ]],
 					vim.fn.expand("%"),
 					cword
 				))
@@ -757,6 +786,8 @@ local ft_binds = { -- {{{
 		-- TODO: if checkbox item (`- [ ]`), toggle check
 		-- https://github.com/tadmccorkle/markdown.nvim#lists
 
+		{ "n", "<leader>x", ":Dispatch zola serve<cr>" },
+
 		{
 			"n",
 			"(",
@@ -825,6 +856,16 @@ for ft, binds in pairs(ft_binds) do
 end
 
 local function c_compiler_cmd()
+	if
+		require("util"):buf_contains("// fil%-c") -- i keep forgetting that `-` is always magic
+	then
+		-- fil-c's clang is a drop-in replacement; for normal applications, it is
+		-- never necessary to import stdfil.h
+		-- https://fil-c.org/installation
+		-- https://fil-c.org/invisicaps_by_example
+		return vim.env.HOME .. "/filc-0.670-linux-x86_64/build/bin/clang -O2 -g"
+	end
+
 	-- {{{
 	-- if vim.fn.executable("tcc") then
 	-- 	return "tcc"
@@ -936,6 +977,17 @@ local function exec() -- {{{
 
 		-- the iffy langs
 
+		make = function()
+			local curr = vim.fn.line(".")
+			for c in require("util"):get_command_output([[grep -Pn '^[a-z][^:]+:' ]] .. curr_file):gmatch("(.-)\n") do
+				local l, c = c:match("^(%d):([^ :]+)")
+				if curr >= tonumber(l) then
+					return "make " .. c
+				end
+			end
+			error("unreachable")
+		end,
+
 		sql = function()
 			return string.format(
 				[[psql %s --expanded --file='%s']],
@@ -1035,7 +1087,7 @@ local function exec() -- {{{
 		-- optional: strace ./main
 
 		c = string.format(
-			[[ %s %s -o %s && ./%s 2>&1 ]],
+			[[ %s %s -o %s && %s 2>&1 ]],
 			c_compiler_cmd(),
 			curr_file,
 			string.gsub(curr_file, ".c", ""),
