@@ -105,6 +105,35 @@ require("conform").setup({
 			},
 		},
 
+		shfmt2 = {
+			command = "bash",
+
+			-- args = {
+			-- 	"-c",
+			-- 	string.format(
+			-- 		[[ < /dev/stdin sed -r '/^[^\t]/ s/^/#/; s/\$\$\(/z$(/g' | ~/.local/share/nvim/mason/bin/shfmt -sr | sed -r 's/^[^#]/\t&/; s/^\t*#//; s/z\$/$$/' | sponge "%s" ]],
+			-- 		vim.fn.expand("%")
+			-- 	),
+			-- },
+
+			args = {
+				"-c",
+				-- echo $0              # bash
+				-- bash -c 'echo $0'    # bash
+				-- bash -c 'echo $0' hi # hi
+				-- bash -c 'echo $1'    # ""
+				-- bash -c 'echo $1' hi # ""
+				-- i have not found a satisfying explanation for this behaviour
+				[[ < "$0" sed -r '/^[^\t]/ s/^/#/; s/\$\$\(/z$(/g' | ~/.local/share/nvim/mason/bin/shfmt -sr | sed -r 's/^[^#]/\t&/; s/^\t*#//; s/z\$/$$/' | sponge "$0" ]],
+				"$FILENAME",
+			},
+
+			-- creates a tmp file, which is to be modified in place. conform then
+			-- (silently) replaces the contents of the current file with that of the
+			-- tmp file
+			stdin = false,
+		},
+
 		rustfmt = {
 			prepend_args = {
 				-- https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#configuration-options
@@ -246,6 +275,7 @@ require("conform").setup({
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
+		make = { "shfmt2" },
 		markdown = { "mdslw", "cbfmt", "prettier" },
 		proto = { "buf" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
