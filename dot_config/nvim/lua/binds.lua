@@ -665,8 +665,10 @@ local ft_binds = { -- {{{
 		{ "n", "<leader>H", get_c_doc },
 	},
 
-	-- TODO: also include gomod
+	-- TODO: also include gomod (but for what?)
 	go = {
+
+		-- TODO: https://docs.go101.org/std/pkg/bytes.html
 
 		-- go-logging -> slog
 		-- %s/\v(log\.\w+)f\(("[^"]+"), ([^)]+)/\1(\2, "\3", \3/g
@@ -944,32 +946,35 @@ local function exec() -- {{{
 	curr_file = vim.fn.shellescape(curr_file)
 	local cwd = vim.fn.getcwd() -- only for go
 
-	---@type {[string]: string|function}
+	---@type {[string]: string}
 	local runners = {
 
 		-- the great langs
 		gleam = "gleam run",
 		rust = "RUST_BACKTRACE=1 cargo run", -- TODO: if vim.fn.line(".") >= line num of first match of '#[cfg(test)]', run 'cargo test' instead
 
+		-- d = "dmd -run " .. curr_file,
 		-- d2 = string.format("d2 --stdout-format=ascii '%s' -", curr_file), -- D2Preview more convenient
+		-- dhall = "dhall-to-json --file " .. curr_file,
+		-- elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
+		-- elvish = "elvish " .. curr_file,
+		-- fennel = "fennel " .. curr_file,
+		-- haskell = "runghc " .. curr_file,
 		-- jq = string.format("jq -f %s %s", curr_file, curr_file:gsub(".jq", ".json")),
 		-- jsonl = "jq -r < " .. curr_file, -- -f just waits for stdin for some reason
+		-- kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
+		-- lisp = "sbcl --script " .. curr_file,
 		-- lua = "luafile " .. curr_file,
+		-- ocaml = "ocaml " .. curr_file,
+		-- ruby = "ruby " .. curr_file,
+		-- zig = "zig run " .. curr_file,
+
 		-- the normal langs
-		d = "dmd -run " .. curr_file,
-		dhall = "dhall-to-json --file " .. curr_file,
-		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
-		elvish = "elvish " .. curr_file,
-		fennel = "fennel " .. curr_file,
-		haskell = "runghc " .. curr_file,
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
-		kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
-		lisp = "sbcl --script " .. curr_file,
-		ocaml = "ocaml " .. curr_file,
-		ruby = "ruby " .. curr_file,
 		sh = "env bash " .. curr_file,
-		zig = "zig run " .. curr_file,
+
+		-- the iffy langs
 
 		-- TODO: should be Dispatch
 		proto = string.format(
@@ -978,26 +983,25 @@ local function exec() -- {{{
 			vim.fn.expand("%:p:t") -- must be basename
 		),
 
-		-- the iffy langs
-
-		make = function()
+		make = (function() -- execute current recipe
 			local curr = vim.fn.line(".")
 			for c in require("util"):get_command_output([[grep -Pn '^[a-z][^:]+:' ]] .. curr_file):gmatch("(.-)\n") do
-				local l, c = c:match("^(%d):([^ :]+)")
+				local l
+				l, c = c:match("^(%d):([^ :]+)")
 				if curr >= tonumber(l) then
 					return "make " .. c
 				end
 			end
 			error("unreachable")
-		end,
+		end)(),
 
-		sql = function()
+		sql = (function() -- rarely used nowadays
 			return string.format(
 				[[psql %s --expanded --file='%s']],
 				assert(require("util"):sql_connections().work, "POSTGRES_URL not set"),
 				curr_file
 			)
-		end,
+		end)(),
 
 		-- note that :new brings us to repo root (verify with :new|pwd), so we need
 		-- to not only know where we used to be, but also run the basename.go
@@ -1013,7 +1017,7 @@ local function exec() -- {{{
 		-- .. "grep -v _test | " -- ignore test files (ugh)
 		-- .. "xargs go run",
 
-		python = function()
+		python = (function()
 			-- local root = require("util"):root_directory()
 			local cmd
 			if vim.fn.executable("uv") and require("util"):buf_contains("# /// script") then
@@ -1028,10 +1032,10 @@ local function exec() -- {{{
 				cmd = "python3 "
 			end
 			return cmd .. curr_file
-		end,
+		end)(),
 
 		-- local js = vim.fn.fnamemodify(curr_file, ":r") .. ".js"
-		typescript = function()
+		typescript = (function()
 			-- cd first, so that child's node_modules/tsx can be found
 			-- this assumes that node_modules and file.ts are at the same level
 			vim.fn.chdir(vim.fn.expand("%:p:h")) -- abs dirname (:h %:p)
@@ -1048,16 +1052,6 @@ local function exec() -- {{{
 				return ts_node .. " " .. curr_file
 			elseif vim.uv.fs_stat("./node_modules/tsx") then
 				return "node --no-warnings --import=tsx " .. curr_file
-				-- elseif vim.fs.root(0, "package.json") then
-				-- 	-- TODO: print is shown after execute
-				-- 	-- print("installing tsx...") -- ts-node is not just single binary
-				-- 	-- npm install --save-dev tsx
-				-- 	-- os.execute("yarn add --dev tsx >/dev/null")
-				-- 	error("need install tsx")
-				-- 	-- vim.fn.jobstart("yarn add --dev tsx") -- possibly bad recursion, high memory
-				-- 	-- return get_ts_runner(file)
-				-- else
-				-- 	error("no package.json found; need npm init")
 			end
 
 			local args = { "node" }
@@ -1072,24 +1066,24 @@ local function exec() -- {{{
 			table.insert(args, curr_file)
 
 			return table.concat(args, " ")
-		end, --(curr_file),
+		end)(), --(curr_file),
 
-		["javascript.mongo"] = string.format(
-			-- -f FILE requires FILE to be mongosh (not js)
-			[[mongosh %s --authenticationDatabase admin --quiet --eval < %s | sed -r 's/^\S+>[ .]*//g']],
-			-- .. [[ | node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq]],
-			vim.env.MONGO_URL,
-			curr_file
-		),
-
-		-- note: -static generates a fully self-contained binary. this roughly
-		-- doubles compile time, and makes the binary about 50x bigger
-
-		-- note: -W flags should be passed to clangd directly
-		-- optional: checksec --file=main --output=json | jq .
-		-- optional: strace ./main
+		-- ["javascript.mongo"] = string.format(
+		-- 	-- -f FILE requires FILE to be mongosh (not js)
+		-- 	[[mongosh %s --authenticationDatabase admin --quiet --eval < %s | sed -r 's/^\S+>[ .]*//g']],
+		-- 	-- .. [[ | node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq]],
+		-- 	vim.env.MONGO_URL,
+		-- 	curr_file
+		-- ),
 
 		c = string.format(
+			-- note: -static generates a fully self-contained binary. this roughly
+			-- doubles compile time, and makes the binary about 50x bigger
+
+			-- note: -W flags should be passed to clangd directly
+			-- optional: checksec --file=main --output=json | jq .
+			-- optional: strace ./main
+
 			[[ %s %s -o %s && %s 2>&1 ]],
 			c_compiler_cmd(),
 			curr_file,
@@ -1115,8 +1109,6 @@ local function exec() -- {{{
 	if not runner then
 		print("No runner configured for " .. ft)
 		return
-	elseif type(runner) == "function" then
-		runner = runner(curr_file)
 	end
 
 	require("util"):close_unnamed_splits()
