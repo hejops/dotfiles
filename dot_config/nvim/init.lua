@@ -380,7 +380,7 @@ telescope.setup({
 				-- https://github.com/nvim-telescope/telescope.nvim/blob/a4ed82509/lua/telescope/actions/init.lua#L885
 				i = {
 					["<cr>"] = function()
-						vim.cmd("Git commit -v")
+						vim.cmd("Git commit --untracked-files=no -v")
 					end,
 				},
 				-- n = { ["<cr>"] = telescope_actions.git_staging_toggle },
@@ -449,6 +449,9 @@ local function wrap(f, err)
 	end
 end
 
+-- all git actions now use the `g` prefix; first verify that the default bind
+-- doesn't do something useful. there may be some conflicts with treesitter
+
 vim.keymap.set("n", "<leader>e", wrap(telescope_b.git_files), { desc = "git ls-files" }) -- errors if not in git repo -- TODO: fallback to telescope_b.find_files
 vim.keymap.set("n", "gs", telescope_b.git_status, { desc = "git status" })
 
@@ -457,7 +460,7 @@ vim.keymap.set("n", "gs", telescope_b.git_status, { desc = "git status" })
 -- no matter where we are. furthermore, the `git log --oneline` preview cannot
 -- be overridden, so we are stuck with the ugly graph (which i never care
 -- about)
-vim.keymap.set("n", "<leader>gb", telescope_b.git_branches, { desc = "git branches" }) -- rare (run b in bash instead)
+-- vim.keymap.set("n", "<leader>gb", telescope_b.git_branches, { desc = "git branches" }) -- rare (run b in bash instead)
 
 local git_log_cmd = {
 	"git",
@@ -494,10 +497,11 @@ end, { desc = "git log (current file only)" })
 -- requires user input (or visual selection):
 -- git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S
 
-vim.keymap.set("n", "<leader>g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
-vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" })
-vim.keymap.set("n", "<leader>gu", ":Git checkout -- %", { desc = "discard all uncommitted changes" }) -- note: need confirm
+-- vim.keymap.set("n", "<leader>gs", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" })
 vim.keymap.set("n", "g.", ":Dispatch! git push<cr>", { desc = "git push (async)" })
+vim.keymap.set("n", "gX", ":Git checkout -- %", { desc = "discard all uncommitted changes" }) -- need confirm
+vim.keymap.set("n", "gh", ":Gitsigns stage_hunk<cr>", { desc = "add current hunk" })
+vim.keymap.set("n", "gr", ":Git rm -- %", { desc = "discard all uncommitted changes" }) -- need confirm
 vim.keymap.set("v", "gs", ":Gitsigns stage_hunk<cr>")
 
 local function commit_staged() -- {{{
@@ -524,7 +528,6 @@ vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit" })
 
 -- ga is not useful (:h ga), and can be safely overridden
 
--- vim.keymap.set("n", "<leader>gB", ":BlameToggle<cr>")
 vim.keymap.set("n", "gab", ":Gwrite<cr>", { desc = "add current buffer (entire)" })
 vim.keymap.set("n", "gap", ":Git add %<cr>", { desc = "add current buffer (patch)" })
 
@@ -547,7 +550,7 @@ vim.keymap.set("n", "gaP", function()
 	commit_staged()
 end, { desc = "commit hunks matching pattern" })
 
-vim.keymap.set("n", "<leader>gC", function()
+vim.keymap.set("n", "gC", function()
 	-- TODO: git add % + git commit --amend --no-edit
 	if not require("util"):command_ok("git status --porcelain | grep -q '^M'") then
 		print("No hunks staged")
@@ -563,12 +566,7 @@ vim.keymap.set("n", "<leader>gC", function()
 	)
 end, { desc = "append currently staged hunks to previous commit" })
 
--- use gdm instead
--- vim.keymap.set("n", "<leader>gd", function()
--- 	vim.cmd("vertical Git -p diff master...HEAD") -- J and K are smartly remapped, apparently
--- end, { desc = "diff current HEAD against master" })
-
-vim.keymap.set("n", "<leader>go", function()
+vim.keymap.set("n", "gB", function()
 	-- GitBlameOpenFileURL may produce bogus URLs, usually when files are moved.
 	-- in such cases, GitBlameOpenCommitURL may be better
 	-- https://github.com/f-person/git-blame.nvim/issues/103
