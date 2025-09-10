@@ -350,15 +350,6 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "proto" },
-	callback = function()
-		if not vim.uv.fs_stat(vim.env.HOME .. "/.local/share/nvim/mason/bin/protols") then
-			os.execute("rustup default nightly")
-		end
-	end,
-})
-
 -- vim.api.nvim_create_autocmd("FileType", {
 -- 	pattern = { "sh", "bash" },
 -- 	callback = function()

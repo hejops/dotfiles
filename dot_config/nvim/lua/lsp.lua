@@ -166,7 +166,6 @@ local servers = { -- {{{
 	dockerls = {},
 	lexical = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
-	protols = {}, -- rename quite slow on lsp start
 	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5/nvim/lua/plugins/lsp_init.lua#L90
 	taplo = {},
 	tinymist = {},
@@ -283,22 +282,18 @@ local servers = { -- {{{
 		-- },
 	},
 
-	-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md
-	-- TODO: lsp rename (or nvim) is acting weird (go 1.24, gopls 0.18): renames
-	-- are performed, but affected files are not opened in new tabs (maybe it was
-	-- always like that?), and each file needs to be explicitly opened/saved.
-	-- sometimes, renames are totally botched and result in ghastly syntax errors
 	gopls = {
 		settings = {
 			gopls = { -- i have absolutely no idea why gopls needs to stutter
+
+				-- https://tip.golang.org/gopls/settings
+				-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md
+				-- https://github.com/jarmex/nvim/blob/0c3876069aa7f7/lua/plugins/coding/lsp/langs/gopls.lua#L16
 
 				staticcheck = true, -- https://staticcheck.io/docs/checks/
 				symbolScope = "workspace", -- don't show ~/go, /usr/lib
 				usePlaceholders = false,
 
-				-- https://github.com/jarmex/nvim/blob/0c3876069aa7f7/lua/plugins/coding/lsp/langs/gopls.lua#L16
-
-				-- buildFlags = { "-tags", "integration" },
 				-- diagnosticsDelay = "500ms",
 				-- directoryFilters = { "-**/node_modules", "-**/.git", "-.vscode", "-.idea", "-.vscode-test" },
 				analysisProgressReporting = true,
@@ -438,6 +433,14 @@ local extra_servers = { -- these lsps are not on mason
 	-- and doesn't recognise some basic syntax (e.g. ON CONFLICT DO))
 	postgres_lsp = { autostart = false },
 }
+
+if require("util"):get_command_output("rustup default"):match("nightly") then
+	servers["protols"] = {}
+else
+	-- could also just force install nightly, but no other lsp requires this rn
+	-- os.execute("rustup default nightly")
+	extra_servers["protols"] = {}
+end
 
 -- -- this doesn't work at all lol
 -- vim.lsp.config("*", {

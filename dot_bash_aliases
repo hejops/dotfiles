@@ -1871,7 +1871,8 @@ ffconcat() {
 # ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; } # lines to comma-delimited str (rare?)
 append() { < /dev/stdin awk "{print \$0 \"$1\"}"; }
 desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # remove seconds, for ease of filtering logs
-largs() { < /dev/stdin xargs --delimiter='\n' "$@"; }        # split xargs by newline instead of space
+join2() { < /dev/stdin paste -d " " - -; }
+largs() { < /dev/stdin xargs --delimiter='\n' "$@"; } # split xargs by newline instead of space
 line() { < /dev/stdin sed -n "${1}p"; }
 paren() { < /dev/stdin prepend '(' | append ')'; }
 prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
@@ -2009,6 +2010,29 @@ inci() {
 	inci.js "$1" |
 		jq '.data.items[]' |
 		jqt year title director[0]
+}
+
+rewe() {
+	# https://ss64.com/bash/mapfile.html
+	zip=$1
+	# TODO: watch 10 s
+	readarray -t x < <(notmuch show 'subject:Vielen Dank für deine Bestellung!' |
+		grep -Fm1 http |
+		xargs curl -sL |
+		grep -Pom1 '[A-Z]-[A-Z]{3}[^<]+' |
+		xargs -I{} curl -sL 'https://wannkommt.rewe.de/api/delivery/{}' \
+			-X POST \
+			-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0' \
+			-H 'Content-Type: application/json' \
+			--data-raw '{"zipCode":"'"$zip"'"}' |
+		jq '
+			.address.latitude,
+			.mapDetails.driverLocation.latitude,
+			.address.longitude,
+			.mapDetails.driverLocation.longitude
+		')
+	[[ ${x[1]} == null ]] && return
+	echo "sqrt( (${x[1]}^2-${x[2]}^2) + (${x[3]}^2-${x[4]}^2) )" | bc
 }
 
 # }}}
