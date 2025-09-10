@@ -66,17 +66,22 @@ vim.keymap.set(
 			return
 		end
 
+		word = word:gsub("%)$", "")
+
 		local f, l = word:match("(.+):(%d+)")
-		-- always use current file, because cwd may be at a higher level than we
-		-- expect. however, relative paths only work from a dir, not a file
-		f = vim.fn.expand("%:p:h") .. "/" .. f
 		-- print(word, f, l)
 
-		if f and l and vim.uv.fs_stat(f) then
-			-- vim.cmd("tab drop <cfile>|" .. l) -- opens file named `$l`
-			vim.cmd(string.format("tab drop %s|%d", f, l))
+		if not f then -- no line number specified
+			-- always use current file, because cwd may be at a higher level than we
+			-- expect. however, relative paths only work from a dir, not a file
+			vim.cmd("tab drop " .. vim.fn.expand("%:p:h") .. "/" .. word)
+			return
 		end
-		-- vim.cmd.wincmd("gF") -- <c-w>gF
+
+		local p = vim.fn.expand("%:p:h") .. "/" .. f
+		if vim.uv.fs_stat(p) then
+			vim.cmd(string.format("tab drop %s|%d", p, l))
+		end
 	end
 )
 
