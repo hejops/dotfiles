@@ -67,6 +67,9 @@ vim.keymap.set(
 		end
 
 		local f, l = word:match("(.+):(%d+)")
+		-- always use current file, because cwd may be at a higher level than we
+		-- expect. however, relative paths only work from a dir, not a file
+		f = vim.fn.expand("%:p:h") .. "/" .. f
 		-- print(word, f, l)
 
 		if f and l and vim.uv.fs_stat(f) then

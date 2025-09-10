@@ -320,13 +320,14 @@ replace() {
 
 rge() {
 	: edit files matching pattern
-	staged=$(rg --files-with-matches "$@" | sort -u)
+	staged=$(rg --hidden --files-with-matches "$@" | sort -u)
 	if [[ $(<<< "$staged" wc -l) -gt 10 ]]; then
 		echo "More than 10 files found"
 	fi
 	echo "$staged" |
 		head |
-		xargs nvim -p
+		xargs nvim -p +"/\v""${*: -1}" # https://unix.stackexchange.com/a/503475
+
 }
 
 sd() {
@@ -412,6 +413,7 @@ alias b=_git_branch
 alias cr=git_root
 alias e=v
 alias gl=git_log
+alias i=b
 alias s=gS # should increasingly be done in vim
 
 # discouraged due to double index keypresses: gt gf gb
@@ -1666,17 +1668,6 @@ jqt() {
 }
 
 # }}}
-# 'bash' {{{
-
-# lint yaml
-# {
-# 	echo '#!/usr/bin/env bash'
-# 	< .gitlab-ci.yml yq -r '.[].script[]'
-# } |
-# 	~/.local/share/nvim/mason/bin/shellcheck -
-
-# }}}
-
 # docker {{{
 
 alias dolf='docker logs --tail=1 -f'

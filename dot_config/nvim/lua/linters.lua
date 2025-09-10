@@ -27,6 +27,7 @@ local linters = {
 	python = { "ruff" }, -- may have duplicate with ruff lsp
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
+	yaml = { "yaml_shellcheck" },
 
 	sql = {
 		"sqlfluff", -- slow lint is fine, since async
@@ -256,43 +257,56 @@ require("lint").linters.d2 = { -- {{{
 	end,
 } -- }}}
 
-require("lint").linters.checkmake2 = { -- {{{
-	cmd = "bash",
-	args = {
-		"-c",
-		[[ < "$1" sed -r '/^[^\t]/ s/^/#/; s/\$\$/$/g' | ~/.local/share/nvim/mason/bin/shellcheck --shell=bash -f json - ]],
-		vim.fn.expand("%"),
-		-- doesn't work
-		-- string.format(
-		-- 	[[ < "%s" sed -r '/^[^\t]/ s/^/#/' | sed -r 's/\$\$/$/g' | ~/.local/share/nvim/mason/bin/shellcheck --shell=bash -f json - ]],
-		-- 	vim.fn.expand("%")
-		-- ),
-	},
+-- use sed to transform a shell-containing file into valid shell script
+-- (preserving line numbers), then call shellcheck
+---@ param sed_cmd string
+local function shellcheck_wrapper(sed_cmd)
+	return {
+		cmd = "bash",
+		args = {
+			"-c",
+			string.format(
+				[[ < "$1" sed -r '%s' | ~/.local/share/nvim/mason/bin/shellcheck --shell=bash -f json - ]],
+				sed_cmd
+			),
+			vim.fn.expand("%"),
+		},
 
-	stdin = false,
-	ignore_exitcode = true,
+		stdin = false,
+		ignore_exitcode = true,
 
-	parser = function(output, _)
-		local items = {}
+		parser = function(output, _)
+			local items = {}
 
-		if output == "" then
+			if output == "" then
+				return items
+			end
+
+			for _, diag in ipairs(vim.json.decode(output) or {}) do
+				table.insert(items, {
+					source = "shellcheck",
+					lnum = diag.line - 1,
+					col = vim.bo.filetype == "yaml" and 6 or 1,
+					end_col = 999,
+					message = diag.message,
+					severity = vim.diagnostic.severity.WARN,
+				})
+			end
+
 			return items
-		end
+		end,
+	}
+end
 
-		for _, diag in ipairs(vim.json.decode(output) or {}) do
-			table.insert(items, {
-				source = "shellcheck",
-				lnum = diag.line - 1,
-				col = diag.column,
-				end_col = diag.endColumn,
-				message = diag.message,
-				severity = vim.diagnostic.severity.WARN,
-			})
-		end
+require("lint").linters.checkmake2 = shellcheck_wrapper([[/^[^\t]/ s/^/#/; s/\$\$/$/g]])
 
-		return items
-	end,
-} -- }}}
+require("lint").linters.yaml_shellcheck = shellcheck_wrapper([[
+  s/^/#/                    # comment everything
+  # /script:$/,/^#$/  s/^#//g # uncomment script: sections
+  /script:$/,/^#($|  [^ ])/  s/^#//g # uncomment script: sections
+  /script:$/        s/^/#/  # comment script: again
+  s/^[ |>-]+//              # remove leading symbols
+]])
 
 -- linters cannot be conditionally disabled at config time. they can only be
 -- disabled at runtime:
