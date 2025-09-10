@@ -107,30 +107,17 @@ require("conform").setup({
 
 		shfmt2 = {
 			command = "bash",
-
-			-- args = {
-			-- 	"-c",
-			-- 	string.format(
-			-- 		[[ < /dev/stdin sed -r '/^[^\t]/ s/^/#/; s/\$\$\(/z$(/g' | ~/.local/share/nvim/mason/bin/shfmt -sr | sed -r 's/^[^#]/\t&/; s/^\t*#//; s/z\$/$$/' | sponge "%s" ]],
-			-- 		vim.fn.expand("%")
-			-- 	),
-			-- },
-
 			args = {
 				"-c",
-				-- echo $0              # bash
-				-- bash -c 'echo $0'    # bash
-				-- bash -c 'echo $0' hi # hi
-				-- bash -c 'echo $1'    # ""
-				-- bash -c 'echo $1' hi # ""
-				-- i have not found a satisfying explanation for this behaviour
+				-- `man bash`: If the -c option is present [and] there are arguments
+				-- after the command_string, the first argument is assigned to $0 and
+				-- any remaining arguments are assigned to the positional parameters.
 				[[ < "$0" sed -r '/^[^\t]/ s/^/#/; s/\$\$\(/z$(/g' | ~/.local/share/nvim/mason/bin/shfmt -sr | sed -r 's/^[^#]/\t&/; s/^\t*#//; s/z\$/$$/' | sponge "$0" ]],
 				"$FILENAME",
 			},
-
-			-- creates a tmp file, which is to be modified in place. conform then
-			-- (silently) replaces the contents of the current file with that of the
-			-- tmp file
+			-- creates a tmp file (at $FILENAME), which is to be modified in place.
+			-- conform then (silently) replaces the contents of the current file with
+			-- that of $FILENAME
 			stdin = false,
 		},
 
