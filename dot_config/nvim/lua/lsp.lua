@@ -157,18 +157,27 @@ local servers = { -- {{{
 	-- https://github.com/blackbhc/nvim/blob/4ae2692403a463053a713e488cf2f3a762c583a2/lua/plugins/lspconfig.lua#L399
 	-- https://github.com/oniani/dot/blob/e517c5a8dc122650522d5a4b3361e9ce9e223ef7/.config/nvim/lua/plugin.lua#L157
 
-	-- digestif = {}, -- not valid in ensure_installed?
-	-- hls = {}, -- 1.7 GB!
+	-- hls = {}, -- haskell; 1.7 GB!
+	-- lexical = {}, -- elixir
 	-- ocamllsp = {}, -- requires global opam installation
 	-- ruff = {}, -- i don't know if this actually does anything
 	-- texlab = {},
-	bashls = {},
+
+	bashls = {
+		on_attach = function(client, bufnr)
+			-- -- hoverProvider disables hover completely, which is not what we want; we
+			-- -- only want to disable func def
+			-- client.server_capabilities.hoverProvider = false
+			-- vim.lsp.handlers["textDocument/hover"] = false -- noop
+			on_attach(client, bufnr)
+		end,
+	},
+
 	dockerls = {},
-	lexical = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
 	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5/nvim/lua/plugins/lsp_init.lua#L90
-	taplo = {},
-	tinymist = {},
+	taplo = {}, -- toml
+	tinymist = {}, -- typst
 	zls = {},
 
 	clangd = { -- mason versions are usually newer than arch
@@ -427,7 +436,7 @@ local servers = { -- {{{
 } -- }}}
 
 local extra_servers = { -- these lsps are not on mason
-	digestif = {}, -- requires luarocks; autocomplete is wonky
+	digestif = {}, -- latex; requires luarocks; autocomplete is wonky
 	gleam = {},
 	-- works without active connection, but parser is unusable (agonisingly slow
 	-- and doesn't recognise some basic syntax (e.g. ON CONFLICT DO))
