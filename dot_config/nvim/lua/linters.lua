@@ -266,7 +266,7 @@ local function shellcheck_wrapper(sed_cmd)
 		args = {
 			"-c",
 			string.format(
-				[[ < "$1" sed -r '%s' | ~/.local/share/nvim/mason/bin/shellcheck --shell=bash -f json - ]],
+				[[ < "$1" sed -r '%s' | ~/.local/share/nvim/mason/bin/shellcheck --shell=bash --exclude=2164,2103,2091 -f json - ]],
 				sed_cmd
 			),
 			vim.fn.expand("%"),
