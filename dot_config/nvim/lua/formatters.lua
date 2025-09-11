@@ -105,6 +105,22 @@ require("conform").setup({
 			},
 		},
 
+		shfmt2 = {
+			command = "bash",
+			args = {
+				"-c",
+				-- `man bash`: If the -c option is present [and] there are arguments
+				-- after the command_string, the first argument is assigned to $0 and
+				-- any remaining arguments are assigned to the positional parameters.
+				[[ < "$0" sed -r '/^[^\t]/ s/^/#/; s/\$\$\(/z$(/g' | ~/.local/share/nvim/mason/bin/shfmt -sr | sed -r 's/^[^#]/\t&/; s/^\t*#//; s/z\$/$$/' | sponge "$0" ]],
+				"$FILENAME",
+			},
+			-- creates a tmp file (at $FILENAME), which is to be modified in place.
+			-- conform then (silently) replaces the contents of the current file with
+			-- that of $FILENAME
+			stdin = false,
+		},
+
 		rustfmt = {
 			prepend_args = {
 				-- https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#configuration-options
@@ -246,6 +262,7 @@ require("conform").setup({
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
+		make = { "shfmt2" },
 		markdown = { "mdslw", "cbfmt", "prettier" },
 		proto = { "buf" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
