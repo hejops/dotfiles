@@ -263,6 +263,7 @@ require("conform").setup({
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
 		make = { "shfmt2" },
 		markdown = { "mdslw", "cbfmt", "prettier" },
+		nginx = { "nginxfmt" },
 		proto = { "buf" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },

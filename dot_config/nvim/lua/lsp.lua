@@ -166,6 +166,7 @@ local servers = { -- {{{
 	dockerls = {},
 	lexical = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
+	nginx_language_server = {},
 	pyright = {}, -- https://github.com/Lilja/dotfiles/blob/9fd77d2f5/nvim/lua/plugins/lsp_init.lua#L90
 	taplo = {},
 	tinymist = {},
