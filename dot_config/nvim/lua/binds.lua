@@ -955,7 +955,6 @@ local function exec() -- {{{
 		rust = "RUST_BACKTRACE=1 cargo run", -- TODO: if vim.fn.line(".") >= line num of first match of '#[cfg(test)]', run 'cargo test' instead
 
 		-- d = "dmd -run " .. curr_file,
-		-- d2 = string.format("d2 --stdout-format=ascii '%s' -", curr_file), -- D2Preview more convenient
 		-- dhall = "dhall-to-json --file " .. curr_file,
 		-- elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 		-- elvish = "elvish " .. curr_file,
@@ -971,6 +970,7 @@ local function exec() -- {{{
 		-- zig = "zig run " .. curr_file,
 
 		-- the normal langs
+		d2 = "d2 " .. curr_file, -- svg (for ascii, use D2Preview autocmd)
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
 		sh = "env bash " .. curr_file,
@@ -1125,6 +1125,11 @@ local function exec() -- {{{
 
 	if type(runner) == "function" then
 		runner = runner()
+	end
+
+	if ft == "d2" then -- no need to output
+		vim.cmd("!" .. runner)
+		return
 	end
 
 	require("util"):close_unnamed_splits()

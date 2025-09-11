@@ -234,7 +234,9 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 -- FileType is buggy if d2 plugin is lazy loaded
-vim.api.nvim_create_autocmd("VimEnter", {
+-- VimEnter only works for `nvim foo.d2`
+-- BufReadPost is buggy with `update`
+vim.api.nvim_create_autocmd("BufEnter", {
 	pattern = { "*.d2" },
 	command = "D2Preview",
 })
