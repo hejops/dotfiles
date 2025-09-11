@@ -112,7 +112,7 @@ require("conform").setup({
 				-- `man bash`: If the -c option is present [and] there are arguments
 				-- after the command_string, the first argument is assigned to $0 and
 				-- any remaining arguments are assigned to the positional parameters.
-				[[ < "$0" sed -r '/^[^\t]/ s/^/#/; s/\$\$\(/z$(/g' | ~/.local/share/nvim/mason/bin/shfmt -sr | sed -r 's/^[^#]/\t&/; s/^\t*#//; s/z\$/$$/' | sponge "$0" ]],
+				[[ < "$0" sed -r '/^[^\t]/ s/^/#/; s/\$\$\(/z$(/g' | ~/.local/share/nvim/mason/bin/shfmt -sr | sed -r 's/^[^#]/\t&/; s/^# /\t&/; s/^#//; s/z\$/$$/' | sponge "$0" ]],
 				"$FILENAME",
 			},
 			-- creates a tmp file (at $FILENAME), which is to be modified in place.
@@ -245,7 +245,6 @@ require("conform").setup({
 
 		-- jq = { "jq" }, -- jq only formats json (duh)
 		-- ocaml = { "ocamlformat" },
-		-- xml = { "xmlformat" }, -- ModuleNotFoundError: No module named 'xmlformatter'
 		["_"] = { "trim_whitespace", "trim_newlines" },
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
@@ -257,18 +256,20 @@ require("conform").setup({
 		gleam = { "gleam" }, -- apparently this works?
 		html = { "prettier" },
 		htmldjango = { "djlint" },
-		jq = { "jqfmt" },
+		jq = { "jqfmt" }, -- pending https://github.com/noperator/jqfmt/issues/5
 		json = { "jq" },
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
 		make = { "shfmt2" },
 		markdown = { "mdslw", "cbfmt", "prettier" },
+		nginx = { "nginxfmt" },
 		proto = { "buf" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },
 		scss = { "prettier" },
 		sh = { "shfmt", "shellharden" }, -- TODO: consider shellcheck -f diff (similar to shellharden, but does not apply)
+		svg = { "xmlformatter" },
 		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },

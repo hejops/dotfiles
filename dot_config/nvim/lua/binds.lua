@@ -62,17 +62,22 @@ vim.keymap.set(
 			return
 		end
 
+		word = word:gsub("%)$", "")
+
 		local f, l = word:match("(.+):(%d+)")
-		-- always use current file, because cwd may be at a higher level than we
-		-- expect. however, relative paths only work from a dir, not a file
-		f = vim.fn.expand("%:p:h") .. "/" .. f
 		-- print(word, f, l)
 
-		if f and l and vim.uv.fs_stat(f) then
-			-- vim.cmd("tab drop <cfile>|" .. l) -- opens file named `$l`
-			vim.cmd(string.format("tab drop %s|%d", f, l))
+		if not f then -- no line number specified
+			-- always use current file, because cwd may be at a higher level than we
+			-- expect. however, relative paths only work from a dir, not a file
+			vim.cmd("tab drop " .. vim.fn.expand("%:p:h") .. "/" .. word)
+			return
 		end
-		-- vim.cmd.wincmd("gF") -- <c-w>gF
+
+		local p = vim.fn.expand("%:p:h") .. "/" .. f
+		if vim.uv.fs_stat(p) then
+			vim.cmd(string.format("tab drop %s|%d", p, l))
+		end
 	end
 )
 
@@ -950,7 +955,6 @@ local function exec() -- {{{
 		rust = "RUST_BACKTRACE=1 cargo run", -- TODO: if vim.fn.line(".") >= line num of first match of '#[cfg(test)]', run 'cargo test' instead
 
 		-- d = "dmd -run " .. curr_file,
-		-- d2 = string.format("d2 --stdout-format=ascii '%s' -", curr_file), -- D2Preview more convenient
 		-- dhall = "dhall-to-json --file " .. curr_file,
 		-- elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 		-- elvish = "elvish " .. curr_file,
@@ -966,6 +970,7 @@ local function exec() -- {{{
 		-- zig = "zig run " .. curr_file,
 
 		-- the normal langs
+		d2 = "d2 " .. curr_file, -- svg (for ascii, use D2Preview autocmd)
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
 		sh = "env bash " .. curr_file,
@@ -1120,6 +1125,11 @@ local function exec() -- {{{
 
 	if type(runner) == "function" then
 		runner = runner()
+	end
+
+	if ft == "d2" then -- no need to output
+		vim.cmd("!" .. runner)
+		return
 	end
 
 	require("util"):close_unnamed_splits()

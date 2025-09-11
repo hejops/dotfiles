@@ -9,7 +9,13 @@ require("binds")
 require("filetypes")
 require("sets")
 
+if vim.version().minor >= 12 then
+	-- https://neovim.io/doc/user/pack.html#_plugin-manager
+	print("vim.pack is now available on v0.12")
+end
+
 require("plugins")
+
 require("pickers")
 require("util"):random_colorscheme()
 
