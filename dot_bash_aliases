@@ -685,9 +685,7 @@ gcoup() {
 	# https://adamtornhill.com/articles/crimescene/codeascrimescene.htm
 	git log --pretty=%h "$1" |
 		xargs git show --name-only --pretty= |
-		sort |
-		uniq -c |
-		sort -n
+		count
 }
 
 clocd() {
