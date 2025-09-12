@@ -67,14 +67,28 @@ vim.keymap.set(
 		local f, l = word:match("(.+):(%d+)")
 		-- print(word, f, l)
 
+		---@param ff string
+		local function relativise(ff)
+			if ff:match("^/") then -- absolute
+				return ff
+			elseif ff:match("^~") then
+				return ff:gsub("~", vim.env.HOME)
+			else -- relative
+				return vim.fn.expand("%:p:h") .. "/" .. ff
+			end
+		end
+
 		if not f then -- no line number specified
 			-- always use current file, because cwd may be at a higher level than we
 			-- expect. however, relative paths only work from a dir, not a file
-			vim.cmd("tab drop " .. vim.fn.expand("%:p:h") .. "/" .. word)
+			-- vim.cmd("tab drop " .. vim.fn.expand("%:p:h") .. "/" .. word)
+			vim.cmd("tab drop " .. relativise(word))
 			return
 		end
 
-		local p = vim.fn.expand("%:p:h") .. "/" .. f
+		-- print(f, f:match("^%~"))
+
+		local p = relativise(f)
 		if vim.uv.fs_stat(p) then
 			vim.cmd(string.format("tab drop %s|%d", p, l))
 		end
