@@ -32,7 +32,7 @@ vim.keymap.set("n", "X", '"_X')
 vim.keymap.set("n", "Y", "y$") -- default is redundant with yy
 vim.keymap.set("n", "co", "O<esc>jo<esc>k") -- surround current line with newlines
 vim.keymap.set("n", "gD", "<nop>")
-vim.keymap.set("n", "gg", "go") -- you should just be using go instead
+vim.keymap.set("n", "gg", "gg0")
 vim.keymap.set("n", "j", [[v:count == 0 ? 'gj' : 'j']], { expr = true, silent = true }) -- use g[jk] smartly
 vim.keymap.set("n", "k", [[v:count == 0 ? 'gk' : 'k']], { expr = true, silent = true })
 vim.keymap.set("n", "s", '"_d')
@@ -806,6 +806,7 @@ local ft_binds = { -- {{{
 		-- TODO: if checkbox item (`- [ ]`), toggle check
 		-- https://github.com/tadmccorkle/markdown.nvim#lists
 
+		{ "n", "<leader>t", require("util").md_toc },
 		{ "n", "<leader>x", ":Dispatch zola serve<cr>" },
 
 		{
