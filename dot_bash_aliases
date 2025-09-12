@@ -1153,8 +1153,10 @@ gcon() { # {{{
 
 	: resolve conflicts, if any, and merge
 
+	markers='^[<=>|]{7}'
+
 	_git_has_conflicts() {
-		rg -q --hidden '^[<=>]{7}'
+		rg -q --hidden "$markers"
 		return $?
 	}
 
@@ -1192,7 +1194,7 @@ gcon() { # {{{
 			return
 		fi
 		echo "Unresolved conflicts remaining!"
-		_git_get_conflicts | xargs nvim -p +'/\v^[<=>]{7}'
+		_git_get_conflicts | xargs nvim -p +'/\v'"$markers"
 	done
 
 	# _git_get_conflicts | xargs git add
@@ -1632,6 +1634,40 @@ sqt() {
 		sed -rz 's/\n/ /g; s/\( /\n/g' |
 		awk '{print $NF}' |
 		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+}
+
+psch() {
+
+	# psql \d+ is too verbose, so we must use pg_dump
+
+	# use subshell to avoid persisting sourced vars
+	(
+		f=$(rg -l --hidden '^POSTGRES_URL' "$REPO" | grep -v template) # inner
+		source "$f"
+
+		# env has all the correct values, but domain:port is wrong. the
+		# mapping is found in a docker-compose.yml
+
+		inner_port=$(<<< "$POSTGRES_URL" grep -Po '\d+')
+		outer_port=$(rg -Iom1 "\d+:$inner_port" "$REPO" | # one can only hope the correct file is selected
+			head -n1 |
+			cut -d: -f1)
+		POSTGRES_URL=$(<<< "$POSTGRES_URL" sed -r "s|@[^/]+|@localhost:$outer_port|")
+
+		# getting the quoting right is extremely difficult, so just
+		# dump to file
+		pg_dump --schema-only "$POSTGRES_URL" > /tmp/s
+
+		# TODO: sqruff would be nice...
+		prv_cmd="cat /tmp/s | sed -rn '/CREATE TABLE public.{} /,/\);/p' | bat --color always --style=auto --language=sql 2>/dev/null"
+
+		psql "$POSTGRES_URL" -c '\dt' |
+			awk 'NR>3{print $3}' |
+			grep . |
+			fzf --preview="$prv_cmd" \
+				--preview-window='right,60%,border' --ansi
+	)
+
 }
 
 # }}}
