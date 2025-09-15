@@ -618,7 +618,8 @@ v() { # {{{
 	# ln -s /usr/bin/batcat ~/.local/bin/bat
 	prv_cmd="bat --color always --style=auto {} 2>/dev/null || cat {}"
 
-	{
+	# https://github.com/wezterm/wezterm/issues/4287#issuecomment-3289326309
+	readarray -t f < <({
 		# git diff --name-only --ignore-submodules "$(_gmaster)...HEAD" | grep . #||
 		git log --no-merges --first-parent --name-only --pretty= "$(_gmaster)...HEAD" | grep .
 		git ls-files --full-name # . is implicit
@@ -633,8 +634,8 @@ v() { # {{{
 		# extent
 		fzf -m --prompt="$(_git_current_branch): " \
 			--height=50% --reverse --preview-window='right,50%,border' \
-			--preview="$prv_cmd" |
-		xargs nvim -p
+			--preview="$prv_cmd")
+	nvim -p "${f[@]}"
 }       # }}}
 gdm() { # {{{
 	: diff against master, like in a PR
@@ -685,9 +686,7 @@ gcoup() {
 	# https://adamtornhill.com/articles/crimescene/codeascrimescene.htm
 	git log --pretty=%h "$1" |
 		xargs git show --name-only --pretty= |
-		sort |
-		uniq -c |
-		sort -n
+		count
 }
 
 clocd() {

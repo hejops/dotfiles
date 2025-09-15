@@ -47,6 +47,18 @@ function M:literal_keys(seq)
 	vim.api.nvim_feedkeys(seq, "n", false) -- .. '/'
 end
 
+--- @param s string
+--- @param delim string
+--- @return string[]
+function M:split(s, delim)
+	-- https://old.reddit.com/r/lua/comments/123hd6m/_/jdumrd6/
+	local tbl = {}
+	for token in string.gmatch(s, "[^" .. delim .. "]+") do
+		table.insert(tbl, token)
+	end
+	return tbl
+end
+
 -- buffers {{{
 
 function M:get_bufnr(fname)
@@ -61,6 +73,8 @@ function M:get_bufnr(fname)
 end
 
 -- only first 10 lines of buffer are checked
+---@param target string
+---@param lines integer?
 ---@return boolean
 function M:buf_contains(target, lines)
 	for _, l in pairs(vim.api.nvim_buf_get_lines(0, 0, lines or 10, false)) do
@@ -96,7 +110,7 @@ function M:get_bufs_loaded(buf_nums) -- return list of (open) buffer paths
 end
 
 ---@return number[]
-function M:get_tabs_loaded()
+function M:get_tabs_loaded() -- returns buf numbers
 	-- this will differ from get_bufs_loaded, because not all buffers may be open
 	-- in a tab
 
@@ -323,6 +337,39 @@ function M:md_to_pdf()
 	os.execute(compile)
 	if require("util"):command_ok("lsof " .. out) then
 		os.execute(string.format("zathura %s >/dev/null 2>/dev/null &", out))
+	end
+end
+
+function M:md_toc()
+	local cmd = string.format(
+		[[
+      < "%s" grep -P '^#{2,}' |
+        while read -r section; do
+          indent=$(<<< "$section" cut -d' ' -f1 | wc -c) # includes newline
+          _=$((indent = (indent - 3) * 2))
+          indent=$(printf %%"${indent}"s) # https://stackoverflow.com/a/5349796
+
+          title=$(<<< "$section" cut -d' ' -f2-)
+
+          link=$(<<< "$title" tr '[:upper:]' '[:lower:]' |
+            tr ' ' - |
+            tr -dc 'a-z0-9_\n-')
+          echo "${indent}- [$title](#$link)"
+        done
+    ]],
+		vim.fn.expand("%:p")
+	)
+
+	local lnum
+	for i, l in pairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+		if l:match("^# ") then
+			lnum = i + 1
+			break
+		end
+	end
+
+	if lnum then
+		vim.api.nvim_buf_set_lines(0, lnum, lnum, false, M:split(require("util"):get_command_output(cmd), "\n"))
 	end
 end
 

@@ -32,7 +32,7 @@ vim.keymap.set("n", "X", '"_X')
 vim.keymap.set("n", "Y", "y$") -- default is redundant with yy
 vim.keymap.set("n", "co", "O<esc>jo<esc>k") -- surround current line with newlines
 vim.keymap.set("n", "gD", "<nop>")
-vim.keymap.set("n", "gg", "go") -- you should just be using go instead
+vim.keymap.set("n", "gg", "gg0")
 vim.keymap.set("n", "j", [[v:count == 0 ? 'gj' : 'j']], { expr = true, silent = true }) -- use g[jk] smartly
 vim.keymap.set("n", "k", [[v:count == 0 ? 'gk' : 'k']], { expr = true, silent = true })
 vim.keymap.set("n", "s", '"_d')
@@ -67,14 +67,28 @@ vim.keymap.set(
 		local f, l = word:match("(.+):(%d+)")
 		-- print(word, f, l)
 
+		---@param ff string
+		local function relativise(ff)
+			if ff:match("^/") then -- absolute
+				return ff
+			elseif ff:match("^~") then
+				return ff:gsub("~", vim.env.HOME)
+			else -- relative
+				return vim.fn.expand("%:p:h") .. "/" .. ff
+			end
+		end
+
 		if not f then -- no line number specified
 			-- always use current file, because cwd may be at a higher level than we
 			-- expect. however, relative paths only work from a dir, not a file
-			vim.cmd("tab drop " .. vim.fn.expand("%:p:h") .. "/" .. word)
+			-- vim.cmd("tab drop " .. vim.fn.expand("%:p:h") .. "/" .. word)
+			vim.cmd("tab drop " .. relativise(word))
 			return
 		end
 
-		local p = vim.fn.expand("%:p:h") .. "/" .. f
+		-- print(f, f:match("^%~"))
+
+		local p = relativise(f)
 		if vim.uv.fs_stat(p) then
 			vim.cmd(string.format("tab drop %s|%d", p, l))
 		end
@@ -794,6 +808,7 @@ local ft_binds = { -- {{{
 		-- TODO: if checkbox item (`- [ ]`), toggle check
 		-- https://github.com/tadmccorkle/markdown.nvim#lists
 
+		{ "n", "<leader>t", require("util").md_toc },
 		{ "n", "<leader>x", ":Dispatch zola serve<cr>" },
 
 		{

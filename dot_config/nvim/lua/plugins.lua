@@ -53,7 +53,7 @@ local cfg = { -- {{{
 	-- },
 } -- }}}
 
-require("lazy").setup(
+require("lazy").setup( --
 	{
 
 		-- essentials {{{
@@ -231,6 +231,7 @@ require("lazy").setup(
 					"gitlint",
 					"golangci-lint",
 					"hadolint",
+					"luacheck",
 					"markdownlint",
 					"proselint",
 					"ruff",
@@ -827,6 +828,7 @@ require("lazy").setup(
 		-- underline current word (not highlight, not bold)
 
 		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
+		"hejops/kwrite-theme-nvim",
 		"maya-sama/kawaii.nvim",
 		"sebasruiz09/fizz.nvim",
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
@@ -885,5 +887,5 @@ require("lazy").setup(
 		-- }}}
 	},
 
-	cfg --
+	cfg
 )
