@@ -64,6 +64,8 @@ complete -o bashdefault -o default -F _complete_make make # not sure if option o
 
 # startup {{{
 
+# https://silverrainz.me/blog/2025-09-systemd-fzf-aliases.html
+
 # https://wiki.archlinux.org/title/Systemd#Boot_time_increasing_over_time
 # systemd-analyze blame | grep -P '\ds'
 # systemd-analyze critical-chain
@@ -129,7 +131,7 @@ ps --pid "$PPID" | grep -Fq wezterm &&
 	# \S (et al) is not supported. there is no noticeable performance
 	# difference
 	# https://www.bashsupport.com/bash/variables/bash_rematch/
-	[[ $(du -csh "$SLSK"/complete | tail -n1) =~ ^([0-9]+).+G ]] &&
+	[[ $(du -csh "$SLSK"/complete | tail -n1) =~ ^([0-9]+).*G ]] &&
 	# [0] = full line (like awk)
 	# [@] = full line + all matches
 	((BASH_REMATCH[1] >= 3)) &&
