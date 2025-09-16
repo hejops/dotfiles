@@ -1662,13 +1662,19 @@ psch() {
 		pg_dump --schema-only "$POSTGRES_URL" > /tmp/s
 
 		# TODO: sqruff would be nice...
-		prv_cmd="cat /tmp/s | sed -rn '/CREATE TABLE public.{} /,/\);/p' | bat --color always --style=auto --language=sql 2>/dev/null"
+		prefix='CREATE TABLE public'
+		prv_cmd="cat /tmp/s | sed -rn '/$prefix.{}/,/\);/p' | bat --color always --style=auto --language=sql 2>/dev/null"
 
-		psql "$POSTGRES_URL" -c '\dt' |
+		tbl=$(psql "$POSTGRES_URL" -c '\dt' |
 			awk 'NR>3{print $3}' |
 			grep . |
 			fzf --preview="$prv_cmd" \
-				--preview-window='right,60%,border' --ansi
+				--preview-window='right,60%,border' --ansi)
+
+		rg -l "$prefix\.$tbl" "$REPO" |
+			head -n1 |
+			xargs nvim +'/\v'"$prefix\.$tbl"
+
 	)
 
 }

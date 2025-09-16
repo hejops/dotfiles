@@ -683,6 +683,8 @@ local ft_binds = { -- {{{
 	-- TODO: also include gomod (but for what?)
 	go = {
 
+		-- %s/\v"json:\\"([^\\]+)\\""/`json:"\1"`/g
+
 		-- TODO: https://docs.go101.org/std/pkg/bytes.html
 
 		-- go-logging -> slog
