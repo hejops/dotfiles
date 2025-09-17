@@ -689,9 +689,6 @@ gxx() {
 	prv_cmd="echo {} | cut -f1 | xargs git show -U1 | grepdiff \"$1\" --output-matching=hunk"
 	git log --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S "$1" | # WARN: slow with large histories
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border'
-	# |     # --ansi
-	# 	cut -f1 |
-	# 	xargs git show
 }
 
 gcoup() {
@@ -971,9 +968,8 @@ guns() {
 
 	# _git_log_fzf "$1" |
 	git log --oneline "$1" |
-		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
-		awk '{print $1}' |
-		xargs -I{}git checkout {} -- "$f"
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi --accept-nth=1 |
+		xargs -I{} git checkout {} -- "$f"
 
 }
 
@@ -982,8 +978,7 @@ gpick() {
 	[[ $# -ne 1 ]] && return
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
 	sha=$(git log --branches --remotes --tags --oneline --decorate "$1" |
-		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
-		awk '{print $1}')
+		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi --accept-nth=1)
 	[[ -n $sha ]] && git cherry-pick --edit "$sha"
 }
 
@@ -1325,9 +1320,7 @@ gldiff() {
 			jq '.[:25][]' |
 			jqt updated_at iid title assignee.username source_branch |
 			sort -r |
-			fzh -0 -1 --preview="$prv_cmd" |
-			# fzf --preview="$prv_cmd" |
-			awk '{print $2}')
+			fzh -0 -1 --preview="$prv_cmd" --accept-nth=2)
 		[[ -z $n ]] && return
 	else
 		n=$1
@@ -1566,8 +1559,7 @@ jup() {
 		sort -rV |
 		sed "/^$curr_ver/,\$d; /\t0$/d" | # filter to versions newer than current
 		sort -k2n |                       # sort by downloads
-		fzf --tac --prompt="$pkg (current: $curr_ver)" |
-		cut -f1)
+		fzf --tac --prompt="$pkg (current: $curr_ver)" --accept-nth=1)
 	# npm install (update?) / yarn upgrade
 	echo yarn upgrade "$pkg@^$target_ver"
 }
@@ -2248,8 +2240,7 @@ imm() {
 		grep -Po 'Adresse: [^(]+' |
 		sed -r 's/([a-z])([A-Z])/\1\t\2/' |
 		sort -u |
-		fzf |
-		cut -f2 |
+		fzf --accept-nth=2 |
 		xargs -I{} notmuch show "from:noreply@immobilienscout24.de and body:{}" |
 		grep -Fm1 'Scout-ID' |
 		awk '{print $NF}' |
@@ -2352,7 +2343,7 @@ _unused() {
 
 # rng() { for _ in "$(seq "${2:-1}")"; do echo $((1 + RANDOM % ${1:-100})); done; }
 ,pgrep() { \pgrep "$1" | xargs ps; } # ps for runtime
-pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill -9; }
+pk() { pgrep "$1" | fzf -m --tac --accept-nth=1 | xargs kill -9; }
 pkill1() { \pgrep "$1" | sed 1d | xargs kill; }                                            # kill all procs except 1st
 rng() { while read -r _; do echo $((1 + RANDOM % ${1:-100})); done < "$(seq "${2:-1}")"; } # shellharden
 ya() { mpv --video=no "ytdl://ytsearch10:'$*'"; }
