@@ -280,7 +280,16 @@ cm() {
 		# symlink) is modified. the symlink targets must always be
 		# re-added. this will no longer be necessary when the scripts
 		# repo is deprecated.
-		chezmoi status | grep -Po '\.local/bin/.+' | largs chezmoi add -f 2> /dev/null
+		chezmoi status |
+			grep -Po '\.local/bin/.+' |
+			largs chezmoi add -f 2> /dev/null
+
+		# TODO: when updating ~/scripts/foo (and having run `links`),
+		# the symlink at ~/.local/bin/foo is always updated. however,
+		# cm apply will replace the symlink with an actual file?
+		#
+		# chezmoi source-path .local/bin/mail | xargs chezmoi
+		# target-path | xargs realpath
 
 		chezmoi cd
 	else
@@ -598,7 +607,9 @@ _git_log_fzf() { # {{{
 	# committed in this branch, or simply pulled from remote.
 
 	git log --decorate --oneline --no-merges "${args[@]}" |
-		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+		# we always only want the git hash
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi \
+			--accept-nth=1
 }     # }}}
 v() { # {{{
 	: open recently modified files
@@ -637,7 +648,7 @@ v() { # {{{
 		fzf -m --prompt="$(_git_current_branch): " \
 			--height=50% --reverse --preview-window='right,50%,border' \
 			--preview="$prv_cmd")
-	nvim -p "${f[@]}"
+	((${#f} > 0)) && nvim -p "${f[@]}"
 }       # }}}
 gdm() { # {{{
 	: diff against master, like in a PR
@@ -669,7 +680,7 @@ gdm() { # {{{
 
 git_log() {
 	: browse git log, showing each commit\'s diff in fzf preview
-	_git_log_fzf "$@" | awk '{print $1}' | xargs git show
+	_git_log_fzf "$@" | xargs git show
 }
 
 gxx() {
@@ -867,7 +878,7 @@ _git_commit() {
 gsq() {
 	: squash last n commits, starting from a given commit -- rewrites history!
 	# https://stackoverflow.com/a/5201642
-	sha=$(_git_log_fzf | cut -d' ' -f1)
+	sha=$(_git_log_fzf)
 	# `git reset <sha>` brings us back to the commit -after- <sha>. this
 	# means we need to select the commit before the 'target', which is
 	# unintuitive. so we just go back 1 more commit with ~
@@ -880,7 +891,7 @@ gcf() {
 	: like gc, but squash the new commit with an earlier one
 
 	# https://jordanelver.co.uk/blog/2020/06/04/fixing-commits-with-git-commit-fixup-and-git-rebase-autosquash/
-	old_sha=$(_git_log_fzf . | cut -d' ' -f1)
+	old_sha=$(_git_log_fzf .)
 	[[ -z $old_sha ]] && return
 
 	# --fixup associates a new commit with an existing commit so that when
@@ -927,12 +938,12 @@ gapat() { # {{{
 
 grev() {
 	: revert single commit in isolation
-	_git_log_fzf "$@" | awk '{print $1}' | xargs git revert
+	_git_log_fzf "$@" | xargs git revert
 }
 
 gRev() {
 	: rollback entire index to a known good commit -- check ci first
-	sha=$(_git_log_fzf "$@" | awk '{print $1}')
+	sha=$(_git_log_fzf "$@")
 	git checkout -f "$sha" -- .
 	git commit -av
 }
@@ -1596,6 +1607,19 @@ mch() {
 			cproto "$f" > "$h"
 		fi
 	done
+}
+
+chemo() {
+	# TODO: integrate into vim exec (scanning all files may be tricky though)
+	: determine module of c header file
+	find /usr/include |  # all header files live here (hopefully)
+		grep "$1$" |        # curl/curl.h
+		xargs pacman -Qoq | # owner of file
+		xargs pacman -Qlq | # files owned by pkg
+		grep -m1 pc$ |
+		xargs basename |
+		cut -d. -f1 |
+		xargs pkg-config --cflags --libs
 }
 
 # }}}
