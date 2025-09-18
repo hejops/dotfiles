@@ -62,6 +62,15 @@ _complete_make() {
 }
 complete -o bashdefault -o default -F _complete_make make # not sure if option order is significant
 
+# # < foo.json jq doesn't work
+# _complete_jq() {
+# 	notify-send hi
+# 	>&2 echo "${COMP_WORDS[@]}"
+# }
+# complete -F _complete_jq jq
+# complete -F _complete_jq foo
+# complete -F _complete_jq '<'
+
 # startup {{{
 
 # https://wiki.archlinux.org/title/Systemd#Boot_time_increasing_over_time
@@ -896,6 +905,8 @@ gcf() {
 gapat() { # {{{
 	: stage hunks matching some pattern
 
+	# TODO: error: No valid patches in input (allow with "--allow-empty")
+
 	for patt in "$@"; do
 		# grepdiff is more reliable than git diff -S/-G
 		# https://choly.ca/post/git-programmatic-staging/
@@ -1067,7 +1078,9 @@ gb() { # {{{
 	# note: rev-list errors if branch has no remote yet
 	if [[ "$(git rev-list --left-right --count \
 		"origin/$target...HEAD" 2> /dev/null | cut -f1)" -gt 0 ]]; then
+		set -x
 		git pull
+		set +x
 	fi
 
 } # }}}
@@ -1151,6 +1164,13 @@ g,() {
 
 gcon() { # {{{
 	# https://nitaym.github.io/ourstheirs/
+
+	# TODO: if gmm not run yet (i.e. still behind master), do nothing
+
+	# cd novum-api
+	# make db-up && make db-vet && make db-generate
+	# cr
+	# gcon
 
 	: resolve conflicts, if any, and merge
 
@@ -1661,7 +1681,7 @@ psch() {
 
 		# TODO: sqruff would be nice...
 		prefix='CREATE TABLE public'
-		prv_cmd="cat /tmp/s | sed -rn '/$prefix.{}/,/\);/p' | bat --color always --style=auto --language=sql 2>/dev/null"
+		prv_cmd="cat /tmp/s | sed -rn '/$prefix.{} /,/\);/p' | bat --color always --style=auto --language=sql 2>/dev/null"
 
 		tbl=$(psql "$POSTGRES_URL" -c '\dt' |
 			awk 'NR>3{print $3}' |
@@ -1723,7 +1743,7 @@ dps() {
 	docker ps -a --format=json |
 		# note: ID is usually just visual noise, but placing it any
 		# later in the seq will make it hard to extract (with cut/awk)
-		jqt 'Names[0:50]' State ID Status RunningFor Ports |
+		jqt 'Names[0:50]' State ID Status RunningFor Ports 2>&1 |
 		sort |
 		colt
 }
