@@ -1,6 +1,8 @@
 // Note: if you make changes to pref.js while Firefox is running, the changes
 // will be overwritten on exit. Editing this is fine, though.
 
+// https://ffprofile.com/
+
 // https://github.com/dm0-/installer/blob/6cf8f0bbdc91757579bdcab53c43754094a9a9eb/configure.pkg.d/firefox.sh
 // https://github.com/matfurla/dotfiles/blob/master/firefox/.mozilla/user.js
 // https://github.com/pyllyukko/user.js/blob/master/user.js
@@ -70,6 +72,7 @@ user_pref("browser.link.open_newwindow.restriction", 0);
 user_pref("browser.messaging-system.whatsNewPanel.enabled", false);
 user_pref("browser.migrated-sync-button", true);
 user_pref("browser.ml.chat.enabled", false);
+user_pref("browser.ml.enabled", false);
 user_pref("browser.newtab.extensionControlled", true);
 user_pref("browser.newtab.privateAllowed", true);
 user_pref("browser.newtab.url", "about:blank");
@@ -359,7 +362,7 @@ user_pref("privacy.clearOnShutdown.downloads", true);
 user_pref("privacy.clearOnShutdown.history", false);
 user_pref("privacy.clearOnShutdown.sessions", false);
 user_pref("privacy.donottrackheader.enabled", true);
-user_pref("privacy.firstparty.isolate", true);
+user_pref("privacy.firstparty.isolate", true); // breaks 3rd party login
 user_pref("privacy.history.custom", true);
 user_pref("privacy.popups.showBrowserMessage", false);
 user_pref("privacy.purge_trackers.date_in_cookie_database", "0");
@@ -393,6 +396,7 @@ user_pref("sidebar.backupState", '{"panelOpen":false,"launcherWidth":240,"expand
 user_pref("sidebar.expandOnHover", true);
 user_pref("sidebar.main.tools", "aichat"); // if "", reverts to default
 user_pref("sidebar.verticalTabs", true); // 136 -- https://support.mozilla.org/en-US/kb/use-sidebar-access-tools-and-vertical-tabs
+user_pref("sidebar.verticalTabs.dragToPinPromo.dismissed", true); // https://github.com/mozilla-firefox/firefox/commit/ba8f58ab5812be252fc672d0106f65729a12025b#diff-6c308cd46a16f78a1510ddb0fc397bb10cdb277fc5beaede721c0bd8eec0e6dcR12-R46
 user_pref("sidebar.visibility", "expand-on-hover");
 user_pref("signon.importedFromSqlite", true);
 user_pref("signon.usage.hasEntry", true);
