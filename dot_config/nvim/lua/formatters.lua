@@ -105,14 +105,24 @@ require("conform").setup({
 			},
 		},
 
-		shfmt2 = {
+		shfmt_makefile = {
 			command = "bash",
 			args = {
 				"-c",
 				-- `man bash`: If the -c option is present [and] there are arguments
 				-- after the command_string, the first argument is assigned to $0 and
 				-- any remaining arguments are assigned to the positional parameters.
-				[[ < "$0" sed -r '/^[^\t]/ s/^/#/; s/\$\$\(/z$(/g' | ~/.local/share/nvim/mason/bin/shfmt -sr | sed -r 's/^[^#]/\t&/; s/^# /\t&/; s/^#//; s/z\$/$$/' | sponge "$0" ]],
+				[[ < "$0" sed -r '
+/^[^\t]/ s/^/#/ # add placeholder comment to all make-specific lines
+s/\$\$\(/z$(/g  # $$ results in shfmt error
+' |
+~/.local/share/nvim/mason/bin/shfmt -sr |
+sed -r '
+/^[^"]+"$/,/\t+"( \|)?$/ s/^/#/ # HACK: prevent shfmt from preserving leading whitespace in quotes
+s/^([^#]|# )/\t&/ # reindent recipes and "real" make comments (which are always followed by space)
+s/^#//  # undo placeholder comments
+s/z\$/$$/
+' | sponge "$0" ]],
 				"$FILENAME",
 			},
 			-- creates a tmp file (at $FILENAME), which is to be modified in place.
@@ -211,22 +221,6 @@ require("conform").setup({
 			command = "d2",
 			args = { "fmt", "-" },
 		},
-
-		-- sqlfluff = {
-		-- 	-- format: more reliable; will format if no violations found
-		-- 	-- fix: does nothing if 'Unfixable violations detected'
-		-- 	-- in either case, no `dialect` usually leads to timeout
-		-- 	args = {
-		-- 		"format",
-		-- 		"--dialect=postgres",
-		-- 		"--processes=32", -- lol
-		-- 		"--exclude-rules",
-		-- 		"layout.long_lines",
-		-- 		"-",
-		-- 	},
-		-- 	stdin = true,
-		-- 	require_cwd = false, -- else requires local .sqlfluff
-		-- },
 	},
 
 	formatters_by_ft = {
@@ -261,7 +255,7 @@ require("conform").setup({
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
-		make = { "shfmt2" },
+		make = { "shfmt_makefile" },
 		markdown = { "mdslw", "cbfmt", "prettier" },
 		nginx = { "nginxfmt" },
 		proto = { "buf" },
@@ -284,7 +278,7 @@ require("conform").setup({
 		typescriptreact = js_formatters,
 
 		go = {
-			-- https://github.com/SingularisArt/Singularis/blob/856a938fc8554fcf47aa2a4068200bc49cad2182/aspects/nvim/files/.config/nvim/lua/modules/lsp/lsp_config.lua#L50
+			-- https://github.com/SingularisArt/Singularis/blob/856a938fc8554/aspects/nvim/files/.config/nvim/lua/modules/lsp/lsp_config.lua#L50
 
 			"gofumpt", -- https://github.com/mvdan/gofumpt?tab=readme-ov-file#added-rules
 			"golines", -- https://github.com/segmentio/golines#motivation https://github.com/segmentio/golines?tab=readme-ov-file#struct-tag-reformatting

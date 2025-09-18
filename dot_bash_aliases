@@ -73,6 +73,8 @@ complete -o bashdefault -o default -F _complete_make make # not sure if option o
 
 # startup {{{
 
+# https://silverrainz.me/blog/2025-09-systemd-fzf-aliases.html
+
 # https://wiki.archlinux.org/title/Systemd#Boot_time_increasing_over_time
 # systemd-analyze blame | grep -P '\ds'
 # systemd-analyze critical-chain
@@ -138,7 +140,7 @@ ps --pid "$PPID" | grep -Fq wezterm &&
 	# \S (et al) is not supported. there is no noticeable performance
 	# difference
 	# https://www.bashsupport.com/bash/variables/bash_rematch/
-	[[ $(du -csh "$SLSK"/complete | tail -n1) =~ ^([0-9]+).+G ]] &&
+	[[ $(du -csh "$SLSK"/complete | tail -n1) =~ ^([0-9]+).*G ]] &&
 	# [0] = full line (like awk)
 	# [@] = full line + all matches
 	((BASH_REMATCH[1] >= 3)) &&
@@ -287,7 +289,16 @@ cm() {
 		# symlink) is modified. the symlink targets must always be
 		# re-added. this will no longer be necessary when the scripts
 		# repo is deprecated.
-		chezmoi status | grep -Po '\.local/bin/.+' | largs chezmoi add -f 2> /dev/null
+		chezmoi status |
+			grep -Po '\.local/bin/.+' |
+			largs chezmoi add -f 2> /dev/null
+
+		# TODO: when updating ~/scripts/foo (and having run `links`),
+		# the symlink at ~/.local/bin/foo is always updated. however,
+		# cm apply will replace the symlink with an actual file?
+		#
+		# chezmoi source-path .local/bin/mail | xargs chezmoi
+		# target-path | xargs realpath
 
 		chezmoi cd
 	else
@@ -605,7 +616,9 @@ _git_log_fzf() { # {{{
 	# committed in this branch, or simply pulled from remote.
 
 	git log --decorate --oneline --no-merges "${args[@]}" |
-		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+		# we always only want the git hash
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi \
+			--accept-nth=1
 }     # }}}
 v() { # {{{
 	: open recently modified files
@@ -644,7 +657,7 @@ v() { # {{{
 		fzf -m --prompt="$(_git_current_branch): " \
 			--height=50% --reverse --preview-window='right,50%,border' \
 			--preview="$prv_cmd")
-	nvim -p "${f[@]}"
+	((${#f} > 0)) && nvim -p "${f[@]}"
 }       # }}}
 gdm() { # {{{
 	: diff against master, like in a PR
@@ -676,7 +689,7 @@ gdm() { # {{{
 
 git_log() {
 	: browse git log, showing each commit\'s diff in fzf preview
-	_git_log_fzf "$@" | awk '{print $1}' | xargs git show
+	_git_log_fzf "$@" | xargs git show
 }
 
 gxx() {
@@ -685,9 +698,6 @@ gxx() {
 	prv_cmd="echo {} | cut -f1 | xargs git show -U1 | grepdiff \"$1\" --output-matching=hunk"
 	git log --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S "$1" | # WARN: slow with large histories
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border'
-	# |     # --ansi
-	# 	cut -f1 |
-	# 	xargs git show
 }
 
 gcoup() {
@@ -874,7 +884,7 @@ _git_commit() {
 gsq() {
 	: squash last n commits, starting from a given commit -- rewrites history!
 	# https://stackoverflow.com/a/5201642
-	sha=$(_git_log_fzf | cut -d' ' -f1)
+	sha=$(_git_log_fzf)
 	# `git reset <sha>` brings us back to the commit -after- <sha>. this
 	# means we need to select the commit before the 'target', which is
 	# unintuitive. so we just go back 1 more commit with ~
@@ -887,7 +897,7 @@ gcf() {
 	: like gc, but squash the new commit with an earlier one
 
 	# https://jordanelver.co.uk/blog/2020/06/04/fixing-commits-with-git-commit-fixup-and-git-rebase-autosquash/
-	old_sha=$(_git_log_fzf . | cut -d' ' -f1)
+	old_sha=$(_git_log_fzf .)
 	[[ -z $old_sha ]] && return
 
 	# --fixup associates a new commit with an existing commit so that when
@@ -936,12 +946,12 @@ gapat() { # {{{
 
 grev() {
 	: revert single commit in isolation
-	_git_log_fzf "$@" | awk '{print $1}' | xargs git revert
+	_git_log_fzf "$@" | xargs git revert
 }
 
 gRev() {
 	: rollback entire index to a known good commit -- check ci first
-	sha=$(_git_log_fzf "$@" | awk '{print $1}')
+	sha=$(_git_log_fzf "$@")
 	git checkout -f "$sha" -- .
 	git commit -av
 }
@@ -969,9 +979,8 @@ guns() {
 
 	# _git_log_fzf "$1" |
 	git log --oneline "$1" |
-		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
-		awk '{print $1}' |
-		xargs -I{}git checkout {} -- "$f"
+		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi --accept-nth=1 |
+		xargs -I{} git checkout {} -- "$f"
 
 }
 
@@ -980,8 +989,7 @@ gpick() {
 	[[ $# -ne 1 ]] && return
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
 	sha=$(git log --branches --remotes --tags --oneline --decorate "$1" |
-		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi |
-		awk '{print $1}')
+		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi --accept-nth=1)
 	[[ -n $sha ]] && git cherry-pick --edit "$sha"
 }
 
@@ -1332,9 +1340,7 @@ gldiff() {
 			jq '.[:25][]' |
 			jqt updated_at iid title assignee.username source_branch |
 			sort -r |
-			fzh -0 -1 --preview="$prv_cmd" |
-			# fzf --preview="$prv_cmd" |
-			awk '{print $2}')
+			fzh -0 -1 --preview="$prv_cmd" --accept-nth=2)
 		[[ -z $n ]] && return
 	else
 		n=$1
@@ -1573,8 +1579,7 @@ jup() {
 		sort -rV |
 		sed "/^$curr_ver/,\$d; /\t0$/d" | # filter to versions newer than current
 		sort -k2n |                       # sort by downloads
-		fzf --tac --prompt="$pkg (current: $curr_ver)" |
-		cut -f1)
+		fzf --tac --prompt="$pkg (current: $curr_ver)" --accept-nth=1)
 	# npm install (update?) / yarn upgrade
 	echo yarn upgrade "$pkg@^$target_ver"
 }
@@ -1614,6 +1619,19 @@ mch() {
 			cproto "$f" > "$h"
 		fi
 	done
+}
+
+chemo() {
+	# TODO: integrate into vim exec (scanning all files may be tricky though)
+	: determine module of c header file
+	find /usr/include |  # all header files live here (hopefully)
+		grep "$1$" |        # curl/curl.h
+		xargs pacman -Qoq | # owner of file
+		xargs pacman -Qlq | # files owned by pkg
+		grep -m1 pc$ |
+		xargs basename |
+		cut -d. -f1 |
+		xargs pkg-config --cflags --libs
 }
 
 # }}}
@@ -2242,8 +2260,7 @@ imm() {
 		grep -Po 'Adresse: [^(]+' |
 		sed -r 's/([a-z])([A-Z])/\1\t\2/' |
 		sort -u |
-		fzf |
-		cut -f2 |
+		fzf --accept-nth=2 |
 		xargs -I{} notmuch show "from:noreply@immobilienscout24.de and body:{}" |
 		grep -Fm1 'Scout-ID' |
 		awk '{print $NF}' |
@@ -2346,7 +2363,7 @@ _unused() {
 
 # rng() { for _ in "$(seq "${2:-1}")"; do echo $((1 + RANDOM % ${1:-100})); done; }
 ,pgrep() { \pgrep "$1" | xargs ps; } # ps for runtime
-pk() { pgrep "$1" | fzf -m --tac | cut -d' ' -f1 | xargs kill -9; }
+pk() { pgrep "$1" | fzf -m --tac --accept-nth=1 | xargs kill -9; }
 pkill1() { \pgrep "$1" | sed 1d | xargs kill; }                                            # kill all procs except 1st
 rng() { while read -r _; do echo $((1 + RANDOM % ${1:-100})); done < "$(seq "${2:-1}")"; } # shellharden
 ya() { mpv --video=no "ytdl://ytsearch10:'$*'"; }
