@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+loc() {
+
+	# cloc (lines of code) report for the start of each month
+	#
+	# produces jsonl which should be processed and plotted with a dedicated
+	# plotting tool (e.g. matplotlib/gonum). allowing output to remain
+	# unstructured (e.g. for gnuplot) would likely result in unnecessary
+	# complexity.
+
+	# shellcheck disable=SC2329
+	f() {
+		fts=(
+
+			"Bourne Again Shell"
+			# "Bourne Shell" # dubious (4 lines)
+			# SUM
+			Go
+			Markdown
+			Python
+			SQL
+			TypeScript
+			YAML
+		)
+
+		ajoin() {
+			: join space-delimited array
+			input=("$@")
+			IFS=,
+			echo "${input[*]}"
+		}
+
+		# first commit of each month
+		month=$(printf "%02d" "$1")
+		git log --since="2025-$month-01" --oneline --reverse |
+			head -n1 |
+			awk '{print $1}' |
+			# note: 2 s without --include-lang
+			xargs cloc --json --force-lang="Bourne Again Shell",sh \
+				--include-lang="$(ajoin "${fts[@]}")" |
+			# not sure why jq errs
+			# https://stackoverflow.com/a/68176981
+			# langs are always sorted by loc desc (except SUM)
+			jq 'map_values(.code)|del(..|nulls)' || :
+	}
+	export -f f
+
+	# 7 s / 5 months
+	# 13 s / 8 months
+	seq 1 8 |
+		parallel -q f |
+		tee ~/foo.jsonl
+
+}
+
+mr() {
+
+	# tabular summary of MR numstats
+	# 7 s
+
+	# !1263	c150	+29135	-76568	subj...
+	# !1148	c19	+13788	-47	subj...
+	# !1065	c22	+11793	-276	subj...
+	# !995	c76	+9917	-140	subj...
+	# !1232	c39	+7562	-361	subj...
+	# !1377	c48	+7322	-62	subj...
+	# !1090	c545	+4301	-4304	subj...
+
+	# shellcheck disable=SC2329
+	f() {
+		sum() { paste -sd+ < /dev/stdin | bc; }
+
+		ajoin() {
+			: join space-delimited array
+			input=("$@")
+			IFS=$'\t'
+			echo "${input[*]}"
+		}
+
+		line=$1
+		m_hash=$(<<< "$line" awk '{print $1}')
+
+		# Merge branch 'master' of ...
+		mr=$(git show "$m_hash" | grep -Po '!\d+') #|| continue
+
+		# get real parent of merge commit (which has the changes)
+		p_hash=$(git show --no-patch --format='%P' "$m_hash" |
+			awk '{print $2}')
+
+		# git show "$p_hash" --shortstat
+
+		subj=$(git show --no-patch --format=%s "$p_hash")
+		stat=$(git show --format= --numstat "$p_hash")
+		changed=$(<<< "$stat" wc -l)
+		add=$(<<< "$stat" cut -f1 | grep -v ^- | sum)
+		del=$(<<< "$stat" cut -f2 | grep -v ^- | sum)
+		net=$(echo "$add-$del" | bc)
+
+		a=("$mr" "$changed" +"$add" -"$del" "$net" "$subj")
+		ajoin "${a[@]}"
+	}
+	export -f f
+
+	git log --since="$(date +%Y)-01-01" --oneline --merges |
+		parallel -q f
+
+}
+
+cd "$REPO"
+
+# loc
+
+# as markdown
+cat << EOF
+|mr|files|add|delete|net|title|
+|--|-----|---|------|---|-----|
+EOF
+mr |
+	sort -k5 -n -r |
+	sed -r 's/(^|$|\t)/\|/g' |
+	(
+		head
+		tail
+	)
+
+# echo "$SECONDS"
