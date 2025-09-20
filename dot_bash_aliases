@@ -654,7 +654,10 @@ v() { # {{{
 		# height=~X% is not suitable because preview is usually longer
 		# than input rows, and preview must always be shown to a reasonable
 		# extent
-		fzf -m --prompt="$(_git_current_branch): " \
+		#
+		# --no-sort should only be used when fuzzy matching is strict
+		# enough to remove most rows
+		fzf --no-sort -m --prompt="$(_git_current_branch): " \
 			--height=50% --reverse --preview-window='right,50%,border' \
 			--preview="$prv_cmd")
 	((${#f} > 0)) && nvim -p "${f[@]}"
@@ -2142,10 +2145,31 @@ fftabs() {
 }
 
 topa() {
+	# TODO: confusingly, there are still 2 different disq dirs:
+	# ~/gripts/disq is older, ~/disq is newer and uses sqlc. both use the
+	# same db (hardlinked). no attempt has been made to unify the two
+
+	# shellcheck disable=SC2329
+	f() {
+		# because what's stopping me from just making another sqlite
+		# call?
+		artist=$(< /dev/stdin)
+		q=$(< ~/disq/queries/artists.sql sed -rn '/GetAlbums/,/;/p' | # extract the query we want
+			sed -r "s/\?/'$artist'/")                                    # inject the arg
+		# xargs -I{} sqlite3 -- ~/disq/collection2.db '{}'
+		sqlite3 -tabs -- ~/disq/collection2.db "$q" 2> /dev/null |
+			colt
+	}
+	export -f f
+
 	< ~/gripts/disq/queries/top_artists_by_avg_rating.sql sqlite3 -tabs \
 		~/gripts/disq/collection2.db 2> /dev/null |
 		sort -k2 -t$'\t' -k1 |
-		colt
+		fzf --preview='echo {} | cut -f1 | f' --preview-window='right,60%,border'
+
+	# fzf --preview='echo {} | cut -f1 | xargs -d"\n" ~/disq/disq -artist' --preview-window='right,60%,border'
+
+	unset f
 }
 
 randalb() { # {{{
@@ -2486,4 +2510,24 @@ gcpd() {
 		awk -F$'\t' '{print $8/$9,$3,$1,$8,$9}' |
 		sort -n |
 		colt
+}
+
+lsp_clean() {
+	# this is quite destructive for lsps that are not just lsps, esp biome,
+	# buf, ruff. reinstalls may not work. it is usually safer to just go
+	# nuclear: rm -rf ~/.local/share/nvim/mason
+	reg=~/.local/share/nvim/mason/registries/github/mason-org/mason-registry/registry.json
+	in_use="$(< ~/.config/nvim/lua/lsp.lua sed -rn '/^local servers/,/^\}/p' |
+		grep -P '^\t\w' |
+		awk '{print $1}')"
+	# shellcheck disable=SC2012
+	\ls ~/.local/share/nvim/mason/packages |
+		while read -r d; do
+			lua_name=$(< "$reg" jq -er ".[]|select(.name==\"$d\")|.neovim.lspconfig") || continue # not lsp
+			<<< "$in_use" grep -Fxq "$lua_name" && continue                                       # in use
+			# echo "$d"
+			rm -rf ~/.local/share/nvim/mason/packages/"$d"
+		done
+	# if dead symlink still present, mason thinks already installed
+	find ~/.local/share/nvim/mason/bin -xtype l -delete
 }
