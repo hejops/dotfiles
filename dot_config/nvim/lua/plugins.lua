@@ -227,17 +227,18 @@ require("lazy").setup( --
 
 					-- linters
 
+					"buf",
 					"checkmake",
 					"gitlint",
 					"golangci-lint",
 					"hadolint",
-					"luacheck",
 					"markdownlint",
 					"proselint",
 					"ruff",
 					"shellcheck", -- should be included in bashls, but may not work ootb?
 					"sqlfluff",
 					"sqruff",
+					vim.fn.executable("luarocks") == 1 and "luacheck" or nil,
 				},
 
 				--
