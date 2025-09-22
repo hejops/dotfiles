@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# vim:ft=bash
+# vim:ft=sh
 # this file is sourced on any unix-like system and should remain under 400 LOC.
 # 200 LOC is possible with extensive sourcing. no functions (except for
 # GIT_PROMPT) should be declared here.
@@ -21,6 +21,7 @@ paths=(
 	/snap/go/current/bin # ubuntu
 	/usr/local/bin       # dwm
 	~/.cargo/bin         # arch installs are preferred over cargo
+	~/.diversion/bin
 	~/.local/bin
 	~/dita/.venv/bin # poetry config --local virtualenvs.in-project true
 	~/go/bin
@@ -180,6 +181,7 @@ export WORK_DIRS=(
 	~/rust/lasttree
 	~/scripts
 	~/ts/handbook
+	~/vapl
 	~/ytm
 
 )
@@ -245,6 +247,7 @@ export LESS="-R --mouse --wheel-lines=$((LINES / 2))" # ensure mouse wheel works
 alias cal="cal --monday --week" # util-linux (ubuntu uses bsd's)
 alias cp="cp -rv"
 alias dmesg="dmesg --time-format=iso"
+alias du="du -b" # kb as default makes no sense
 alias feh="feh --draw-filename --fullscreen --auto-zoom --sort name --version-sort"
 alias grep="grep --color=auto"
 alias inotifywait="inotifywait --format='%T	%w%f	%e' --timefmt='%Y-%m-%dT%H:%M:%S'"
@@ -265,15 +268,17 @@ alias xargs="xargs --no-run-if-empty --verbose"
 alias ..="cd .."
 alias c="curl --silent --location --fail"
 alias cg="wget --continue"
+alias duc="du -csh"
 alias fehm="feh --sort mtime"
 alias fehr="feh --randomize"
 alias ftail="tail -f"
 alias h="htop --user=\$USER"
 alias qm="vim +Quickmath -c startinsert /tmp/foo"
 alias r="yazi"
+alias rg.="rg --multiline --multiline-dotall"
 alias rgf="rg --files-with-matches"
 alias rgl="rg --no-heading --with-filename"
-alias rgml="rg --multiline --multiline-dotall"
+alias sc=systemctl
 alias sqj="sqlite3 -json"
 alias tmp="cd \$(mktemp -d)"
 alias xargs1="xargs --max-args=1"
@@ -289,7 +294,7 @@ if command -v pacman > /dev/null; then
 	alias get="sudo pacman --sync"
 	alias lp="pacman --query --search"
 	alias lps="expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort -n"
-	alias pclean="paccache --remove && yes | sudo pacman -Scc"
+	alias pclean="paccache --remove && yes | sudo pacman -Scc" # TODO: does not clean /var/cache/pkgfile
 	alias pwhich="pacman -Qo"
 	alias sp="pacman --sync --search"
 	alias tz=trizen # if gpg fail, gpg --recv-keys <key>
@@ -315,19 +320,23 @@ elif command -v port > /dev/null; then
 fi
 
 rem() {
+	[[ $# -eq 0 ]] && return
 	if command -v apt > /dev/null; then
 		sudo apt --purge remove "$@"
 		return
 	fi
 
-	[[ $# -ne 1 ]] && return
-	tree=$(pactree -r "$1") || return
-	if [[ $(<<< "$tree" wc -l) -eq 1 ]]; then
-		lp "^$1$"
-	else
-		echo "$tree"
-	fi
-	sudo pacman --remove --recursive "$1"
+	for pkg in "$@"; do
+		tree=$(pactree -r "$pkg") || return
+		if
+			[[ $(<<< "$tree" wc -l) -eq 1 ]] # no dependents
+		then
+			lp "^$pkg$"
+		else
+			echo "$tree"
+		fi
+	done
+	sudo pacman --remove --recursive "$@"
 }
 
 rema() { rem "$(lp "$1" | grep -Po '^\S+')"; } # remove all packages matching pattern
@@ -395,8 +404,6 @@ stty werase undef
 set -o vi
 # set +h # always lookup command path on every invocation
 
-# GSHA=$(git rev-parse --short HEAD) # sha is cool but useless
-
 GIT_PROMPT() {
 	# https://gist.github.com/matthewmccullough/47267
 	# https://gist.github.com/nickboldt/4055398#file-bashrc-L50
@@ -415,20 +422,18 @@ GIT_PROMPT() {
 			git rev-parse --is-inside-work-tree > /dev/null 2>&1
 	} || return
 
-	# rev-parse fails if no remote yet
-	SHA=$(git rev-parse --short HEAD 2> /dev/null) || return
-
 	# git branch -r (remote)
 	# git branch -l (local)
 
-	CURRENT_LOCAL_BRANCH=$(git branch --show-current)
-	if [[ -z $CURRENT_LOCAL_BRANCH ]]; then
+	if
+		CURRENT_LOCAL_BRANCH=$(git branch --show-current)
+		[[ -z $CURRENT_LOCAL_BRANCH ]]
+	then
 		CURRENT_LOCAL_BRANCH=detached
 	fi
 
-	# elif [[ $(git branch | wc -l) -ne 1 ]]; then
-	# 	prompt+="<$CURRENT_LOCAL_BRANCH:$SHA> " || return
-	# fi
+	# rev-parse fails if no remote yet
+	SHA=$(git rev-parse --short HEAD 2> /dev/null) || return
 
 	local prompt
 	prompt="< $CURRENT_LOCAL_BRANCH :: $SHA > "
@@ -440,27 +445,25 @@ GIT_PROMPT() {
 	fi
 
 	# set -x
-	# sorted branches, most recently committed first
-	REMOTE_BRANCHES=$(git branch --sort=-committerdate) # default: local branches only
-	# REMOTE_BRANCHES=$(git branch --remotes --sort=-committerdate)
+
 	if
-		[[ $REMOTE_BRANCHES == *upstream* ]] # repo is a fork
+		# sorted branches, most recently committed first
+		REMOTE_BRANCHES=$(git branch --sort=-committerdate) # default: local branches only
+		[[ $REMOTE_BRANCHES == *upstream* ]]                # `upstream` means repo is a fork (relatively rare)
 	then
-		MASTER=$(grep <<< "$REMOTE_BRANCHES" -m1 upstream | xargs)
+		MASTER=$(grep <<< "$REMOTE_BRANCHES" -m1 upstream | \xargs)
+
+	elif
+		# refs/remotes/origin/master (or main)
+		MASTER=$(git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | \xargs basename)
+		[[ -n $MASTER ]]
+	then
+		:
 
 	else
-		MASTER=$(
-			# refs/remotes/origin/master (or main)
-			git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null |
-				cut -d/ -f4
-			# cut -d/ -f3-
-		)
-
-		if [[ -z $MASTER ]]; then
-			>&2 echo 'empty remote branch found; fixing...'
-			git remote set-head origin --auto > /dev/null
-			MASTER=$(git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4)
-		fi
+		>&2 echo 'empty remote branch found; fixing...'
+		git remote set-head origin --auto > /dev/null
+		MASTER=$(git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | \xargs basename)
 
 	fi
 
@@ -477,31 +480,39 @@ GIT_PROMPT() {
 			"origin/$MASTER...HEAD" 2> /dev/null
 	)
 
-	if [[ $behind_m -gt 0 ]]; then
-		state="$behind_m commits behind"
+	# if ((behind_m > 0)); then
+	# 	state="$behind_m commits behind"
+	#
+	# 	if ((ahead_m > 0)); then
+	# 		state+=", $ahead_m commits ahead of $MASTER"
+	# 	else
+	# 		state+=" $MASTER"
+	# 	fi
+	#
+	# elif ((ahead_m > 0)); then
+	# 	state+="$ahead_m commits ahead of $MASTER"
+	#
+	# fi
 
-		if [[ $ahead_m -gt 0 ]]; then
-			state+=", $ahead_m commits ahead of $MASTER"
-		else
-			state+=" $MASTER"
-		fi
-
-	elif [[ $ahead_m -gt 0 ]]; then
+	if ((behind_m > 0 && ahead_m > 0)); then
+		state="$behind_m commits behind, $ahead_m commits ahead of $MASTER"
+	elif ((behind_m > 0)); then
+		state="$behind_m commits behind $MASTER"
+	elif ((ahead_m > 0)); then
 		state+="$ahead_m commits ahead of $MASTER"
 
 	fi
 
 	if
 		[[ $CURRENT_LOCAL_BRANCH != "$MASTER" ]] &&
-			! dev_ahead=$(git log --oneline --first-parent \
+			dev_ahead=$(git log --oneline --first-parent \
 				"origin/$CURRENT_LOCAL_BRANCH...HEAD" 2> /dev/null |
-				wc -l)
+				wc -l) &&
+			((dev_ahead > 0))
 	then
-		state+=" (no remote branch yet)"
-
-	elif [[ $dev_ahead -gt 0 ]]; then
 		state+=" ($dev_ahead unpushed)"
-
+	else
+		state+=" (no remote branch yet)"
 	fi
 
 	# list number of dead local branches
@@ -520,14 +531,16 @@ GIT_PROMPT() {
 
 last_exit() {
 	# note: $? is only updated when a non-empty cmd is run
-	ex=$?
-	if [[ $ex -gt 0 ]]; then
+	if
+		ex=$?
+		((ex > 0))
+	then
 		echo "$ex "
 	fi
 }
 
-# apparently, double quotes only evaluate once, while single quotes allow
-# (repeated) expansion at runtime
+# double quotes only evaluate once, while single quotes allow (repeated)
+# expansion at runtime. this is similar to how aliases work
 # https://stackoverflow.com/a/21219060
 # https://stackoverflow.com/a/23879264
 # PS1='[\A] \W/ $(GIT_PROMPT)> '
@@ -550,8 +563,6 @@ PS1+='> ' # prompt symbol
 # }}}
 
 # shellcheck disable=SC1090
-[[ -f ~/.opam/opam-init/init.sh ]] && . ~/.opam/opam-init/init.sh
-# shellcheck disable=SC1090
 [[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
 # shellcheck disable=SC1090
 [[ -f ~/.bash_aliases_work ]] && . ~/.bash_aliases_work
@@ -559,13 +570,8 @@ PS1+='> ' # prompt symbol
 [[ -f ~/.config/readline/fzf.bash ]] && . ~/.config/readline/fzf.bash
 
 _complete_pacman_pkgs() {
-	f() {
-		# shellcheck disable=SC2317
-		pacman --query --search |
-			grep -P "^local/$1" |
-			cut -d' ' -f1 |
-			cut -d/ -f2
-	}
+	# shellcheck disable=SC2329
+	f() { pacman --query --search | grep -P "^local/$1" | cut -d' ' -f1 | cut -d/ -f2; }
 	_base_completer f
 }
 

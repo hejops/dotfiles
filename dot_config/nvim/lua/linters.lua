@@ -5,13 +5,13 @@ local linters = {
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
 
 	-- bashls now includes shellcheck
+	-- css = { vim.uv.fs_stat("foo") and "stylelint" }, -- TODO: 'no configuration provided'
 	-- elixir = { "credo" }, -- where da binary at
 	-- lua = { "selene" }, -- disabled until i can get condition to work
 	-- rust = { "clippy" }, -- part of the lsp
 	["yaml.github"] = { "zizmor" },
 	c = { "clangtidy" },
 	cpp = { "clangtidy" },
-	css = { "stylelint" },
 	d2 = { "d2" },
 	dockerfile = { "hadolint" }, -- can be quite noisy
 	dotenv = { "dotenv_linter" },
@@ -21,7 +21,7 @@ local linters = {
 	htmldjango = { "djlint" },
 	javascript = { "biomejs" }, -- should resolve to repo root
 	javascriptreact = { "biomejs" },
-	lua = { "luacheck" },
+	lua = { vim.fn.executable("luacheck") == 1 and "luacheck" or nil },
 	make = { "checkmake", "checkmake2" },
 	proto = { "buf_lint" },
 	python = { "ruff" }, -- may have duplicate with ruff lsp
