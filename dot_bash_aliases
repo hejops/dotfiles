@@ -200,7 +200,8 @@ alias ctz='sudo timedatectl set-timezone $(timedatectl list-timezones | grep / |
 alias cv='exec $EDITOR ~/cv/cv.typ'
 alias datez='date -u +%FT%TZ' # utc (i.e. ignore current timezone)
 alias eb="exec bash"
-alias fzh="fzf --height=~33% --reverse" # height=~X% means min(input rows, window height * X%);
+alias fzh="fzf --reverse --height=~33%" # height=~X% means min(input rows, window height * X%);
+alias fzr="fzf --reverse --preview='bat --color=always --style=auto {}' --preview-window='right,60%,border'"
 alias inw="inotifywait --monitor --recursive"
 alias li="exec chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg'"
 alias or="bash ~/gripts/oar/run.sh"
@@ -258,7 +259,7 @@ alias lsl="ls --sort=modified"
 # frequent {{{
 
 # copy cmd to clipboard
-# history | fzf --tac | awk '{$1=""; print $0}' | xclip -sel c
+alias yc="history | fzf --tac | awk '{\$1=\"\"; print \$0}' | xclip -sel c"
 
 # # show contents of most recent self-sent msg
 # notmuch show --limit=1 from:hejops1 |
@@ -709,6 +710,7 @@ gcoup() {
 }
 
 clocd() {
+	: diff current repo state against a date in the past
 	git log --until="$(date -I --date="$1")" -n1 --oneline |
 		awk '{print $1}' |
 		xargs -I{} cloc --diff {} HEAD
@@ -2047,11 +2049,10 @@ get_cookie() {
 	\cp ~/.mozilla/firefox/*default/cookies.sqlite tmp.db
 	if <<< "$1" grep -q ' '; then
 		sql="select value from moz_cookies where $1 order by id desc"
-		sqlite3 -json tmp.db "$sql" 2> /dev/null | jq
 	else
 		sql="select value from moz_cookies where name = '$1' order by id desc limit 1"
-		sqlite3 tmp.db "$sql" 2> /dev/null
 	fi
+	sqlite3 tmp.db "$sql" 2> /dev/null
 	rm tmp.db > /dev/null
 }
 
