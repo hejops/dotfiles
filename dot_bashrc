@@ -277,6 +277,9 @@ alias rgml="rg --multiline --multiline-dotall"
 alias sqj="sqlite3 -json"
 alias tmp="cd \$(mktemp -d)"
 alias xargs1="xargs --max-args=1"
+rgt() { gls | largs rg "$@" 2> /dev/null; } # rg ignores gitignore, but still matches untracked
+
+# { echo '**' ; gls | prepend '!'; } > .ignore # tends to wrongly ignore files
 
 if command -v pacman > /dev/null; then
 
