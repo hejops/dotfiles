@@ -556,12 +556,18 @@ _git_log_fzf() { # {{{
 		return 1
 	fi
 
-	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
+	# stat always suppresses the diff, so --patch must be specified again.
+	# i generally prefer --numstat, if only because --stat uses a weird ---
+	# separator
+	#
+	# i don't mind always showing a stat in git show, but there seems to be
+	# no config option for this
+	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --numstat --patch --color=always"
 
 	args=()
 
 	if
-		[[ -f $1 ]] || [[ -d $1 ]]
+		[[ -f $1 || -d $1 ]]
 	then
 		args+=("$@")
 		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
@@ -575,7 +581,7 @@ _git_log_fzf() { # {{{
 	elif
 		# other dev branch
 		[[ $# -eq 1 ]] &&
-			git branch --remote | grep -Pqx "  origin/$1"
+			git branch --remote | grep -Fqx "  origin/$1"
 	then
 		git pull > /dev/null 2> /dev/null
 		args+=("origin/$1")
@@ -839,8 +845,8 @@ gc() {
 _git_commit() {
 	: like gl, for files to stage/commit
 
-	# should be replaced by <leader>gs in vim, but i still find myself
-	# doing this often
+	# should be replaced by gs in vim, but i still find myself doing this
+	# often
 
 	# # porcelain v1 is -always- relative to repo root, which makes
 	# # relativising to cwd needlessly tedious (this would probably involve
@@ -961,7 +967,7 @@ gRev() {
 
 gu() {
 	if
-		[[ $# -eq 0 ]] ||
+		(($# == 0)) ||
 			[[ $(_git_current_branch) == $(_gmaster) ]] && [[ $1 == . ]]
 	then
 		echo "cannot reset on master"
@@ -975,7 +981,7 @@ gu() {
 
 guns() {
 	: revert file to its state in a previous commit
-	[[ $# -ne 1 ]] && return
+	(($# != 1)) && return
 
 	f=$1
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1"
@@ -989,7 +995,9 @@ guns() {
 
 gpick() {
 	: cherry pick commit from other branch
-	[[ $# -ne 1 ]] && return
+	# i only use this when a commit was accidentally made in another
+	# branch. the wrongly made commit is not undone.
+	(($# != 1)) && return
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --color=always"
 	sha=$(git log --branches --remotes --tags --oneline --decorate "$1" |
 		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi --accept-nth=1)
@@ -2165,7 +2173,7 @@ topa() {
 	< ~/gripts/disq/queries/top_artists_by_avg_rating.sql sqlite3 -tabs \
 		~/gripts/disq/collection2.db 2> /dev/null |
 		sort -k2 -t$'\t' -k1 |
-		fzf --preview='echo {} | cut -f1 | f' --preview-window='right,60%,border'
+		fzf --tac --reverse --no-sort --preview='echo {} | cut -f1 | f' --preview-window='right,60%,border'
 
 	# fzf --preview='echo {} | cut -f1 | xargs -d"\n" ~/disq/disq -artist' --preview-window='right,60%,border'
 
