@@ -6,7 +6,7 @@ element { background-color: var(--main-bg-color); }
 
 /*
 
-ctrl-shift-alt-i, inspector, ctrl-shift-c
+browser toolbox -> inspector -> ctrl-shift-c
 https://0x0.st/iSBd.css
 https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties
 https://gist.github.com/Geobert/8c71ee54038cf339341cf8fa0b26ce01
@@ -58,6 +58,7 @@ scrollbar,
 
 /* hide items {{{ */
 
+#picture-in-picture-button,
 #identity-permission-box,
 #identity-icon, /* lock */
 #tracking-protection-icon-container, /* shield */
@@ -173,24 +174,7 @@ toolbar .toolbarbutton-1,
 
 /*}}}*/
 
-/*
-.tab {
-  background-color: var(background-color) !important;
-  color: var(--beige) !important;
-  counter-increment: tabs;
-  height: 22px;
-  margin-left: -9px;
-  padding: -2em;
-}
-*/
-
 /*}}}*/
-
-/* imposing a max width on searchbar will leave empty space on the right */
-/* #searchbar, */
-/* #search-container .searchbar-textbox { */
-/*   max-width: 200px !important; */
-/* } */
 
 #search-container,
 #searchbar,
