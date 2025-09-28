@@ -2131,6 +2131,25 @@ rewe() {
 
 # }}}
 
+nmsr() {
+	(($# == 0)) && return
+	# notmuch search is always word-based, never partial
+	notmuch search --format=json "$1" |
+		jq -r '.[]|[.timestamp,.thread,.authors,.subject]|@tsv' |
+		while read -r l; do
+			<<< "$l" cut -f1 | \xargs -I{} date --date=@{} -Im | tr '\n' '\t'
+			<<< "$l" cut -f2-
+		done |
+		# this is all because 1) notmuch show --part is so annoying,
+		# and 2) json output is unstructured and cannot be relied on
+		# (need the first `content` field that is a string (not array))
+		# json[0][0][0].body[0].content
+		# json[0][0][0].body[0].content[0].content
+		# json[0][0][0].body[0].content[0].content[0].content
+		fzr --preview='echo {} | cut -f2 | xargs notmuch show --format=json | gron | grep -Pm1 "\]\.content = \"" | cut -d" " -f3- | tr -d ";" | jq -r | fold -sw80'
+	# TODO: on select, reply to email?
+}
+
 # seq 1 10 |
 # 	while read -r i; do
 # 		curl -sL "https://vimcolorschemes.com/i/new/b.dark/$( ((i > 1)) && echo "p.$i")" |
