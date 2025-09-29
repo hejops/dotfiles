@@ -1,7 +1,22 @@
-# stty -a
-# intr = ^C; quit = ^\; erase = ^?; kill = ^U; eof = ^D; eol = <undef>; eol2 =
-# <undef>; swtch = <undef>; start = ^Q; stop = ^S; susp = ^Z; rprnt = ^R;
-# werase = <undef>; lnext = ^V; discard = ^O; min = 1; time = 0;
+# stty -a | grep = | tr ';' '\n'
+#
+# intr = ^C
+#  quit = ^\
+#  erase = ^?
+#  kill = ^U
+#  eof = ^D
+#  eol = <undef>
+#
+# eol2 = <undef>
+#  swtch = <undef>
+#  start = ^Q
+#  stop = ^S
+#  susp = ^Z
+#  rprnt = ^R
+#
+# werase = <undef>
+#  lnext = ^V
+#  discard = ^O
 
 # to use a keybind "reserved" by bash,
 # call "stty undef COMMAND" in .bashrc (or similar)
@@ -29,14 +44,6 @@ set colored-completion-prefix On
 set menu-complete-display-prefix On
 set echo-control-characters off
 
-"\e[1;5C": forward-word
-"\e[1;5D": backward-word
-
-# only scroll through history of the same command
-
-"\e[A": history-search-backward
-"\e[B": history-search-forward
-
 # several C-[x] commands are silently mirrored to other keys, and produce
 # undesirable behaviour when remapped:
 
@@ -44,38 +51,30 @@ set echo-control-characters off
 # C-m = Enter
 # C-n = Tab
 
+# defaults
+
+# "\C-i": complete
+# "\C-m": accept-line
+# "\C-u": unix-line-discard
+
 # some keybinds just don't work, e.g. ctrl-0
 
-# C-q kitty (?) quit
-"\C-w": backward-kill-word
-# C-e kitty new window
-# "\C-r": backward-word
-# "\C-t": forward-word
-"\C-h": backward-word
-"\C-l": forward-word
-# C-y unbound
-"\C-u": kill-whole-line
-"\C-i": complete
-# C-o unbound
-# "\C-p": unbound
+# not all vim motions are supported, e.g. ciw
+# https://deut-erium.github.io/2024/01/28/inputrc.html
+"\C-v": vi-movement-mode
+"\C-x": vi-movement-mode
 
-# "\C-a": beginning-of-line
-# "\C-s": forward-search-history
-# "\C-d": delete-char
-# "\C-f": forward-char
-# "\C-g": abort
-# "\C-h": backward-delete-char
+"\C-h": backward-word
 "\C-j": history-search-forward
 "\C-k": history-search-backward
+"\C-l": forward-word
+"\C-o": forward-char
+"\C-r":
+"\C-w": backward-kill-word
+"\C-y": backward-char
 # "\C-r": clear-screen
-
-# "\C-z": unbound
-# "\C-x": unbound
-# "\C-c": unbound
+# "\C-u": kill-whole-line
 # "\C-v": quoted-insert
-# "\C-b": backward-char
-# "\C-n": next-history
-"\C-m": accept-line
 
 # 1. word _word word (beginning, or after whitespace)
 # 2. word wo_rd word (middle)
@@ -90,7 +89,7 @@ set echo-control-characters off
 # "\C-g": end-of-line
 
 # to view defaults, run:
-# INPUTRC=~/dev/null bash -c 'bind -pm emacs' | grep -vE '^#|: (do-lowercase-version|self-insert)$'
+# INPUTRC=~/dev/null bash -c 'bind -pm emacs' | grep -vE '^#|: (do-lowercase-version|self-insert)$' | grep '"\\C' | sort
 
 # "\C-?": backward-delete-char
 # "\C-@": set-mark
@@ -134,82 +133,3 @@ set echo-control-characters off
 # "\C-xg": glob-list-expansions
 # "\C-x~": possible-username-completions
 # "\C-y": yank
-# "\e ": set-mark
-# "\e!": complete-command
-# "\e#": insert-comment
-# "\e$": complete-variable
-# "\e&": tilde-expand
-# "\e*": insert-completions
-# "\e-": digit-argument
-# "\e.": insert-last-argument
-# "\e.": yank-last-arg
-# "\e/": complete-filename
-# "\e0": digit-argument
-# "\e1": digit-argument
-# "\e2": digit-argument
-# "\e3": digit-argument
-# "\e4": digit-argument
-# "\e5": digit-argument
-# "\e6": digit-argument
-# "\e7": digit-argument
-# "\e8": digit-argument
-# "\e9": digit-argument
-# "\e<": beginning-of-history
-# "\e=": possible-completions
-# "\e>": end-of-history
-# "\e?": possible-completions
-# "\e@": complete-hostname
-# "\eOA": previous-history
-# "\eOB": next-history
-# "\eOC": forward-char
-# "\eOD": backward-char
-# "\eOF": end-of-line
-# "\eOH": beginning-of-line
-# "\e[1;3C": forward-word
-# "\e[1;3D": backward-word
-# "\e[1;5C": forward-word
-# "\e[1;5D": backward-word
-# "\e[200~": bracketed-paste-begin
-# "\e[2~": overwrite-mode
-# "\e[3;5~": kill-word
-# "\e[3~": delete-char
-# "\e[7~": beginning-of-line
-# "\e[8~": end-of-line
-# "\e[A": previous-history
-# "\e[B": next-history
-# "\e[C": forward-char
-# "\e[D": backward-char
-# "\e[F": end-of-line
-# "\e[H": beginning-of-line
-# "\e\C-?": backward-kill-word
-# "\e\C-]": character-search-backward
-# "\e\C-b": shell-backward-word
-# "\e\C-d": shell-kill-word
-# "\e\C-e": shell-expand-line
-# "\e\C-f": shell-forward-word
-# "\e\C-g": abort
-# "\e\C-h": backward-kill-word
-# "\e\C-i": dynamic-complete-history
-# "\e\C-l": clear-display
-# "\e\C-r": revert-line
-# "\e\C-t": shell-transpose-words
-# "\e\C-y": yank-nth-arg
-# "\e\\": delete-horizontal-space
-# "\e\e": complete
-# "\e^": history-expand-line
-# "\e_": insert-last-argument
-# "\e_": yank-last-arg
-# "\eb": backward-word
-# "\ec": capitalize-word
-# "\ed": kill-word
-# "\ef": forward-word
-# "\eg": glob-complete-word
-# "\el": downcase-word
-# "\en": non-incremental-forward-search-history
-# "\ep": non-incremental-reverse-search-history
-# "\er": revert-line
-# "\et": transpose-words
-# "\eu": upcase-word
-# "\e{": complete-into-braces
-# "\e~": complete-username
-# "\ey": yank-pop

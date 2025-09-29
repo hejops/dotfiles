@@ -256,10 +256,10 @@ alias ln="ln -v"
 alias mkdir="mkdir -p"
 alias mv="mv -v"
 alias parallel="parallel --quote"
-alias pgrep="pgrep --list-full --exact"
+alias pgrep="pgrep --exact --list-full"
 alias pkill="pkill --exact" # non-exact match is dangerous
 alias python=python3
-alias reset="reset; exec \$SHELL"                                       # reset undoes C-w; bind -f doesn't fix it
+alias reset="reset; exec \$SHELL"                                       # TODO: reset undoes C-w (inputrc); bind -f doesn't fix it
 alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
 alias top="top -w\$COLUMNS"
 alias xargs="xargs --no-run-if-empty --verbose"
@@ -391,7 +391,10 @@ shopt -s histappend
 # }}}
 # prompt {{{
 
-# allow remapping of c-w in inputrc
+# allow remapping of c-w, etc in inputrc
+# man stty
+# stty kill undef
+stty lnext undef
 stty werase undef
 
 # https://linuxcommand.org/lc3_man_pages/seth.html
@@ -481,20 +484,6 @@ GIT_PROMPT() {
 			"origin/$MASTER...HEAD" 2> /dev/null
 	)
 
-	# if ((behind_m > 0)); then
-	# 	state="$behind_m commits behind"
-	#
-	# 	if ((ahead_m > 0)); then
-	# 		state+=", $ahead_m commits ahead of $MASTER"
-	# 	else
-	# 		state+=" $MASTER"
-	# 	fi
-	#
-	# elif ((ahead_m > 0)); then
-	# 	state+="$ahead_m commits ahead of $MASTER"
-	#
-	# fi
-
 	if ((behind_m > 0 && ahead_m > 0)); then
 		state="$behind_m commits behind, $ahead_m commits ahead of $MASTER"
 	elif ((behind_m > 0)); then
@@ -512,8 +501,8 @@ GIT_PROMPT() {
 			((dev_ahead > 0))
 	then
 		state+=" ($dev_ahead unpushed)"
-	# else
-	# 	state+=" (no remote branch yet)"
+	elif [[ ! -f .git/refs/remotes/origin/$MASTER ]]; then
+		state+=" (no remote branch yet)"
 	fi
 
 	# list number of dead local branches
