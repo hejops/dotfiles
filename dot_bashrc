@@ -257,6 +257,7 @@ alias mkdir="mkdir -p"
 alias mv="mv -v"
 alias parallel="parallel --quote"
 alias pgrep="pgrep --list-full --exact"
+alias pkill="pkill --exact" # non-exact match is dangerous
 alias python=python3
 alias reset="reset; exec \$SHELL"                                       # reset undoes C-w; bind -f doesn't fix it
 alias rsync="rsync --partial --progress --recursive --archive --update" # all options are generally desired
@@ -511,8 +512,8 @@ GIT_PROMPT() {
 			((dev_ahead > 0))
 	then
 		state+=" ($dev_ahead unpushed)"
-	else
-		state+=" (no remote branch yet)"
+	# else
+	# 	state+=" (no remote branch yet)"
 	fi
 
 	# list number of dead local branches
