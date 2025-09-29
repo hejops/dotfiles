@@ -258,8 +258,8 @@ alias lsl="ls --sort=modified"
 # }}}
 # frequent {{{
 
-# copy cmd to clipboard
-alias yc="history | fzf --tac | awk '{\$1=\"\"; print \$0}' | xclip -sel c"
+# # copy cmd to clipboard
+# alias yc="history | fzf --tac | awk '{\$1=\"\"; print \$0}' | xclip -sel c"
 
 # # show contents of most recent self-sent msg
 # notmuch show --limit=1 from:hejops1 |
@@ -675,7 +675,7 @@ gdm() { # {{{
 	# branch as well as in a merge, both changes will be shown. for the
 	# purpose of fast diffing (i.e. without network), this is usually fine.
 
-	span="$(_gmaster)...HEAD"
+	span="origin/$(_gmaster)...HEAD" # origin/ is important
 	root=$(_get_repo_root)
 	git log --diff-filter=d --no-merges --first-parent --name-only --oneline --pretty= "$span" |
 		sort -u |
@@ -1178,8 +1178,6 @@ g,() {
 gcon() { # {{{
 	# https://nitaym.github.io/ourstheirs/
 
-	# TODO: if gmm not run yet (i.e. still behind master), do nothing
-
 	# cd novum-api
 	# make db-up && make db-vet && make db-generate
 	# cr
@@ -1202,8 +1200,18 @@ gcon() { # {{{
 			cut -c3-
 	}
 
+	# not up to date with master yet
+	if
+		! _git_has_conflicts &&
+			(("$(git rev-list --left-right --count "origin/master...HEAD" | cut -f1)" > 0))
+	then
+		gmm || return
+		gcon
+	fi
+
 	if
 		# only conflict is lock file
+		# TODO: go.sum
 		! git status --porcelain |
 			grep ^UU |
 			grep -vx 'UU pnpm-lock.yaml'
@@ -1720,6 +1728,26 @@ psch() {
 
 }
 
+sqq() {
+	: view sqlc queries
+	# TODO: this needs to be in vim
+
+	cd "$REPO"
+
+	# shellcheck disable=SC2329
+	f() {
+		# we cannot inherit REPO, too bad
+		# novum-api/src/sql/query/users.sql:-- name: FindUserByEmail :one
+		l=$(< /dev/stdin)
+		f=$(<<< "$l" cut -d: -f1)
+		s=$(<<< "$l" cut -d: -f2-)
+		< "$f" sed -rn "/^$s/,/;/p"
+	}
+	export -f f
+	rgl -t sql '^-- name:' | fzr --preview='echo {} | f'
+	unset f
+}
+
 # }}}
 # jq {{{
 
@@ -2122,6 +2150,13 @@ rewe() {
 }
 
 # }}}
+
+# < ~/dwm/config.h grep -Pv '^\s*//' |
+# 	grep -Pow '\{MODKEY, XK_[a-z]' |
+# 	sort |
+# 	cut -d_ -f2 |
+# 	tr -d '\n'
+# 	TODO: xargs tr -d abcdefghijklmnopqrstuvwxyz
 
 # seq 1 10 |
 # 	while read -r i; do
