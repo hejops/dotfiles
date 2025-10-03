@@ -702,7 +702,6 @@ require("lazy").setup( --
 
 						"bash",
 						"css",
-						"csv",
 						"diff",
 						"gitcommit",
 						"gitignore",
@@ -730,6 +729,7 @@ require("lazy").setup( --
 						"vimdoc",
 						"yaml",
 						"zig",
+						-- "csv", -- useless
 						-- "htmldjango",
 						-- "latex", -- requires tree-sitter-cli
 						-- "scheme",
