@@ -1,12 +1,30 @@
 # https://ghostty.org/docs/config/reference
 
-# won't bother until rounded corners can be disabled
+# gradually getting better, but there is still noticeable latency on spawning
+# window
 
+# font-feature = -calt
+# font-feature = -dlig
+# font-feature = -liga
 # gtk-adwaita = false
+# minimum-contrast = 21
+# window-show-tab-bar = always
+adjust-cell-width = -5%
 font-family = Source Code Pro
-font-feature = -calt
-font-feature = -dlig
-font-feature = -liga
-font-size = 12
+font-feature = -calt, -liga, -dlig
+font-size = 10
 font-thicken = true
-window-decoration = false
+theme = Citruszest
+window-decoration = none
+
+# https://ghostty.org/docs/config/reference#shell-integration
+# shell-integration = none
+shell-integration-features = no-cursor
+
+# ghostty +list-keybinds --default
+# https://ghostty.org/docs/config/reference#keybind
+keybind = super+h=previous_tab
+keybind = super+l=next_tab
+
+# # opacity still requires a compositor, so this is useless
+# background-opacity = 0

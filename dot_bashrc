@@ -295,7 +295,7 @@ if command -v pacman > /dev/null; then
 	alias get="sudo pacman --sync"
 	alias lp="pacman --query --search"
 	alias lps="expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort -n"
-	alias pclean="paccache --remove && yes | sudo pacman -Scc" # TODO: does not clean /var/cache/pkgfile
+	alias pclean="paccache --remove && yes | sudo pacman -Scc" # TODO: does not clean /var/cache/pkgfile (500 mb), /var/cache/pacman/pkg/download-* (200 mb) requires root
 	alias pwhich="pacman -Qo"
 	alias sp="pacman --sync --search"
 	alias tz=trizen # if gpg fail, gpg --recv-keys <key>
