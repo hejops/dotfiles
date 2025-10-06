@@ -74,7 +74,7 @@ require("conform").setup({
 		},
 
 		biome_remove_unused_imports = {
-			command = "biome",
+			command = require("conform.util").from_node_modules("biome"),
 			args = {
 				"lint",
 				"--write",
