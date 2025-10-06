@@ -214,15 +214,18 @@ alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 
 mem() {
 	# https://unix.stackexchange.com/a/261252
-	# free memory
-	low=$(< /proc/zoneinfo grep low | awk '{print $NF}' | sum)
+	: calc free memory in kb
+	low=$(< /proc/zoneinfo grep low |
+		awk '{print $NF}' |
+		sum)
 	a=$(
+		# TODO: why 12?
 		cat <<- EOF
-			{a[\$1]=\$2} END{ print a["MemFree:"]+a["Active(file):"]+a["Inactive(file):"]+a["SReclaimable:"]-(12*low); }
+			{a[\$1]=\$2} END { print a["MemFree:"]+a["Active(file):"]+a["Inactive(file):"]+a["SReclaimable:"]-(12*$low); }
 		EOF
 	)
-	free_mem=$(< /proc/meminfo awk -v low="$low" "$a") # kb
-	echo "$free_mem" | bc
+	< /proc/meminfo awk "$a" |
+		awk '{print $0/1000000}' # bc does not handle floats
 }
 
 # alias y="bash ~/gripts/disq/ytm.sh"
@@ -1997,6 +2000,7 @@ desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # remove seconds, f
 join2() { < /dev/stdin paste -d " " - -; }
 largs() { < /dev/stdin xargs --delimiter='\n' "$@"; } # split xargs by newline instead of space
 line() { < /dev/stdin sed -n "${1}p"; }
+mean() { < /dev/stdin awk '{ sum += $0; n++ } END { if (n > 0) print sum / n; }'; } # https://stackoverflow.com/a/19149931
 paren() { < /dev/stdin prepend '(' | append ')'; }
 prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
 seen() { < /dev/stdin awk '!a[$0]++'; } # https://paweldu.dev/posts/awk-clever-way-to-remove-duplicate-lines/
@@ -2159,6 +2163,27 @@ rewe() {
 
 # }}}
 
+wn() {
+	: wiki news of the month
+	f() {
+		# https://news.ycombinator.com/item?id=12292723
+		# https://old.reddit.com/r/commandline/comments/mty60c
+		< /dev/stdin cut -d/ -f3 |
+			\xargs -I{} curl -sL 'https://en.wikipedia.org/w/api.php?format=json&action=query&titles={}&prop=extracts&explaintext=true' |
+			jq -r .query.pages[].extract |
+			fold -sw75
+	}
+	export -f f
+	c 'https://en.wikipedia.org/wiki/Portal:Current_events/September_2025' |
+		grep -Po '/wiki/[^"]+' |
+		count |
+		awk '$1>=7{print $2}' |
+		sort |
+		fzr --preview='echo {} | f'
+
+	unset f
+}
+
 nmsr() {
 	(($# == 0)) && return
 	# notmuch search is always word-based, never partial
@@ -2177,6 +2202,9 @@ nmsr() {
 		fzr --preview='echo {} | cut -f2 | xargs notmuch show --format=json | gron | grep -Pm1 "\]\.content = \"" | cut -d" " -f3- | tr -d ";" | jq -r | fold -sw80'
 	# TODO: on select, reply to email?
 }
+
+# rgf redirect ~/.local/state/mpv/watch_later |
+# 	xargs rm
 
 # < ~/dwm/config.h grep -Pv '^\s*//' |
 # 	grep -Pow '\{MODKEY, XK_[a-z]' |
@@ -2405,22 +2433,6 @@ kb() {
 	fi
 }
 
-tvll() {
-	: truncate vim lsp.log -- should be nvim autocmd, or session startup
-	# TODO: figure out which lsp(s) produce the most logs
-	f=~/.local/state/nvim/lsp.log
-	i=14 # keep 7-14 days (~ 5 MB)
-	while
-		[[ $i -ge 7 ]] &&
-			d=$(date --date="$i days ago" -I) &&
-			! < ~/.local/state/nvim/lsp.log grep -q "$d"
-	do
-		((--i))
-	done
-	sed -i -r "1,/$d/d" "$f"
-	echo "truncated $f to $d"
-}
-
 _unused() {
 	: list unused functions
 	< ~/.bash_aliases grep -Po '^[a-z]\w+\(\)' |
@@ -2573,24 +2585,4 @@ gcpd() {
 		awk -F$'\t' '{print $8/$9,$3,$1,$8,$9}' |
 		sort -n |
 		colt
-}
-
-lsp_clean() {
-	# this is quite destructive for lsps that are not just lsps, esp biome,
-	# buf, ruff. reinstalls may not work. it is usually safer to just go
-	# nuclear: rm -rf ~/.local/share/nvim/mason
-	reg=~/.local/share/nvim/mason/registries/github/mason-org/mason-registry/registry.json
-	in_use="$(< ~/.config/nvim/lua/lsp.lua sed -rn '/^local servers/,/^\}/p' |
-		grep -P '^\t\w' |
-		awk '{print $1}')"
-	# shellcheck disable=SC2012
-	\ls ~/.local/share/nvim/mason/packages |
-		while read -r d; do
-			lua_name=$(< "$reg" jq -er ".[]|select(.name==\"$d\")|.neovim.lspconfig") || continue # not lsp
-			<<< "$in_use" grep -Fxq "$lua_name" && continue                                       # in use
-			# echo "$d"
-			rm -rf ~/.local/share/nvim/mason/packages/"$d"
-		done
-	# if dead symlink still present, mason thinks already installed
-	find ~/.local/share/nvim/mason/bin -xtype l -delete
 }
