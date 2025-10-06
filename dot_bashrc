@@ -501,8 +501,9 @@ GIT_PROMPT() {
 			((dev_ahead > 0))
 	then
 		state+=" ($dev_ahead unpushed)"
-	elif [[ ! -f .git/refs/remotes/origin/$MASTER ]]; then
-		state+=" (no remote branch yet)"
+	# TODO: newly cloned repos always end up here, so this is probably incorrect
+	# elif [[ ! -f $(git rev-parse --show-toplevel)/.git/refs/remotes/origin/$MASTER ]]; then
+	# 	state+="(no remote branch yet)"
 	fi
 
 	# list number of dead local branches
