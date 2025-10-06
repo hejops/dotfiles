@@ -171,6 +171,7 @@ alias ex=extract
 alias gm=getmail
 alias met=metronome
 alias ns=notify-send
+alias sk=slock
 alias tt=taptempo
 alias xo=xdg-open
 
@@ -1358,6 +1359,7 @@ alias gmer='seq 1 2 | parallel -n1 glab mr list --output=json --assignee=@me --m
 
 gldiff() {
 	# note: to see diff of current branch, just use gdm
+	[[ $PWD != *$REPO* ]] || cd "$REPO"
 	if [[ $# -eq 0 ]]; then
 		prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
 		n=$(glab mr list --output=json --reviewer=@me | #--not-draft |
