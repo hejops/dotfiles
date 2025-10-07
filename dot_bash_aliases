@@ -1987,9 +1987,12 @@ mi() {
 ffconcat() {
 	# cat *mp4 > out.mp4 does not work
 	# https://trac.ffmpeg.org/wiki/Concatenate#Automaticallygeneratingtheinputfile
-	glob=$1
-	# TODO: determine file ext
-	ffmpeg -f concat -safe 0 -i <(find . -name "$glob" -printf "file '$PWD/%p'\n" | sort) -c copy output.mp4
+	ext=$(<<< "$1" awk -F. '{print $NF}')
+	files=$(for f in "$@"; do
+		echo "file '$(realpath "$f")'" # single quotes must be preserved
+	done |
+		sort)
+	ffmpeg -f concat -safe 0 -i <(echo "$files") -c copy output."$ext"
 }
 
 # }}}
@@ -2148,7 +2151,7 @@ rewe() {
 		grep -Fm1 http |
 		xargs curl -sL |
 		grep -Pom1 '[A-Z]-[A-Z]{3}[^<]+' |
-		xargs -I{} curl -sL 'https://wannkommt.rewe.de/api/delivery/{}' \
+		xargs -I{} curl --fail-with-body -sL 'https://wannkommt.rewe.de/api/delivery/{}' \
 			-X POST \
 			-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0' \
 			-H 'Content-Type: application/json' \
@@ -2159,8 +2162,14 @@ rewe() {
 			.address.longitude,
 			.mapDetails.driverLocation.longitude
 		')
-	[[ ${x[1]} == null ]] && return
-	echo "sqrt( (${x[1]}^2-${x[2]}^2) + (${x[3]}^2-${x[4]}^2) )" | bc
+	echo "${x[@]}"
+	if [[ ${x[1]} == null ]]; then
+		echo 'driver location not yet available'
+		return
+	fi
+	if [[ ${x[0]} == null ]]; then return; fi # delivery over
+	# unit unclear; value starts at about 1.4, ends at 0.1
+	echo "sqrt( (${x[0]}^2-${x[1]}^2) + (${x[2]}^2-${x[3]}^2) )" | bc
 }
 
 # }}}
