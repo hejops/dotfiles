@@ -539,23 +539,18 @@ vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit" })
 vim.keymap.set("n", "gab", ":Gwrite<cr>", { desc = "add current buffer (entire)" })
 vim.keymap.set("n", "gap", ":Git add %<cr>", { desc = "add current buffer (patch)" })
 
-vim.keymap.set("n", "gaP", function()
-	local patt
-	vim.ui.input({ prompt = "pattern: " }, function(input) -- TODO: rg picker
-		patt = input
-	end)
-
-	if not patt then
+vim.keymap.set("n", "gp", function()
+	-- stage only (does not commit)
+	local pat = vim.fn.input("pattern: ")
+	if not pat then
 		return
 	end
 
-	require("util"):get_command_output(
-		string.format(
-			[[git diff -U0 | grepdiff --output-matching=hunk -E "%s" | git apply --cached --unidiff-zero]],
-			patt
-		)
+	local cmd = string.format(
+		[[ !git diff -U0 '%%' | grepdiff --output-matching=hunk -E "%s" | git apply --cached --unidiff-zero ]],
+		pat
 	)
-	commit_staged()
+	vim.cmd(cmd)
 end, { desc = "commit hunks matching pattern" })
 
 vim.keymap.set("n", "gC", function()
@@ -617,28 +612,6 @@ vim.keymap.set("n", "gB", function()
 	-- vim.cmd("GitBlameCopyCommitURL")
 	-- vim.fn.jobstart([[sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"]])
 end, { desc = "view commit of current line (in browser)" })
-
-local deprecations = {
-	C = "c",
-	gc = "c",
-	gp = "g.",
-}
-
-for old, new in pairs(deprecations) do
-	vim.keymap.set("n", "<leader>" .. old, function()
-		print("deprecated; use <leader>" .. new)
-	end, { desc = "deprecated" })
-end
-
-vim.keymap.set("n", "gp", function()
-	-- stage only (does not commit)
-	local pat = vim.fn.input("pattern: ")
-	local cmd = string.format(
-		[[ !git diff -U0 '%%' | grepdiff --output-matching=hunk -E "%s" | git apply --cached --unidiff-zero ]],
-		pat
-	)
-	vim.cmd(cmd)
-end)
 
 -- }}}
 
