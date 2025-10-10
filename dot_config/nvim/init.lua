@@ -226,6 +226,8 @@ vim.api.nvim_create_autocmd("TabLeave", {
 })
 
 -- https://github.com/xvzc/chezmoi.nvim?tab=readme-ov-file#treat-all-files-in-chezmoi-source-directory-as-chezmoi-files
+-- WARN: corner case: if lint fails, change will not be applied!
+-- cm edit --watch should still work, however
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
 	-- dot* excludes .git/*
 	pattern = { os.getenv("HOME") .. "/.local/share/chezmoi/dot*" },
@@ -627,6 +629,16 @@ for old, new in pairs(deprecations) do
 		print("deprecated; use <leader>" .. new)
 	end, { desc = "deprecated" })
 end
+
+vim.keymap.set("n", "gp", function()
+	-- stage only (does not commit)
+	local pat = vim.fn.input("pattern: ")
+	local cmd = string.format(
+		[[ !git diff -U0 '%%' | grepdiff --output-matching=hunk -E "%s" | git apply --cached --unidiff-zero ]],
+		pat
+	)
+	vim.cmd(cmd)
+end)
 
 -- }}}
 
