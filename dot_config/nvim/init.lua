@@ -431,8 +431,8 @@ vim.api.nvim_create_autocmd({ "VimEnter", "VimResized" }, {
 })
 
 -- rarely used
+-- vim.keymap.set("n", "<leader>f", telescope_b.find_files, { desc = "find" })
 vim.keymap.set("n", "<leader>b", telescope_b.buffers, { desc = "open buffers" })
-vim.keymap.set("n", "<leader>f", telescope_b.find_files, { desc = "find" })
 vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tabs) -- TODO: if 1 tab, noop
 
 -- telescope.treesitter is less useful than telescope_b.lsp_*_symbols
@@ -537,7 +537,7 @@ vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit" })
 -- ga is not useful (:h ga), and can be safely overridden
 
 vim.keymap.set("n", "gab", ":Gwrite<cr>", { desc = "add current buffer (entire)" })
-vim.keymap.set("n", "gap", ":Git add %<cr>", { desc = "add current buffer (patch)" })
+vim.keymap.set("n", "gap", ":Git add --patch %<cr>", { desc = "add current buffer (patch)" })
 
 vim.keymap.set("n", "gp", function()
 	-- stage only (does not commit)
