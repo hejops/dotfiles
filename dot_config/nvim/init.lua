@@ -537,10 +537,10 @@ vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit" })
 -- ga is not useful (:h ga), and can be safely overridden
 
 vim.keymap.set("n", "gA", ":Git restore --staged<cr>", { desc = "unstage current buffer (entire)" }) -- probably uncommon
-vim.keymap.set("n", "gab", ":Gwrite<cr>", { desc = "add current buffer (entire)" })
-vim.keymap.set("n", "gap", ":Git add --patch %<cr>", { desc = "add current buffer (patch)" })
+vim.keymap.set("n", "gaP", ":Git add --patch %<cr>", { desc = "add current buffer (patch)" }) -- add pattern probably more common
+vim.keymap.set("n", "gae", ":Gwrite<cr>", { desc = "add current buffer (entire)" }) -- e easier than b
 
-vim.keymap.set("n", "gp", function()
+vim.keymap.set("n", "gap", function()
 	-- stage only (does not commit)
 	local pat = vim.fn.input("pattern: ")
 	if not pat then
