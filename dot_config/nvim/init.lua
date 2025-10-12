@@ -536,6 +536,7 @@ vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit" })
 
 -- ga is not useful (:h ga), and can be safely overridden
 
+vim.keymap.set("n", "gA", ":Git restore --staged<cr>", { desc = "unstage current buffer (entire)" }) -- probably uncommon
 vim.keymap.set("n", "gab", ":Gwrite<cr>", { desc = "add current buffer (entire)" })
 vim.keymap.set("n", "gap", ":Git add --patch %<cr>", { desc = "add current buffer (patch)" })
 
@@ -586,11 +587,13 @@ vim.keymap.set("n", "gB", function()
 
 	local branch = require("util"):get_command_output("git branch --show-current", true)
 
-	if require("util"):get_command_output("git ls-remote --heads origin refs/heads/" .. branch, true) == "" then
-		-- branch deleted on remote
-		branch = "master"
-	end
+	-- -- slow (1.6 s)
+	-- if require("util"):get_command_output("git ls-remote --heads origin refs/heads/" .. branch, true) == "" then
+	-- 	-- branch deleted on remote
+	-- 	branch = "master"
+	-- end
 
+	-- relativise to repo root
 	local path = require("util"):get_command_output("git ls-files --full-name " .. vim.fn.expand("%:p"), true)
 
 	local url = string.format( --
@@ -600,9 +603,9 @@ vim.keymap.set("n", "gB", function()
 		"blame",
 		branch,
 		path,
-		vim.fn.line(".") -- note: may not be reliable
+		vim.fn.line(".") -- note: may not be accurate, because HEAD is probably different from origin
 	)
-	vim.fn.jobstart(string.format("xdg-open '%s'", url))
+	vim.system({ "xdg-open", url })
 
 	-- $url/-/blob/$branch/$path
 
