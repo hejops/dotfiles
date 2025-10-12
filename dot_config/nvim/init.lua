@@ -597,7 +597,7 @@ vim.keymap.set("n", "gB", function()
 		"%s/%s/%s/%s#L%s",
 		base,
 		-- base:match("gitlab") and "/-/tree/" or "/blob/",
-		"/blame/",
+		"blame",
 		branch,
 		path,
 		vim.fn.line(".") -- note: may not be reliable
