@@ -43,6 +43,9 @@ vim.keymap.set("v", ">", ">gv")
 vim.keymap.set("v", "P", '"_dP') -- default behaviour is to just paste above selection
 vim.keymap.set("v", "x", '"_x')
 
+-- TODO:
+-- !wezterm start --new-tab --cwd=. 2>/dev/null
+
 vim.keymap.set(
 	"n",
 	"gf",
@@ -283,12 +286,17 @@ vim.keymap.set("n", "<leader>T", function()
 	require("util"):literal_keys(":tabe " .. vim.fn.expand("%:p:h"))
 end)
 
+vim.keymap.set("n", "<leader>F", function()
+	-- TODO: find ~ -maxdepth 3 -name foo.sh? should not be necessary if i just remove ~/foo.sh
+	vim.cmd(string.format("tab drop %s/foo.sh", require("util"):root_directory()))
+end)
+
 -- context dependent binds
 -- https://github.com/neovim/neovim/blob/012cfced9b5/runtime/doc/lua-guide.txt#L450
 
 -- close window if scratch
 local function update_or_close()
-	if vim.fn.getcmdwintype() == ":" then -- in cmdline (e.g. q:) -- quite rare
+	if vim.fn.getcmdwintype() == ":" then -- in cmdline (e.g. q:)
 		vim.cmd("q")
 	elseif
 		vim.bo.buftype == "nofile" -- scratch split
@@ -305,7 +313,7 @@ vim.keymap.set("n", "<cr>", update_or_close, { silent = true })
 
 -- niche
 vim.keymap.set("i", "<c-y>", "<esc>lyBgi") -- yank current word without moving, useful only for note taking
-vim.keymap.set("n", "<leader>I", [[:lua print(vim.inspect())<left><left>]])
+vim.keymap.set("n", "<leader>I", [[:lua print(vim.inspect())<left><left>]]) -- TODO: inspect current line?
 vim.keymap.set("n", "<leader>M", '"qp0dd') -- dump q buffer into a newline and cut it (for binding)
 vim.keymap.set("n", "<leader>y", [[:let @a=''<bar>g/\v/yank A<left><left><left><left><left><left><left>]]) -- yank lines containing
 
@@ -418,7 +426,7 @@ local function search_for(str, backward, recenter)
 	end
 end
 
--- TODO: move out to separate file (almost 400 lines!)
+-- TODO: move out to separate file (> 400 lines!)
 --
 -- https://github.com/LuaLS/lua-language-server/wiki/Annotations#documenting-types
 ---@type {[string]: { mode: string, lhs: string, rhs: string|function, opts: table? }[]}
@@ -458,33 +466,6 @@ local ft_binds = { -- {{{
 	},
 
 	sql = {
-
-		-- {
-		-- 	"n",
-		-- 	")",
-		-- 	function()
-		-- 		if require("dbee").is_open() then
-		-- 			-- TODO: wrap page
-		-- 			require("dbee").api.ui.result_page_next()
-		-- 		else
-		-- 			-- api.nvim_input and cmd.norm are recursive (cmd.norm at least errors noisily)
-		-- 			vim.api.nvim_feedkeys(")", "n", false)
-		-- 		end
-		-- 	end,
-		-- },
-		-- {
-		-- 	"n",
-		-- 	"(",
-		-- 	function()
-		-- 		if require("dbee").is_open() then
-		-- 			require("dbee").api.ui.result_page_prev()
-		-- 		else
-		-- 			vim.api.nvim_feedkeys("(", "n", false)
-		-- 		end
-		-- 	end,
-		-- },
-		-- { "n", "<leader>dc", require("pickers").dbee_connections },
-
 		{ "n", "<leader>H", require("pickers").devdocs },
 	},
 
@@ -495,10 +476,14 @@ local ft_binds = { -- {{{
 	},
 
 	sh = {
+
+		-- %s/\v\[\[ \$(\S+) -gt (\d+) \]\]/((\1>\2))/g -- [[ $ -gt -> (( >
+
+		-- { "n", "@", "Ehciw{[@]}<esc>F[P" }, -- fails with trailing ;
 		{ "n", "<bar>", ":.s/ <bar> / <bar>\\r/g|w<cr>" },
 		{ "n", "<leader>H", [[:.s/\v -H/ \\\r&/g|w<cr>]] },
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
-		{ "n", "@", "Ehciw{[@]}<esc>F[P" }, -- string var to array
+		{ "n", "@", 'f"hciw{[@]}<esc>F[P' }, -- string var to array
 
 		{
 			"n",
@@ -531,6 +516,10 @@ local ft_binds = { -- {{{
 				require("util"):open_float({ body })
 			end,
 		},
+	},
+
+	json = {
+		{ "n", "<leader>x", ":JqPlayground<cr>i" }, -- VimEnter?
 	},
 
 	["typescriptreact,javascriptreact"] = {
@@ -1055,6 +1044,7 @@ local function exec() -- {{{
 				-- poetry install -vv
 				cmd = "poetry run python3 "
 			else
+				-- TODO: if all stdlib imports, try pypy3?
 				cmd = "python3 "
 			end
 			return cmd .. curr_file
@@ -1104,6 +1094,9 @@ local function exec() -- {{{
 		-- ),
 
 		c = function()
+			-- TODO: clang++ `pkg-config --cflags --libs libcurl` foo.cpp -o ./foo
+			-- determine provider of header file, e.g.
+			-- #include <curl/curl.h> -> libcurl
 			return string.format(
 				-- note: -static generates a fully self-contained binary. this roughly
 				-- doubles compile time, and makes the binary about 50x bigger
