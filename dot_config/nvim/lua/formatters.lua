@@ -255,7 +255,7 @@ s/z\$/$$/
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
-		make = { "shfmt_makefile" },
+		-- make = { "shfmt_makefile" },
 		markdown = { "mdslw", "cbfmt", "prettier" },
 		nginx = { "nginxfmt" },
 		proto = { "buf" },
