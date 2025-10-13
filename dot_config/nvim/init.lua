@@ -226,6 +226,8 @@ vim.api.nvim_create_autocmd("TabLeave", {
 })
 
 -- https://github.com/xvzc/chezmoi.nvim?tab=readme-ov-file#treat-all-files-in-chezmoi-source-directory-as-chezmoi-files
+-- WARN: corner case: if lint fails, change will not be applied!
+-- cm edit --watch should still work, however
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
 	-- dot* excludes .git/*
 	pattern = { os.getenv("HOME") .. "/.local/share/chezmoi/dot*" },
@@ -429,8 +431,8 @@ vim.api.nvim_create_autocmd({ "VimEnter", "VimResized" }, {
 })
 
 -- rarely used
+-- vim.keymap.set("n", "<leader>f", telescope_b.find_files, { desc = "find" })
 vim.keymap.set("n", "<leader>b", telescope_b.buffers, { desc = "open buffers" })
-vim.keymap.set("n", "<leader>f", telescope_b.find_files, { desc = "find" })
 vim.keymap.set("n", "<leader>t", telescope.extensions["telescope-tabs"].list_tabs) -- TODO: if 1 tab, noop
 
 -- telescope.treesitter is less useful than telescope_b.lsp_*_symbols
@@ -534,26 +536,22 @@ vim.keymap.set("n", "<leader>c", commit_staged, { desc = "commit" })
 
 -- ga is not useful (:h ga), and can be safely overridden
 
-vim.keymap.set("n", "gab", ":Gwrite<cr>", { desc = "add current buffer (entire)" })
-vim.keymap.set("n", "gap", ":Git add %<cr>", { desc = "add current buffer (patch)" })
+vim.keymap.set("n", "gA", ":Git restore --staged<cr>", { desc = "unstage current buffer (entire)" }) -- probably uncommon
+vim.keymap.set("n", "gaP", ":Git add --patch %<cr>", { desc = "add current buffer (patch)" }) -- add pattern probably more common
+vim.keymap.set("n", "gae", ":Gwrite<cr>", { desc = "add current buffer (entire)" }) -- e easier than b
 
-vim.keymap.set("n", "gaP", function()
-	local patt
-	vim.ui.input({ prompt = "pattern: " }, function(input) -- TODO: rg picker
-		patt = input
-	end)
-
-	if not patt then
+vim.keymap.set("n", "gap", function()
+	-- stage only (does not commit)
+	local pat = vim.fn.input("pattern: ")
+	if not pat then
 		return
 	end
 
-	require("util"):get_command_output(
-		string.format(
-			[[git diff -U0 | grepdiff --output-matching=hunk -E "%s" | git apply --cached --unidiff-zero]],
-			patt
-		)
+	local cmd = string.format(
+		[[ !git diff -U0 '%%' | grepdiff --output-matching=hunk -E "%s" | git apply --cached --unidiff-zero ]],
+		pat
 	)
-	commit_staged()
+	vim.cmd(cmd)
 end, { desc = "commit hunks matching pattern" })
 
 vim.keymap.set("n", "<leader>C", function()
@@ -589,23 +587,25 @@ vim.keymap.set("n", "gB", function()
 
 	local branch = require("util"):get_command_output("git branch --show-current", true)
 
-	if require("util"):get_command_output("git ls-remote --heads origin refs/heads/" .. branch, true) == "" then
-		-- branch deleted on remote
-		branch = "master"
-	end
+	-- -- slow (1.6 s)
+	-- if require("util"):get_command_output("git ls-remote --heads origin refs/heads/" .. branch, true) == "" then
+	-- 	-- branch deleted on remote
+	-- 	branch = "master"
+	-- end
 
+	-- relativise to repo root
 	local path = require("util"):get_command_output("git ls-files --full-name " .. vim.fn.expand("%:p"), true)
 
 	local url = string.format( --
 		"%s/%s/%s/%s#L%s",
 		base,
 		-- base:match("gitlab") and "/-/tree/" or "/blob/",
-		"/blame/",
+		"blame",
 		branch,
 		path,
-		vim.fn.line(".") -- note: may not be reliable
+		vim.fn.line(".") -- note: may not be accurate, because HEAD is probably different from origin
 	)
-	vim.fn.jobstart(string.format("xdg-open '%s'", url))
+	vim.system({ "xdg-open", url })
 
 	-- $url/-/blob/$branch/$path
 
@@ -615,18 +615,6 @@ vim.keymap.set("n", "gB", function()
 	-- vim.cmd("GitBlameCopyCommitURL")
 	-- vim.fn.jobstart([[sleep 0.5 ; xdg-open "$(xclip -o -sel c)" || firefox "$(xclip -o -sel c)"]])
 end, { desc = "view commit of current line (in browser)" })
-
-local deprecations = {
-	-- C = "c",
-	gc = "c",
-	gp = "g.",
-}
-
-for old, new in pairs(deprecations) do
-	vim.keymap.set("n", "<leader>" .. old, function()
-		print("deprecated; use <leader>" .. new)
-	end, { desc = "deprecated" })
-end
 
 -- }}}
 

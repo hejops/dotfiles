@@ -215,15 +215,18 @@ alias tz=trizen # if gpg fail, gpg --recv-keys <key>
 
 mem() {
 	# https://unix.stackexchange.com/a/261252
-	# free memory
-	low=$(< /proc/zoneinfo grep low | awk '{print $NF}' | sum)
+	: calc free memory in kb
+	low=$(< /proc/zoneinfo grep low |
+		awk '{print $NF}' |
+		sum)
 	a=$(
+		# TODO: why 12?
 		cat <<- EOF
-			{a[\$1]=\$2} END{ print a["MemFree:"]+a["Active(file):"]+a["Inactive(file):"]+a["SReclaimable:"]-(12*low); }
+			{a[\$1]=\$2} END { print a["MemFree:"]+a["Active(file):"]+a["Inactive(file):"]+a["SReclaimable:"]-(12*$low); }
 		EOF
 	)
-	free_mem=$(< /proc/meminfo awk -v low="$low" "$a") # kb
-	echo "$free_mem" | bc
+	< /proc/meminfo awk "$a" |
+		awk '{print $0/1000000}' # bc does not handle floats
 }
 
 # alias y="bash ~/gripts/disq/ytm.sh"
@@ -345,10 +348,19 @@ rge() {
 	staged=$(rg --hidden --files-with-matches "$@" | sort -u)
 	if [[ $(<<< "$staged" wc -l) -gt 10 ]]; then
 		echo "More than 10 files found"
+
 	fi
+
+	# pat="${@[-1]}" # invalid syntax
+	pat="${@: -1}" # last arg of array https://unix.stackexchange.com/a/503475
+	if [[ -f $pat || -d $pat ]]; then
+		x=("$@")
+		pat="${x[-2]}"
+	fi
+
 	echo "$staged" |
 		head |
-		xargs nvim -p +"/\v""${*: -1}" # https://unix.stackexchange.com/a/503475
+		xargs nvim -p +"/\v$pat"
 
 }
 
@@ -428,12 +440,12 @@ ytm() {
 
 # git
 
-# alias bb=gb
+# alias ga=_git_commit
 # alias gr=git_root
-alias b=_git_branch
+alias b=_git_branch_fzf
 alias cr=git_root
 alias e=v
-alias ga=_git_commit
+alias gb=_git_branch
 alias gl=git_log
 alias i=b
 alias s=_git_commit # should increasingly be done in vim
@@ -449,10 +461,10 @@ alias gCH="git show --oneline HEAD | cat; echo; read -r -p 'confirm?'; git reset
 alias gdn="git diff --no-index"                                                                 # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
 alias gdnc="git diff --color-words=. --no-index"                                                # diff by char; may be replaced with delta
 alias gig='$EDITOR $(_get_repo_root)/.gitignore'
-alias gm,='gb && gmm'
+alias gm,='_git_branch && gmm'
 alias gx='git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S' # TODO: colt would be nice, but then it can't be an alias anymore
 
-gdns() { gdn -U0 <(sort -u "$1") <(sort -u "$2"); }
+gdns() { gdn -U0 <(sort -u "$1") <(sort -u "$2"); } # sort lines and diff
 
 # git info {{{
 # functions that only report info
@@ -753,20 +765,28 @@ gsdel() {
 _commit_or_discard() {
 	: returns 0 if committed
 
-	# TODO: fzf better
 	committed=1
-	while read -r f; do
-		f=$(_get_repo_root)/$f
-		[[ -f $f ]] || continue
-		if
-			git commit -v --untracked-files=no "$f"
-		then
-			committed=0
-		else
-			# TODO: checkout fails if f is staged; must gA
-			git checkout -- "$f"
-		fi
-	done < /dev/stdin
+
+	# while read -r f; do
+	# 	f=$(_get_repo_root)/$f
+	# 	[[ -f $f ]] || continue
+	# 	if
+	# 		git commit -v --untracked-files=no "$f"
+	# 	then
+	# 		committed=0
+	# 	else
+	# 		# TODO: checkout fails if f is staged; must gA
+	# 		git checkout -- "$f"
+	# 	fi
+	# done < /dev/stdin
+
+	< /dev/stdin cat |
+		while read -r f; do
+			f=$(_get_repo_root)/$f
+			[[ -f $f ]] || continue
+		done |
+		xargs git commit -v --untracked-files=no # TODO: -n1?
+	git checkout -- "$(_get_repo_root)"
 
 	return "$committed"
 }
@@ -924,37 +944,38 @@ gcf() {
 	git rebase --autosquash --autostash || gC
 }
 
-gapat() { # {{{
-	: stage hunks matching some pattern
-
-	# TODO: error: No valid patches in input (allow with "--allow-empty")
-
-	for patt in "$@"; do
-		# grepdiff is more reliable than git diff -S/-G
-		# https://choly.ca/post/git-programmatic-staging/
-		# https://blog.paddlefish.net/git-tip-stage-lines-matching-a-regular-expression/
-		# https://old.reddit.com/r/git/comments/p1vltk
-		git diff -U0 |
-			grepdiff --output-matching=hunk -E "$patt" |
-			# "By default, git apply expects that the patch being applied
-			# is a unified diff with at least one line of context."
-			git apply --cached --unidiff-zero
-	done
-
-	# # https://stackoverflow.com/a/52394658
-	# git diff --unified=1 --pickaxe-regex -S "$1" |
-	# 	grepdiff --output-matching=hunk --extended-regexp "$1" |
-	# 	git apply --cached
-
-	# see also:
-	# http://www.philandstuff.com/2014/02/09/git-pickaxe.html
-	# https://git-scm.com/docs/gitdiffcore#_diffcore_pickaxe_for_detecting_additiondeletion_of_specified_string
-
-	git commit -v
-
-	# # unstage hunks that were unnecessarily added
-	# git reset -p
-} # }}}
+# use gap in vim instead
+# gapat() { # {{{
+# 	: stage hunks matching some pattern
+#
+# 	# TODO: error: No valid patches in input (allow with "--allow-empty")
+#
+# 	for patt in "$@"; do
+# 		# grepdiff is more reliable than git diff -S/-G
+# 		# https://choly.ca/post/git-programmatic-staging/
+# 		# https://blog.paddlefish.net/git-tip-stage-lines-matching-a-regular-expression/
+# 		# https://old.reddit.com/r/git/comments/p1vltk
+# 		git diff -U0 |
+# 			grepdiff --output-matching=hunk -E "$patt" |
+# 			# "By default, git apply expects that the patch being applied
+# 			# is a unified diff with at least one line of context."
+# 			git apply --cached --unidiff-zero
+# 	done
+#
+# 	# # https://stackoverflow.com/a/52394658
+# 	# git diff --unified=1 --pickaxe-regex -S "$1" |
+# 	# 	grepdiff --output-matching=hunk --extended-regexp "$1" |
+# 	# 	git apply --cached
+#
+# 	# see also:
+# 	# http://www.philandstuff.com/2014/02/09/git-pickaxe.html
+# 	# https://git-scm.com/docs/gitdiffcore#_diffcore_pickaxe_for_detecting_additiondeletion_of_specified_string
+#
+# 	git commit -v
+#
+# 	# # unstage hunks that were unnecessarily added
+# 	# git reset -p
+# } # }}}
 
 grev() {
 	: revert single commit in isolation
@@ -1009,97 +1030,120 @@ gpick() {
 
 # }}}
 # git branch # {{{
-gb() { # {{{
-	: switch to new branch, or existing branch
 
-	default_local_branch=$(_gmaster)
-	current_local_branch=$(_git_current_branch)
+# create new branch, basing off current branch (this is the default behaviour of switch)
+alias gbc="git switch --create"
+
+gbr() {
+	: switch to remote branch
+	git fetch
+	git branch --remotes |
+		seen |
+		# TODO: filter out branches that exist locally
+		fzf |
+		# --guess (default) switches to remote branch if found
+		xargs git switch --create
+}
+
+_git_branch() { # {{{
+	: switch to new branch, or existing branch. with no arg, switches to master
+
+	# new branches are always based off latest master; the default
+	# behaviour of git switch -c is to base off the current branch, but
+	# this is generally not useful (in the rare cases that basing off
+	# current branch is required, call gbc instead)
+
+	# regardless of the start point, it is common to be prevented from
+	# switching branches due to the presence of unstaged/uncommitted
+	# changes, which is highly disruptive:
+	#
+	# error: Your local changes to the following files would be overwritten
+	# by checkout: ... Please commit your changes or stash them before you
+	# switch branches.
+	#
+	# most unstaged changes are usually throwaway code that was never meant
+	# to be committed (and could thus be discarded with git switch
+	# --discard-changes). but some unstaged changes are wips that -do- need
+	# to be committed before switching, so we ask for every file.
+	#
+	# note that git switch --conflict brings uncommitted changes into
+	# master, causing conflict markers to appear. this is never desired
+	# (because we want to start from a clean slate), so conflicts must be
+	# resolved in the current branch, -before- the checkout
 
 	commit_unstaged_changes() {
-		# it is common to be prevented from switching branches due to
-		# the presence of uncommitted changes, which is highly
-		# disruptive.
-		#
-		# preserving currently unstaged changes in the new branch is
-		# just annoying, because these unstaged changes are usually
-		# throwaway code that was never meant to be committed. but
-		# --discard-changes is also unsafe, so ask for every file.
+
+		# we always compare the current branch to the current state of
+		# master (-before- fetch)
 
 		# presumably, ' M	' can be safely ignored?
 		# git diff-tree HEAD "$target"
 		# git diff-index "$target"
 		# git diff --numstat "$target"...HEAD
 
-		git diff-index "$1" |
+		git diff-index "$start_branch" |
 			grep -P '00000 [AM]	' |
 			cut -f2 |
 			_commit_or_discard && git push
 	}
 
+	start_branch=$(_gmaster)
+
 	if [[ $# -eq 0 ]]; then
-		if [[ $default_local_branch == "$current_local_branch" ]]; then
-			echo "Already on $default_local_branch"
+		if [[ $(_git_current_branch) == "$start_branch" ]]; then
+			echo "Already on $start_branch"
 		else
+			# relatively uncommon, and there are probably better ways to update master
 			# func retval is not propagated to parent
-			git checkout "$default_local_branch" || return 1
+			git checkout "$start_branch" || return 1
 			timeout 30 git pull
 		fi
+		return
+	fi
+
+	# if
+	# 	! git branch | grep -qPx "[ *] $target" &&
+	# 		timeout 30 git pull &&
+	# 		git branch -r | grep -q "origin/$target"
+	# then
+	# 	# note: git hook stdout cannot be suppressed
+	# 	echo "Switching to remote branch $target"
+	# 	git switch "$target" > /dev/null || return 1
+
+	# if
+	# 	commit_unstaged_changes "$start_branch" #&&
+	# 	git switch --create "$new_branch" "$start_branch" > /dev/null 2> /dev/null
+	# then
+	# 	# for some reason, newly created branches don't know
+	# 	# which repo to pull from
+	# 	git pull "$(_get_remote)" "$start_branch"
+	# else
+	# 	commit_unstaged_changes "$new_branch"
+	# 	git switch "$new_branch"
+	# fi
+
+	commit_unstaged_changes "$start_branch"
+
+	new_branch=$1
+
+	# TODO: if this is stable, this should be simple enough to port into vim
+
+	if
+		# existing local branch
+		git branch | grep -Fqw "$new_branch"
+	then
+		git switch "$new_branch"
 	else
-
-		target=$1
-
-		# generally, new branches should target master. however, this
-		# may not always be the case, so accept an optional 2nd arg to
-		# specify target branch (should be current)
-
-		# --conflict will cause conflict markers to appear in master.
-		# this is never desired, so conflicts should be resolved in the
-		# current branch (i.e. -before- the checkout)
-
-		# existing remote branch > create local branch > existing local branch
-		if
-			! git branch | grep -qPx "[ *] $target" &&
-				timeout 30 git pull &&
-				git branch -r | grep -q "origin/$target"
-		then
-			# note: git hook stdout cannot be suppressed
-			echo "Switching to remote branch $target"
-
-			# TODO: --guess?
-			git switch "$target" > /dev/null || return 1
-
-		elif
-			commit_unstaged_changes "$default_local_branch" #&&
-			git switch --create "$target" "$default_local_branch" > /dev/null 2> /dev/null
-		then
-			# for some reason, newly created branches don't know
-			# which repo to pull from
-			git pull "$(_get_remote)" "$default_local_branch"
-
-		else
-
-			# plain git switch can fail, if 'files would be
-			# overwritten by checkout'. with --conflict, switch
-			# always succeeds, but may result in conflicts which
-			# must be resolved in the new branch
-
-			commit_unstaged_changes "$target"
-			git switch "$target"
-
-			# # alternatively, revert all unstaged changes, then
-			# # switch. this is probably more fragile
-			# git switch "$branch" 2>&1 |
-			# 	grep '^\s' |
-			# 	xargs git checkout --
-
-		fi
+		# new local branch
+		git pull origin "$start_branch:$start_branch" # https://stackoverflow.com/a/16560695
+		git switch --create "$new_branch" "$start_branch"
 	fi
 
 	# check if (dev) branch is behind remote
 	# rev-list probably wouldn't be useful if we don't fetch though
 	# note: rev-list errors if branch has no remote yet
-	if [[ "$(git rev-list --left-right --count \
-		"origin/$target...HEAD" 2> /dev/null | cut -f1)" -gt 0 ]]; then
+	if (("$(git rev-list --left-right --count \
+		"origin/$new_branch...HEAD" 2> /dev/null | cut -f1)" > 0)); then
 		set -x
 		git pull
 		set +x
@@ -1107,44 +1151,52 @@ gb() { # {{{
 
 } # }}}
 
-_complete_gb() {
-	f() {
-		# shellcheck disable=SC2317
-		git branch --list "$1*" 2> /dev/null |
-			grep -Po '[a-z].+'
-	}
-	_base_completer f
-}
+# # rarely used, because for existing branches it is faster to just call b, and
+# # new branches cannot be completed anyway
+# _complete_gb() {
+# 	# shellcheck disable=SC2317
+# 	f() { git branch --list "$1*" 2> /dev/null | grep -Po '[a-z].+'; }
+# 	_base_completer f
+# }
+# # we complete the alias, not the func
+# complete -F _complete_gb gb
 
-complete -F _complete_gb gb
+_git_branch_fzf() {
+	: switch interactively to existing branch, aliased to b
+	# does not handle existing remote branch; use gbr instead
 
-_git_branch() {
-	: switch to existing branch, aliased to b
 	# https://stackoverflow.com/a/1441062
 	# --pretty=format:'%h%x09%an%x09%ad%x09%s' # no color
 
 	_in_git_repo || return
-	if [[ $(git branch | wc -l) -eq 1 ]]; then
+	if (($(git branch | wc -l) == 1)); then
 		echo "No other branches; create one with gb <branch>"
 		return
 	fi
 
 	prv_cmd=$(
+		# if branch, show log starting from master
+		# if master, the range `master..master` fails, so show entire git log
+		# TODO: branch with no commits = empty preview
 		cat <<- EOF
-			echo {} | sed -r 's/^[ *]+/$(_gmaster)../' | xargs git log --oneline --color=always | grep . ||
-				git log --oneline  --color=always {}
+			echo {} |
+				sed -r 's/^/$(_gmaster)../' |
+				xargs git log --oneline --color=always |
+				grep . ||
+			git log --oneline  --color=always {}
 		EOF
 	)
 	branch=$(git branch --sort=-committerdate |
-		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi |
-		sed -r 's/^[ *]+//')
+		awk '{print $NF}' |
+		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi)
 	[[ -z $branch ]] && return
-	gb "$branch"
+	_git_branch "$branch"
 
 }
 
 gbd() {
 	: prune local branches that no longer exist on remote -- unstaged changes will be lost!
+	# this should generally not be run automatically
 	# https://stackoverflow.com/a/46192689
 	git branch -vv |
 		grep ': gone]' |
@@ -1480,7 +1532,7 @@ gon() {
 }
 
 gob() { # build and run
-	name=$(< go.mod head -n1 | cut -d' ' -f2)
+	name=$(< go.mod head -n1 | cut -d' ' -f2 | xargs basename)
 	go build && ./"$name" "$@"
 }
 
@@ -1994,9 +2046,12 @@ mi() {
 ffconcat() {
 	# cat *mp4 > out.mp4 does not work
 	# https://trac.ffmpeg.org/wiki/Concatenate#Automaticallygeneratingtheinputfile
-	glob=$1
-	# TODO: determine file ext
-	ffmpeg -f concat -safe 0 -i <(find . -name "$glob" -printf "file '$PWD/%p'\n" | sort) -c copy output.mp4
+	ext=$(<<< "$1" awk -F. '{print $NF}')
+	files=$(for f in "$@"; do
+		echo "file '$(realpath "$f")'" # single quotes must be preserved
+	done |
+		sort)
+	ffmpeg -f concat -safe 0 -i <(echo "$files") -c copy output."$ext"
 }
 
 # }}}
@@ -2009,6 +2064,7 @@ desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # remove seconds, f
 join2() { < /dev/stdin paste -d " " - -; }
 largs() { < /dev/stdin xargs --delimiter='\n' "$@"; } # split xargs by newline instead of space
 line() { < /dev/stdin sed -n "${1}p"; }
+mean() { < /dev/stdin awk '{ sum += $0; n++ } END { if (n > 0) print sum / n; }'; } # https://stackoverflow.com/a/19149931
 paren() { < /dev/stdin prepend '(' | append ')'; }
 prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
 seen() { < /dev/stdin awk '!a[$0]++'; } # https://paweldu.dev/posts/awk-clever-way-to-remove-duplicate-lines/
@@ -2154,7 +2210,7 @@ rewe() {
 		grep -Fm1 http |
 		xargs curl -sL |
 		grep -Pom1 '[A-Z]-[A-Z]{3}[^<]+' |
-		xargs -I{} curl -sL 'https://wannkommt.rewe.de/api/delivery/{}' \
+		xargs -I{} curl --fail-with-body -sL 'https://wannkommt.rewe.de/api/delivery/{}' \
 			-X POST \
 			-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0' \
 			-H 'Content-Type: application/json' \
@@ -2165,11 +2221,44 @@ rewe() {
 			.address.longitude,
 			.mapDetails.driverLocation.longitude
 		')
-	[[ ${x[1]} == null ]] && return
-	echo "sqrt( (${x[1]}^2-${x[2]}^2) + (${x[3]}^2-${x[4]}^2) )" | bc
+	echo "${x[@]}"
+	if [[ ${x[1]} == null ]]; then
+		echo 'driver location not yet available'
+		return
+	fi
+	if [[ ${x[0]} == null ]]; then return; fi # delivery over
+	# unit unclear; value starts at about 1.4, ends at 0.1
+	echo "sqrt( (${x[0]}^2-${x[1]}^2) + (${x[2]}^2-${x[3]}^2) )" | bc
 }
 
 # }}}
+
+sleep_until() {
+	now=$(date +%s)
+	end=$(date --date="$1" +%s)
+	sleep $((end - now))
+}
+
+wn() {
+	: wiki news of the month
+	f() {
+		# https://news.ycombinator.com/item?id=12292723
+		# https://old.reddit.com/r/commandline/comments/mty60c
+		< /dev/stdin cut -d/ -f3 |
+			\xargs -I{} curl -sL 'https://en.wikipedia.org/w/api.php?format=json&action=query&titles={}&prop=extracts&explaintext=true' |
+			jq -r .query.pages[].extract |
+			fold -sw75
+	}
+	export -f f
+	c 'https://en.wikipedia.org/wiki/Portal:Current_events/September_2025' |
+		grep -Po '/wiki/[^"]+' |
+		count |
+		awk '$1>=7{print $2}' |
+		sort |
+		fzr --preview='echo {} | f'
+
+	unset f
+}
 
 nmsr() {
 	(($# == 0)) && return
@@ -2189,6 +2278,9 @@ nmsr() {
 		fzr --preview='echo {} | cut -f2 | xargs notmuch show --format=json | gron | grep -Pm1 "\]\.content = \"" | cut -d" " -f3- | tr -d ";" | jq -r | fold -sw80'
 	# TODO: on select, reply to email?
 }
+
+# rgf redirect ~/.local/state/mpv/watch_later |
+# 	xargs rm
 
 # < ~/dwm/config.h grep -Pv '^\s*//' |
 # 	grep -Pow '\{MODKEY, XK_[a-z]' |
@@ -2248,7 +2340,7 @@ topa() {
 }
 
 randalb() { # {{{
-	# generate list of random albums rated >=3 amounting to 50 gb
+	# generate list of random albums rated >=3 amounting to 50 GB
 	set -euo pipefail
 	sql=$(
 		# note: unlike select_random.sql, the ORDER BY random() is used
@@ -2277,7 +2369,7 @@ randalb() { # {{{
 	)
 
 	# size=0
-	((size = 0, max = 50 * 1024 ** 2)) # 50 gb
+	((size = 0, max = 50 * 1024 ** 2)) # 50 GB
 	db=~/disq/collection2.db
 	dirs=()
 
@@ -2415,22 +2507,6 @@ kb() {
 		vim "$f"
 
 	fi
-}
-
-tvll() {
-	: truncate vim lsp.log -- should be nvim autocmd, or session startup
-	# TODO: figure out which lsp(s) produce the most logs
-	f=~/.local/state/nvim/lsp.log
-	i=14 # keep 7-14 days (~ 5 MB)
-	while
-		[[ $i -ge 7 ]] &&
-			d=$(date --date="$i days ago" -I) &&
-			! < ~/.local/state/nvim/lsp.log grep -q "$d"
-	do
-		((--i))
-	done
-	sed -i -r "1,/$d/d" "$f"
-	echo "truncated $f to $d"
 }
 
 _unused() {
@@ -2585,24 +2661,4 @@ gcpd() {
 		awk -F$'\t' '{print $8/$9,$3,$1,$8,$9}' |
 		sort -n |
 		colt
-}
-
-lsp_clean() {
-	# this is quite destructive for lsps that are not just lsps, esp biome,
-	# buf, ruff. reinstalls may not work. it is usually safer to just go
-	# nuclear: rm -rf ~/.local/share/nvim/mason
-	reg=~/.local/share/nvim/mason/registries/github/mason-org/mason-registry/registry.json
-	in_use="$(< ~/.config/nvim/lua/lsp.lua sed -rn '/^local servers/,/^\}/p' |
-		grep -P '^\t\w' |
-		awk '{print $1}')"
-	# shellcheck disable=SC2012
-	\ls ~/.local/share/nvim/mason/packages |
-		while read -r d; do
-			lua_name=$(< "$reg" jq -er ".[]|select(.name==\"$d\")|.neovim.lspconfig") || continue # not lsp
-			<<< "$in_use" grep -Fxq "$lua_name" && continue                                       # in use
-			# echo "$d"
-			rm -rf ~/.local/share/nvim/mason/packages/"$d"
-		done
-	# if dead symlink still present, mason thinks already installed
-	find ~/.local/share/nvim/mason/bin -xtype l -delete
 }

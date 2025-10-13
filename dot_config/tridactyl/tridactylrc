@@ -56,6 +56,10 @@ set tabsort mru
 set yankto both
 setpref browser.autofocus false
 
+" https://github.com/azzamsa/dot/blob/65821cef6cc12a994f4c2f7c511d16c11b719a52/browsers/tridactyl/tridactylrc#L14
+" --class or --always-new-process required
+set editorcmd wezterm start --class triedit nvim -c 'setf markdown' +startinsert
+
 " " <C-,> focuses page (e.g. when address bar), but also closes sidebar
 " " https://github.com/tridactyl/tridactyl/issues/377#issuecomment-832580820
 " set escapehatchsidebarhack false
@@ -198,8 +202,8 @@ bind f hint -c input:not([type=hidden]):not([disabled]), a, area, iframe, textar
 bind --mode=ex <C-c> ex.hide_and_clear
 bind --mode=hint <C-c> hint.reset
 
-bind --mode=input <C-i> editor
-bind --mode=insert <C-i> editor
+bind --mode=input <c-i> editor
+bind --mode=insert <c-i> editor
 
 " backward_kill_word has visual quirks in insert/input mode (word delete is not drawn until new text is added)
 bind --mode=ex <C-h> text.backward_word
@@ -249,11 +253,6 @@ bind --mode=visual l js document.getSelection().modify("extend","forward","word"
 bind --mode=visual S composite js document.getSelection().toString() | tabopen
 bind --mode=visual s composite js " " + document.getSelection().toString() | fillcmdline tabopen ; text.beginning_of_line ; text.forward_word ; text.forward_char
 " bind s composite js " " + document.getSelection().toString() | fillcmdline tabopen ; text.beginning_of_line ; text.forward_word ; text.forward_char
-
-" https://github.com/tridactyl/tridactyl/blob/fcdcdc028f01d61589d3e84923f4d3318967c3aa/src/excmds.ts#L323
-" set editorcmd to suckless terminal, or use the defaults on other platforms
-js tri.browserBg.runtime.getPlatformInfo().then(os=>{const editorcmd = os.os=="linux" ? "$TERMINAL vim" : "auto"; tri.config.set("editorcmd", editorcmd)})
-"alias editor_rm composite editor | jsb -p tri.native.run(`rm -f '${JS_ARG[0]}'`)
 
 jsb browser.webRequest.onHeadersReceived.addListener(tri.request.clobberCSP,{urls:["<all_urls>"],types:["main_frame"]},["blocking","responseHeaders"])
 

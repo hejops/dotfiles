@@ -150,7 +150,27 @@ s/z\$/$$/
 			-- https://clang.llvm.org/docs/ClangFormatStyleOptions.html#basedonstyle
 			-- https://github.com/motine/cppstylelineup
 			-- https://github.com/torvalds/linux/blob/master/.clang-format
-			prepend_args = vim.uv.fs_stat(".clang-format") and {} or { "--style", "google" },
+			-- TODO:
+			prepend_args = vim.uv.fs_stat(".clang-format") and {} or {
+				-- { on next line: gnu, microsoft, mozilla
+				-- PascalCase: llvm
+				-- m_: webkit
+				-- squashes long lines, prefers char *var: google
+				-- '--style={BasedOnStyle: chromium, UseTab: "always", IndentWidth: 8}',
+				"--style={"
+					-- TODO: align elements in {} ? (not even gofmt does this iirc)
+					.. "ColumnLimit: 80,"
+					.. "AlignConsecutiveAssignments: true," -- align on =
+					-- .. "AlignConsecutiveDeclarations: true," -- align on var name (precedence over AlignConsecutiveAssignments, ugly)
+					-- .. "AlignAfterOpenBracket: Align," -- ?
+					-- .. "AlignEscapedNewlines: Left," -- ?
+					-- .. "AlignOperands: true," -- ?
+					-- .. "AlignTrailingComments: true," -- ?
+					.. "TabWidth: 8," -- generally not possible to override indentation?
+					.. "BasedOnStyle: Chromium,"
+					-- .. "UseTab: Always,"
+					.. "}",
+			},
 		},
 
 		["clang-tidy"] = {
@@ -240,6 +260,7 @@ s/z\$/$$/
 		-- jq = { "jq" }, -- jq only formats json (duh)
 		-- ocaml = { "ocamlformat" },
 		["_"] = { "trim_whitespace", "trim_newlines" },
+		asm = { "asmfmt" },
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
 		css = { "prettier" },
