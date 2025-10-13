@@ -62,7 +62,7 @@ vim.keymap.set(
 			return
 		end
 
-		word = word:gsub("%)$", "")
+		word = word:gsub("[).]*$", "")
 
 		local f, l = word:match("(.+):(%d+)")
 		-- print(word, f, l)
@@ -408,8 +408,12 @@ end, { silent = true })
 -- mode: string|string[], lhs: string, rhs: string|function, opts?: vim.keymap.set.Opts
 
 ---@param str string
----@param backward boolean
+---@param backward boolean?
+---@param recenter boolean?
 local function search_for(str, backward, recenter)
+	-- TODO: we return closure for convenience (so that callers don't need to
+	-- function() search_for() end), but this may be unintuitive to 'actually'
+	-- call (search_for('foo')())
 	return function()
 		vim.fn.search(str, "W" .. (backward and "b" or ""))
 		if recenter then
@@ -444,12 +448,12 @@ local ft_binds = { -- {{{
 
 	yaml = {
 		{ "n", "(", search_for([[^\S\+:]], true) },
-		{ "n", ")", search_for([[^\S\+:]], false) },
+		{ "n", ")", search_for([[^\S\+:]]) },
 	},
 
 	csv = {
 		{ "n", "(", search_for(",", true) }, -- TODO: should not cross lines
-		{ "n", ")", search_for(",", false) },
+		{ "n", ")", search_for(",") },
 	},
 
 	man = {
@@ -701,7 +705,26 @@ local ft_binds = { -- {{{
 		},
 
 		{ "n", "<leader>B", ":!go build -x<cr>" },
-		{ "n", "<leader>C", ":.s/\vif([^{]+)/case \1:/g<cr>" },
+		-- { "n", "<leader>C", ":.s/\vif([^{]+)/case \1:/g<cr>" }, -- if -> case
+
+		{
+			"n",
+			"<leader>z",
+			function()
+				-- generate swag doc comment
+				search_for("^}")()
+				vim.cmd.norm("k$hKK")
+				vim.cmd.sleep("2m") -- open float introduces delay; we need to wait before we can navigate inside
+				vim.cmd.norm("j$yiW<cr>")
+				vim.cmd("q") -- only :q can exit float -- https://vi.stackexchange.com/a/37226
+
+				local s = string.format(
+					[[// @Success 200 {array} %s "desc"]], --
+					vim.fn.getreg("+")
+				)
+				print(s)
+			end,
+		},
 
 		{
 			"n",
@@ -710,9 +733,6 @@ local ft_binds = { -- {{{
 			function() -- handle error
 				-- https://youtube.com/watch?v=fIp-cWEHaCk&t=1437
 
-				local lnum = vim.api.nvim_win_get_cursor(0)[1] -- 1-indexed
-				local curr_line = vim.fn.getline(lnum)
-
 				-- note: lua has no 'word boundary' pattern
 				-- https://stackoverflow.com/a/6192354
 				if not vim.fn.getline("."):match("err") then
@@ -720,6 +740,8 @@ local ft_binds = { -- {{{
 					return
 				end
 
+				local lnum = vim.api.nvim_win_get_cursor(0)[1] -- 1-indexed
+				local curr_line = vim.fn.getline(lnum)
 				local next_line = vim.fn.getline(lnum + 1)
 				lnum = lnum - 1 -- adjust for 0-indexing
 
@@ -805,6 +827,9 @@ local ft_binds = { -- {{{
 	},
 
 	markdown = {
+
+		-- TODO: <details><summary>Image</summary>...</details>
+
 		-- TODO: if checkbox item (`- [ ]`), toggle check
 		-- https://github.com/tadmccorkle/markdown.nvim#lists
 
@@ -978,6 +1003,7 @@ local function exec() -- {{{
 		-- fennel = "fennel " .. curr_file,
 		-- haskell = "runghc " .. curr_file,
 		-- jq = string.format("jq -f %s %s", curr_file, curr_file:gsub(".jq", ".json")),
+		-- json = "jq -r < " .. curr_file, -- -f just waits for stdin for some reason
 		-- jsonl = "jq -r < " .. curr_file, -- -f just waits for stdin for some reason
 		-- kotlin = "kotlinc -script " .. curr_file, -- extremely slow due to jvm (2.5 s for noop?!)
 		-- lisp = "sbcl --script " .. curr_file,
