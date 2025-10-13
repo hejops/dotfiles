@@ -1407,6 +1407,16 @@ gmrc() {
 		grep -Po '!\d+'
 }
 
+# # branches with conflict
+# glab mr list --author=@me --output=json |
+# 	jq -r '.[]|select(.detailed_merge_status=="conflict")|.source_branch'
+
+gmrf() {
+	# branches with ci fail
+	glab mr list --author=@me --output=json |
+		jq -r '.[]|select(.detailed_merge_status=="ci_must_pass")|.source_branch'
+}
+
 # }}}
 
 # rust {{{
@@ -2073,10 +2083,10 @@ upload() {
 
 wifi() {
 	: connect to wifi network without nmtui
-	nmcli --terse device wifi list |
+	ssid=$(nmcli --terse device wifi list |
 		fzf --reverse |
-		cut -d: -f8 |
-		xargs nmcli --ask device wifi connect #"$ssid" # password $password
+		cut -d: -f8)
+	nmcli --ask device wifi connect "$ssid" < /dev/tty # password $password
 }
 
 getmail() {
