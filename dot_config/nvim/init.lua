@@ -488,7 +488,7 @@ local function git_log()
 		require("util"):get_command_output("git symbolic-ref refs/remotes/origin/HEAD 2> /dev/null | cut -d/ -f4", true)
 
 	telescope_b.git_commits({
-		git_command = vim.list_extend(git_log_cmd, branch ~= master and { master .. "...HEAD" } or {}),
+		git_command = require("util"):extend(git_log_cmd, branch ~= master and { master .. "...HEAD" } or {}),
 	})
 end
 
@@ -496,7 +496,7 @@ vim.keymap.set("n", "gl", git_log, { desc = "git log (current branch only)" })
 
 vim.keymap.set("n", "gL", function()
 	telescope_b.git_commits({
-		git_command = vim.list_extend(git_log_cmd, { vim.fn.expand("%") }),
+		git_command = require("util"):extend(git_log_cmd, { vim.fn.expand("%:p") }),
 	})
 end, { desc = "git log (current file only)" })
 
@@ -556,7 +556,7 @@ vim.keymap.set("n", "gaP", function()
 	commit_staged()
 end, { desc = "commit hunks matching pattern" })
 
-vim.keymap.set("n", "gC", function()
+vim.keymap.set("n", "<leader>C", function()
 	-- TODO: git add % + git commit --amend --no-edit
 	if not require("util"):command_ok("git status --porcelain | grep -q '^M'") then
 		print("No hunks staged")
@@ -617,7 +617,7 @@ vim.keymap.set("n", "gB", function()
 end, { desc = "view commit of current line (in browser)" })
 
 local deprecations = {
-	C = "c",
+	-- C = "c",
 	gc = "c",
 	gp = "g.",
 }
