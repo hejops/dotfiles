@@ -360,7 +360,6 @@ bindurl music.youtube.com l hint -Jc .ytmusic-player-bar.style-scope.next-button
 bindurl music.youtube.com p hint -Jc #play-pause-button
 bindurl music.youtube.com w hint -Jc .ytmusic-player-bar.style-scope.middle-controls
 bindurl news.ycombinator.com f hint .clicky.togg
-bindurl rateyourmusic.com f hint -Jc a.artist, .album, .searchpage, .label, .btn_xsmall.btn, [href^="/release/mixtape/"], [href^="/release/album/"], [href^="/release/ep/"], #musicrecent > .mbgen > tbody > tr > td > .medium
 bindurl reddit.com f hint .expand
 bindurl rutracker.org/forum/login.php f hint -Jc .long.bold
 bindurl rutracker.org/forum/tracker.php f hint -Jc .bold.hl-tags.ts-text.tLink.med
@@ -386,13 +385,18 @@ bindurl reddit.com gu urlparent 3
 " spaces are not allowed in pipe construction
 bindurl 1fichier.com a composite get_current_url | js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('echo ' + url + ' >> $HOME/to_watch'))
 bindurl boards.4chan.org/wg/thread R composite get_current_url | shellescape | wallchan
-bindurl discogs.com/(artist|label) i composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
 bindurl discogs.com/(release|master) i composite get_current_url | shellescape | exclaim_quiet discogs_release | open
-bindurl discogs.com/release R composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
 bindurl leetcode i composite get_current_url | shellescape | exclaim_quiet chromium --incognito
 bindurl library.lol a composite get_current_url | js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('echo ' + url + ' >> $HOME/to_dl'))
 bindurl localhost:85 i composite get_current_url | shellescape | exclaim_quiet chromium --incognito
 bindurl wikipedia.org D composite get_current_url | shellescape | exclaim_quiet $TERMINAL wkbk
+
+bindurl discogs.com/(artist|label) i composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
+" bindurl discogs.com/release R composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
+
+" using mixed quotes is asking for trouble
+" https://github.com/cbrst/config/blob/4ae870d8d9bd0ecd5e4951d45b1451971a43db71/tridactyl/tridactylrc#L78
+bindurl discogs.com/release R composite get_current_url | shellescape | js -d€ tri.excmds.exclaim_quiet(`$TERMINAL ~/plaque/discogs/foo ${JS_ARGS[1].split('/')[4].split('-')[0]}`)€
 
 " command gldiff js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('$TERMINAL bash -ic "curl -sL -H "Cookie:_gitlab_session=$GL_SESSION" "'+url+'.diff" | delta"'))
 command gldiff js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('gldiff ' + url))
