@@ -178,8 +178,12 @@ local function open_terminal()
 		end
 	end
 
+	-- almost always want to be at nearest Makefile, or dir which contains
+	-- current file
+	local d = vim.fs.root(0, { "Makefile", ".git" })
+
 	local wide, ratio = is_wide()
-	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal")
+	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal " .. string.format([[sh -c 'cd %s; bash']], d))
 end
 
 -- vim.keymap.set("n", "<c-e>", open_terminal, { silent = true })
