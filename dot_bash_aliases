@@ -62,14 +62,14 @@ _complete_make() {
 }
 complete -o bashdefault -o default -F _complete_make make # not sure if option order is significant
 
-# # < foo.json jq doesn't work
-# _complete_jq() {
-# 	notify-send hi
-# 	>&2 echo "${COMP_WORDS[@]}"
-# }
-# complete -F _complete_jq jq
-# complete -F _complete_jq foo
-# complete -F _complete_jq '<'
+_complete_pnpm() {
+	# pnpm -h is too slow (0.2s)
+	f() { < package.json jq -r '.scripts|keys[]' | grep "${1:-.}"; }
+	_base_completer f
+}
+complete -o bashdefault -o default -F _complete_pnpm pnpm
+
+# complete -o bashdefault -o default -F 'f() { < package.json jq -r ".scripts|keys[]" | grep "${1:-.}"; }; _base_completer f' pnpm
 
 # startup {{{
 
@@ -259,6 +259,13 @@ EXA_ARGS=(
 alias ls='exa ${EXA_ARGS[*]}'
 alias lsl="ls --sort=modified"
 
+vv() {
+	line=$(rgl --line-number . | fzf)
+	f=$(<<< "$line" cut -d: -f1)
+	line=$(<<< "$line" cut -d: -f2)
+	nvim +"$line" +"norm zt" "$f"
+}
+
 # }}}
 # frequent {{{
 
@@ -440,11 +447,11 @@ ytm() {
 
 # git
 
+# alias e=v
 # alias ga=_git_commit
 # alias gr=git_root
 alias b=_git_branch_fzf
 alias cr=git_root
-alias e=v
 alias gb=_git_branch
 alias gl=git_log
 alias i=b
@@ -587,6 +594,11 @@ _git_log_fzf() { # {{{
 		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
 
 	elif
+		<<< "$1" grep -Fq ... # from...to
+	then
+		args+=("$@")
+
+	elif
 		[[ $# -gt 1 ]] # probably arbitrary options to git log
 	then
 		# TODO: allow arbitrary options to fzf (this is a can of worms)
@@ -710,6 +722,15 @@ gdm() { # {{{
 
 } # }}}
 
+gbe() {
+	: match pattern in current branch, like rge
+	pat=$1
+	git log --name-only --pretty= origin/"$(_gmaster)"...HEAD |
+		seen |
+		xargs rg -l "$pat" |
+		xargs nvim -p +'/\v'"$pat"
+}
+
 git_log() {
 	: browse git log, showing each commit\'s diff in fzf preview
 	_git_log_fzf "$@" | xargs git show
@@ -743,6 +764,22 @@ gsdel() {
 	# https://stackoverflow.com/a/19727752
 	f=$1
 	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
+}
+
+gly() {
+	: yesterday\'s log
+	git log --all --format="%S|%cI|%h|%s" --since="$(date --date='1 days ago' -I)" \
+		--author="$(
+			# not reliable yet:
+			# git config get --local user.email
+			# git config get --local user.name
+			<<< "$USER" sed -r 's/^\w/\U&/'
+		)" --no-merges |
+		sort |
+		tr '|' '\t' |
+		colt |
+		sed 's|refs/heads/||' |
+		grep -v ^master
 }
 
 # git diff blame
@@ -1041,12 +1078,15 @@ gbr() {
 		seen |
 		# TODO: filter out branches that exist locally
 		fzf |
-		# --guess (default) switches to remote branch if found
-		xargs git switch --create
+		cut -d/ -f2 |
+		# --guess (default) switches to remote branch if found, but must remove origin/
+		xargs git switch # --create
 }
 
 _git_branch() { # {{{
 	: switch to new branch, or existing branch. with no arg, switches to master
+
+	[[ -z $1 ]] && return
 
 	# new branches are always based off latest master; the default
 	# behaviour of git switch -c is to base off the current branch, but
@@ -1122,6 +1162,9 @@ _git_branch() { # {{{
 	# 	git switch "$new_branch"
 	# fi
 
+	set -x
+
+	# TODO: does this pull?
 	commit_unstaged_changes "$start_branch"
 
 	new_branch=$1
@@ -1135,31 +1178,38 @@ _git_branch() { # {{{
 		git switch "$new_branch"
 	else
 		# new local branch
-		git pull origin "$start_branch:$start_branch" # https://stackoverflow.com/a/16560695
+		# TODO: why do we appear to merge master into curr branch?
+
+		# + git pull origin master:master
+		# remote: Enumerating objects: 62, done.
+		# remote: Counting objects: 100% (62/62), done.
+		# remote: Compressing objects: 100% (30/30), done.
+		# remote: Total 32 (delta 24), reused 0 (delta 0), pack-reused 0 (from 0)
+		# Unpacking objects: 100% (32/32), 8.71 KiB | 222.00 KiB/s, done.
+		# From gitlab.novum-engineering.com:external-services/novum-cloud
+		#    bb8fec7eb..c1572ba64  master     -> master
+		#    bb8fec7eb..c1572ba64  master     -> origin/master
+		# Merge made by the 'ort' strategy.
+		# + git switch --create v2-storage-bulk-create master
+
+		# --no-edit skips commit msg (?)
+		git pull --commit --no-edit origin "$start_branch:$start_branch" # https://stackoverflow.com/a/16560695
 		git switch --create "$new_branch" "$start_branch"
 	fi
+
+	set +x
 
 	# check if (dev) branch is behind remote
 	# rev-list probably wouldn't be useful if we don't fetch though
 	# note: rev-list errors if branch has no remote yet
-	if (("$(git rev-list --left-right --count \
-		"origin/$new_branch...HEAD" 2> /dev/null | cut -f1)" > 0)); then
-		set -x
+	if
+		behind=$(git rev-list --left-right --count "origin/$new_branch...HEAD" 2> /dev/null | cut -f1 | grep .) &&
+			((behind > 0))
+	then
 		git pull
-		set +x
 	fi
 
 } # }}}
-
-# # rarely used, because for existing branches it is faster to just call b, and
-# # new branches cannot be completed anyway
-# _complete_gb() {
-# 	# shellcheck disable=SC2317
-# 	f() { git branch --list "$1*" 2> /dev/null | grep -Po '[a-z].+'; }
-# 	_base_completer f
-# }
-# # we complete the alias, not the func
-# complete -F _complete_gb gb
 
 _git_branch_fzf() {
 	: switch interactively to existing branch, aliased to b
@@ -1189,7 +1239,7 @@ _git_branch_fzf() {
 	branch=$(git branch --sort=-committerdate |
 		awk '{print $NF}' |
 		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi)
-	[[ -z $branch ]] && return
+	# [[ -z $branch ]] && return
 	_git_branch "$branch"
 
 }
@@ -1200,8 +1250,8 @@ gbd() {
 	# https://stackoverflow.com/a/46192689
 	git branch -vv |
 		grep ': gone]' |
-		grep -v "\*" |
-		awk '{ print $1; }' |
+		grep -v "^\*" | # TODO: this means we cannot delete current branch; consider sed s/^*//
+		awk '{print $1}' |
 		xargs -r git branch -D
 }
 
@@ -1264,7 +1314,7 @@ gcon() { # {{{
 	# not up to date with master yet
 	if
 		! _git_has_conflicts &&
-			(("$(git rev-list --left-right --count "origin/master...HEAD" | cut -f1)" > 0))
+			(("$(git rev-list --left-right --count "origin/$(_gmaster)...HEAD" | cut -f1)" > 0))
 	then
 		gmm || return
 		gcon
@@ -1394,6 +1444,10 @@ review() {
 
 # gitlab {{{
 
+# TODO: run after clone
+# git config set --local user.email "$EMAIL"
+# git config set --local user.name "$NAME"
+
 # json output requires v1.37 (apt is 1.36 smh)
 # https://gitlab.com/gitlab-org/cli/-/commit/893f5c945a50cb8a6d674eb05923f87e46fa6150
 
@@ -1401,7 +1455,22 @@ review() {
 # glab auth login
 
 alias gld=gldiff
+
+# all mrs made by me
 alias gmer='seq 1 2 | parallel -n1 glab mr list --output=json --assignee=@me --merged --per-page=9999 -p | jq .[] | jqt iid source_branch title | sort -n'
+
+# # similar to b (but slower)
+# glab mr list --author=@me --output=json |
+# 	jq -r .[] |
+# 	jqt detailed_merge_status source_branch title |
+# 	sort
+
+gmw() {
+	: mrs merged in the last week
+	glab mr list --merged --output=json |
+		# jq -r 'sort_by(.merged_at)[]|select(.merged_at>="'"$(date --date='1 week ago' -I)"'")|["- !"+(.iid|tostring),.title]|@tsv'
+		jq -r 'sort_by(.merged_at)[]|select(.merged_at>="'"$(date --date='1 week ago' -I)"'")|[.iid,.title]|@tsv'
+}
 
 # apt 1.36
 # snap 1.43/1.54, but cannot read config file (lol)
@@ -1431,7 +1500,7 @@ gmrc() {
 	: find recent mr that is most likely the predecessor of the current mr
 
 	# current mr numstat
-	curr=$(git diff --numstat master..HEAD |
+	curr=$(git diff --numstat "$(_gmaster)"..HEAD | # not sure if ... better
 		grep -Fvw -e 0 -e '=>' |
 		sort -rn)
 
@@ -1443,13 +1512,13 @@ gmrc() {
 		head |
 		while read -r sha; do
 
-			x=$(git show --format= --numstat "$sha" |
+			xx=$(git show --format= --numstat "$sha" |
 				sort -rn |
 				# cut -f3 | xargs grep |
 				while read -r _ _ f; do <<< "$curr" grep "$f" || :; done |
 				wc -l)
 
-			echo "$x $sha"
+			echo "$xx $sha"
 
 		done |
 		sort -rn |
@@ -1459,14 +1528,16 @@ gmrc() {
 		grep -Po '!\d+'
 }
 
-# # branches with conflict
-# glab mr list --author=@me --output=json |
-# 	jq -r '.[]|select(.detailed_merge_status=="conflict")|.source_branch'
+alias bf=gmrf
 
 gmrf() {
 	# branches with ci fail
-	glab mr list --author=@me --output=json |
-		jq -r '.[]|select(.detailed_merge_status=="ci_must_pass")|.source_branch'
+	branch=$(glab mr list --author=@me --output=json |
+		# jq -r '.[]|select(.detailed_merge_status=="ci_must_pass")|.source_branch' # or "conflict"
+		jq -r .[] |
+		jqt iid source_branch title[:30] detailed_merge_status |
+		fzr --preview="echo {} | awk '{print \$2}' | xargs git log --oneline --color=always" --accept-nth=2)
+	_git_branch "$branch"
 }
 
 # }}}
@@ -1624,12 +1695,6 @@ jx() {
 	[[ -n $cmd ]] && "$(pkgmgr)" "$cmd"
 }
 
-_complete_jx() {
-	f() { < ./package.json jq -r '.scripts|keys[]'; }
-	_base_completer f
-}
-complete -o bashdefault -o default -F _complete_jx jx
-
 jmake() {
 	: convert scripts to Makefile
 
@@ -1766,7 +1831,7 @@ psch() {
 
 	# use subshell to avoid persisting sourced vars
 	(
-		f=$(rg -l --hidden '^POSTGRES_URL' "$REPO" | grep -v template) # inner
+		f=$(rg -l --hidden '^POSTGRES_URL' "$REPO" | grep -v -e template -e Makefile) # inner
 		source "$f"
 
 		# env has all the correct values, but domain:port is wrong. the
@@ -2232,6 +2297,19 @@ rewe() {
 }
 
 # }}}
+
+e() {
+	: open recent command in dummy sh file
+	cmd=$(history | fzf --reverse --tac | awk '{$1="";print $0}')
+	# WARN: sed -i wipes undo history
+	# sed -i "1s/^/$cmd\n/" ~/foo.sh
+	# sed -i "1 i\\$cmd" ~/foo.sh
+	{
+		echo "$cmd"
+		cat ~/foo.sh
+	} | sponge ~/foo.sh
+	vim ~/foo.sh
+}
 
 sleep_until() {
 	now=$(date +%s)
