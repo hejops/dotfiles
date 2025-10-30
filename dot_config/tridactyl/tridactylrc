@@ -360,7 +360,6 @@ bindurl music.youtube.com l hint -Jc .ytmusic-player-bar.style-scope.next-button
 bindurl music.youtube.com p hint -Jc #play-pause-button
 bindurl music.youtube.com w hint -Jc .ytmusic-player-bar.style-scope.middle-controls
 bindurl news.ycombinator.com f hint .clicky.togg
-bindurl rateyourmusic.com f hint -Jc a.artist, .album, .searchpage, .label, .btn_xsmall.btn, [href^="/release/mixtape/"], [href^="/release/album/"], [href^="/release/ep/"], #musicrecent > .mbgen > tbody > tr > td > .medium
 bindurl reddit.com f hint .expand
 bindurl rutracker.org/forum/login.php f hint -Jc .long.bold
 bindurl rutracker.org/forum/tracker.php f hint -Jc .bold.hl-tags.ts-text.tLink.med
@@ -386,13 +385,18 @@ bindurl reddit.com gu urlparent 3
 " spaces are not allowed in pipe construction
 bindurl 1fichier.com a composite get_current_url | js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('echo ' + url + ' >> $HOME/to_watch'))
 bindurl boards.4chan.org/wg/thread R composite get_current_url | shellescape | wallchan
-bindurl discogs.com/(artist|label) i composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
 bindurl discogs.com/(release|master) i composite get_current_url | shellescape | exclaim_quiet discogs_release | open
-bindurl discogs.com/release R composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
 bindurl leetcode i composite get_current_url | shellescape | exclaim_quiet chromium --incognito
 bindurl library.lol a composite get_current_url | js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('echo ' + url + ' >> $HOME/to_dl'))
 bindurl localhost:85 i composite get_current_url | shellescape | exclaim_quiet chromium --incognito
 bindurl wikipedia.org D composite get_current_url | shellescape | exclaim_quiet $TERMINAL wkbk
+
+bindurl discogs.com/(artist|label) i composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
+" bindurl discogs.com/release R composite get_current_url | shellescape | exclaim_quiet $TERMINAL discogs_rate
+
+" using mixed quotes is asking for trouble
+" https://github.com/cbrst/config/blob/4ae870d8d9bd0ecd5e4951d45b1451971a43db71/tridactyl/tridactylrc#L78
+bindurl discogs.com/release R composite get_current_url | shellescape | js -d€ tri.excmds.exclaim_quiet(`$TERMINAL ~/plaque/discogs/foo ${JS_ARGS[1].split('/')[4].split('-')[0]}`)€
 
 " command gldiff js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('$TERMINAL bash -ic "curl -sL -H "Cookie:_gitlab_session=$GL_SESSION" "'+url+'.diff" | delta"'))
 command gldiff js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('gldiff ' + url))
@@ -422,8 +426,8 @@ bindurl letterboxd.com/(director|studio)/.+your-rating R urlmodify -t your-ratin
 bindurl letterboxd.com/(director|studio)/[^/]+?/?$ R urlmodify -g -2 by/release-earliest/
 bindurl letterboxd.com/[^/]+/?$ R urlmodify -g -2 films/rated/5/by/release-earliest/
 bindurl music.youtube.com/.*list= gu urlmodify -Q list
-bindurl vid.puffyan.us M urlmodify -t vid.puffyan.us music.youtube.com
-bindurl vid.puffyan.us R urlmodify -t vid.puffyan.us music.youtube.com
+bindurl invidious.nerdvpn.de M urlmodify -t invidious.nerdvpn.de music.youtube.com
+bindurl invidious.nerdvpn.de R urlmodify -t invidious.nerdvpn.de music.youtube.com
 
 " }}}
 "exclaim echo $(date +%s) urlmod | tee -a /tmp/tridactyl
@@ -452,23 +456,23 @@ quickmark w	https://web.whatsapp.com
 
 " TODO: include playlist (regex?)
 " bindurl odysee.com f composite hint -Jcpipe .claim-preview href | mpvyt
-" bindurl vid.puffyan.us f composite hint -Jcpipe .h-box>[href^="/watch"] href | mpvyt
+" bindurl invidious.nerdvpn.de A js tri.native.run('echo ' + document.location.href + ' >> $HOME/to_watch')
+" bindurl invidious.nerdvpn.de f composite hint -Jcpipe .h-box>[href^="/watch"] href | mpvyt
 autocmd DocStart github.+readme-ov-file js tri.excmds.urlmodify("-Q", "tab")
 autocmd DocStart gitlab.+ref_type js tri.excmds.urlmodify("-Q", "ref_type")
 autocmd DocStart rust-lang.github.io/.+%E2%94%82 js tri.excmds.urlmodify("-t","%E2%94%82","")
-autocmd DocStart www.youtube.com js tri.excmds.urlmodify("-t","www.youtube.com","vid.puffyan.us")
+autocmd DocStart www.youtube.com js tri.excmds.urlmodify("-t","www.youtube.com","invidious.nerdvpn.de")
 autocmd DocStart www.youtube.com/feeds/videos.xml js tri.excmds.urlmodify("-t","feeds/videos.xml?channel_id=","channel/")
 bindurl music.youtube.com y composite js document.location.href.replace("music.","") | clipboard yank
-bindurl vid.puffyan.us A js tri.native.run('echo ' + document.location.href + ' >> $HOME/to_watch')
-bindurl vid.puffyan.us f composite hint -Jcpipe .thumbnail>[href^="/watch"] href | mpvyt
-bindurl vid.puffyan.us i composite get_current_url | mpvyt
-bindurl vid.puffyan.us y composite js document.location.href.replace("vid.puffyan.us","www.youtube.com") | clipboard yank
-bindurl vid.puffyan.us/watch M composite get_current_url | mpvytfast
-bindurl vid.puffyan.us/watch Q composite get_current_url | ytquality
+bindurl invidious.nerdvpn.de f composite hint -Jcpipe .thumbnail>[href^="/watch"] href | mpvyt
+bindurl invidious.nerdvpn.de i composite get_current_url | mpvyt
+bindurl invidious.nerdvpn.de y composite js document.location.href.replace("invidious.nerdvpn.de","www.youtube.com") | clipboard yank
+bindurl invidious.nerdvpn.de/watch M composite get_current_url | mpvytfast
+bindurl invidious.nerdvpn.de/watch Q composite get_current_url | ytquality
 bindurl vimeo|dailymotion f composite get_current_url | mpvyt
-set searchurls.y	https://vid.puffyan.us/search?q=
+set searchurls.y	https://invidious.nerdvpn.de/search?q=
 
-" autocmd BeforeRedirect www.youtube.com js tri.excmds.urlmodify("-t", "www.youtube.com", "vid.puffyan.us")
+" autocmd BeforeRedirect www.youtube.com js tri.excmds.urlmodify("-t", "www.youtube.com", "invidious.nerdvpn.de")
 " https://github.com/tridactyl/tridactyl/issues/2047
 " https://github.com/tridactyl/tridactyl/issues/2469#issuecomment-644795832
 
@@ -548,7 +552,7 @@ autocontain -s movieparadise.org tv
 autocontain -s nyaa.si tv
 autocontain -s reservix.de event
 autocontain -s songkick.com event
-autocontain -s vid.puffyan.us video
+autocontain -s invidious.nerdvpn.de video
 autocontain -s vimeo.com video
 
 " containerupdate name newname color icon
