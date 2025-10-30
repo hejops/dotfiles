@@ -785,7 +785,7 @@ gsdel() {
 
 gly() {
 	: yesterday\'s log
-	git log --all --format="%S|%cI|%h|%s" --since="$(date --date='1 days ago' -I)" \
+	git -C "${REPO:-.}" log --all --format="%S|%cI|%h|%s" --since="$(date --date='1 days ago' -I)" \
 		--author="$(
 			# not reliable yet:
 			# git config get --local user.email
@@ -1507,20 +1507,27 @@ gmw() {
 
 gldiff() {
 	# note: to see diff of current branch, just use gdm
-	[[ $PWD != *$REPO* ]] || cd "$REPO"
-	if [[ $# -eq 0 ]]; then
-		prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
-		n=$(glab mr list --output=json --reviewer=@me | #--not-draft |
-			jq '.[:25][]' |
-			jqt updated_at iid title assignee.username source_branch |
-			sort -r |
-			fzh -0 -1 --preview="$prv_cmd" --accept-nth=2)
-		[[ -z $n ]] && return
-	else
-		n=$1
+	[[ $PWD != *$REPO* ]] && cd "$REPO"
+
+	if <<< "$1" grep -Pqx '\d+'; then
+		glab mr diff "$n" | sed '/Subproject commit/d' | delta
+		return
 	fi
 
-	glab mr diff "$n" | sed '/Subproject commit/d' | delta
+	prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
+	branch=$(glab mr list --output=json --reviewer=@me | #--not-draft |
+		jq '.[:25][]' |
+		jqt updated_at iid source_branch title assignee.username |
+		sort -r |
+		fzh -0 -1 --preview="$prv_cmd" --accept-nth=3)
+	[[ -z $branch ]] && return
+
+	if (($# == 1)); then
+		git fetch
+		git diff "$1...origin/$branch"
+	else
+		git diff "origin/$(_gmaster)...origin/$branch"
+	fi
 
 }
 
@@ -2330,12 +2337,23 @@ rewe() {
 
 bb() {
 	# bw config server
+
 	j=$(bw list items)
-	name=$(<<< "$j" jq -r '.[]|select(.login.password)|.name' | fzf)
+	export j
+
+	# shellcheck disable=SC2329
+	f() { <<< "$j" jq --color-output ".[]|select(.name==\"$1\")"; }
+	export -f f
+
+	name=$(<<< "$j" jq -r '.[]|select(.login.password)|.name' |
+		fzf --preview='f {}' --preview-window='right,60%,border')
+	unset f
+
 	[[ -z $name ]] && return
 	<<< "$j" jq -r ".[]|select(.name==\"$name\")|.login.password" |
 		xclip -selection clipboard
 	echo "copied password for $name"
+	unset j
 }
 
 e() {
@@ -2359,6 +2377,7 @@ sleep_until() {
 
 wn() {
 	: wiki news of the month
+	# shellcheck disable=SC2329
 	f() {
 		# https://news.ycombinator.com/item?id=12292723
 		# https://old.reddit.com/r/commandline/comments/mty60c
