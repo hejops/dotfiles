@@ -260,7 +260,26 @@ alias ls='exa ${EXA_ARGS[*]}'
 alias lsl="ls --sort=modified"
 
 vv() {
-	line=$(rgl --line-number . | fzf)
+	# shellcheck disable=SC2329
+	f() {
+		line=$1
+		f=$(<<< "$line" cut -d: -f1)
+		line=$(<<< "$line" cut -d: -f2)
+		((start = line - 10))
+		((start < 0)) && ((start = 0))
+
+		echo "$f"
+		echo
+		bat --color always --style=auto --line-range "$start": "$f"
+	}
+	export -f f
+
+	# TODO: exclude pnpm lock, etc
+	line=$(rgl --line-number . | fzf --preview='f {}' --preview-window='right,60%,border')
+	unset f
+
+	[[ -z $line ]] && return
+
 	f=$(<<< "$line" cut -d: -f1)
 	line=$(<<< "$line" cut -d: -f2)
 	nvim +"$line" +"norm zt" "$f"
@@ -550,19 +569,6 @@ gh() {
 	xdg-open "$url"
 }
 
-# gd() {
-# 	if [[ $# -eq 0 ]]; then
-# 		git diff
-# 	elif
-# 		# file with no local changes (or hash?)
-# 		[[ $# -eq 1 ]] && git diff --exit-code "$1" > /dev/null
-# 	then
-# 		git diff HEAD^^ "$1" # check against last commit
-# 	else
-# 		git diff "$@"
-# 	fi
-# }
-
 # }}}
 # git history {{{
 
@@ -603,6 +609,16 @@ _git_log_fzf() { # {{{
 	then
 		# TODO: allow arbitrary options to fzf (this is a can of worms)
 		args+=("$@")
+
+	elif
+		[[ $# -eq 1 ]] &&
+			[[ $1 == $(_gmaster) ]]
+	then
+		# git does not allow flag overrides (i.e. --merges will not
+		# work), and merge commits are always after. thus, we just show
+		# child commit in preview
+		# https://stackoverflow.com/a/9870218
+		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git log --reverse --ancestry-path {}..$(_gmaster) --oneline 2>/dev/null | head -n1 | cut -d' ' -f1 | xargs git show"
 
 	elif
 		# other dev branch
@@ -682,6 +698,7 @@ v() { # {{{
 		largs realpath --relative-to=. 2> /dev/null |
 		sort -u |
 		largs ls -1t 2> /dev/null |
+		# TODO: 50 is often too few
 		head -n50 |
 		# height=~X% is not suitable because preview is usually longer
 		# than input rows, and preview must always be shown to a reasonable
@@ -1320,16 +1337,29 @@ gcon() { # {{{
 		gcon
 	fi
 
-	if
-		# only conflict is lock file
-		# TODO: go.sum
-		! git status --porcelain |
-			grep ^UU |
-			grep -vx 'UU pnpm-lock.yaml'
-	then
+	# only conflict is lock file
+	if ! git status --porcelain |
+		grep ^UU |
+		grep -vx 'UU pnpm-lock.yaml'; then
+
 		pnpm install
 		_git_get_conflicts | xargs git add
 		git commit -v
+
+	elif ! git status --porcelain |
+		grep ^UU |
+		grep -v 'go.sum$'; then
+
+		cd "$(git status --porcelain |
+			grep ^UU |
+			cut -d' ' -f2 |
+			xargs dirname)"
+		go mod tidy
+		cd -
+
+		_git_get_conflicts | xargs git add
+		git commit -v
+
 	fi
 
 	# git diff --name-only --diff-filter=U --relative
@@ -2298,6 +2328,16 @@ rewe() {
 
 # }}}
 
+bb() {
+	# bw config server
+	j=$(bw list items)
+	name=$(<<< "$j" jq -r '.[]|select(.login.password)|.name' | fzf)
+	[[ -z $name ]] && return
+	<<< "$j" jq -r ".[]|select(.name==\"$name\")|.login.password" |
+		xclip -selection clipboard
+	echo "copied password for $name"
+}
+
 e() {
 	: open recent command in dummy sh file
 	cmd=$(history | fzf --reverse --tac | awk '{$1="";print $0}')
@@ -2308,7 +2348,7 @@ e() {
 		echo "$cmd"
 		cat ~/foo.sh
 	} | sponge ~/foo.sh
-	vim ~/foo.sh
+	nvim +1 ~/foo.sh
 }
 
 sleep_until() {
