@@ -2311,7 +2311,7 @@ rewe() {
 	readarray -t x < <(notmuch show 'subject:Vielen Dank für deine Bestellung!' |
 		grep -Fm1 http |
 		xargs curl -sL |
-		grep -Pom1 '[A-Z]-[A-Z]{3}[^<]+' |
+		grep -Pom1 '[A-Z]-[A-Z0-9]{3}[^<]+' |
 		xargs -I{} curl --fail-with-body -sL 'https://wannkommt.rewe.de/api/delivery/{}' \
 			-X POST \
 			-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0' \
@@ -2330,7 +2330,7 @@ rewe() {
 	fi
 	if [[ ${x[0]} == null ]]; then return; fi # delivery over
 	# unit unclear; value starts at about 1.4, ends at 0.1
-	echo "sqrt( (${x[0]}^2-${x[1]}^2) + (${x[2]}^2-${x[3]}^2) )" | bc
+	echo "sqrt( (${x[0]}-${x[1]})^2 + (${x[2]}-${x[3]})^2 )" | bc
 }
 
 # }}}
