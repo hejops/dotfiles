@@ -821,26 +821,21 @@ _commit_or_discard() {
 
 	committed=1
 
-	# while read -r f; do
-	# 	f=$(_get_repo_root)/$f
-	# 	[[ -f $f ]] || continue
-	# 	if
-	# 		git commit -v --untracked-files=no "$f"
-	# 	then
-	# 		committed=0
-	# 	else
-	# 		# TODO: checkout fails if f is staged; must gA
-	# 		git checkout -- "$f"
-	# 	fi
-	# done < /dev/stdin
+	while read -r f; do
+		f=$(_get_repo_root)/$f
+		[[ -f $f ]] || continue
+		if
+			git commit -v --untracked-files=no "$f"
+		then
+			committed=0
+		else
+			# TODO: checkout fails if f is staged; must gA
+			git checkout -- "$f"
+		fi
+	done < /dev/stdin
 
-	< /dev/stdin cat |
-		while read -r f; do
-			f=$(_get_repo_root)/$f
-			[[ -f $f ]] || continue
-		done |
-		xargs git commit -v --untracked-files=no # TODO: -n1?
-	git checkout -- "$(_get_repo_root)"
+	# xargs git commit is not useful, because we need to know the result of
+	# each git checkout
 
 	return "$committed"
 }
