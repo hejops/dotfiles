@@ -146,7 +146,11 @@ ps --pid "$PPID" | grep -Fq wezterm &&
 	((BASH_REMATCH[1] >= 3)) &&
 	echo -e "\n${BASH_REMATCH[0]}"
 
-if ! ls /tmp/ssh-XXXXX* > /dev/null; then
+if
+	# ! ls /tmp/ssh-XXXXX* > /dev/null
+	# openssh v10.2?
+	\ls -1 /tmp/ssh-XXXXX* ~/.ssh/agent/s.*.agent.* > /dev/null 2> /dev/null
+then
 	# pkill ssh-agent # deletes all existing sockets
 	eval "$(ssh-agent -s)"
 
