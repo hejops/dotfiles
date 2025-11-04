@@ -265,23 +265,28 @@ alias ls='exa ${EXA_ARGS[*]}'
 alias lsl="ls --sort=modified"
 
 vv() {
-	# shellcheck disable=SC2329
-	f() {
-		line=$1
-		f=$(<<< "$line" cut -d: -f1)
-		line=$(<<< "$line" cut -d: -f2)
-		((start = line - 10))
-		((start < 0)) && ((start = 0))
 
-		echo "$f"
-		echo
-		bat --color always --style=auto --line-range "$start": "$f"
-	}
-	export -f f
+	# # shellcheck disable=SC2329
+	# f() {
+	# 	line=$1
+	# 	f=$(<<< "$line" cut -d: -f1)
+	# 	line=$(<<< "$line" cut -d: -f2)
+	# 	((start = line - 10))
+	# 	((start < 0)) && ((start = 0))
+	#
+	# 	echo "$f"
+	# 	echo
+	# 	bat --color always --style=auto --line-range "$start": "$f"
+	# }
+	# export -f f
+	# line=$(rgl --line-number . | fzf --preview='f {}' --preview-window='right,60%,border')
+	# unset f
 
 	# TODO: exclude pnpm lock, etc
-	line=$(rgl --line-number . | fzf --preview='f {}' --preview-window='right,60%,border')
-	unset f
+
+	f=$(rg --line-number --no-heading . |
+		# https://news.ycombinator.com/item?id=45677142
+		fzf -d: -n 2.. --preview-window "right:50%:+{2}" --preview "bat --color=always --highlight-line {2} {1}")
 
 	[[ -z $line ]] && return
 
