@@ -148,7 +148,8 @@ ps --pid "$PPID" | grep -Fq wezterm &&
 
 if
 	# ! ls /tmp/ssh-XXXXX* > /dev/null
-	# openssh v10.2?
+	# openssh v10.1
+	# https://www.openssh.org/txt/release-10.1
 	\ls -1 /tmp/ssh-XXXXX* ~/.ssh/agent/s.*.agent.* > /dev/null 2> /dev/null
 then
 	# pkill ssh-agent # deletes all existing sockets
@@ -2333,6 +2334,21 @@ rewe() {
 }
 
 # }}}
+
+de() {
+	while true; do
+		read -r w < /dev/tty
+		# TODO: if jq fail, try uppercase
+		w1=$(urlenc "${w:0:1}")
+		w2=$(urlenc "${w:0:2}")
+		url="https://kaikki.org/dictionary/German/meaning/$w1/$w2/$w.jsonl"
+		# echo "$url"
+		c "$url" |
+			jq -er .senses[].glosses[] 2> /dev/null |
+			uniq
+		echo
+	done
+}
 
 bb() {
 	# bw config server
