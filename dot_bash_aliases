@@ -1582,6 +1582,28 @@ gmrf() {
 	_git_branch "$branch"
 }
 
+glj() {
+	: view job logs of current mr
+	f() {
+		id=$1
+		glab ci get --output=json --pipeline-id "$1" |
+			jq ".jobs[]|select(.name==\"$2\")|.web_url" |
+			xargs --verbose -I{} curl -sL \
+				-H "Cookie: _gitlab_session=$GL_SESSION" '{}/raw' |
+			sed -n '/GRPC/,$p'
+	}
+	export -f f
+	job=$1
+	if [[ -z $job ]]; then
+		echo "no job specified"
+		return
+	fi
+	glab ci list --output=json |
+		jq ".[]|select(.ref==\"$(_git_current_branch)\")|.id" |
+		fzf --preview="f {} $job" --preview-window='right,95%,border' --reverse --tac
+	unset f
+}
+
 # }}}
 
 # rust {{{
