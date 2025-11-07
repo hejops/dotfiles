@@ -103,7 +103,7 @@ function M:foo()
 		return string.format( --
 			"%s[%s+%s]",
 			curr_branch,
-			curr_branch == "master" and "" or "b",
+			curr_branch == "master" and "" or "m",
 			v
 		)
 	else
