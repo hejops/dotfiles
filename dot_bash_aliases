@@ -147,20 +147,22 @@ ps --pid "$PPID" | grep -Fq wezterm &&
 	echo -e "\n${BASH_REMATCH[0]}"
 
 if
-	# ! ls /tmp/ssh-XXXXX* > /dev/null
-	# openssh v10.1
-	# https://www.openssh.org/txt/release-10.1
-	\ls -1 /tmp/ssh-XXXXX* ~/.ssh/agent/s.*.agent.* > /dev/null 2> /dev/null
+	# note: ls foo bar fails if any arg does not exit
+	x=$(! ls /tmp/ssh-XXXXXX*/agent.* &&
+		# openssh v10.1
+		# https://www.openssh.org/txt/release-10.1
+		! ls ~/.ssh/agent/s.*.agent.*)
 then
 	# pkill ssh-agent # deletes all existing sockets
-	eval "$(ssh-agent -s)"
+	eval "$(ssh-agent -s)" > /dev/null
 
 elif [[ -z $SSH_AUTH_SOCK ]]; then
-	SSH_AUTH_SOCK=$(\ls /tmp/ssh-XXXXXX*/agent.*)
+	SSH_AUTH_SOCK=$(<<< "$x" head -n1)
 	export SSH_AUTH_SOCK
 	find ~/.ssh -name 'gitlab*' | grep -v .pub | \xargs ssh-add -q
 
 fi
+unset x
 
 [[ -f ~/jira.txt ]] && < ~/jira.txt cut -f1,3
 
@@ -1580,6 +1582,28 @@ gmrf() {
 		jqt iid source_branch title[:30] detailed_merge_status |
 		fzr --preview="echo {} | awk '{print \$2}' | xargs git log --oneline --color=always" --accept-nth=2)
 	_git_branch "$branch"
+}
+
+glj() {
+	: view job logs of current mr
+	f() {
+		id=$1
+		glab ci get --output=json --pipeline-id "$1" |
+			jq ".jobs[]|select(.name==\"$2\")|.web_url" |
+			xargs --verbose -I{} curl -sL \
+				-H "Cookie: _gitlab_session=$GL_SESSION" '{}/raw' |
+			sed -n '/GRPC/,$p'
+	}
+	export -f f
+	job=$1
+	if [[ -z $job ]]; then
+		echo "no job specified"
+		return
+	fi
+	glab ci list --output=json |
+		jq ".[]|select(.ref==\"$(_git_current_branch)\")|.id" |
+		fzf --preview="f {} $job" --preview-window='right,95%,border' --reverse --tac
+	unset f
 }
 
 # }}}
