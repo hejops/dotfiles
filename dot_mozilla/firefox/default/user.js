@@ -72,6 +72,7 @@ user_pref("browser.link.open_newwindow.restriction", 0);
 user_pref("browser.messaging-system.whatsNewPanel.enabled", false);
 user_pref("browser.migrated-sync-button", true);
 user_pref("browser.ml.chat.enabled", false);
+user_pref("browser.ml.chat.page", false); // context menu
 user_pref("browser.ml.chat.page.footerBadge", false);
 user_pref("browser.ml.chat.page.menuBadge", false);
 user_pref("browser.ml.chat.shortcuts", false);
