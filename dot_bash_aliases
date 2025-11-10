@@ -2726,19 +2726,27 @@ nico() {
 	xdotool key super+8
 	# ensure window is focused!
 	i=0
-	while read -r line; do
-		[[ -z $line ]] && break
+	cat "$1" |
+		head -n68 |
+		while read -r line; do
+			[[ -z $line ]] && break
+			((++i))
 
-		# slsk blocks all searches after a while
-		# TODO: where are logs written to?
-		((i++))
-		[[ $i -ge 68 ]] && break
+			# slsk blocks all searches after a while
+			# TODO: where are logs written to?
 
-		echo "$i: $line"
-		echo "$line" | xclip -sel c
-		xdotool key ctrl+2 F6 ctrl+v enter
-		sleep 3
-	done < "$1"
+			echo "$i: $line"
+			echo "$line" | xclip -sel c
+
+			# F6 is unreliable now
+			# xdotool key ctrl+2 F6 ctrl+v enter
+
+			# iffy
+			xdotool key ctrl+1 ctrl+2
+			sleep 0.5
+			xdotool key ctrl+v enter
+			sleep 3
+		done
 
 	notify-send 'done'
 }
