@@ -805,9 +805,9 @@ gly() {
 			<<< "$USER" sed -r 's/^\w/\U&/'
 		)" --no-merges |
 		sort |
+		sed 's|refs[^ ]*/||' |
 		tr '|' '\t' |
 		colt |
-		sed 's|refs/heads/||' |
 		grep -v ^master
 }
 
