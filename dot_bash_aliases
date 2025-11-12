@@ -286,7 +286,7 @@ vv() {
 
 	# TODO: exclude pnpm lock, etc
 
-	f=$(rg --line-number --no-heading . |
+	line=$(rg --line-number --no-heading . |
 		# https://news.ycombinator.com/item?id=45677142
 		fzf -d: -n 2.. --preview-window "right:50%:+{2}" --preview "bat --color=always --highlight-line {2} {1}")
 
@@ -1098,6 +1098,12 @@ alias gbc="git switch --create"
 gbr() {
 	: switch to remote branch
 	git fetch
+
+	if (($# > 0)); then
+		git switch "$1"
+		return
+	fi
+
 	git branch --remotes |
 		seen |
 		# TODO: filter out branches that exist locally
