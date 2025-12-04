@@ -41,7 +41,7 @@ get_assigned_issues() {
 select_issue() {
 	get_assigned_issues |
 		jq -r '.[] | [.status,.url,.title] | @tsv' |
-		fzf --reverse --height=~33% |
+		(fzf --reverse --height=~33% || kill 0) |
 		cut -f2 |
 		xargs basename
 }
