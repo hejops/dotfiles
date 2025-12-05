@@ -72,8 +72,16 @@ user_pref("browser.link.open_newwindow.restriction", 0);
 user_pref("browser.messaging-system.whatsNewPanel.enabled", false);
 user_pref("browser.migrated-sync-button", true);
 user_pref("browser.ml.chat.enabled", false);
+user_pref("browser.ml.chat.page", false); // context menu
+user_pref("browser.ml.chat.page.footerBadge", false);
+user_pref("browser.ml.chat.page.menuBadge", false);
+user_pref("browser.ml.chat.shortcuts", false);
+user_pref("browser.ml.chat.shortcuts.custom", false);
+user_pref("browser.ml.chat.sidebar", false);
+user_pref("browser.ml.checkForMemory", false);
 user_pref("browser.ml.enable", false);
 user_pref("browser.ml.enabled", false);
+user_pref("browser.ml.linkPreview.shift ", false);
 user_pref("browser.newtab.extensionControlled", true);
 user_pref("browser.newtab.privateAllowed", true);
 user_pref("browser.newtab.url", "about:blank");
