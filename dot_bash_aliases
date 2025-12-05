@@ -148,10 +148,10 @@ ps --pid "$PPID" | grep -Fq wezterm &&
 
 if
 	# note: ls foo bar fails if any arg does not exit
-	x=$(! ls /tmp/ssh-XXXXXX*/agent.* &&
+	x=$(! ls /tmp/ssh-XXXXXX*/agent.* 2> /dev/null &&
 		# openssh v10.1
 		# https://www.openssh.org/txt/release-10.1
-		! ls ~/.ssh/agent/s.*.agent.*)
+		! ls ~/.ssh/agent/s.*.agent.* 2> /dev/null)
 then
 	# pkill ssh-agent # deletes all existing sockets
 	eval "$(ssh-agent -s)" > /dev/null
@@ -211,6 +211,7 @@ alias eb="exec bash"
 alias fzh="fzf --reverse --height=~33%" # height=~X% means min(input rows, window height * X%);
 alias fzr="fzf --reverse --preview='bat --color=always --style=auto {}' --preview-window='right,60%,border'"
 alias inw="inotifywait --monitor --recursive"
+alias keep="tee /dev/stderr" # copy stdout to stderr, but still direct stdout to pipe
 alias li="exec chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg'"
 alias or="bash ~/gripts/oar/run.sh"
 alias ports="netstat -tunlp | grep -Pw '^(udp|tcp)' | sort -k4 -V" # https://linuxize.com/post/check-listening-ports-linux/#check-listening-ports-with-netstat
@@ -706,6 +707,7 @@ v() { # {{{
 		git log --no-merges --first-parent --name-only --pretty= "$(_gmaster)...HEAD" | grep .
 		git ls-files --full-name # . is implicit
 	} |
+		grep -v .sql.go |
 		prepend "$(_get_repo_root)"/ |
 		largs realpath --relative-to=. 2> /dev/null |
 		sort -u |
@@ -753,11 +755,20 @@ gdm() { # {{{
 
 gbe() {
 	: match pattern in current branch, like rge
+	# does not include uncommitted changes
+	# TODO: generally requires gmm
 	pat=$1
-	git log --name-only --pretty= origin/"$(_gmaster)"...HEAD |
+
+	# git log --name-only --pretty= origin/"$(_gmaster)"...HEAD |
+	# 	seen |
+	# 	xargs rg -l "$pat" |
+	# 	xargs nvim -p +'/\v'"$pat"
+
+	git log --name-only --pretty= origin/"$(_gmaster)"...HEAD --pickaxe-regex -S "$pat" |
 		seen |
-		xargs rg -l "$pat" |
-		xargs nvim -p +'/\v'"$pat"
+		# xargs rg -l "$pat" |
+		xargs nvim -p +'/\v'"${pat//\//\/\/}"
+
 }
 
 git_log() {
@@ -797,18 +808,26 @@ gsdel() {
 
 gly() {
 	: yesterday\'s log
-	git -C "${REPO:-.}" log --all --format="%S|%cI|%h|%s" --since="$(date --date='1 days ago' -I)" \
-		--author="$(
-			# not reliable yet:
-			# git config get --local user.email
-			# git config get --local user.name
-			<<< "$USER" sed -r 's/^\w/\U&/'
-		)" --no-merges |
-		sort |
-		sed 's|refs[^ ]*/||' |
-		tr '|' '\t' |
-		colt |
-		grep -v ^master
+	n=1
+	until
+		d=$(date --date="$n days ago" -I)
+		git -C "${REPO:-.}" log --all --format="%S|%cI|%h|%s" \
+			--since="${d}T07:00:00" \
+			--until="${d}T23:00:00" \
+			--author="$(
+				# not reliable yet:
+				# git config get --local user.email
+				# git config get --local user.name
+				<<< "$USER" sed -r 's/^\w/\U&/'
+			)" --no-merges |
+			sed 's|refs[^ ]*/||' |
+			sort |
+			tr '|' '\t' |
+			colt |
+			grep -v -e ^master -e ^HEAD
+	do
+		((++n))
+	done
 }
 
 # git diff blame
@@ -1245,6 +1264,11 @@ _git_branch_fzf() {
 	: switch interactively to existing branch, aliased to b
 	# does not handle existing remote branch; use gbr instead
 
+	if git status --porcelain | grep -P '^\w'; then
+		echo "staged changes must be restored first; use gA"
+		return
+	fi
+
 	# https://stackoverflow.com/a/1441062
 	# --pretty=format:'%h%x09%an%x09%ad%x09%s' # no color
 
@@ -1452,37 +1476,6 @@ gnew() { # {{{
 # 	# git push -f
 # }
 
-review() {
-	# https://news.ycombinator.com/item?id=44968785
-	if
-		[[ -n "$(git status -s)" ]]
-	then
-		echo 'must start with clean tree!'
-		return 1
-	fi
-
-	[[ $# -eq 1 ]] && return
-
-	git checkout pristine # a branch that I never commit to
-	git rebase origin/master
-
-	branch="$1"
-	git branch -D "$branch"
-	git checkout "$branch"
-
-	git rebase origin/master
-	git reset --soft origin/master
-	git reset
-
-	nvim -c ':G'
-
-	git reset --hard
-	git status -s | awk '{ print $2 }' | xargs 'rm' # seems dangerous...
-	git checkout pristine
-	git branch -D "$branch"
-
-}
-
 # }}}
 
 # gitlab {{{
@@ -1535,8 +1528,8 @@ gldiff() {
 		fzh -0 -1 --preview="$prv_cmd" --accept-nth=3)
 	[[ -z $branch ]] && return
 
+	git fetch
 	if (($# == 1)); then
-		git fetch
 		git diff "$1...origin/$branch"
 	else
 		git diff "origin/$(_gmaster)...origin/$branch"
@@ -2389,14 +2382,14 @@ bb() {
 	# bw config server
 
 	j=$(bw list items)
-	export j
+	# export j # leaks
 
 	# shellcheck disable=SC2329
 	f() { <<< "$j" jq --color-output ".[]|select(.name==\"$1\")"; }
 	export -f f
 
 	name=$(<<< "$j" jq -r '.[]|select(.login.password)|.name' |
-		fzf --preview='f {}' --preview-window='right,60%,border')
+		fzf --tac --no-sort --preview='f {}' --preview-window='right,60%,border')
 	unset f
 
 	[[ -z $name ]] && return
