@@ -41,7 +41,7 @@ get_assigned_issues() {
 select_issue() {
 	get_assigned_issues |
 		jq -r '.[] | [.status,.url,.title] | @tsv' |
-		fzf |
+		(fzf --reverse --height=~33% || kill 0) |
 		cut -f2 |
 		xargs basename
 }
@@ -56,9 +56,10 @@ log_work() {
 		--header 'Accept: application/json' \
 		--user "$WORK_EMAIL:$JIRA_TOKEN" \
 		"$JIRA/rest/api/3/issue/$n/worklog" |
-		jq '[.worklogs[].timeSpentSeconds]|add/3600' || echo 0)
+		jq '[.worklogs[].timeSpentSeconds]|add/3600' 2> /dev/null || echo 0)
 
-	read -r -p "Hours (current: $curr): " hours < /dev/tty
+	read -r -p "Hours (current: $curr): " input < /dev/tty
+	hours=$(<<< "$input" awk '{print $1}')
 	d=$(date --date="$hours hours ago" +"%Y-%m-%dT%H:%M:%S.000%z")
 	secs=$((hours * 3600))
 	echo "$d"
@@ -66,8 +67,17 @@ log_work() {
 		--user "$WORK_EMAIL:$JIRA_TOKEN" \
 		-X POST -H "Content-Type: application/json" \
 		-d '{"started":"'"$d"'","timeSpentSeconds":'"$secs"'}' \
-		"$JIRA/rest/api/2/issue/$n/worklog" |
-		jq
+		"$JIRA/rest/api/2/issue/$n/worklog" #| jq
+
+	if ((curr == 0)); then
+		transition "$n" "In Progress"
+	elif
+		second_word=$(<<< "$input" awk '{print $2}')
+		[[ $second_word == r ]]
+	then
+		# transition "$n" "In Review"
+		transition "$n" review
+	fi
 
 }
 
@@ -76,18 +86,27 @@ transition() {
 	# https://docs.atlassian.com/software/jira/docs/api/REST/4.4.5/#id339616
 
 	n=$1
+	new_status_id=${2:-} # currently, string must match value specified on server (see get_assigned_issues)
 
-	new_status=$(curl -s \
-		--user "$WORK_EMAIL:$JIRA_TOKEN" \
-		"$JIRA/rest/api/2/issue/$n/transitions" |
-		jq -c '.transitions[] | {id, name}' |
-		fzf |
-		jq .id) # keep as str
+	if [[ -n $new_status_id ]]; then
+		# map to actual id
+		new_status_id=$(curl -s \
+			--user "$WORK_EMAIL:$JIRA_TOKEN" \
+			"$JIRA/rest/api/2/issue/$n/transitions" |
+			jq -r ".transitions[] | select(.name == \"$new_status_id\") | .id") # numeric string
+	else
+		new_status_id=$(curl -s \
+			--user "$WORK_EMAIL:$JIRA_TOKEN" \
+			"$JIRA/rest/api/2/issue/$n/transitions" |
+			jq -c '.transitions[] | {id, name}' |
+			fzf |
+			jq -r .id)
+	fi
 
 	curl -s \
 		--user "$WORK_EMAIL:$JIRA_TOKEN" \
 		-X POST -H "Content-Type: application/json" \
-		-d "{ \"transition\" : $new_status }" \
+		-d "{ \"transition\" : \"$new_status_id\" }" \
 		"$JIRA/rest/api/2/issue/$n/transitions"
 
 }

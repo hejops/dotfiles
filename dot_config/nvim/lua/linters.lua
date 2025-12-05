@@ -65,6 +65,9 @@ require("lint").linters.markdownlint.args = {
 	"--stdin",
 }
 
+local x = vim.fs.root(0, "biome.json")
+require("lint").linters.biomejs.cmd = x and x .. "/node_modules/.bin/biome" or "biome"
+
 -- https://github.com/rrunner/dotfiles/blob/d55d90ed5d481fc/nvim/.config/nvim/lua/plugins/linting.lua#L17
 require("lint").linters.ruff.args = { -- {{{
 	"check",
