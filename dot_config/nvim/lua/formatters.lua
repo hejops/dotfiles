@@ -1,5 +1,5 @@
 local js_formatters = {
-	"sanitize_inner_semicolons",
+	-- "sanitize_inner_semicolons",
 	"biome_remove_unused_imports",
 	"biome",
 	-- "prettier",
@@ -313,6 +313,7 @@ s/z\$/$$/
 			-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
 			-- do people rewrite in rust without feature parity?
 			"trim_newlines",
+			"trim_whitespace",
 			-- "sqlfluff",
 			-- stop_after_first = true,
 		},
