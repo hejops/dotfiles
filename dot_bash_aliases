@@ -2355,17 +2355,32 @@ rewe() {
 	if [[ ${x[1]} == null ]]; then
 		echo 'driver location not yet available'
 		return
+	elif [[ ${x[0]} == null ]]; then # delivery over
+		return
 	fi
-	if [[ ${x[0]} == null ]]; then return; fi # delivery over
 	# unit unclear; value starts at about 1.4, ends at 0.1
 	echo "sqrt( (${x[0]}-${x[1]})^2 + (${x[2]}-${x[3]})^2 )" | bc
 }
 
 # }}}
 
+nomon() {
+	xrandr --output HDMI-A-1 --auto
+	pactl set-card-profile alsa_card.pci-0000_04_00.1 off
+}
+
+mw() {
+	rg -INo "$HDD/movies.+" ~/.local/state/mpv/watch_later |
+		grep . |
+		while read -r f; do [[ -f $f ]] && echo "$f"; done |
+		fzf |
+		largs mpv
+}
+
 de() {
 	while true; do
-		read -r w < /dev/tty
+		# TODO: ignore bash history
+		read -e -r w < /dev/tty
 		# TODO: if jq fail, try uppercase
 		w1=$(urlenc "${w:0:1}")
 		w2=$(urlenc "${w:0:2}")
@@ -2626,6 +2641,15 @@ tsg() {
 		sed -r 's/(.+) by (.+)/\2\t\1/'
 }
 
+tsgr() {
+	# non-deterministic
+	curl -sL 'https://app.thestorygraph.com/populate-recommendations-recent-reads-picks-list-view' \
+		-H "Cookie: remember_user_token=$(get_cookie remember_user_token)" |
+		grep -P 'img alt="[^"]' |
+		cut -d'"' -f2 |
+		shuf -n3
+}
+
 imm() {
 	notmuch show from:noreply@immobilienscout24.de |
 		grep -Po 'Adresse: [^(]+' |
@@ -2716,11 +2740,10 @@ _unused() {
 
 }
 
-# rng() { for _ in "$(seq "${2:-1}")"; do echo $((1 + RANDOM % ${1:-100})); done; }
 ,pgrep() { \pgrep "$1" | xargs ps; } # ps for runtime
 pk() { pgrep "$1" | fzf -m --tac --accept-nth=1 | xargs kill -9; }
-pkill1() { \pgrep "$1" | sed 1d | xargs kill; }                                            # kill all procs except 1st
-rng() { while read -r _; do echo $((1 + RANDOM % ${1:-100})); done < "$(seq "${2:-1}")"; } # shellharden
+pkill1() { \pgrep "$1" | sed 1d | xargs kill; } # kill all procs except 1st
+rng() { for ((i = 0; i < ${2:-1}; i++)); do echo $((1 + RANDOM % ${1:-100})); done; }
 ya() { mpv --video=no "ytdl://ytsearch10:'$*'"; }
 yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '{title, description, webpage_url, channel_url}'; }
 yt() { mpv --force-window "ytdl://ytsearch10:'$*'"; }

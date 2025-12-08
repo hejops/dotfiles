@@ -259,7 +259,11 @@ s/z\$/$$/
 
 		-- jq = { "jq" }, -- jq only formats json (duh)
 		-- ocaml = { "ocamlformat" },
-		["_"] = { "trim_whitespace", "trim_newlines" },
+		["_"] = {
+			"squeeze_blanks", -- consecutive newlines
+			"trim_whitespace",
+			"trim_newlines", -- only empty lines at end of file
+		},
 		asm = { "asmfmt" },
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
@@ -309,7 +313,7 @@ s/z\$/$$/
 
 		sql = {
 			-- "pg_format", -- default formatting violates sqlfluff
-			"sqruff", -- relies on .sqruff
+			"sqruff", -- relies on .sqruff; TODO: || coerced to | |?
 			-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
 			-- do people rewrite in rust without feature parity?
 			"trim_newlines",
