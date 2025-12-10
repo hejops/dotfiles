@@ -180,7 +180,7 @@ local function open_terminal()
 
 	-- almost always want to be at nearest Makefile, or dir which contains
 	-- current file
-	local d = vim.fs.root(0, { "Makefile", ".git" })
+	local d = vim.fs.root(0, { { "Makefile", "package.json" }, ".git" })
 
 	local wide, ratio = is_wide()
 	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal " .. string.format([[sh -c 'cd %s; bash']], d))
@@ -459,6 +459,7 @@ local ft_binds = { -- {{{
 	},
 
 	yaml = {
+		-- '<,'>s/\v([^-]) ([A-Z])/\1\r\2/g
 		{ "n", "(", search_for([[^\S\+:]], true) },
 		{ "n", ")", search_for([[^\S\+:]]) },
 	},
@@ -475,6 +476,9 @@ local ft_binds = { -- {{{
 
 	sql = {
 		{ "n", "<leader>H", require("pickers").devdocs },
+
+		-- yeah...
+		-- yap}o^[pjj^V/)^Mk$y/VALUES<fc>^B<80>kb^Mj0^V/)^MkPkkcabSET^M^[ddkc2wUPDATE^[vipr, +/=^M/;^Md0Bch=^[^M{jfI<80><fd>5c6lUpdate^[^M
 	},
 
 	["qf,help,man,lspinfo,startuptime,Trouble,lazy"] = {
@@ -530,6 +534,38 @@ local ft_binds = { -- {{{
 		{ "n", "<leader>x", ":JqPlayground<cr>i" }, -- VimEnter?
 	},
 
+	["typescript,javascript"] = {
+		{
+			"n",
+			"<leader>z",
+			function() -- toggle concurrent/only
+				if not vim.fn.expand("%"):match("test.ts$") then
+					return
+				end
+
+				vim.cmd.norm("mz")
+				search_for("^test", true)()
+
+				local lnum = vim.fn.line(".")
+				local line = vim.fn.getline(".")
+
+				-- local rep
+				-- if line:match("%.concurrent") then
+				-- 	rep = line:gsub("concurrent", "only")
+				-- else
+				-- 	rep = line:gsub("only", "concurrent")
+				-- end
+
+				vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, false, {
+					line:match("%.concurrent") and line:gsub("concurrent", "only") or line:gsub("only", "concurrent"),
+				})
+				vim.cmd.norm("`z")
+				vim.cmd.norm("zz")
+				vim.cmd.w()
+			end,
+		},
+	},
+
 	["typescriptreact,javascriptreact"] = {
 		-- { "n", "<leader>x", ":!npx shadcn@latest add -y " },
 		{ "n", "<leader>x", ":Dispatch pnpm vite<cr>" }, -- BufReadPost? lol
@@ -575,6 +611,7 @@ local ft_binds = { -- {{{
 					{ pat = [[\(t\)]], rep = [[()]] },
 					{ pat = [[\.serial]], rep = [[]] },
 					{ pat = [[t\.(true|false)([^;]+)]], rep = [[expect\2.toBe(\1)]] },
+					{ pat = [[t\.deepEqual\(([^,]+), ([^)]+)\)]], rep = [[expect\(\1).toStrictEqual(\2)]] },
 					{ pat = [[t\.is\(([^,]+), ([^)]+)\)]], rep = [[expect\(\1).toBe(\2)]] },
 					{ pat = [[t\.not\(([^,]+), ([^)]+)\)]], rep = [[expect\(\1).not.toBe(\2)]] },
 
