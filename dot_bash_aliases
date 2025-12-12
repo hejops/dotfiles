@@ -1894,39 +1894,40 @@ psch() {
 
 	# psql \d+ is too verbose, so we must use pg_dump
 
-	# use subshell to avoid persisting sourced vars
-	(
-		f=$(rg -l --hidden '^POSTGRES_URL' "$REPO" | grep -v -e template -e Makefile) # inner
-		source "$f"
+	while read -r line; do
+		eval "$line"
+	done <<< "$(rg --hidden '^POSTGRES' "$REPO" |
+		grep -v -e template -e Makefile |
+		cut -d: -f2-)"
 
-		# env has all the correct values, but domain:port is wrong. the
-		# mapping is found in a docker-compose.yml
+	# env has all the correct values, but domain:port is wrong. the
+	# mapping is found in a docker-compose.yml
 
-		inner_port=$(<<< "$POSTGRES_URL" grep -Po '\d+')
-		outer_port=$(rg -Iom1 "\d+:$inner_port" "$REPO" | # one can only hope the correct file is selected
-			head -n1 |
-			cut -d: -f1)
-		POSTGRES_URL=$(<<< "$POSTGRES_URL" sed -r "s|@[^/]+|@localhost:$outer_port|")
+	inner_port=$(<<< "$POSTGRES_URL" grep -Po '\d+') || return
+	outer_port=$(rg -Iom1 "\d+:$inner_port" "$REPO" | # one can only hope the correct file is selected
+		head -n1 |
+		cut -d: -f1)
+	POSTGRES_URL=$(<<< "$POSTGRES_URL" sed -r "s|@[^/]+|@localhost:$outer_port|")
 
-		# getting the quoting right is extremely difficult, so just
-		# dump to file
-		pg_dump --schema-only "$POSTGRES_URL" > /tmp/s
+	# getting the quoting right is extremely difficult, so just
+	# dump to file
+	pg_dump --schema-only "$POSTGRES_URL" > /tmp/s
 
-		# TODO: sqruff would be nice...
-		prefix='CREATE TABLE public'
-		prv_cmd="cat /tmp/s | sed -rn '/$prefix.{} /,/\);/p' | bat --color always --style=auto --language=sql 2>/dev/null"
+	# new tables will not be in schema file
+	prefix='CREATE TABLE (public\.)?'
 
-		tbl=$(psql "$POSTGRES_URL" -c '\dt' |
-			awk 'NR>3{print $3}' |
-			grep . |
-			fzf --preview="$prv_cmd" \
-				--preview-window='right,60%,border' --ansi)
+	# TODO: sqruff would be nice...
+	prv_cmd="cat /tmp/s | sed -rn '/$prefix{} /,/\);/p' | bat --color always --style=auto --language=sql 2>/dev/null"
 
-		rg -l "$prefix\.$tbl" "$REPO" |
-			head -n1 |
-			xargs nvim +'/\v'"$prefix\.$tbl"
+	tbl=$(psql "$POSTGRES_URL" -c '\dt' |
+		awk 'NR>3{print $3}' |
+		grep . |
+		fzf --preview="$prv_cmd" \
+			--preview-window='right,60%,border' --ansi) || return
 
-	)
+	rg -l "$prefix$tbl" "$REPO" |
+		head -n1 |
+		xargs nvim +'/\v'"$prefix\.$tbl"
 
 }
 
