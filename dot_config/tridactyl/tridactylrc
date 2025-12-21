@@ -302,6 +302,7 @@ alias va view-archive
 command addfeed js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('addfeed ' + url))
 command chrome js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('chromium ' + url))
 command download js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('$TERMINAL dl ' + url))
+command lbrate js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('$TERMINAL lbrate ' + url))
 command mpvweb js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('$TERMINAL mpvweb ' + url))
 command mpvyt js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('mpvyt ' + url))
 command mpvytfast js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet('mpvyt -f ' + url))
@@ -332,12 +333,13 @@ command tabcloseallbykeyword jsb -p browser.tabs.query({}).then(tabs => tabs.for
 " TODO: sometimes, when yt music switches to a small window, play-pause-button disappears, even when size is restored
 " bindurl 4chan(nel)?.org/\w+/thread f composite hint -Jcpipe .youtube.linkify href | mpvyt
 bindurl 1337x.to f hint -Jcpipe [href^="/torrent"]
-bindurl 1fichier.com f hint -Jc .btn-orange.btn-general.ok
+bindurl 1fichier.com f hint -Jc .btn-orange.btn-general.ok, .btn-orange.btn-general
 bindurl 1lib.eu f hint -Jc .addDownloadedBook.dlButton.btn-primary.btn
 bindurl atlassian.net f hint -Jc .css-mjkbzy, .css-8ut1ye
 bindurl bandcamp.com/download f hint -c [href^="https://p4.bcbits.com/download"] -F i => tri.excmds.shellescape(i).then(url => tri.excmds.exclaim_quiet('$TERMINAL dl ' + url))
 bindurl commons.wikimedia.org f hint -Jc .internal
 bindurl duckduckgo.com f hint .EKtkFWMYpwzMKOYr0GYm, .Bl3t3iYRHX9BeMH_V52u.JhFQAeU7IMxZaS7jCOQm
+bindurl geoguesser.io f hint -Jc .playAgain, .play-again-btn
 bindurl github Y composite js "git clone " + document.location.href.replace(/https?:\/\//,"git@").replace("/",":").replace(/$/,".git") | clipboard yank
 bindurl github.+ov-file y composite js document.location.href.replace("?tab=readme-ov-file","") | clipboard yank
 bindurl github.com/.*/blob/ f hint -c .blob-num,a
@@ -345,9 +347,10 @@ bindurl immobilienscout24.de h hint -Jc .slick-prev
 bindurl immobilienscout24.de l hint -Jc .slick-next
 bindurl imslp.org/images f hint -Jc [href^="/wiki/Special:IMSLPDisclaimerAccept"], [href^="https"]
 bindurl imslp.org/wiki/File: f hint -Jc [src^="//"]
-bindurl imslp.org/wiki/Special:IMSLPImageHandler f hint -Jc [href^="https"]
+bindurl imslp.org/wiki/Special: f hint -Jc [href^="https"]
 bindurl letterboxd.com f hint -Jc a.tooltip.text-slug, .prettify, .all-link, .has-menu.frame, .reveal, .next, .add-this-film, .rateit-range, .-director.-contributor.search-result > .content > p.film-metadata > a.text-slug
 bindurl letterboxd.com/(director|studio)/.+release-earliest i download
+bindurl letterboxd.com/film R composite get_current_url | shellescape | exclaim_quiet $TERMINAL lbrate
 bindurl libgen.is f hint -Jc [href^="http://library.lol"]
 bindurl libgen.li f hint -Jc [href^="/ads"]
 bindurl movieparadise.org F hint -Jcb .clicklogin2
@@ -499,6 +502,7 @@ autocmd DocEnd zoom.us/j/\d+#success tabclose
 autocmd DocStart \w{2}.m.wikipedia.org js tri.excmds.urlmodify("-t", ".m.", ".")
 autocmd DocStart bandcamp.com/?$ js tri.excmds.urlmodify("-g", "-1", "music")
 autocmd DocStart google.com/sorry composite get_current_url | shellescape | exclaim_quiet gredir | open
+autocmd DocStart imslp.+pdf fullscreen
 autocmd DocStart letterboxd.com/film/[\w\d-:]+?/reviews/by/added/$ js tri.excmds.urlmodify("-g", "-3", "entry-rating")
 autocmd DocStart letterboxd.com/hejops/friends/film/[\w-]+?/$ js tri.excmds.urlmodify("-g", "-2", "by/member-rating")
 autocmd DocStart nitroflare.com/view/\w {15}/.+?\.\w {3}$ js tri.excmds.urlmodify("-g", "-1", "free")
@@ -597,10 +601,13 @@ autocmd DocLoad \.amazon\. dark
 autocmd DocLoad adventofcode.com darklarge
 autocmd DocLoad biblegateway.com darklarge
 autocmd DocLoad dhl.de dark
+autocmd DocLoad dict.leo.org darklarge
 autocmd DocLoad discogs.com dark
 autocmd DocLoad docs.gitlab.com dark
 autocmd DocLoad docs.influxdata.com darklarge
 autocmd DocLoad docs.rs darklarge
+autocmd DocLoad dpdgroup.com dark
+autocmd DocLoad dwds.de darklarge
 autocmd DocLoad georust.org darklarge
 autocmd DocLoad git-scm.com dark
 autocmd DocLoad htmx.org darklarge
@@ -608,11 +615,13 @@ autocmd DocLoad last.fm dark
 autocmd DocLoad letterboxd.com/.+/reviews darklarge
 autocmd DocLoad libgen.is dark
 autocmd DocLoad musicbrainz.org darklarge
+autocmd DocLoad musopen.org dark
 autocmd DocLoad nesdev.org darklarge
 autocmd DocLoad nyaa.si dark
 autocmd DocLoad padolsey.github.io darklarge
 autocmd DocLoad reddit.com darklarge
 autocmd DocLoad rikai.com dark
+autocmd DocLoad rome2rio.com dark
 autocmd DocLoad serde.rs dark
 autocmd DocLoad shop.rewe.de dark
 autocmd DocLoad skyscanner.(net|de) dark
@@ -620,6 +629,7 @@ autocmd DocLoad sourceforge.net dark
 autocmd DocLoad sqlite.org darklarge
 autocmd DocLoad stackexchange.com dark
 autocmd DocLoad stackoverflow.com dark
+autocmd DocLoad stretta-music.de dark
 autocmd DocLoad tour.gleam.run darklarge
 autocmd DocLoad transistor.fm dark
 autocmd DocLoad vimcolorschemes.com dark
@@ -636,9 +646,10 @@ autocmd DocStart wikipedia.org darklarge
 " }}}
 
 " these should be placed later in the config, not earlier
+seturl db-fiddle.com superignore true
 seturl docs.google.com superignore true
-seturl localhost:[^3] superignore true
 seturl localhost:[1-9]?8086 superignore true
+seturl localhost:[^3] superignore true
 seturl monkeytype.com superignore true
 
 "exclaim echo $(date +%s) css,end | tee -a /tmp/tridactyl
