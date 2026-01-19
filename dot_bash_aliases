@@ -103,7 +103,7 @@ then
 			! < /tmp/updates grep -Pq 'python (3\.\d+)\S+ -> \1'
 	then
 		echo -e "WARNING: major Python update\n"
-		# TODO: update globally installed pips? (scrobblerh)
+		# TODO: reinstall aur scrobbler, python-lfm
 	fi
 
 	if
@@ -1235,18 +1235,6 @@ _git_branch() { # {{{
 		# new local branch
 		# TODO: why do we appear to merge master into curr branch?
 
-		# + git pull origin master:master
-		# remote: Enumerating objects: 62, done.
-		# remote: Counting objects: 100% (62/62), done.
-		# remote: Compressing objects: 100% (30/30), done.
-		# remote: Total 32 (delta 24), reused 0 (delta 0), pack-reused 0 (from 0)
-		# Unpacking objects: 100% (32/32), 8.71 KiB | 222.00 KiB/s, done.
-		# From gitlab.novum-engineering.com:external-services/novum-cloud
-		#    bb8fec7eb..c1572ba64  master     -> master
-		#    bb8fec7eb..c1572ba64  master     -> origin/master
-		# Merge made by the 'ort' strategy.
-		# + git switch --create v2-storage-bulk-create master
-
 		# --no-edit skips commit msg (?)
 		git pull --commit --no-edit origin "$start_branch:$start_branch" # https://stackoverflow.com/a/16560695
 		git switch --create "$new_branch" "$start_branch"
@@ -1349,7 +1337,6 @@ g,() {
 gcon() { # {{{
 	# https://nitaym.github.io/ourstheirs/
 
-	# cd novum-api
 	# make db-up && make db-vet && make db-generate
 	# cr
 	# gcon
@@ -1521,7 +1508,9 @@ gldiff() {
 	# note: to see diff of current branch, just use gdm
 	[[ $PWD != *$REPO* ]] && cd "$REPO"
 
-	if <<< "$1" grep -Pqx '\d+'; then
+	if
+		<<< "$1" grep -Pqx '\d+'
+	then
 		glab mr diff "$n" | sed '/Subproject commit/d' | delta
 		return
 	fi
@@ -1591,6 +1580,7 @@ gmrf() {
 
 glj() {
 	: view job logs of current mr
+	# TODO: do in vim
 	f() {
 		id=$1
 		glab ci get --output=json --pipeline-id "$1" |
@@ -1946,7 +1936,6 @@ sqq() {
 	# shellcheck disable=SC2329
 	f() {
 		# we cannot inherit REPO, too bad
-		# novum-api/src/sql/query/users.sql:-- name: FindUserByEmail :one
 		l=$(< /dev/stdin)
 		f=$(<<< "$l" cut -d: -f1)
 		s=$(<<< "$l" cut -d: -f2-)
@@ -1960,7 +1949,9 @@ sqq() {
 # }}}
 # jq {{{
 
-alias jqc="jq -c" # basically just colors output
+alias jqc="jq -c" # basically just forces colored output
+
+jqe() { < /dev/stdin jq -e "$1" > /dev/null 2> /dev/null; }
 
 jqk() {
 	: https://gist.github.com/pedroxs/f0ee8c515eea0dbce2e23eea7c048e10#file-jq-filters-sh-L2
@@ -2183,6 +2174,8 @@ mi() {
 ffconcat() {
 	# cat *mp4 > out.mp4 does not work
 	# https://trac.ffmpeg.org/wiki/Concatenate#Automaticallygeneratingtheinputfile
+	# TODO: for vobs, need to remove the first few (menus) and select
+	# correct lang -and- subs
 	ext=$(<<< "$1" awk -F. '{print $NF}')
 	files=$(for f in "$@"; do
 		echo "file '$(realpath "$f")'" # single quotes must be preserved
@@ -2291,7 +2284,9 @@ getmail() {
 
 get_cookie() {
 	\cp ~/.mozilla/firefox/*default/cookies.sqlite tmp.db
-	if <<< "$1" grep -q ' '; then
+	if
+		<<< "$1" grep -q ' '
+	then
 		sql="select value from moz_cookies where $1 order by id desc"
 	else
 		sql="select value from moz_cookies where name = '$1' order by id desc limit 1"
@@ -2348,7 +2343,7 @@ rewe() {
 		xargs curl -sL |
 		grep -Pom1 '[A-Z]-[A-Z0-9]{3}[^<]+' |
 		xargs -I{} curl --fail-with-body -sL 'https://wannkommt.rewe.de/api/delivery/{}' \
-			-_X POST \
+			-X POST \
 			-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0' \
 			-H 'Content-Type: application/json' \
 			--data-raw '{"zipCode":"'"$zip"'"}' |
@@ -2374,44 +2369,52 @@ rewe() {
 w2g() {
 	: determine cycling destination with meteoblue
 
-	if (($(date +%H) >= 22)); then
-		# TODO: determine cutoff
+	if (($(date +%-H) >= 16)); then
 		d=$(date -I --date=tomorrow | tr -d -)
 	else
 		d=$(date -I | tr -d -)
 	fi
 
-	place=$(curl -sL https://ipinfo.io |
-		jq -r .loc |
-		sed -r 's/,/%2C/' |
-		\xargs -I{} curl -sL 'https://www.meteoblue.com/de/server/search/query3?query={}' |
+	origin=$(curl -sL https://ipinfo.io | jq -r .loc)
+	place=$(curl -sL "https://www.meteoblue.com/de/server/search/query3?query=${origin/,/%2C}" |
 		grep -Po '\{.+\}' |
 		jq -r '.results[0].url')
 
-	coords=$(curl -sL --verbose \
+	dest=$(curl -sL --verbose \
 		"https://www.meteoblue.com/weather/outdoorsports/where2go/$place?date=$d&period=2&radius=40" \
 		-H 'x-requested-with: XMLHttpRequest' 2>&1 |
 		grep -Fw sig |
 		grep -Pom1 "https[^']+" |
 		xargs curl -sL)
 
-	echo "$coords"
+	echo "$dest"
 
-	if <<< "$coords" jq -e '.match_percent<85'; then
+	# TODO: check false positive
+	if
+		<<< "$dest" jqe '.match_percent<85'
+	then
 		echo 'bad weather'
 		return
 	fi
 
 	# TODO: if in cz, try [1][][0,1]?
-	x=$(<<< "$coords" jq -c '.polygones[0][][0]' | mean)
-	y=$(<<< "$coords" jq -c '.polygones[0][][1]' | mean)
+	x=$(<<< "$dest" jq -c '.polygones[0][][0]' | mean)
+	y=$(<<< "$dest" jq -c '.polygones[0][][1]' | mean)
 
-	# chromium "https://www.meteoblue.com/weather/outdoorsports/where2go/$place" & # requires webgl
-	# return
+	xo=$(<<< "$origin" cut -d, -f1)
+	yo=$(<<< "$origin" cut -d, -f2)
 
-	# TODO: if too close to origin, increase radius?
+	if
+		# whole area is sunny
+		echo "110 * sqrt( (${x}-${xo})^2 + (${y}-${yo})^2 )" | bc | jqe '.<25'
+	then
+		echo "generating random route"
+		crad
+		return
+	fi
 
-	firefox "https://www.google.com/maps/place/$x,$y"
+	ci "https://www.meteoblue.com/weather/outdoorsports/where2go/$place" & # requires webgl
+	firefox "https://www.google.com/maps/dir/$origin/$x,$y/data=!4m2!4m1!3e1!5m1!1e3"
 
 	# # use meteoblue to detect nearest town; may not always be a good idea
 	# loc=$(curl -sL "https://www.meteoblue.com/de/server/search/query3?query=$x%2C$y" |
@@ -2590,9 +2593,9 @@ wn() {
 }
 
 nmsr() {
-	(($# == 0)) && return
+	# (($# == 0)) && return
 	# notmuch search is always word-based, never partial
-	notmuch search --format=json "$1" |
+	notmuch search --format=json "${1:-*}" |
 		jq -r '.[]|[.timestamp,.thread,.authors,.subject]|@tsv' |
 		while read -r l; do
 			<<< "$l" cut -f1 | \xargs -I{} date --date=@{} -Im | tr '\n' '\t'
@@ -2606,6 +2609,19 @@ nmsr() {
 		# json[0][0][0].body[0].content[0].content[0].content
 		fzr --preview='echo {} | cut -f2 | xargs notmuch show --format=json | gron | grep -Pm1 "\]\.content = \"" | cut -d" " -f3- | tr -d ";" | jq -r | fold -sw80'
 	# TODO: on select, reply to email?
+}
+
+gpx() {
+	notmuch search --format=json "subject:'Here are some files'" |
+		jq -r .[].thread |
+		# xargs notmuch show --part=5 |
+		while read -r thread; do
+			gpx=$(notmuch show --part=5 "$thread")
+			d=$(<<< "$gpx" grep -Pom1 '\d{4}-\d{2}-\d{2}' |
+				head -n1)
+			echo "$gpx" > ~/gpx/"$d".gpx
+			# echo ~/gpx/"$d".gpx
+		done
 }
 
 # rgf redirect ~/.local/state/mpv/watch_later |
