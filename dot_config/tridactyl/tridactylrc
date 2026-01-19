@@ -39,7 +39,8 @@
 
 sanitise tridactyllocal tridactylsync
 
-exclaim notify-send hi
+" TODO: when started by cron, all scripts that invoke notify-send may fail
+" exclaim notify-send hi
 
 bindurl booking.com y composite js document.location.href.replace(/label=[^&]+&/,"").replace(/sid=[^&]+&/,"").replace(/aid=[^&]+&/,"").replace(/ac_meta=[^&]+&/,"") | clipboard yank
 
@@ -364,6 +365,7 @@ bindurl music.youtube.com p hint -Jc #play-pause-button
 bindurl music.youtube.com w hint -Jc .ytmusic-player-bar.style-scope.middle-controls
 bindurl news.ycombinator.com f hint .clicky.togg
 bindurl reddit.com f hint .expand
+bindurl rome2rio.com f hint -Jc .bg-rome2rio-pink
 bindurl rutracker.org/forum/login.php f hint -Jc .long.bold
 bindurl rutracker.org/forum/tracker.php f hint -Jc .bold.hl-tags.ts-text.tLink.med
 bindurl rutracker.org/forum/viewtopic.php f hint .magnet-link.med
@@ -423,14 +425,15 @@ bindurl biblegateway.+KJV r urlmodify -s version LUTH1545
 bindurl biblegateway.+LUTH1545 r urlmodify -s version NIV
 bindurl biblegateway.+NIV r urlmodify -s version KJV
 bindurl duckduckgo.com R urlmodify -t duckduckgo.com/ google.com/search
+bindurl duckduckgo.com } urlmodify -t duckduckgo.com/ google.com/search
 bindurl imdb.com/title R urlmodify -t imdb.com/title/tt opensubtitles.org/en/search/sublanguageid-all/imdbid-
+bindurl invidious.nerdvpn.de M urlmodify -t invidious.nerdvpn.de music.youtube.com
+bindurl invidious.nerdvpn.de R urlmodify -t invidious.nerdvpn.de music.youtube.com
 bindurl letterboxd.com/(director|studio)/.+release-earliest R urlmodify -t release-earliest your-rating
 bindurl letterboxd.com/(director|studio)/.+your-rating R urlmodify -t your-rating release-earliest
 bindurl letterboxd.com/(director|studio)/[^/]+?/?$ R urlmodify -g -2 by/release-earliest/
 bindurl letterboxd.com/[^/]+/?$ R urlmodify -g -2 films/rated/5/by/release-earliest/
 bindurl music.youtube.com/.*list= gu urlmodify -Q list
-bindurl invidious.nerdvpn.de M urlmodify -t invidious.nerdvpn.de music.youtube.com
-bindurl invidious.nerdvpn.de R urlmodify -t invidious.nerdvpn.de music.youtube.com
 
 " }}}
 "exclaim echo $(date +%s) urlmod | tee -a /tmp/tridactyl
@@ -597,9 +600,12 @@ bind i darklarge
 " autocmd DocLoad sorbet.org/docs darklarge
 autocmd DocLoad (docs|peps).python.org darklarge
 autocmd DocLoad 4chan.org darklarge
+autocmd DocLoad 99spokes.com dark
 autocmd DocLoad \.amazon\. dark
+autocmd DocLoad adfc-radtourismus.de dark
 autocmd DocLoad adventofcode.com darklarge
 autocmd DocLoad biblegateway.com darklarge
+autocmd DocLoad decathlon.de dark
 autocmd DocLoad dhl.de dark
 autocmd DocLoad dict.leo.org darklarge
 autocmd DocLoad discogs.com dark
@@ -610,6 +616,7 @@ autocmd DocLoad dpdgroup.com dark
 autocmd DocLoad dwds.de darklarge
 autocmd DocLoad georust.org darklarge
 autocmd DocLoad git-scm.com dark
+autocmd DocLoad gpx-zone.com dark
 autocmd DocLoad htmx.org darklarge
 autocmd DocLoad last.fm dark
 autocmd DocLoad letterboxd.com/.+/reviews darklarge
@@ -636,6 +643,7 @@ autocmd DocLoad vimcolorschemes.com dark
 autocmd DocLoad wiki.archlinux.org dark
 autocmd DocLoad yr.no dark
 autocmd DocLoad zig.guide dark
+autocmd DocStart booking.com darklarge
 autocmd DocStart neon.tech darklarge
 autocmd DocStart omdb.org dark
 autocmd DocStart overview.novum-engineering.com darklarge
