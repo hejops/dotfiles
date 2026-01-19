@@ -1509,10 +1509,19 @@ gldiff() {
 	[[ $PWD != *$REPO* ]] && cd "$REPO"
 
 	if
-		<<< "$1" grep -Pqx '\d+'
+		<<< "$1" grep -Pqx '\d+' # mr id
 	then
-		glab mr diff "$n" | sed '/Subproject commit/d' | delta
+		# no need fetch, probably
+		glab mr diff "$1" | sed '/Subproject commit/d' | delta
 		return
+
+	elif
+		git branch --all | grep -Fqw "$1" # branch name
+	then
+		git fetch
+		git diff "origin/$(_gmaster)...origin/$1"
+		return
+
 	fi
 
 	prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
@@ -1524,7 +1533,9 @@ gldiff() {
 	[[ -z $branch ]] && return
 
 	git fetch
-	if (($# == 1)); then
+	if
+		(($# == 1)) && <<< "$1" grep -Pqx '[0-9a-f]+' # commit hash
+	then
 		git diff "$1...origin/$branch"
 	else
 		git diff "origin/$(_gmaster)...origin/$branch"
@@ -2567,6 +2578,9 @@ e() {
 sleep_until() {
 	now=$(date +%s)
 	end=$(date --date="$1" +%s)
+	if ((now > end)); then
+		end=$(date --date="tomorrow $1" +%s)
+	fi
 	sleep $((end - now))
 }
 
