@@ -178,9 +178,17 @@ local function open_terminal()
 		end
 	end
 
-	-- almost always want to be at nearest Makefile, or dir which contains
-	-- current file
-	local d = vim.fs.root(0, { { "Makefile", "package.json" }, ".git" })
+	-- almost always want to be at nearest Makefile (or similar)
+	-- note the double braces
+	local d = vim.fs.root(0, { {
+		"Makefile",
+		"package.json",
+		".git",
+	} })
+
+	-- if d == vim.env.HOME then -- fallback to dir which contains current file
+	-- 	d = vim.fn.expand("%:p:h")
+	-- end
 
 	local wide, ratio = is_wide()
 	vim.cmd(ratio .. (wide and "v" or "") .. "split|terminal " .. string.format([[sh -c 'cd %s; bash']], d))
