@@ -93,7 +93,9 @@ complete -o bashdefault -o default -F _complete_pnpm pnpm
 # docker is disabled for now, because i literally never use it
 # sudo systemctl disable docker.service
 
-if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
+if
+	[[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null
+then
 
 	cat /tmp/updates
 
@@ -102,7 +104,7 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 			! < /tmp/updates grep -Pq 'python (3\.\d+)\S+ -> \1'
 	then
 		echo -e "WARNING: major Python update\n"
-		# TODO: update globally installed pips? (scrobblerh)
+		# TODO: reinstall aur scrobbler, python-lfm
 	fi
 
 	if
@@ -117,6 +119,9 @@ if [[ -f /tmp/updates ]] && ! pgrep pacman > /dev/null; then
 
 		# may get unset after update? not sure what causes it
 		setxkbmap -layout us -option -option compose:rctrl #,caps:menu
+
+	elif [[ -f /var/lib/pacman/db.lck ]]; then
+		echo "try rm /var/lib/pacman/db.lck"
 
 	elif
 		# if pacman hasn't been run in a long time, keys in keyring
@@ -222,7 +227,7 @@ alias fzr="fzf --reverse --preview='bat --color=always --style=auto {}' --previe
 alias inw="inotifywait --monitor --recursive"
 alias keep="tee /dev/stderr" # copy stdout to stderr, but still direct stdout to pipe
 alias li="exec chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg'"
-alias or="bash ~/gripts/oar/run.sh && nico ~/oar.txt"
+alias or="bash ~/gripts/oar/run.sh && nico ~/oar.txt"              # TODO: why new term spawned in gui window?
 alias ports="netstat -tunlp | grep -Pw '^(udp|tcp)' | sort -k4 -V" # https://linuxize.com/post/check-listening-ports-linux/#check-listening-ports-with-netstat
 alias pss="ps -e --format=lstart,pid,cmd --sort=start_time | grep -Fv -e '[' -e '('"
 alias synctime="sudo ntpd --quit --panicgate"
@@ -479,7 +484,8 @@ rt() {
 	: pass an array of relative paths to tagfix
 	# note: dead symlinks are still displayed as if they exist
 
-	< ~/.config/mpv/library fzf --multi --reverse --preview="ls \"$MU\"/{}" |
+	< ~/.config/mpv/library sort -u |
+		fzf --multi --reverse --preview="ls \"$MU\"/{}" |
 		prepend "$MU/" |
 		while read -r d; do
 			files mpv | grep -Fq "$d" && waitdie mpv >&2
@@ -1262,18 +1268,6 @@ _git_branch() { # {{{
 		# new local branch
 		# TODO: why do we appear to merge master into curr branch?
 
-		# + git pull origin master:master
-		# remote: Enumerating objects: 62, done.
-		# remote: Counting objects: 100% (62/62), done.
-		# remote: Compressing objects: 100% (30/30), done.
-		# remote: Total 32 (delta 24), reused 0 (delta 0), pack-reused 0 (from 0)
-		# Unpacking objects: 100% (32/32), 8.71 KiB | 222.00 KiB/s, done.
-		# From gitlab.novum-engineering.com:external-services/novum-cloud
-		#    bb8fec7eb..c1572ba64  master     -> master
-		#    bb8fec7eb..c1572ba64  master     -> origin/master
-		# Merge made by the 'ort' strategy.
-		# + git switch --create v2-storage-bulk-create master
-
 		# --no-edit skips commit msg (?)
 		git pull --commit --no-edit origin "$start_branch:$start_branch" # https://stackoverflow.com/a/16560695
 		git switch --create "$new_branch" "$start_branch"
@@ -1377,7 +1371,6 @@ g,() {
 gcon() { # {{{
 	# https://nitaym.github.io/ourstheirs/
 
-	# cd novum-api
 	# make db-up && make db-vet && make db-generate
 	# cr
 	# gcon
@@ -1632,6 +1625,7 @@ gmrf() {
 
 glj() {
 	: view job logs of current mr
+	# TODO: do in vim
 	f() {
 		id=$1
 		glab ci get --output=json --pipeline-id "$1" |
@@ -1987,7 +1981,6 @@ sqq() {
 	# shellcheck disable=SC2329
 	f() {
 		# we cannot inherit REPO, too bad
-		# novum-api/src/sql/query/users.sql:-- name: FindUserByEmail :one
 		l=$(< /dev/stdin)
 		f=$(<<< "$l" cut -d: -f1)
 		s=$(<<< "$l" cut -d: -f2-)
@@ -2001,7 +1994,9 @@ sqq() {
 # }}}
 # jq {{{
 
-alias jqc="jq -c" # basically just colors output
+alias jqc="jq -c" # basically just forces colored output
+
+jqe() { < /dev/stdin jq -e "$1" > /dev/null 2> /dev/null; }
 
 jqk() {
 	: https://gist.github.com/pedroxs/f0ee8c515eea0dbce2e23eea7c048e10#file-jq-filters-sh-L2
@@ -2238,6 +2233,8 @@ mi() {
 ffconcat() {
 	# cat *mp4 > out.mp4 does not work
 	# https://trac.ffmpeg.org/wiki/Concatenate#Automaticallygeneratingtheinputfile
+	# TODO: for vobs, need to remove the first few (menus) and select
+	# correct lang -and- subs
 	ext=$(<<< "$1" awk -F. '{print $NF}')
 	files=$(for f in "$@"; do
 		echo "file '$(realpath "$f")'" # single quotes must be preserved
@@ -2346,7 +2343,9 @@ getmail() {
 
 get_cookie() {
 	\cp ~/.mozilla/firefox/*default/cookies.sqlite tmp.db
-	if <<< "$1" grep -q ' '; then
+	if
+		<<< "$1" grep -q ' '
+	then
 		sql="select value from moz_cookies where $1 order by id desc"
 	else
 		sql="select value from moz_cookies where name = '$1' order by id desc limit 1"
@@ -2398,7 +2397,7 @@ rewe() {
 	# https://ss64.com/bash/mapfile.html
 	zip=$1
 	# TODO: watch 10 s
-	readarray -t x < <(notmuch show 'subject:Vielen Dank für deine Bestellung!' |
+	readarray -t _x < <(notmuch show 'subject:Vielen Dank für deine Bestellung!' |
 		grep -Fm1 http |
 		xargs curl -sL |
 		grep -Pom1 '[A-Z]-[A-Z0-9]{3}[^<]+' |
@@ -2413,18 +2412,153 @@ rewe() {
 			.address.longitude,
 			.mapDetails.driverLocation.longitude
 		')
-	echo "${x[@]}"
-	if [[ ${x[1]} == null ]]; then
+	echo "${_x[@]}"
+	if [[ ${_x[1]} == null ]]; then
 		echo 'driver location not yet available'
 		return
-	elif [[ ${x[0]} == null ]]; then # delivery over
+	elif [[ ${_x[0]} == null ]]; then # delivery over
 		return
 	fi
 	# unit unclear; value starts at about 1.4, ends at 0.1
-	echo "sqrt( (${x[0]}-${x[1]})^2 + (${x[2]}-${x[3]})^2 )" | bc
+	echo "sqrt( (${_x[0]}-${_x[1]})^2 + (${_x[2]}-${_x[3]})^2 )" | bc
 }
 
 # }}}
+
+w2g() {
+	: determine cycling destination with meteoblue
+
+	if (($(date +%-H) >= 16)); then
+		d=$(date -I --date=tomorrow | tr -d -)
+	else
+		d=$(date -I | tr -d -)
+	fi
+
+	origin=$(curl -sL https://ipinfo.io | jq -r .loc)
+	place=$(curl -sL "https://www.meteoblue.com/de/server/search/query3?query=${origin/,/%2C}" |
+		grep -Po '\{.+\}' |
+		jq -r '.results[0].url')
+
+	dest=$(curl -sL --verbose \
+		"https://www.meteoblue.com/weather/outdoorsports/where2go/$place?date=$d&period=2&radius=40" \
+		-H 'x-requested-with: XMLHttpRequest' 2>&1 |
+		grep -Fw sig |
+		grep -Pom1 "https[^']+" |
+		xargs curl -sL)
+
+	echo "$dest"
+
+	# TODO: check false positive
+	if
+		<<< "$dest" jqe '.match_percent<85'
+	then
+		echo 'bad weather'
+		return
+	fi
+
+	# TODO: if in cz, try [1][][0,1]?
+	x=$(<<< "$dest" jq -c '.polygones[0][][0]' | mean)
+	y=$(<<< "$dest" jq -c '.polygones[0][][1]' | mean)
+
+	xo=$(<<< "$origin" cut -d, -f1)
+	yo=$(<<< "$origin" cut -d, -f2)
+
+	if
+		# whole area is sunny
+		echo "110 * sqrt( (${x}-${xo})^2 + (${y}-${yo})^2 )" | bc | jqe '.<25'
+	then
+		echo "generating random route"
+		crad
+		return
+	fi
+
+	ci "https://www.meteoblue.com/weather/outdoorsports/where2go/$place" & # requires webgl
+	firefox "https://www.google.com/maps/dir/$origin/$x,$y/data=!4m2!4m1!3e1!5m1!1e3"
+
+	# # use meteoblue to detect nearest town; may not always be a good idea
+	# loc=$(curl -sL "https://www.meteoblue.com/de/server/search/query3?query=$x%2C$y" |
+	# 	grep -Po '\{.+\}' |
+	# 	jq -r '.results[0].name')
+	# # urlenc "$loc"
+	# firefox "https://www.google.com/maps/search/$(urlenc "$loc")"
+
+}
+
+crad() {
+	radius=25
+
+	loc=$(curl -sL https://ipinfo.io | jq -r '.loc')
+	lat=$(<<< "$loc" cut -d, -f1)
+	lng=$(<<< "$loc" cut -d, -f2)
+
+	op() { if ((RANDOM % 2 == 0)); then echo -; else echo +; fi; }
+
+	points=()
+
+	for ((i = 0; i < 3; i++)); do
+		x=$(echo "scale=8; ($RANDOM/32768)*($radius/110)" | bc)
+		y=$(echo "scale=8; ($radius/110)-$x" | bc)
+
+		x=$(echo "scale=8; $lat $(op) $x" | bc)
+		y=$(echo "scale=8; $lng $(op) $y" | bc)
+
+		points+=("${x}_${y}")
+	done
+
+	ajoin "${points[@]}" |
+		tr , / |
+		tr _ , |
+		xargs -I{} firefox "https://www.google.com/maps/dir/$loc/{}/$loc/data=!4m2!4m1!3e1!5m1!1e3"
+
+}
+
+erw() {
+	prev_lat=
+	prev_lng=
+	d=0
+
+	for x in {D..N}; do echo "$x"; done |
+		xargs -I{} curl -sL --globoff \
+			'https://www.elberadweg.de/gps/Elberadweg%20-%20Labsk%C3%A1%20stezka%20[Abschnitt%20{}%20links].gpx' |
+		tac |
+		grep -F '<trkpt' |
+		while read -r line; do
+			lat=$(<<< "$line" cut -d'"' -f2)
+			lng=$(<<< "$line" cut -d'"' -f4)
+
+			if [[ -n $prev_lat ]]; then
+				# https://stackoverflow.com/a/1253545
+				d=$(echo "scale=8; $d + (111 * sqrt( ($lat-$prev_lat)^2 + ($lng-$prev_lng)^2 ))" | bc)
+			fi
+
+			if [[ $d == .* ]]; then
+				d=0$d
+			elif (($(<<< "$d" cut -d. -f1) % 80 == 0)); then
+				echo "$d $lat,$lng"
+			fi
+
+			prev_lat=$lat
+			prev_lng=$lng
+		done |
+		awk -F. '!a[$1]++'
+
+	# cut -d' ' -f2 |
+	# tail -n3 |
+	# xargs -I{} firefox 'https://www.google.com/maps?q={}'
+
+}
+
+gta() {
+	# see cronjob
+	< /tmp/gta.json jq '.results[]|{date:.last_updated,title,description,type:.interventions[0].intervention_type}#|select(.type.id)' |
+		less
+	# jq -c '.results[].interventions[].intervention_type|{id,description}' | sort -V -u
+}
+
+timer() {
+	sleep "${1}m"
+	notify-send -u critical 'done'
+}
 
 nomon() {
 	xrandr --output HDMI-A-1 --auto
@@ -2521,9 +2655,9 @@ wn() {
 }
 
 nmsr() {
-	(($# == 0)) && return
+	# (($# == 0)) && return
 	# notmuch search is always word-based, never partial
-	notmuch search --format=json "$1" |
+	notmuch search --format=json "${1:-*}" |
 		jq -r '.[]|[.timestamp,.thread,.authors,.subject]|@tsv' |
 		while read -r l; do
 			<<< "$l" cut -f1 | \xargs -I{} date --date=@{} -Im | tr '\n' '\t'
@@ -2537,6 +2671,19 @@ nmsr() {
 		# json[0][0][0].body[0].content[0].content[0].content
 		fzr --preview='echo {} | cut -f2 | xargs notmuch show --format=json | gron | grep -Pm1 "\]\.content = \"" | cut -d" " -f3- | tr -d ";" | jq -r | fold -sw80'
 	# TODO: on select, reply to email?
+}
+
+gpx() {
+	notmuch search --format=json "subject:'Here are some files'" |
+		jq -r .[].thread |
+		# xargs notmuch show --part=5 |
+		while read -r thread; do
+			gpx=$(notmuch show --part=5 "$thread")
+			d=$(<<< "$gpx" grep -Pom1 '\d{4}-\d{2}-\d{2}' |
+				head -n1)
+			echo "$gpx" > ~/gpx/"$d".gpx
+			# echo ~/gpx/"$d".gpx
+		done
 }
 
 # rgf redirect ~/.local/state/mpv/watch_later |
@@ -2564,11 +2711,21 @@ nmsr() {
 # nvim --headless "+Lazy! clean" +qa ; vim foo.{sh,js,py,lua,ts}
 
 fftabs() {
+	# mozlz4 -x ~/.mozilla/firefox/*default/sessionstore-backups/recovery.jsonlz4 |
+	# 	jq '.windows[0].tabs|sort_by(-.lastAccessed)[]|{lastAccessed,x:.entries[0].url}'
+
 	# aur/mozlz4-bin
 	mozlz4 -x ~/.mozilla/firefox/*default/sessionstore-backups/recovery.jsonlz4 |
 		jq -r '.windows[0].tabs[].entries[-1].url' |
 		grep ^http |
 		sort -u
+}
+
+fftabs2() {
+	# list tabs, newest first
+	mozlz4 -x ~/.mozilla/firefox/*default/sessionstore-backups/recovery.jsonlz4 |
+		jq -c '.windows[0].tabs|sort_by(-.lastAccessed)[]|{lastAccessed,x:.entries[-1].url}' |
+		grep -v moz-ext
 }
 
 topa() {
@@ -2834,6 +2991,7 @@ nico() {
 	# TODO: investigate --headless mode
 	: launch searches in nicotine
 	[[ ! -f $1 ]] && return
+	sleep 1 # shift+super+8 will move current window to 8 (not good)
 	xdotool key super+8
 	# ensure window is focused!
 	i=0
@@ -2860,6 +3018,7 @@ nico() {
 		done
 
 	notify-send 'done'
+	rm -i "$1"
 }
 
 epk() {
@@ -2936,5 +3095,25 @@ gcpd() {
 		tr -d , |
 		awk -F$'\t' '{print $8/$9,$3,$1,$8,$9}' |
 		sort -n |
+		colt
+}
+
+unesco() {
+	# https://osm4wiki.toolforge.org/cgi-bin/wiki/wiki-osm.pl?project=de&article=Welterbe_in_Deutschland&section=Aktuelle_Welterbest%C3%A4tten
+
+	c 'https://de.wikipedia.org/wiki/Welterbe_in_Deutschland#Aktuelle_Welterbest%C3%A4tten' |
+		sed -r '/Die UNESCO strich dieses Gebiet/,$d' |
+		grep -w Lage | # note: regions/groups do not have a geographical point and are not included
+		grep -P '^<td><a' |
+		while read -r line; do
+			<<< "$line" grep -Po 'params[^:]+' |
+				head -n1 |
+				grep -Po '[0-9.]+' |
+				\xargs
+			<<< "$line" cut -d'"' -f2
+		done |
+		join2 |
+		tr ' ' '\t' |
+		sort -V |
 		colt
 }
