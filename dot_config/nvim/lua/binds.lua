@@ -576,7 +576,7 @@ local ft_binds = { -- {{{
 
 	["typescriptreact,javascriptreact"] = {
 		-- { "n", "<leader>x", ":!npx shadcn@latest add -y " },
-		{ "n", "<leader>x", ":Dispatch pnpm vite<cr>" }, -- BufReadPost? lol
+		{ "n", "<leader>x", ":Dispatch pnpm vite --cors<cr>" }, -- BufReadPost? lol
 	},
 
 	["typescript,javascript,typescriptreact,javascriptreact"] = {
@@ -896,8 +896,21 @@ local ft_binds = { -- {{{
 		},
 
 		{ "n", "<c-k>", "ysiw]Ea()<esc>Pgqq", { remap = true } }, -- wrap in hyperlink
-		-- sort n stops sorting in md?
-		{ "n", "<c-s>", "mz{j:<c-u>'{+1,'}-1sort<cr>`z", { remap = true } },
+
+		{
+			"n",
+			"<c-s>",
+			function()
+				if vim.fn.getline("."):match("^|") then
+					-- vim's sort n only sorts on first numeric field, and ignores the
+					-- rest of the line (which is really dumb)
+					require("util"):literal_keys("mz{j:<c-u>'{+3,'}-1!sort -V<cr>`z")
+				else
+					require("util"):literal_keys("mz{j:<c-u>'{+1,'}-1sort<cr>`z")
+				end
+			end,
+			{ remap = true },
+		},
 
 		{
 			"n",
