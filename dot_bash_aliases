@@ -306,8 +306,14 @@ vv() {
 # }}}
 # frequent {{{
 
-# # copy cmd to clipboard
-# alias yc="history | fzf --tac | awk '{\$1=\"\"; print \$0}' | xclip -sel c"
+yc() {
+	# copy cmd to clipboard
+	history |
+		fzf --tac |
+		awk '{$1=""; print $0}' |
+		xclip -sel c
+	vim +gg ~/foo.sh
+}
 
 # # show contents of most recent self-sent msg
 # notmuch show --limit=1 from:hejops1 |
@@ -2623,19 +2629,6 @@ nmsr() {
 		# json[0][0][0].body[0].content[0].content[0].content
 		fzr --preview='echo {} | cut -f2 | xargs notmuch show --format=json | gron | grep -Pm1 "\]\.content = \"" | cut -d" " -f3- | tr -d ";" | jq -r | fold -sw80'
 	# TODO: on select, reply to email?
-}
-
-gpx() {
-	notmuch search --format=json "subject:'Here are some files'" |
-		jq -r .[].thread |
-		# xargs notmuch show --part=5 |
-		while read -r thread; do
-			gpx=$(notmuch show --part=5 "$thread")
-			d=$(<<< "$gpx" grep -Pom1 '\d{4}-\d{2}-\d{2}' |
-				head -n1)
-			echo "$gpx" > ~/gpx/"$d".gpx
-			# echo ~/gpx/"$d".gpx
-		done
 }
 
 # rgf redirect ~/.local/state/mpv/watch_later |
