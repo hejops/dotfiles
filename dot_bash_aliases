@@ -57,6 +57,7 @@ _base_completer() {
 }
 
 _complete_make() {
+	[[ ! -f ./Makefile ]] && return
 	f() { < ./Makefile grep -Po "^${1:-[a-z]}[a-z-]*:" | tr -d :; }
 	_base_completer f
 }
@@ -151,6 +152,10 @@ ps --pid "$PPID" | grep -Fq wezterm &&
 	((BASH_REMATCH[1] >= 3)) &&
 	echo -e "\n${BASH_REMATCH[0]}"
 
+# SSH_AUTH_SOCK=/home/joseph/.ssh/agent/s.CAJYxPkRy2.agent.QOE8rEUDrL
+# SSH_AGENT_PID=5221
+# ssh-add -l no identities
+
 if
 	# note: ls foo bar fails if any arg does not exit
 	x=$(! ls /tmp/ssh-XXXXXX*/agent.* 2> /dev/null &&
@@ -164,9 +169,13 @@ then
 elif [[ -z $SSH_AUTH_SOCK ]]; then
 	SSH_AUTH_SOCK=$(<<< "$x" head -n1)
 	export SSH_AUTH_SOCK
-	find ~/.ssh -name 'gitlab*' | grep -v .pub | \xargs ssh-add -q
 
 fi
+
+if ! ssh-add -l | grep -q .; then
+	find ~/.ssh -name 'gitlab*' | grep -v .pub | \xargs ssh-add -q
+fi
+
 unset x
 
 [[ -f ~/jira.txt ]] && < ~/jira.txt cut -f1,3
@@ -292,7 +301,7 @@ vv() {
 
 	# TODO: exclude pnpm lock, etc
 
-	line=$(rg --line-number --no-heading . |
+	line=$(rg --hidden --line-number --no-heading . |
 		# https://news.ycombinator.com/item?id=45677142
 		fzf -d: -n 2.. --preview-window "right:50%:+{2}" --preview "bat --color=always --highlight-line {2} {1}")
 
@@ -390,6 +399,40 @@ replace() {
 	_rg --line-number -- "$search" | rep --write -- "$search" "$replace"
 
 	# git diff
+
+	# use gap in vim instead?
+	gapat() { # {{{
+		: stage hunks matching some pattern
+
+		# TODO: error: No valid patches in input (allow with "--allow-empty")
+
+		for patt in "$@"; do
+			# grepdiff is more reliable than git diff -S/-G
+			# https://choly.ca/post/git-programmatic-staging/
+			# https://blog.paddlefish.net/git-tip-stage-lines-matching-a-regular-expression/
+			# https://old.reddit.com/r/git/comments/p1vltk
+			git diff -U0 |
+				grepdiff --output-matching=hunk -E "$patt" |
+				# "By default, git apply expects that the patch being applied
+				# is a unified diff with at least one line of context."
+				git apply --cached --unidiff-zero
+		done
+
+		# # https://stackoverflow.com/a/52394658
+		# git diff --unified=1 --pickaxe-regex -S "$1" |
+		# 	grepdiff --output-matching=hunk --extended-regexp "$1" |
+		# 	git apply --cached
+
+		# see also:
+		# http://www.philandstuff.com/2014/02/09/git-pickaxe.html
+		# https://git-scm.com/docs/gitdiffcore#_diffcore_pickaxe_for_detecting_additiondeletion_of_specified_string
+
+		git commit -v
+
+		# # unstage hunks that were unnecessarily added
+		# git reset -p
+	} # }}}
+
 	gapat "$replace"
 }
 
@@ -495,6 +538,7 @@ ytm() {
 # alias ga=_git_commit
 # alias gr=git_root
 alias b=_git_branch_fzf
+alias bv="b && v"
 alias cr=git_root
 alias gb=_git_branch
 alias gl=git_log
@@ -616,24 +660,33 @@ _git_log_fzf() { # {{{
 	# no config option for this
 	prv_cmd="echo {} | cut -d' ' -f1 | xargs git show --numstat --patch --color=always"
 
-	args=()
+	log_args=()
+
+	fzf_args=(
+
+		--accept-nth=1 # we always only want the git hash
+		--ansi
+		--preview-window='right,60%,border'
+		--preview="$prv_cmd"
+		-m
+	)
 
 	if
 		[[ -f $1 || -d $1 ]]
 	then
-		args+=("$@")
+		log_args+=("$@")
 		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
 
 	elif
 		<<< "$1" grep -Fq ... # from...to
 	then
-		args+=("$@")
+		log_args+=("$@")
 
 	elif
 		[[ $# -gt 1 ]] # probably arbitrary options to git log
 	then
-		# TODO: allow arbitrary options to fzf (this is a can of worms)
-		args+=("$@")
+		# TODO: also allow arbitrary options to fzf (this is a can of worms)
+		log_args+=("$@")
 
 	elif
 		[[ $# -eq 1 ]] &&
@@ -643,7 +696,11 @@ _git_log_fzf() { # {{{
 		# work), and merge commits are always after. thus, we just show
 		# child commit in preview
 		# https://stackoverflow.com/a/9870218
-		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git log --reverse --ancestry-path {}..$(_gmaster) --oneline 2>/dev/null | head -n1 | cut -d' ' -f1 | xargs git show"
+		# TODO: also show merge commit (MR)
+		fzf_args+=(--no-sort) # TODO: prefer word match
+		# prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git log --reverse --ancestry-path {}..$(_gmaster) --oneline 2>/dev/null | head -n1 | cut -d' ' -f1 | xargs git show"
+		prv_cmd="echo {} | cut -d' ' -f1 | xargs git show"
+		fzf_args+=(--preview="$prv_cmd")
 
 	elif
 		# other dev branch
@@ -651,7 +708,7 @@ _git_log_fzf() { # {{{
 			git branch --remote | grep -Fqx "  origin/$1"
 	then
 		git pull > /dev/null 2> /dev/null
-		args+=("origin/$1")
+		log_args+=("origin/$1")
 
 	elif
 		m=$(_gmaster) && [[ $(_git_current_branch) == "$m" ]]
@@ -672,7 +729,7 @@ _git_log_fzf() { # {{{
 		# https://i.sstatic.net/PboEt.png
 		# https://stackoverflow.com/a/24186641
 
-		args+=(--first-parent "origin/$m...HEAD")
+		log_args+=(--first-parent "origin/$m...HEAD")
 
 	else
 		: no remote yet
@@ -688,10 +745,8 @@ _git_log_fzf() { # {{{
 	# alternatively, it may be good to indicate whether the commit was
 	# committed in this branch, or simply pulled from remote.
 
-	git log --decorate --oneline --no-merges "${args[@]}" |
-		# we always only want the git hash
-		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi \
-			--accept-nth=1
+	git log --decorate --oneline --no-merges "${log_args[@]}" |
+		fzf "${fzf_args[@]}"
 }     # }}}
 v() { # {{{
 	: open recently modified files
@@ -1036,39 +1091,6 @@ gcf() {
 	git rebase --autosquash --autostash || gC
 }
 
-# use gap in vim instead
-# gapat() { # {{{
-# 	: stage hunks matching some pattern
-#
-# 	# TODO: error: No valid patches in input (allow with "--allow-empty")
-#
-# 	for patt in "$@"; do
-# 		# grepdiff is more reliable than git diff -S/-G
-# 		# https://choly.ca/post/git-programmatic-staging/
-# 		# https://blog.paddlefish.net/git-tip-stage-lines-matching-a-regular-expression/
-# 		# https://old.reddit.com/r/git/comments/p1vltk
-# 		git diff -U0 |
-# 			grepdiff --output-matching=hunk -E "$patt" |
-# 			# "By default, git apply expects that the patch being applied
-# 			# is a unified diff with at least one line of context."
-# 			git apply --cached --unidiff-zero
-# 	done
-#
-# 	# # https://stackoverflow.com/a/52394658
-# 	# git diff --unified=1 --pickaxe-regex -S "$1" |
-# 	# 	grepdiff --output-matching=hunk --extended-regexp "$1" |
-# 	# 	git apply --cached
-#
-# 	# see also:
-# 	# http://www.philandstuff.com/2014/02/09/git-pickaxe.html
-# 	# https://git-scm.com/docs/gitdiffcore#_diffcore_pickaxe_for_detecting_additiondeletion_of_specified_string
-#
-# 	git commit -v
-#
-# 	# # unstage hunks that were unnecessarily added
-# 	# git reset -p
-# } # }}}
-
 grev() {
 	: revert single commit in isolation
 	_git_log_fzf "$@" | xargs git revert
@@ -1076,9 +1098,20 @@ grev() {
 
 gRev() {
 	: rollback entire index to a known good commit -- check ci first
-	sha=$(_git_log_fzf "$@")
+	# this does not modify history
+	if (($# > 0)); then
+		sha=$1
+	else
+		sha=$(_git_log_fzf "$@")
+	fi
 	git checkout -f "$sha" -- .
 	git commit -av
+}
+
+gcp() {
+	: reapply old commits
+	_git_log_fzf "$@" |
+		xargs --no-run-if-empty --verbose git cherry-pick --edit
 }
 
 gu() {
@@ -1291,8 +1324,9 @@ _git_branch_fzf() {
 		EOF
 	)
 	branch=$(git branch --sort=-committerdate |
+		grep -Fvx "* $(_git_current_branch)" |
 		awk '{print $NF}' |
-		fzf --preview="$prv_cmd" --preview-window='right,80%,border' --ansi)
+		fzf --prompt="Switch to branch (current: $(_git_current_branch)): " --preview="$prv_cmd" --preview-window='right,80%,border' --ansi)
 	# [[ -z $branch ]] && return
 	_git_branch "$branch"
 
@@ -1514,20 +1548,20 @@ gldiff() {
 	# note: to see diff of current branch, just use gdm
 	[[ $PWD != *$REPO* ]] && cd "$REPO"
 
-	if
-		<<< "$1" grep -Pqx '\d+' # mr id
-	then
-		# no need fetch, probably
-		glab mr diff "$1" | sed '/Subproject commit/d' | delta
-		return
-
-	elif
-		git branch --all | grep -Fqw "$1" # branch name
-	then
-		git fetch
-		git diff "origin/$(_gmaster)...origin/$1"
-		return
-
+	if (($# == 1)); then
+		if
+			<<< "$1" grep -Pqx '\d+' # mr id
+		then
+			# no need fetch, probably
+			glab mr diff "$1" | sed '/Subproject commit/d' | delta
+			return
+		elif
+			git branch --all | grep -Fqw "$1" # branch name
+		then
+			git fetch
+			git diff "origin/$(_gmaster)...origin/$1"
+			return
+		fi
 	fi
 
 	prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
@@ -1544,7 +1578,7 @@ gldiff() {
 	then
 		git diff "$1...origin/$branch"
 	else
-		git diff "origin/$(_gmaster)...origin/$branch"
+		git diff "origin/$(_gmaster)...origin/$branch" # base case
 	fi
 
 }
@@ -2016,6 +2050,9 @@ dps() {
 		colt
 }
 
+# clean nameless containers
+# dps | grep -P '^[a-z_]+\s' | awk '{print $1}' | xargs docker rm
+
 docl() {
 	docker system df || return
 	docker system prune --all
@@ -2089,13 +2126,24 @@ doslow() {
 	fi
 }
 
+dorm() {
+	docker stop "$@"
+	docker rm "$@"
+}
+
+dors() {
+	docker stop "$@"
+	docker start "$@"
+}
+
 dostop() { docker ps --all --quiet | xargs docker stop; }
 
 donuke() {
 	: stop and remove all containers
 	mapfile -t containers < "$(docker ps --all --quiet)"
-	docker stop "${containers[@]}"
-	docker rm "${containers[@]}"
+	# docker stop "${containers[@]}"
+	# docker rm "${containers[@]}"
+	dorm "${containers[@]}"
 }
 
 dodu() {

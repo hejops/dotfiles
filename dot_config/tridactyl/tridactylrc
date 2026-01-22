@@ -160,12 +160,13 @@ unbind w
 
 " until bind f: 3 s
 
+" bind <c-g> tab #
 " bind B tab #
 " bind w fullscreen
 bind , jsb tri.excmds.tabnext() //
 bind . tabmove +1
 bind / fillcmdline tab
-bind <c-g> tab #
+bind <c-j> fillcmdline tab
 bind c jsb tri.excmds.tabprev() //
 bind d jsb tri.excmds.tabclose() //
 bind gD composite tabduplicate | tabdetach
