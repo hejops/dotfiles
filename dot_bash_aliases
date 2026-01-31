@@ -744,21 +744,13 @@ v() { # {{{
 	# ln -s /usr/bin/batcat ~/.local/bin/bat
 	prv_cmd="bat --color always --style=auto {} 2>/dev/null || cat {}"
 
+	# readarray avoids 'xargs nvim' wezterm bug
 	# https://github.com/wezterm/wezterm/issues/4287#issuecomment-3289326309
-	readarray -t f < <({
-		# git diff --name-only --ignore-submodules "$(_gmaster)...HEAD" | grep . #||
-		git log --no-merges --first-parent --name-only --pretty= "$(_gmaster)...HEAD" | grep .
-		git ls-files --full-name # . is implicit
-	} |
-		grep -v .sql.go |
+	readarray -t f < <(git log --max-count=50 --no-merges --first-parent --name-only --pretty= |
+		grep -Fv -e .sql.go |
 		prepend "$(_get_repo_root)"/ |
 		largs realpath --relative-to=. 2> /dev/null |
-		sort -u |
-		# TODO: ls -t orders by mtime, but mtime is a poor metric of
-		# "recently edited in this branch"
-		largs ls -1t 2> /dev/null |
-		# TODO: 50 is often too few
-		head -n50 |
+		seen |
 		# height=~X% is not suitable because preview is usually longer
 		# than input rows, and preview must always be shown to a reasonable
 		# extent
