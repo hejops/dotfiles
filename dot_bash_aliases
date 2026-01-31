@@ -65,10 +65,17 @@ complete -o bashdefault -o default -F _complete_make make # not sure if option o
 
 _complete_pnpm() {
 	# pnpm -h is too slow (0.2s)
-	f() { < package.json jq -r '.scripts|keys[]' | grep "${1:-.}"; }
+	f() { < package.json jq -r '.scripts|keys[]' | grep "^${1:-.}"; }
 	_base_completer f
 }
 complete -o bashdefault -o default -F _complete_pnpm pnpm
+
+_complete_git() {
+	git rev-parse --is-inside-work-tree > /dev/null 2> /dev/null || return
+	f() { git help -a | grep '^ ' | awk '{print $1}' | grep "^${1:-.}" | sort -u; }
+	_base_completer f
+}
+complete -o bashdefault -o default -F _complete_git git
 
 # complete -o bashdefault -o default -F 'f() { < package.json jq -r ".scripts|keys[]" | grep "${1:-.}"; }; _base_completer f' pnpm
 
@@ -519,8 +526,8 @@ ytm() {
 			cut -d'"' -f2 |
 			uniq |
 			while read -r id; do # deduplicate across queries; somewhat useful i guess?
-				<<< "$all_ids" grep -Fxq -- "$id" && continue
-				all_ids+=$'\n'$id
+				<<< "$all_ids" grep -Fqw -- "$id" && continue
+				all_ids+=" $id"
 				echo "$id"
 			done |
 			prepend 'https://youtube.com/watch?v=' |
@@ -536,19 +543,19 @@ ytm() {
 
 # alias e=v
 # alias ga=_git_commit
-# alias gr=git_root
-alias b=_git_branch_fzf
+# alias i=b
+alias b=_git_branch_fzf # existing branch
 alias bv="b && v"
 alias cr=git_root
-alias gb=_git_branch
+alias gb=_git_branch # new branch
 alias gl=git_log
-alias i=b
 alias s=_git_commit # should increasingly be done in vim
 
 # discouraged due to double index keypresses: gt gf gb
 
 # alias ga="git add"
 # alias gdnw="git diff --color-words --no-index"
+# alias gm,='_git_branch && gmm'
 alias g..="git push --force-with-lease origin \$(_git_current_branch)"
 alias g.="git push"
 alias gC="git show HEAD | cat; git reset --soft HEAD~1"                                         # un-commit, but keep changes staged
@@ -556,7 +563,6 @@ alias gCH="git show --oneline HEAD | cat; echo; read -r -p 'confirm?'; git reset
 alias gdn="git diff --no-index"                                                                 # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
 alias gdnc="git diff --color-words=. --no-index"                                                # diff by char; may be replaced with delta
 alias gig='$EDITOR $(_get_repo_root)/.gitignore'
-alias gm,='_git_branch && gmm'
 alias gx='git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S' # TODO: colt would be nice, but then it can't be an alias anymore
 
 gdns() { gdn -U0 <(sort -u "$1") <(sort -u "$2"); } # sort lines and diff
@@ -565,6 +571,7 @@ gdns() { gdn -U0 <(sort -u "$1") <(sort -u "$2"); } # sort lines and diff
 # functions that only report info
 
 gls() { git ls-files "${1:-.}"; }
+glsat() { git ls-tree -r --name-only "${1:-HEAD}"; } # https://superuser.com/a/429694
 
 _get_remote() { git config --get remote.origin.url; }
 _git_current_branch() { git branch --show-current; }
@@ -593,44 +600,24 @@ git_root() {
 	fi
 }
 
-_git_http() {
-	url=$1
-	if [[ $url == http* ]]; then
-		echo "$url"
-	else
-		tr <<< "$url" : / | sed -r 's|git@|https://|; s|.git$||'
-	fi
-
-}
-
-gauthors() {
-	: show authorship of file
-	git blame --line-porcelain "$1" |
-		sed -rn 's/^author (.+)/\1/p' |
-		sort |
-		uniq -c |
-		sort -n
-}
-
 gh() {
+	# TODO: better handled in vim
+
+	_git_http() {
+		url=$1
+		if [[ $url == http* ]]; then
+			echo "$url"
+		else
+			tr <<< "$url" : / | sed -r 's|git@|https://|; s|.git$||'
+		fi
+	}
+
 	: open remote url
 
 	if ! repo=$(_get_remote); then
 		echo "Current repo has no remote"
 		return
 	fi
-
-	# better handled in vim
-
-	# if [[ -f $1 ]] && git ls-files --error-unmatch "$1" &> /dev/null; then
-	# 	# view file at its most recent commit
-	# 	hash=$(git log --max-count=1 --pretty=format:%h -- "$1")
-	# 	url="$repo/blob/$hash/$1"
-	#
-	# elif [[ -n $1 ]]; then # view repo at specific commit
-	# 	h=$(git rev-parse --short --verify HEAD)
-	# 	url="$repo/commit/$h"
-	# fi
 
 	url=${repo%*.git}
 	url=$(_git_http "$url")
@@ -753,17 +740,6 @@ v() { # {{{
 
 	_in_git_repo || return
 
-	# bat can keep up with rapid renders; pygmentize can't
-	#
-	# chezmoi/ > time cat dot_config/nvim/init.lua >/dev/null
-	# real    0m0.001s
-	#
-	# chezmoi/ > time bat --color=always --style=auto --paging=never dot_config/nvim/init.lua >/dev/null
-	# real    0m0.028s
-	#
-	# chezmoi/ > time pygmentize dot_config/nvim/init.lua >/dev/null
-	# real    0m0.118s
-
 	# on ubuntu:
 	# ln -s /usr/bin/batcat ~/.local/bin/bat
 	prv_cmd="bat --color always --style=auto {} 2>/dev/null || cat {}"
@@ -778,6 +754,8 @@ v() { # {{{
 		prepend "$(_get_repo_root)"/ |
 		largs realpath --relative-to=. 2> /dev/null |
 		sort -u |
+		# TODO: ls -t orders by mtime, but mtime is a poor metric of
+		# "recently edited in this branch"
 		largs ls -1t 2> /dev/null |
 		# TODO: 50 is often too few
 		head -n50 |
@@ -825,17 +803,9 @@ gbe() {
 	# does not include uncommitted changes
 	# TODO: generally requires gmm
 	pat=$1
-
-	# git log --name-only --pretty= origin/"$(_gmaster)"...HEAD |
-	# 	seen |
-	# 	xargs rg -l "$pat" |
-	# 	xargs nvim -p +'/\v'"$pat"
-
 	git log --name-only --pretty= origin/"$(_gmaster)"...HEAD --pickaxe-regex -S "$pat" |
 		seen |
-		# xargs rg -l "$pat" |
 		xargs nvim -p +'/\v'"${pat//\//\/\/}"
-
 }
 
 git_log() {
@@ -873,7 +843,7 @@ gsdel() {
 	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
 }
 
-gly() {
+gy() {
 	: yesterday\'s log
 	n=1
 	until
@@ -1157,6 +1127,7 @@ gpick() {
 # git branch # {{{
 
 # create new branch, basing off current branch (this is the default behaviour of switch)
+alias gB=gbc
 alias gbc="git switch --create"
 
 gbr() {
@@ -1215,58 +1186,37 @@ _git_branch() { # {{{
 		# git diff-index "$target"
 		# git diff --numstat "$target"...HEAD
 
-		git diff-index "$start_branch" |
+		git diff-index "$base_branch" |
 			grep -P '00000 [AM]	' |
 			cut -f2 |
 			_commit_or_discard && git push
 	}
 
-	start_branch=$(_gmaster)
+	base_branch=$(_gmaster)
 
 	if [[ $# -eq 0 ]]; then
-		if [[ $(_git_current_branch) == "$start_branch" ]]; then
-			echo "Already on $start_branch"
+		if [[ $(_git_current_branch) == "$base_branch" ]]; then
+			echo "Already on $base_branch"
 		else
 			# relatively uncommon, and there are probably better ways to update master
 			# func retval is not propagated to parent
-			git checkout "$start_branch" || return 1
+			git checkout "$base_branch" || return 1
 			timeout 30 git pull
 		fi
 		return
 	fi
 
-	# if
-	# 	! git branch | grep -qPx "[ *] $target" &&
-	# 		timeout 30 git pull &&
-	# 		git branch -r | grep -q "origin/$target"
-	# then
-	# 	# note: git hook stdout cannot be suppressed
-	# 	echo "Switching to remote branch $target"
-	# 	git switch "$target" > /dev/null || return 1
-
-	# if
-	# 	commit_unstaged_changes "$start_branch" #&&
-	# 	git switch --create "$new_branch" "$start_branch" > /dev/null 2> /dev/null
-	# then
-	# 	# for some reason, newly created branches don't know
-	# 	# which repo to pull from
-	# 	git pull "$(_get_remote)" "$start_branch"
-	# else
-	# 	commit_unstaged_changes "$new_branch"
-	# 	git switch "$new_branch"
-	# fi
-
-	set -x
+	# set -x
 
 	# TODO: does this pull?
-	commit_unstaged_changes "$start_branch"
+	commit_unstaged_changes "$base_branch"
 
 	new_branch=$1
 
 	# TODO: if this is stable, this should be simple enough to port into vim
 
 	if
-		# existing local branch
+		# existing local branch (via _git_branch_fzf)
 		git branch | grep -Fqw "$new_branch"
 	then
 		git switch "$new_branch"
@@ -1274,18 +1224,20 @@ _git_branch() { # {{{
 		# new local branch
 		# TODO: why do we appear to merge master into curr branch?
 
-		# --no-edit skips commit msg (?)
-		git pull --commit --no-edit origin "$start_branch:$start_branch" # https://stackoverflow.com/a/16560695
-		git switch --create "$new_branch" "$start_branch"
+		# --no-edit skips merge commit msg (which we never care about)
+		git pull --commit --no-edit origin "$base_branch:$base_branch" # https://stackoverflow.com/a/16560695
+		git switch --create "$new_branch" "$base_branch"
 	fi
 
-	set +x
+	# set +x
 
-	# check if (dev) branch is behind remote
+	# check if local branch is behind remote
 	# rev-list probably wouldn't be useful if we don't fetch though
 	# note: rev-list errors if branch has no remote yet
 	if
-		behind=$(git rev-list --left-right --count "origin/$new_branch...HEAD" 2> /dev/null | cut -f1 | grep .) &&
+		behind=$(git rev-list --left-right --count "origin/$new_branch...HEAD" 2> /dev/null |
+			cut -f1 |
+			grep .) &&
 			((behind > 0))
 	then
 		git pull
@@ -2865,19 +2817,18 @@ tsgr() {
 		shuf -n3
 }
 
-imm() {
-	notmuch show from:noreply@immobilienscout24.de |
-		grep -Po 'Adresse: [^(]+' |
-		sed -r 's/([a-z])([A-Z])/\1\t\2/' |
-		sort -u |
-		fzf --accept-nth=2 |
-		xargs -I{} notmuch show "from:noreply@immobilienscout24.de and body:{}" |
-		grep -Fm1 'Scout-ID' |
-		awk '{print $NF}' |
-		prepend https://www.immobilienscout24.de/expose/ |
-		xargs xdg-open
-
-}
+# imm() {
+# 	notmuch show from:noreply@immobilienscout24.de |
+# 		grep -Po 'Adresse: [^(]+' |
+# 		sed -r 's/([a-z])([A-Z])/\1\t\2/' |
+# 		sort -u |
+# 		fzf --accept-nth=2 |
+# 		xargs -I{} notmuch show "from:noreply@immobilienscout24.de and body:{}" |
+# 		grep -Fm1 'Scout-ID' |
+# 		awk '{print $NF}' |
+# 		prepend https://www.immobilienscout24.de/expose/ |
+# 		xargs xdg-open
+# }
 
 # curl -sL 'https://www.geoguessr.com/api/v3/users/6118c9f48db3190001c6d471' | jq
 # curl -sL 'https://www.geoguessr.com/api/v3/users/6118c9f48db3190001c6d471/stats' | jq
@@ -3109,4 +3060,13 @@ unesco() {
 		tr ' ' '\t' |
 		sort -V |
 		colt
+}
+
+wce() {
+	c 'https://en.wikipedia.org/wiki/Portal:Current_events' |
+		grep -P '(^\<ul\>\<li\>.+external text|itvstart)' |
+		dehtml |
+		awk '{print $0"\n"}' |
+		fold -s |
+		sed "/$(date -I --date=yesterday)/,\$d"
 }
