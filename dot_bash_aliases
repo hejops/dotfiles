@@ -341,10 +341,9 @@ yc() {
 # 	largs mpv
 
 m() {
-	{
-		find "$HDD/movies" -type f
-		cat ~/to_watch
-	} | fzf --preview=
+	find "$HDD/movies" -type f |
+		fzf --preview= |
+		largs mpv
 }
 
 da() {
@@ -2375,6 +2374,8 @@ rewe() {
 
 # }}}
 
+# < ~/.fehbg tail -n1 | cut -d"'" -f2 | largs -o rm -i
+
 w2g() {
 	: determine cycling destination with meteoblue
 
@@ -2463,6 +2464,8 @@ crad() {
 }
 
 erw() {
+	: determine stopping points along a gpx route
+
 	prev_lat=
 	prev_lng=
 	d=0
@@ -2498,13 +2501,6 @@ erw() {
 
 }
 
-gta() {
-	# see cronjob
-	< /tmp/gta.json jq '.results[]|{date:.last_updated,title,description,type:.interventions[0].intervention_type}#|select(.type.id)' |
-		less
-	# jq -c '.results[].interventions[].intervention_type|{id,description}' | sort -V -u
-}
-
 timer() {
 	sleep "${1}m"
 	notify-send -u critical 'done'
@@ -2519,7 +2515,7 @@ mw() {
 	rg -INo "$HDD/movies.+" ~/.local/state/mpv/watch_later |
 		grep . |
 		while read -r f; do [[ -f $f ]] && echo "$f"; done |
-		fzf |
+		fzf --preview= |
 		largs mpv
 }
 
