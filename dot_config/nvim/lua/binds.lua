@@ -935,6 +935,41 @@ local ft_binds = { -- {{{
 				require("telescope").extensions.heading.heading()
 			end,
 		},
+
+		{
+			"v",
+			"<c-k>",
+			function()
+				local name = "x" -- TODO: read input (or determine name from url)
+				vim.cmd.norm("mz")
+				local cb = vim.fn.getreg("+") -- TODO: if not url, read input
+				local url = cb
+				require("util"):literal_keys(string.format("c[][%s]<esc>BlP", name))
+				require("util"):literal_keys(string.format("Go[%s]: %s<esc>", name, url))
+				require("util"):literal_keys("`z")
+				require("util"):literal_keys(":w<cr>")
+				require("util"):literal_keys("$T[")
+				-- vim.cmd.norm("R")
+			end,
+			-- { remap = true },
+		},
+
+		{
+			"n",
+			"|",
+			function()
+				-- new table row
+				-- note: this causes the copied row to be highlighted like the header
+				-- in all colorschemes
+				if not vim.fn.getline("."):match("^|") then
+					return
+				end
+				vim.cmd.norm("yyp")
+				require("util"):literal_keys(":.s/\\v[^&|]+//g<cr>")
+				-- cmd.w() does not trigger conform?
+				require("util"):literal_keys(":w<cr>")
+			end,
+		},
 	},
 } -- }}}
 
