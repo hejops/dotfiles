@@ -161,7 +161,6 @@ ps --pid "$PPID" | grep -Fq wezterm &&
 
 # SSH_AUTH_SOCK=/home/joseph/.ssh/agent/s.CAJYxPkRy2.agent.QOE8rEUDrL
 # SSH_AGENT_PID=5221
-# ssh-add -l no identities
 
 if
 	# note: ls foo bar fails if any arg does not exit
@@ -172,18 +171,18 @@ if
 then
 	# pkill ssh-agent # deletes all existing sockets
 	eval "$(ssh-agent -s)" > /dev/null
-
-elif [[ -z $SSH_AUTH_SOCK ]]; then
-	SSH_AUTH_SOCK=$(<<< "$x" head -n1)
-	export SSH_AUTH_SOCK
-
 fi
 
-if ! ssh-add -l | grep -q .; then
-	find ~/.ssh -name 'gitlab*' | grep -v .pub | \xargs ssh-add -q
+if [[ -z $SSH_AUTH_SOCK ]]; then
+	SSH_AUTH_SOCK=$(<<< "$x" head -n1)
+	export SSH_AUTH_SOCK
 fi
 
 unset x
+
+if ! ssh-add -l | grep -Fq 'no identities'; then
+	find ~/.ssh -name 'gitlab*' | grep -v .pub | \xargs ssh-add -q
+fi
 
 [[ -f ~/jira.txt ]] && < ~/jira.txt cut -f1,3
 
@@ -899,16 +898,6 @@ _commit_or_discard() {
 	return "$committed"
 }
 
-gA() {
-	: un-add, unstage
-	# i usually want restore more often (?)
-	set -x
-	git restore --staged "$@" \
-		2> /dev/null || # committed; without --staged, changes are discarded!
-		git reset "$@"  # not committed yet
-	set +x
-}
-
 gc() {
 	: commit
 
@@ -1075,7 +1064,19 @@ gcp() {
 		xargs --no-run-if-empty --verbose git cherry-pick --edit
 }
 
+gA() {
+	: un-add, unstage
+	# i usually want restore more often (?)
+	set -x
+	git restore --staged "$@" \
+		2> /dev/null || # committed; without --staged, changes are discarded!
+		git reset "$@"  # not committed yet
+	set +x
+}
+
 gu() {
+	# TODO: also discard staged changes first (gA all)
+
 	if
 		(($# == 0)) ||
 			[[ $(_git_current_branch) == $(_gmaster) ]] && [[ $1 == . ]]
@@ -1213,7 +1214,9 @@ _git_branch() { # {{{
 		git switch "$new_branch"
 	else
 		# new local branch
-		# TODO: why do we appear to merge master into curr branch?
+
+		# TODO: git pull can error if merging origin/master produces merge conflict (why would there be conflict though)
+		# may be fixed by 'gb master ; git pull'
 
 		# --no-edit skips merge commit msg (which we never care about)
 		git pull --commit --no-edit origin "$base_branch:$base_branch" # https://stackoverflow.com/a/16560695
@@ -1309,6 +1312,12 @@ gmm() {
 	git fetch origin
 	# TODO: for forks, need to sync fork (in gh), then git pull
 	git merge "origin/$(_gmaster)"
+
+	if git status --porcelain | grep -q ^UU; then
+		gcon
+	fi
+
+	gbd # debatable
 }
 
 g,() {
@@ -2558,15 +2567,16 @@ bb() {
 
 e() {
 	: open recent command in dummy sh file
+	f=./foo.sh
 	cmd=$(history | fzf --reverse --tac | awk '{$1="";print $0}')
 	# WARN: sed -i wipes undo history
 	# sed -i "1s/^/$cmd\n/" ~/foo.sh
 	# sed -i "1 i\\$cmd" ~/foo.sh
 	{
 		echo "$cmd"
-		cat ~/foo.sh
-	} | sponge ~/foo.sh
-	nvim +1 ~/foo.sh
+		cat "$f"
+	} | sponge "$f"
+	nvim +1 "$f"
 }
 
 sleep_until() {
