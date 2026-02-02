@@ -43,6 +43,21 @@ vim.keymap.set("v", ">", ">gv")
 vim.keymap.set("v", "P", '"_dP') -- default behaviour is to just paste above selection
 vim.keymap.set("v", "x", '"_x')
 
+-- md + diff for summarising MR
+-- vnew | setlocal buftype=nofile bufhidden=hide ft=diff noswapfile | silent! 0read! git diff origin/master
+
+vim.keymap.set("n", "z|", function()
+	-- duplicate buffer in split (invaluable for merge conflict)
+	local ln = vim.fn.line(".")
+	vim.cmd.norm("zt")
+
+	vim.cmd("vsplit %")
+
+	vim.cmd.norm(tostring(ln) .. "gg")
+	vim.cmd.norm("zt")
+	vim.cmd.wincmd("h")
+end)
+
 -- TODO:
 -- !wezterm start --new-tab --cwd=. 2>/dev/null
 
@@ -544,7 +559,7 @@ local ft_binds = { -- {{{
 				end
 
 				vim.cmd.norm("mz")
-				search_for("^test", true)()
+				search_for("^ *test", true)()
 
 				local lnum = vim.fn.line(".")
 				local line = vim.fn.getline(".")
@@ -556,6 +571,7 @@ local ft_binds = { -- {{{
 				-- 	rep = line:gsub("only", "concurrent")
 				-- end
 
+				-- TODO: replace 1st instance only
 				vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, false, {
 					line:match("%.concurrent") and line:gsub("concurrent", "only") or line:gsub("only", "concurrent"),
 				})
