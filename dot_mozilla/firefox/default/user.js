@@ -330,6 +330,7 @@ user_pref("network.http.speculative-parallel-limit", 0);
 user_pref("network.predictor.cleaned-up", true);
 user_pref("network.predictor.enabled", false);
 user_pref("network.prefetch-next", false);
+user_pref("network.protocol-handler.external.mailto", false); // https://superuser.com/a/370235
 user_pref("network.protocol-handler.warn-external.apt", true);
 user_pref("network.protocol-handler.warn-external.apt+http", true);
 user_pref("network.proxy.type", 2);
