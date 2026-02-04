@@ -746,6 +746,7 @@ v() { # {{{
 	# readarray avoids 'xargs nvim' wezterm bug
 	# https://github.com/wezterm/wezterm/issues/4287#issuecomment-3289326309
 	readarray -t f < <(git log --max-count=50 --no-merges --first-parent --name-only --pretty= |
+		# TODO: filter deleted
 		grep -Fv -e .sql.go |
 		prepend "$(_get_repo_root)"/ |
 		largs realpath --relative-to=. 2> /dev/null |
@@ -1897,7 +1898,7 @@ psch() {
 	while read -r line; do
 		eval "$line"
 	done <<< "$(rg --hidden '^POSTGRES' "$REPO" |
-		grep -v -e template -e Makefile |
+		grep -v -e template -e Makefile -e .sh |
 		cut -d: -f2-)"
 
 	# env has all the correct values, but domain:port is wrong. the
