@@ -43,8 +43,14 @@ vim.keymap.set("v", ">", ">gv")
 vim.keymap.set("v", "P", '"_dP') -- default behaviour is to just paste above selection
 vim.keymap.set("v", "x", '"_x')
 
--- md + diff for summarising MR
--- vnew | setlocal buftype=nofile bufhidden=hide ft=diff noswapfile | silent! 0read! git diff origin/master
+vim.keymap.set("n", "zx", function()
+	-- md + diff for summarising MR
+	vim.cmd("tabe foo.md")
+	vim.cmd("vnew | setlocal buftype=nofile bufhidden=hide ft=diff noswapfile | silent! 0read! git diff origin/master")
+	vim.cmd.norm("gg")
+	vim.cmd.wincmd("h")
+	vim.cmd.norm("gg")
+end)
 
 vim.keymap.set("n", "z|", function()
 	-- duplicate buffer in split (invaluable for merge conflict)
