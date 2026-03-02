@@ -93,6 +93,7 @@ complete -o bashdefault -o default -F _complete_git git
 # journalctl -b -u systemd-journald | grep max                                     # current max
 # sudo journalctl --vacuum-time=3d                                                 # truncate
 # sudo sed -i -r 's/#SystemMaxUse.+/SystemMaxUse=100M/' /etc/systemd/journald.conf # set max (should be done on arch install)
+# journalctl --since="$(date -d"$1 hour ago" -I)"
 
 # TODO: SystemMaxUse only affects system.journal? does not prevent
 # /var/log/journal from filling up
@@ -232,14 +233,15 @@ alias fzh="fzf --reverse --height=~33%" # height=~X% means min(input rows, windo
 alias fzr="fzf --reverse --preview='bat --color=always --style=auto {}' --preview-window='right,60%,border'"
 alias inw="inotifywait --monitor --recursive"
 alias keep="tee /dev/stderr" # copy stdout to stderr, but still direct stdout to pipe
-alias li="exec chromium --incognito 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg'"
+alias li="exec firefox --private-window 'https://www.linkedin.com/notifications/?midToken=AQECUGJ6GKhRSg'"
 alias or="bash ~/gripts/oar/run.sh && nico ~/oar.txt"              # TODO: why new term spawned in gui window?
 alias ports="netstat -tunlp | grep -Pw '^(udp|tcp)' | sort -k4 -V" # https://linuxize.com/post/check-listening-ports-linux/#check-listening-ports-with-netstat
 alias pss="ps -e --format=lstart,pid,cmd --sort=start_time | grep -Fv -e '[' -e '('"
 alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
-alias tz=trizen # if gpg fail, gpg --recv-keys <key>
+alias tz=trizen                                                     # if gpg fail, gpg --recv-keys <key>
+alias wr='< ~/.fehbg tail -n1 | cut -d"'"'"'" -f2 | largs -o rm -i' # iffy
 
 mem() {
 	# https://unix.stackexchange.com/a/261252
@@ -566,6 +568,7 @@ alias gdnc="git diff --color-words=. --no-index"                                
 alias gig='$EDITOR $(_get_repo_root)/.gitignore'
 alias gx='git log --author=$(git config --get user.email) --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S' # TODO: colt would be nice, but then it can't be an alias anymore
 
+# TODO: dos2unix
 gdns() { gdn -U0 <(sort -u "$1") <(sort -u "$2"); } # sort lines and diff
 
 # git info {{{
@@ -832,9 +835,8 @@ clocd() {
 
 gsdel() {
 	: show last state of a deleted file
-	# https://stackoverflow.com/a/19727752
 	f=$1
-	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f"
+	git show "$(git rev-list --max-count=1 --all -- "$f")^:$f" # https://stackoverflow.com/a/19727752
 }
 
 gy() {
@@ -1482,8 +1484,6 @@ gnew() { # {{{
 # https://gitlab.xyz.com/-/user_settings/personal_access_tokens
 # glab auth login
 
-alias gld=gldiff
-
 # all mrs made by me
 alias gmer='seq 1 2 | parallel -n1 glab mr list --output=json --assignee=@me --merged --per-page=9999 -p | jq .[] | jqt iid source_branch title | sort -n'
 
@@ -1503,7 +1503,7 @@ gmw() {
 # apt 1.36
 # snap 1.43/1.54, but cannot read config file (lol)
 
-gldiff() {
+gld() {
 	# note: to see diff of current branch, just use gdm
 	[[ $PWD != *$REPO* ]] && cd "$REPO"
 
@@ -2266,7 +2266,8 @@ line() { < /dev/stdin sed -n "${1}p"; }
 mean() { < /dev/stdin awk '{ sum += $0; n++ } END { if (n > 0) print sum / n; }'; } # https://stackoverflow.com/a/19149931
 paren() { < /dev/stdin prepend '(' | append ')'; }
 prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
-seen() { < /dev/stdin awk '!a[$0]++'; } # https://paweldu.dev/posts/awk-clever-way-to-remove-duplicate-lines/
+seen() { < /dev/stdin awk '!a[$0]++'; }        # https://paweldu.dev/posts/awk-clever-way-to-remove-duplicate-lines/
+strsplit() { < /dev/stdin \xargs -n1 -d"$1"; } # x=($(echo x,y,z | strsplit ,)) ; echo ${x[2]}
 sum() { < /dev/stdin paste -sd+ | bc; }
 surround() { < /dev/stdin awk "{print \"$1\" \$0 \"$1\"}"; }
 tojson() { node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq; }
@@ -2288,9 +2289,11 @@ ajoin() {
 
 dehtml() {
 	< /dev/stdin perl -MHTML::Entities -pe '
-			binmode(STDOUT, ":encoding(UTF-8)");	# https://stackoverflow.com/a/47940728
+			s/&nbsp;/ /g;
+			s|(</td>)|\1\t|g;
+			# binmode(STDOUT, ":encoding(UTF-8)");	# https://stackoverflow.com/a/47940728
 			s/<br[^>]*>/\n/g; s/<[^>]*>//g;		# https://stackoverflow.com/a/19878198
-			decode_entities($_);			# https://stackoverflow.com/a/13161719
+			decode_entities($_);			# https://stackoverflow.com/a/13161719 &nbsp; etc
 		'
 }
 
@@ -2513,34 +2516,6 @@ w2g() {
 
 }
 
-crad() {
-	radius=25
-
-	loc=$(curl -sL https://ipinfo.io | jq -r '.loc')
-	lat=$(<<< "$loc" cut -d, -f1)
-	lng=$(<<< "$loc" cut -d, -f2)
-
-	op() { if ((RANDOM % 2 == 0)); then echo -; else echo +; fi; }
-
-	points=()
-
-	for ((i = 0; i < 3; i++)); do
-		x=$(echo "scale=8; ($RANDOM/32768)*($radius/110)" | bc)
-		y=$(echo "scale=8; ($radius/110)-$x" | bc)
-
-		x=$(echo "scale=8; $lat $(op) $x" | bc)
-		y=$(echo "scale=8; $lng $(op) $y" | bc)
-
-		points+=("${x}_${y}")
-	done
-
-	ajoin "${points[@]}" |
-		tr , / |
-		tr _ , |
-		xargs -I{} firefox "https://www.google.com/maps/dir/$loc/{}/$loc/data=!4m2!4m1!3e1!5m1!1e3"
-
-}
-
 erw() {
 	: determine stopping points along a gpx route
 
@@ -2601,7 +2576,12 @@ de() {
 	while true; do
 		# TODO: ignore bash history
 		read -e -r w < /dev/tty
-		# TODO: if jq fail, try uppercase
+		w=$(<<< "$w" sed -r '
+			s/ae/ä/g
+			s/ue/ü/g
+			s/sz/ß/g
+		')
+		# TODO: if jq fail, try uppercase (search is case-sensitive)
 		w1=$(urlenc "${w:0:1}")
 		w2=$(urlenc "${w:0:2}")
 		url="https://kaikki.org/dictionary/German/meaning/$w1/$w2/$w.jsonl"
@@ -2609,6 +2589,21 @@ de() {
 		c "$url" |
 			jq -er .senses[].glosses[] 2> /dev/null |
 			uniq
+		echo
+	done
+}
+
+fr() {
+	while true; do
+		# TODO: ignore bash history
+
+		read -e -r w < /dev/tty
+		c "https://enfr.dict.cc/?s=$w" |
+			grep td6 |
+			dehtml |
+			cut -f3- |
+			colt
+
 		echo
 	done
 }
@@ -2648,13 +2643,19 @@ e() {
 	nvim +1 "$f"
 }
 
-sleep_until() {
-	now=$(date +%s)
-	end=$(date --date="$1" +%s)
-	if ((now > end)); then
-		end=$(date --date="tomorrow $1" +%s)
-	fi
-	sleep $((end - now))
+at() {
+	sleep_until() {
+		now=$(date +%s)
+		end=$(date --date="$1" +%s)
+		if ((now > end)); then
+			end=$(date --date="tomorrow $1" +%s)
+		fi
+		sleep $((end - now))
+	}
+
+	sleep_until "$1"
+	shift
+	"$@"
 }
 
 wn() {
@@ -2758,10 +2759,11 @@ topa() {
 	}
 	export -f f
 
-	< ~/gripts/disq/queries/top_artists_by_avg_rating.sql sqlite3 -tabs \
+	< ~/gripts/disq/queries/top_artists_by_top_n_ratings.sql sqlite3 -tabs \
 		~/gripts/disq/collection2.db 2> /dev/null |
-		sort -k2 -t$'\t' -k1 |
-		fzf --tac --reverse --no-sort --preview='echo {} | cut -f1 | f' --preview-window='right,60%,border'
+		fzf --reverse --no-sort --preview='echo {} | cut -f1 | f' --preview-window='right,60%,border'
+
+	# topa | cut -f1 | sed -r 's/.*/[a=&]/' | tr '\n' / | sed 's|/| / |g'
 
 	# fzf --preview='echo {} | cut -f1 | xargs -d"\n" ~/disq/disq -artist' --preview-window='right,60%,border'
 
@@ -2976,10 +2978,24 @@ _unused() {
 ,pgrep() { \pgrep "$1" | xargs ps; } # ps for runtime
 pk() { pgrep "$1" | fzf -m --tac --accept-nth=1 | xargs kill -9; }
 pkill1() { \pgrep "$1" | sed 1d | xargs kill; } # kill all procs except 1st
-rng() { for ((i = 0; i < ${2:-1}; i++)); do echo $((1 + RANDOM % ${1:-100})); done; }
-ya() { mpv --video=no "ytdl://ytsearch10:'$*'"; }
+ya() { vol --auto && mpv --video=no "ytdl://ytsearch10:'$*'"; }
 yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '{title, description, webpage_url, channel_url}'; }
-yt() { mpv --force-window "ytdl://ytsearch10:'$*'"; }
+yt() { vol --auto && mpv --force-window "ytdl://ytsearch10:'$*'"; }
+
+rng() {
+	# for ((i = 0; i < ${2:-1}; i++)); do
+	# 	echo $((1 + RANDOM % ${1:-100}))
+	# done
+
+	for n in "$@"; do
+		if ((n != prev)); then
+			[[ -n $prev ]] && echo
+			echo -en "$n"
+		fi
+		echo -en "\t$((1 + RANDOM % n))"
+		prev=$n
+	done
+}
 
 ys() { # read youtube subs in less
 	yt-dlp -j "$1" |
