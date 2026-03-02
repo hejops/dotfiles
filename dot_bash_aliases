@@ -261,7 +261,10 @@ mem() {
 
 # alias y="bash ~/gripts/disq/ytm.sh"
 
-y() { bash ~/gripts/disq/ytm.sh; }
+y() {
+	vol 30
+	bash ~/gripts/disq/ytm.sh
+}
 
 EXA_ARGS=(
 
@@ -1070,11 +1073,14 @@ gcp() {
 gA() {
 	: un-add, unstage
 	# i usually want restore more often (?)
-	set -x
+	# set -x
 	git restore --staged "$@" \
 		2> /dev/null || # committed; without --staged, changes are discarded!
 		git reset "$@"  # not committed yet
-	set +x
+
+	gu "$@" # maybe not always
+
+	# set +x
 }
 
 gu() {
@@ -1605,6 +1611,46 @@ glj() {
 	unset f
 }
 
+gll() {
+	: like b, but better?
+
+	# shellcheck disable=SC2329
+	render() {
+		# slow (up to 2 s); 2 glab calls
+
+		j=$(cat /dev/stdin |
+			xargs glab mr list --output=json --source-branch |
+			jq .[])
+
+		ci_pass=$(<<< "$j" jq -r .source_branch |
+			xargs glab ci get --output=json --branch |
+			jq -r '.status=="success"')
+
+		coms=$(<<< "$j" jq -r .iid |
+			xargs glab mr view -c --output=json --per-page=9999 |
+			jq -r '.Notes[]|select(.type=="DiffNote" or .type=="DiscussionNote")|{created_at,body,author:.author.username,pos:.position.line_range.start.line_code,resolved}' |
+			jq -s 'sort_by(.pos,.created_at)')
+
+		coms_r=$(echo "$coms" |
+			jq '
+				def grouped: group_by(.pos);
+				def tot: grouped|length;
+				def unresolved: tot-([grouped[] | map(.resolved)[0]]|length);
+				"\(unresolved)/\(tot)"
+			')
+
+		<<< "$j" jq '{iid,title,no_conflicts:.has_conflicts|not}|.ci_pass='"$ci_pass"'|.comments='"$coms_r"
+	}
+
+	export -f render
+	glab mr list --output=json --not-label=stale --assignee=@me |
+		jq -cr '.[]|"\(.iid)\t\(.source_branch)\t\(.title)"' |
+		colt |
+		fzf --preview="echo {} | awk '{print \$2}' | render" --preview-window='right,60%,border'
+	# TODO: accept -> b
+
+}
+
 # }}}
 
 # rust {{{
@@ -1989,6 +2035,7 @@ jqt() {
 # docker {{{
 
 alias dolf='docker logs --tail=1 -f'
+alias dolst='docker logs --since="$(date -I --date=today)"'
 
 dps() {
 	# # docker ps adds too much padding, and cannot truncate long values
@@ -2093,10 +2140,14 @@ dostop() { docker ps --all --quiet | xargs docker stop; }
 
 donuke() {
 	: stop and remove all containers
-	mapfile -t containers < "$(docker ps --all --quiet)"
+	# mapfile -t containers < "$(docker ps --all --quiet)"
 	# docker stop "${containers[@]}"
 	# docker rm "${containers[@]}"
-	dorm "${containers[@]}"
+	# dorm "${containers[@]}"
+
+	docker ps --all --quiet | xargs docker stop
+	docker ps --all --quiet | xargs docker rm
+
 }
 
 dodu() {
@@ -2104,6 +2155,9 @@ dodu() {
 	docker image history --no-trunc --format=json "$1" |
 		jqt Size CreatedBy
 }
+
+# dps | grep _ | awk '{print $3}' | xargs docker stop
+# docker ps --all --format=json | jq -r 'select(.State=="exited")|.ID' | xargs docker rm
 
 # # list docker containers responsible for a given high-memory/cpu process
 # top -bn1 |
@@ -2396,6 +2450,20 @@ wt() {
 		awk '{if (NR%4==0) {print $0} else {printf "%s\t", $0}}' | # printf does not support + or ,
 		# head -n7 |
 		colt
+}
+
+vib() {
+	: open vite page in browser
+	cd "$REPO"
+	pgrep node |
+		grep vite |
+		cut -d/ -f5 |
+		cut -d- -f2- |
+		\xargs -I{} rg --no-heading --with-filename server_name.+{} |
+		grep dev |
+		awk '{print $NF}' |
+		tr -d ';' |
+		\xargs -I{} chromium http://{} &
 }
 
 w2g() {
