@@ -241,7 +241,7 @@ alias synctime="sudo ntpd --quit --panicgate"
 alias tf="waitdie con; fix_tags"
 alias trizen="trizen --aur-results-sort-by=votes --aur-results-sort-order=ascending"
 alias tz=trizen                                                     # if gpg fail, gpg --recv-keys <key>
-alias wr='< ~/.fehbg tail -n1 | cut -d"'"'"'" -f2 | largs -o rm -i' # iffy
+alias wr='< ~/.fehbg tail -n1 | cut -d"'"'"'" -f2 | largs -o rm -i' # insane quoting
 
 mem() {
 	# https://unix.stackexchange.com/a/261252
@@ -2156,6 +2156,9 @@ dodu() {
 		jqt Size CreatedBy
 }
 
+# dps | grep _ | awk '{print $3}' | xargs docker stop
+# docker ps --all --format=json | jq -r 'select(.State=="exited")|.ID' | xargs docker rm
+
 # # list docker containers responsible for a given high-memory/cpu process
 # top -bn1 |
 # 	grep -m5 python |
@@ -2245,12 +2248,14 @@ ffconcat() {
 	# https://trac.ffmpeg.org/wiki/Concatenate#Automaticallygeneratingtheinputfile
 	# TODO: for vobs, need to remove the first few (menus) and select
 	# correct lang -and- subs
+	ls "$@"
 	ext=$(<<< "$1" awk -F. '{print $NF}')
 	files=$(for f in "$@"; do
 		echo "file '$(realpath "$f")'" # single quotes must be preserved
 	done |
 		sort)
-	ffmpeg -f concat -safe 0 -i <(echo "$files") -c copy output."$ext"
+	ffmpeg -f concat -safe 0 -i <(echo "$files") -c copy output."$ext" &&
+		rm -iv "$@"
 }
 
 # }}}
@@ -2438,8 +2443,14 @@ rewe() {
 
 # }}}
 
-# dps | grep _ | awk '{print $3}' | xargs docker stop
-# docker ps --all --format=json | jq -r 'select(.State=="exited")|.ID' | xargs docker rm
+wt() {
+	c 'https://www.meteoblue.com/en/weather/week/dresden_germany_2935022' |
+		grep -Po -m28 '\d+(&nbsp;°C| km/h| h)' | # TODO: rainfall
+		dehtml |
+		awk '{if (NR%4==0) {print $0} else {printf "%s\t", $0}}' | # printf does not support + or ,
+		# head -n7 |
+		colt
+}
 
 vib() {
 	: open vite page in browser
@@ -2454,8 +2465,6 @@ vib() {
 		tr -d ';' |
 		\xargs -I{} chromium http://{} &
 }
-
-# < ~/.fehbg tail -n1 | cut -d"'" -f2 | largs -o rm -i
 
 w2g() {
 	: determine cycling destination with meteoblue
@@ -2499,7 +2508,7 @@ w2g() {
 		# whole area is sunny
 		echo "110 * sqrt( (${x}-${xo})^2 + (${y}-${yo})^2 )" | bc | jqe '.<25'
 	then
-		echo "generating random route"
+		echo "good weather; generating random route"
 		crad
 		return
 	fi
