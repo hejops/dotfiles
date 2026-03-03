@@ -1,3 +1,5 @@
+-- note: BufWritePost executes after conform
+
 local js_formatters = {
 	-- "sanitize_inner_semicolons",
 	"biome_remove_unused_imports",
@@ -88,7 +90,13 @@ require("conform").setup({
 		-- note: for <script> to be formatted properly, type= is required
 		-- https://github.com/prettier/prettier/blob/main/tests/format/html/js/js.html
 		prettier = {
-			prepend_args = { "--print-width", "80" },
+			prepend_args = function()
+				return {
+					"--print-width=80",
+					-- parser from vim filetype (default parser relies on file ext)
+					"--parser=" .. vim.bo.filetype, -- filetype is evaluated quite late, so defer to closure
+				}
+			end,
 			cwd = function()
 				-- for some reason, prettier will not modify file if cwd == ~ (file
 				-- location is irrelevant)
@@ -103,6 +111,12 @@ require("conform").setup({
 				"--simplify",
 				"--space-redirects",
 			},
+		},
+
+		sh_break_if = {
+			command = "sed",
+			-- note: vim uses \r (inexplicably), sed uses \n
+			args = { "-r", [[ s/(^|\t)(if) ([<])/\1\2\n\3/g ]] },
 		},
 
 		shfmt_makefile = {
@@ -214,13 +228,12 @@ s/z\$/$$/
 			stdin = false,
 		},
 
-		-- blocked until jqfmt preserves `def`
-		-- https://github.com/noperator/jqfmt/issues/5
-		-- < ~/scripts/immo rgml -o "jq \S* '\n.+?'" | sed '1d;$d' | jqfmt -op pipe
-
 		jqfmt = {
+			-- < ~/scripts/immo rg --multiline --multiline-dotall -om1 "jq \S* '[^']+" | sed '1d;$d' | jqfmt
+			-- requires 71bdef8a79d7c2469ccc4dbfb50fd7dbe70ac4d6 to preserve `def`
+			-- TODO: deletes all comments
 			command = "jqfmt",
-			args = { "-op", "pipe" },
+			args = { "-ob", "-op", "pipe" },
 			stdin = true,
 		},
 
@@ -255,15 +268,25 @@ s/z\$/$$/
 		-- bash is not a real filetype, but an 'alias' to sh:
 		-- https://github.com/vim/vim/blob/master/runtime/ftplugin/bash.vim
 		-- sh dialect is only relevant to shellcheck (?), which is a linter (and part of bashls anyway?), and treesitter?
-		-- bash = { "shfmt", "shellharden" }, -- bash ft is only via modeline (?)
+		-- bash = { "shfmt", "shellharden" }, -- bash is not a real ft; use sh instead
 
 		-- jq = { "jq" }, -- jq only formats json (duh)
 		-- ocaml = { "ocamlformat" },
 		["_"] = {
-			"squeeze_blanks", -- consecutive newlines
+			"squeeze_blanks", -- consecutive newlines (doesn't work in typ?)
 			"trim_whitespace",
 			"trim_newlines", -- only empty lines at end of file
 		},
+
+		sh = {
+			-- TODO: consider shellcheck -f diff (similar to shellharden, but does not apply)
+
+			"sh_break_if",
+			"shfmt",
+			"shellharden",
+		},
+
+		-- make = { "shfmt_makefile" },
 		asm = { "asmfmt" },
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
@@ -280,19 +303,18 @@ s/z\$/$$/
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
-		-- make = { "shfmt_makefile" },
 		markdown = { "mdslw", "cbfmt", "prettier" },
 		nginx = { "nginxfmt" },
 		proto = { "buf" },
 		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },
 		scss = { "prettier" },
-		sh = { "shfmt", "shellharden" }, -- TODO: consider shellcheck -f diff (similar to shellharden, but does not apply)
 		svg = { "xmlformatter" },
 		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
 		typst = { "typstyle" },
+		xml = { "xmlformatter" },
 		yaml = { "prettier" }, -- TODO: no .clangd parser
 
 		-- json = js_formatters,
