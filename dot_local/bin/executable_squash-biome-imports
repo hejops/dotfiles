@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+f=$1
+
+lnum=1
+prev_imp=
+prev_line=
+lines=()
+
+while read -r line; do
+
+	if
+		# TODO: handle more cases
+		! <<< "$line" grep -q ^import
+	then
+		break
+	elif
+		imp=$(<<< "$line" grep -F "} from '" | cut -d"'" -f2)
+	then
+		if [[ $imp == "$prev_imp" ]]; then
+			in=$(<<< "$line" cut -d'{' -f2 | cut -d'}' -f1 | xargs)
+			line=$(<<< "$prev_line" sed -r "s/ \}/, $in&/") # accumulate imports
+			lines[-1]=$line                                 # replace last element
+		else
+			lines+=("$line")
+		fi
+	fi
+
+	prev_line=$line
+	prev_imp=$imp
+	((++lnum))
+
+done < "$f"
+
+{
+	for l in "${lines[@]}"; do echo "$l"; done
+	< "$f" sed -n "$lnum,\$p"
+} |
+	sponge "$f"

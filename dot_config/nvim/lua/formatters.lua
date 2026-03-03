@@ -1,6 +1,7 @@
 local js_formatters = {
 	-- "sanitize_inner_semicolons",
 	"biome_remove_unused_imports",
+	"biome_squash_imports",
 	"biome",
 	-- "prettier",
 	-- stop_after_first = true,
@@ -83,6 +84,12 @@ require("conform").setup({
 				"--stdin-file-path",
 				"$FILENAME",
 			},
+		},
+
+		biome_squash_imports = {
+			command = "squash-biome-imports",
+			args = { "$FILENAME" },
+			stdin = false,
 		},
 
 		-- note: for <script> to be formatted properly, type= is required
@@ -276,7 +283,7 @@ s/z\$/$$/
 		html = { "prettier" },
 		htmldjango = { "djlint" },
 		jq = { "jqfmt" }, -- pending https://github.com/noperator/jqfmt/issues/5
-		json = { "jq" },
+		-- json = { "jq" },
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
@@ -284,7 +291,11 @@ s/z\$/$$/
 		markdown = { "mdslw", "cbfmt", "prettier" },
 		nginx = { "nginxfmt" },
 		proto = { "buf" },
-		python = { "ruff_organize_imports", "ruff_fix", "ruff_format" }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
+		-- python = {
+		-- 	"ruff_organize_imports",
+		-- 	"ruff_fix",
+		-- 	"ruff_format",
+		-- }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },
 		scss = { "prettier" },
 		sh = { "shfmt", "shellharden" }, -- TODO: consider shellcheck -f diff (similar to shellharden, but does not apply)
@@ -293,7 +304,7 @@ s/z\$/$$/
 		tex = { "latexindent" },
 		toml = { "taplo" },
 		typst = { "typstyle" },
-		yaml = { "prettier" }, -- TODO: no .clangd parser
+		-- yaml = { "biome", "prettier", stop_after_first = true }, -- TODO: no .clangd parser
 
 		-- json = js_formatters,
 		javascript = js_formatters,
