@@ -126,31 +126,33 @@ require("conform").setup({
 			args = { "-r", [[ s/(^|\t)(if) ([<])/\1\2\n\3/g ]] },
 		},
 
-		shfmt_makefile = {
-			command = "bash",
-			args = {
-				"-c",
-				-- `man bash`: If the -c option is present [and] there are arguments
-				-- after the command_string, the first argument is assigned to $0 and
-				-- any remaining arguments are assigned to the positional parameters.
-				[[ < "$0" sed -r '
-/^[^\t]/ s/^/#/ # add placeholder comment to all make-specific lines
-s/\$\$\(/z$(/g  # $$ results in shfmt error
-' |
-~/.local/share/nvim/mason/bin/shfmt -sr |
-sed -r '
-/^[^"]+"$/,/\t+"( \|)?$/ s/^/#/ # HACK: prevent shfmt from preserving leading whitespace in quotes
-s/^([^#]|# )/\t&/ # reindent recipes and "real" make comments (which are always followed by space)
-s/^#//  # undo placeholder comments
-s/z\$/$$/
-' | sponge "$0" ]],
-				"$FILENAME",
-			},
-			-- creates a tmp file (at $FILENAME), which is to be modified in place.
-			-- conform then (silently) replaces the contents of the current file with
-			-- that of $FILENAME
-			stdin = false,
-		},
+		-- 		shfmt_makefile = {
+		-- 			command = "bash",
+		-- 			args = {
+		-- 				"-c",
+		-- 				-- `man bash`: If the -c option is present [and] there are arguments
+		-- 				-- after the command_string, the first argument is assigned to $0 and
+		-- 				-- any remaining arguments are assigned to the positional parameters.
+		-- 				[[ < "$0" sed -r '
+		-- /^[^\t]/ s/^/#/ # add placeholder comment to all make-specific lines
+		-- s/\$\$\(/z$(/g  # $$ results in shfmt error
+		-- ' |
+		-- ~/.local/share/nvim/mason/bin/shfmt -sr |
+		-- sed -r '
+		-- /^[^"]+"$/,/\t+"( \|)?$/ s/^/#/ # HACK: prevent shfmt from preserving leading whitespace in quotes
+		-- s/^([^#]|# )/\t&/ # reindent recipes and "real" make comments (which are always followed by space)
+		-- s/^#//  # undo placeholder comments
+		-- s/z\$/$$/
+		-- ' | sponge "$0" ]],
+		-- 				"$FILENAME",
+		-- 			},
+		-- 			-- creates a tmp file (at $FILENAME), which is to be modified in place.
+		-- 			-- conform then (silently) replaces the contents of the current file with
+		-- 			-- that of $FILENAME
+		-- 			stdin = false,
+		-- 		},
+
+		shfmt_makefile = { command = "sed", args = { "-r", "s/^ +/\t/g" } },
 
 		rustfmt = {
 			prepend_args = {
@@ -293,7 +295,8 @@ s/z\$/$$/
 			"shellharden",
 		},
 
-		-- make = { "shfmt_makefile" },
+		-- json = { "jq" },
+		-- yaml = { "biome", "prettier", stop_after_first = true }, -- TODO: no .clangd parser
 		asm = { "asmfmt" },
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
@@ -306,27 +309,27 @@ s/z\$/$$/
 		html = { "prettier" },
 		htmldjango = { "djlint" },
 		jq = { "jqfmt" }, -- pending https://github.com/noperator/jqfmt/issues/5
-		-- json = { "jq" },
 		jsonl = { "jq" },
 		lua = { "stylua" },
 		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
+		make = { "shfmt_makefile" },
 		markdown = { "mdslw", "cbfmt", "prettier" },
 		nginx = { "nginxfmt" },
 		proto = { "buf" },
-		-- python = {
-		-- 	"ruff_organize_imports",
-		-- 	"ruff_fix",
-		-- 	"ruff_format",
-		-- }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 		rust = { "rustfmt" },
 		scss = { "prettier" },
 		svg = { "xmlformatter" },
 		templ = { "templ" },
 		tex = { "latexindent" },
 		toml = { "taplo" },
-		typst = { "typstyle" },
+		typst = { "prettypst", "typstyle", stop_after_first = true }, -- neither indents lists properly by default
 		xml = { "xmlformatter" },
-		-- yaml = { "biome", "prettier", stop_after_first = true }, -- TODO: no .clangd parser
+
+		-- python = {
+		-- 	"ruff_organize_imports",
+		-- 	"ruff_fix",
+		-- 	"ruff_format",
+		-- }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 
 		-- json = js_formatters,
 		javascript = js_formatters,
