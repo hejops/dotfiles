@@ -59,6 +59,10 @@ require("lint").linters_by_ft = linters
 -- tagalign, usestdlibvars, unconvert, unparam, unused, varnamelen, whitespace
 -- require("lint").linters.golangci.args = {}
 
+require("lint").linters.golangcilint.args[#require("lint").linters.golangcilint.args] = function()
+	return vim.fs.root(0, "go.mod") .. "/..."
+end
+
 require("lint").linters.markdownlint.args = {
 	"--disable",
 	"MD010", -- no hard tabs (they only appear in Go blocks)
@@ -114,6 +118,7 @@ require("lint").linters.sqlfluff.args = { -- {{{
 		"references.qualification", -- these must be ignored in sqlite
 		"references.consistent",
 	}, ","),
+	"-", -- https://github.com/mfussenegger/nvim-lint/commit/d84539639c81ed28fdebe421d2033793d2f9a740
 
 	-- note: fine-grained 'rule options' can only be declared via cfg file (e.g.
 	-- ~/.config/sqlfluff), which my sqlfluff install doesn't seem to recognise
