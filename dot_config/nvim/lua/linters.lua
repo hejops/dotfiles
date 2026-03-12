@@ -36,7 +36,7 @@ local linters = {
 
 	markdown = {
 		"markdownlint", -- https://github.com/DavidAnson/markdownlint?tab=readme-ov-file#rules--aliases
-		"proselint", -- https://github.com/amperser/proselint?tab=readme-ov-file#checks
+		-- "proselint", -- https://github.com/amperser/proselint?tab=readme-ov-file#checks -- parser failed (py3.14?)
 	},
 }
 
