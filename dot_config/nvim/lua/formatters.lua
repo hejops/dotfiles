@@ -126,6 +126,18 @@ require("conform").setup({
 			args = { "-r", [[ s/(^|\t)(if) ([<])/\1\2\n\3/g ]] },
 		},
 
+		sh_surround_quotes = {
+			command = "sed",
+			-- \2 excludes situations like
+			-- ("$line")
+			-- do echo "$l"; done
+			-- "$pat"*
+			-- json
+			args = { "-r", [[ s/"(\$[^"{(]+)"([^ );'*>]+)/"\1\2"/g ]] }, -- "$foo".xyz -> "$foo.xyz"
+		},
+
+		-- "\$[^"{(]+"[^ );'*>]+
+
 		-- 		shfmt_makefile = {
 		-- 			command = "bash",
 		-- 			args = {
@@ -293,6 +305,7 @@ require("conform").setup({
 			"sh_break_if",
 			"shfmt",
 			"shellharden",
+			"sh_surround_quotes",
 		},
 
 		-- json = { "jq" },
