@@ -123,9 +123,16 @@ require("conform").setup({
 		sh_break_if = {
 			command = "sed",
 			-- note: vim uses \r (inexplicably), sed uses \n
-			args = { "-r", [[ s/(^|\t)(if) ([<])/\1\2\n\3/g ]] },
+			-- TODO: also break while? (but definitely not for)
+			args = { "-r", [[ s/(^|\t)(if|elif) ([<a-z])/\1\2\n\3/g ]] },
 		},
 
+		sh_trim_newlines = { -- trim newlines inside {}
+			command = "sed",
+			args = { "-rz", [[ s/(\) \{\n)\n+/\1/g ; s/\n+(\n\})/\1/g ]] },
+		},
+
+		-- "$foo".xyz -> "$foo.xyz"
 		sh_surround_quotes = {
 			command = "sed",
 			-- \2 excludes situations like
@@ -133,7 +140,11 @@ require("conform").setup({
 			-- do echo "$l"; done
 			-- "$pat"*
 			-- json
-			args = { "-r", [[ s/"(\$[^"{(]+)"([^ );'*>]+)/"\1\2"/g ]] }, -- "$foo".xyz -> "$foo.xyz"
+			args = {
+				"-r",
+				-- [[ s/"(\$[^"{(]+)"([^ );'*>]+)/"\1\2"/g ]],
+				[[ s/"(\$[a-zA-Z]+)"([^ );'*>]+)/"\1\2"/g ]],
+			},
 		},
 
 		-- "\$[^"{(]+"[^ );'*>]+
@@ -303,6 +314,7 @@ require("conform").setup({
 			-- TODO: consider shellcheck -f diff (similar to shellharden, but does not apply)
 
 			"sh_break_if",
+			"sh_trim_newlines",
 			"shfmt",
 			"shellharden",
 			"sh_surround_quotes",
