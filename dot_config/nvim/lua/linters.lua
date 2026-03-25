@@ -27,7 +27,7 @@ local linters = {
 	python = { "ruff" }, -- may have duplicate with ruff lsp
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
-	yaml = { "yaml_shellcheck" },
+	yaml = { "yaml_shellcheck", "glab" },
 
 	sql = {
 		"sqlfluff", -- slow lint is fine, since async
@@ -315,6 +315,37 @@ require("lint").linters.yaml_shellcheck = shellcheck_wrapper([[
   /script:$/        s/^/#/  # comment script: again
   s/^[ |>-]+//              # remove leading symbols
 ]])
+
+-- catches some things that yamlls doesn't, e.g. undefined need
+require("lint").linters.glab = {
+	cmd = "glab",
+	args = { "ci", "config", "compile" }, -- no json output lol
+
+	-- stdin = false,
+	ignore_exitcode = true,
+	stream = "stderr",
+
+	parser = function(output, _)
+		if vim.fn.expand("%:p:t") ~= ".gitlab-ci.yml" then
+			return {}
+		end
+
+		if output == "" then
+			return {}
+		end
+
+		return {
+			{
+				source = "glab",
+				lnum = 0,
+				col = 1,
+				end_col = 999,
+				message = output:gsub(".+Could not compile [^:]+: (.+)", "%1"),
+				severity = vim.diagnostic.severity.ERROR,
+			},
+		}
+	end,
+}
 
 -- linters cannot be conditionally disabled at config time. they can only be
 -- disabled at runtime:
