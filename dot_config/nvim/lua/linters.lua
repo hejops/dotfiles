@@ -27,10 +27,10 @@ local linters = {
 	python = { "ruff" }, -- may have duplicate with ruff lsp
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
-	yaml = { "yaml_shellcheck", "glab" },
+	yaml = { "yaml_shellcheck", "glab", "loki" },
 
 	sql = {
-		"sqlfluff", -- slow lint is fine, since async
+		-- "sqlfluff", -- slow lint is fine, since async
 		vim.fn.executable("squawk") == 1 and "squawk" or nil, -- https://squawkhq.com/
 	},
 
@@ -315,6 +315,47 @@ require("lint").linters.yaml_shellcheck = shellcheck_wrapper([[
   /script:$/        s/^/#/  # comment script: again
   s/^[ |>-]+//              # remove leading symbols
 ]])
+
+require("lint").linters.loki = {
+	cmd = "docker",
+	args = {
+		"run",
+		"--rm",
+		string.format("--mount=type=bind,src=%s,dst=/config.yaml", vim.fn.expand("%:p")),
+		"grafana/loki:2.9.1",
+		"-verify-config",
+	},
+
+	-- stdin = false,
+	ignore_exitcode = true,
+	stream = "stderr",
+
+	parser = function(output, _)
+		if not vim.fn.expand("%:p"):match("config.yaml$") then
+			return {}
+		end
+
+		-- if output == "" then
+		-- 	return {}
+		-- end
+
+		local items = {}
+
+		for _, line in pairs(require("util"):split(output, "\n")) do
+			if line:match("^ +line") then
+				table.insert(items, {
+					source = "loki",
+					lnum = tonumber(line:match("[0-9]+")) - 1,
+					col = 1,
+					message = line:gsub("^ +line [0-9]+: ", ""),
+					severity = vim.diagnostic.severity.ERROR,
+				})
+			end
+		end
+
+		return items
+	end,
+}
 
 -- catches some things that yamlls doesn't, e.g. undefined need
 require("lint").linters.glab = {
