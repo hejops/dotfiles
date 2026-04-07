@@ -660,6 +660,7 @@ require("lazy").setup( --
 			-- in case of breakage on ubuntu, remove and reinstall snap package
 
 			"nvim-treesitter/nvim-treesitter",
+			-- branch = "master",
 			build = ":TSUpdate", -- update parsers when updating plugin
 			lazy = false, -- causes all dependencies to be loaded
 
@@ -680,24 +681,18 @@ require("lazy").setup( --
 					end,
 				},
 
-				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
+				-- "nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
 				{ "danymat/neogen", opts = {} }, -- docs generator
 				{ "ravsii/tree-sitter-d2", build = "make nvim-install" },
 			},
 
+			-- https://github.com/catgoose/nvim/blob/3e28809767c88833175a59b4b91fad38ba81460c/lua/plugins/treesitter.lua#L134
+			-- https://github.com/tom-doerr/dotfiles/blob/4e467289fcacada15d0a75a39d62cf25ac226f78/CLAUDE.md?plain=1#L218
 			config = function()
-				require("nvim-treesitter.configs").setup({
+				if vim.version().minor >= 12 then
+					require("nvim-treesitter").setup({})
 
-					-- https://github.com/nvim-treesitter/nvim-treesitter/wiki/Extra-modules-and-plugins#extra-modules
-					modules = {},
-					ignore_install = {},
-
-					-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3579#issuecomment-1278662119
-					sync_install = #vim.api.nvim_list_uis() == 0,
-
-					-- TODO: https://github.com/nwhetsell/tree-sitter-lilypond
-
-					ensure_installed = {
+					local langs = {
 						-- https://github.com/nvim-treesitter/nvim-treesitter#supported-languages
 
 						"bash",
@@ -712,7 +707,6 @@ require("lazy").setup( --
 						"javascript", -- includes jsx (probably)
 						"jsdoc",
 						"json",
-						"jsonc",
 						"lua",
 						"markdown",
 						"markdown_inline",
@@ -731,9 +725,27 @@ require("lazy").setup( --
 						"zig",
 						-- "csv", -- useless
 						-- "htmldjango",
+						-- "jsonc",
 						-- "latex", -- requires tree-sitter-cli
 						-- "scheme",
-					},
+					}
+
+					require("nvim-treesitter").install(langs)
+					return
+				end
+
+				require("nvim-treesitter.configs").setup({
+
+					-- https://github.com/nvim-treesitter/nvim-treesitter/wiki/Extra-modules-and-plugins#extra-modules
+					modules = {},
+					ignore_install = {},
+
+					-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3579#issuecomment-1278662119
+					sync_install = #vim.api.nvim_list_uis() == 0,
+
+					-- TODO: https://github.com/nwhetsell/tree-sitter-lilypond
+
+					ensure_installed = langs,
 
 					auto_install = false, -- if true, parsers will be force-installed every time
 					highlight = { enable = true }, -- https://github.com/nvim-treesitter/nvim-treesitter#highlight
@@ -828,19 +840,19 @@ require("lazy").setup( --
 		-- not mono tabline
 		-- underline current word (not highlight, not bold)
 
-		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
 		"hejops/kwrite-theme-nvim",
-		"maya-sama/kawaii.nvim",
-		"sebasruiz09/fizz.nvim",
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
+		-- "bgwdotdev/gleam-theme-nvim", -- ignores csv highlight
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
 		-- "e-q/okcolors.nvim", -- few colors, italic methods
 		-- "github-main-user/lytmode.nvim", -- highlight current (dim)
 		-- "iagorrr/noctis-high-contrast.nvim",
+		-- "maya-sama/kawaii.nvim", -- bad at markdown links
 		-- "michaelfresco/space-terminal.nvim", -- highlight current
 		-- "miikanissi/modus-themes.nvim", -- very good, but has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
 		-- "olivercederborg/poimandres.nvim", -- dim line column
+		-- "sebasruiz09/fizz.nvim", -- bad at markdown links
 		-- "sonya-sama/kawaii.nvim", -- dims current line
 		-- "thejian/nvim-moonwalk", -- unreadable git status
 
