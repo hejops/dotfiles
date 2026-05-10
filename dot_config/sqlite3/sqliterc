@@ -1,0 +1,38 @@
+# https://github.com/search?q=path%3A**%2Fsqliterc&type=code
+# https://sqlite.org/cli.html
+
+.mode tabs # default is now table, which is horrendous
+# .width 100
+# .headers off
+.nullvalue NULL
+
+# implicitly turns on headers?
+# .explain on
+
+.log stderr
+
+# note: all extra info is nice to have (esp .eqp). however, since all of it is
+# written to stdout, it complicates usage in scripts
+#
+# .eqp on
+#
+# .expert
+# (no new indexes)
+#
+# (null)
+#
+# .timer on
+# Run Time: real 0.000 user 0.000290 sys 0.000291
+#
+# .changes on
+# changes: 0   total_changes: 0
+
+PRAGMA foreign_keys = ON;
+
+# https://fractaledmind.github.io/2023/09/07/enhancing-rails-sqlite-fine-tuning/#pragmas-summary
+# PRAGMA busy_timeout = 5000;
+# PRAGMA cache_size = 2000;
+# PRAGMA journal_mode = WAL;
+# PRAGMA journal_size_limit = 67108864; -- 64 megabytes
+# PRAGMA mmap_size = 134217728; -- 128 megabytes
+# PRAGMA synchronous = NORMAL;
