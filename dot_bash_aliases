@@ -682,15 +682,22 @@ _git_log_fzf() { # {{{
 		[[ $# -eq 1 ]] &&
 			[[ $1 == $(_gmaster) ]]
 	then
+		log_args+=("$1")
+
 		# git does not allow flag overrides (i.e. --merges will not
 		# work), and merge commits are always after. thus, we just show
 		# child commit in preview
 		# https://stackoverflow.com/a/9870218
-		# TODO: also show merge commit (MR)
-		fzf_args+=(--no-sort) # TODO: prefer word match
-		# prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git log --reverse --ancestry-path {}..$(_gmaster) --oneline 2>/dev/null | head -n1 | cut -d' ' -f1 | xargs git show"
-		prv_cmd="echo {} | cut -d' ' -f1 | xargs git show"
-		fzf_args+=(--preview="$prv_cmd")
+		prv_cmd="
+			echo {} | cut -d' ' -f1 | xargs -I{} git log --reverse --ancestry-path {}..$(_gmaster) --oneline 2>/dev/null | head -n1 | cut -d' ' -f1 | xargs git show | grep -FC1 !; 
+			echo {} | cut -d' ' -f1 | xargs git show
+		"
+
+		fzf_args+=(
+			# TODO: prefer word match
+			--no-sort
+			--preview="$prv_cmd"
+		)
 
 	elif
 		# other dev branch
