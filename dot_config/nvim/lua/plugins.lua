@@ -9,7 +9,7 @@
 -- local in_git = require("util"):command_ok("git rev-parse --is-inside-work-tree 2>/dev/null") -- messes with window resize
 local in_git = true
 
-local columns = 120 -- lualine, git-blame
+local columns = 120 -- minimum screen width required to enable lualine, git-blame
 
 -- https://github.com/folke/lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -146,35 +146,35 @@ require("lazy").setup( --
 			end,
 		},
 
-		{
-			"FabijanZulj/blame.nvim", -- full blame view (like gh/gl)
-			cond = in_git,
-			config = function()
-				require("blame").setup({
-					date_format = "%Y-%m-%d",
-					virtual_style = "right_align",
-					-- views = {
-					-- 	window = window_view,
-					-- 	virtual = virtual_view,
-					-- 	default = window_view,
-					-- },
-					focus_blame = true,
-					merge_consecutive = true,
-					max_summary_width = 30,
-					colors = nil,
-					blame_options = nil,
-					commit_detail_view = "vsplit",
-					-- format_fn = formats.commit_date_author_fn,
-					mappings = {
-						commit_info = "i",
-						stack_push = "h", -- back in history
-						stack_pop = "l", -- forward
-						show_commit = "I",
-						close = { "<esc>", "q" },
-					},
-				})
-			end,
-		},
+		-- {
+		-- 	"FabijanZulj/blame.nvim", -- full blame view (like gh/gl)
+		-- 	cond = in_git,
+		-- 	config = function()
+		-- 		require("blame").setup({
+		-- 			date_format = "%Y-%m-%d",
+		-- 			virtual_style = "right_align",
+		-- 			-- views = {
+		-- 			-- 	window = window_view,
+		-- 			-- 	virtual = virtual_view,
+		-- 			-- 	default = window_view,
+		-- 			-- },
+		-- 			focus_blame = true,
+		-- 			merge_consecutive = true,
+		-- 			max_summary_width = 30,
+		-- 			colors = nil,
+		-- 			blame_options = nil,
+		-- 			commit_detail_view = "vsplit",
+		-- 			-- format_fn = formats.commit_date_author_fn,
+		-- 			mappings = {
+		-- 				commit_info = "i",
+		-- 				stack_push = "h", -- back in history
+		-- 				stack_pop = "l", -- forward
+		-- 				show_commit = "I",
+		-- 				close = { "<esc>", "q" },
+		-- 			},
+		-- 		})
+		-- 	end,
+		-- },
 
 		{
 			"xvzc/chezmoi.nvim",
@@ -541,6 +541,8 @@ require("lazy").setup( --
 			cond = in_git,
 			opts = {
 				-- https://github.com/f-person/git-blame.nvim/blob/master/lua/gitblame/config.lua
+				-- TODO: toggle to blame every line?
+				-- TODO: https://github.com/f-person/git-blame.nvim#use-blame-commit-file-urls
 
 				-- date_format = "%r | %Y-%m-%d %H:%M:%S"
 				-- highlight_group = "Question",
@@ -657,9 +659,10 @@ require("lazy").setup( --
 			},
 		}, -- }}}
 		{ -- treesitter {{{
-			-- in case of breakage on ubuntu, remove and reinstall snap package
-
+			-- updating to nvim v0.12 was a huge ordeal
+			-- https://claude.ai/share/b6a1a03f-0a76-48f6-a771-dbdd4f115841
 			"nvim-treesitter/nvim-treesitter",
+			branch = "main",
 			build = ":TSUpdate", -- update parsers when updating plugin
 			lazy = false, -- causes all dependencies to be loaded
 
@@ -680,111 +683,31 @@ require("lazy").setup( --
 					end,
 				},
 
-				"nvim-treesitter/nvim-treesitter-textobjects", -- textobjects at the function/class level (e.g. :norm daf)
 				{ "danymat/neogen", opts = {} }, -- docs generator
 				{ "ravsii/tree-sitter-d2", build = "make nvim-install" },
+
+				{
+					-- kept for its query files only (nvim-treesitter-textobjects.lua
+					-- requires nvim-treesitter.configs which no longer exists in 0.12)
+					"nvim-treesitter/nvim-treesitter-textobjects",
+					init = function()
+						vim.g.loaded_nvim_treesitter_textobjects = 1
+					end,
+				},
 			},
 
 			config = function()
-				require("nvim-treesitter.configs").setup({
+				require("nvim-treesitter").setup({
 
-					-- https://github.com/nvim-treesitter/nvim-treesitter/wiki/Extra-modules-and-plugins#extra-modules
-					modules = {},
-					ignore_install = {},
+					-- https://github.com/nvim-treesitter/nvim-treesitter#highlight
+					highlight = { enable = true },
+					indent = { enable = true },
 
 					-- https://github.com/nvim-treesitter/nvim-treesitter/issues/3579#issuecomment-1278662119
 					sync_install = #vim.api.nvim_list_uis() == 0,
 
-					-- TODO: https://github.com/nwhetsell/tree-sitter-lilypond
-
-					ensure_installed = {
-						-- https://github.com/nvim-treesitter/nvim-treesitter#supported-languages
-
-						"bash",
-						"css",
-						"diff",
-						"gitcommit",
-						"gitignore",
-						"go",
-						"gomod",
-						"gosum",
-						"html",
-						"javascript", -- includes jsx (probably)
-						"jsdoc",
-						"json",
-						"jsonc",
-						"lua",
-						"markdown",
-						"markdown_inline",
-						"muttrc",
-						"nginx",
-						"python",
-						"rasi",
-						"rust",
-						"sql",
-						"toml",
-						"tsx",
-						"typescript",
-						"vim",
-						"vimdoc",
-						"yaml",
-						"zig",
-						-- "csv", -- useless
-						-- "htmldjango",
-						-- "latex", -- requires tree-sitter-cli
-						-- "scheme",
-					},
-
 					auto_install = false, -- if true, parsers will be force-installed every time
-					highlight = { enable = true }, -- https://github.com/nvim-treesitter/nvim-treesitter#highlight
-					indent = { enable = true },
-
-					textobjects = {
-						select = {
-							enable = true,
-							lookahead = true, -- Automatically jump forward to textobj, similar to targets.vim probably need autocmd
-							keymaps = {
-								-- You can use the capture groups defined in textobjects.scm
-								-- Define your own text objects mappings, similar to `ip` (inner paragraph)
-								["aa"] = "@parameter.outer",
-								["ac"] = "@class.outer",
-								["af"] = "@function.outer", -- game-changer
-								["ia"] = "@parameter.inner",
-								["ic"] = "@class.inner",
-								["if"] = "@function.inner",
-							},
-						},
-
-						move = { -- more like jump
-							enable = true,
-							set_jumps = false, -- whether to set jumps in the jumplist
-							goto_next_start = {
-								-- note: for md sections, use tadmccorkle
-								-- TODO: zz after? probably need autocmd
-								["gj"] = "@function.outer", -- default gj behavior is now in j
-								["gJ"] = "@class.outer", -- default gJ (join with spaces) is never desired
-							},
-							goto_previous_start = {
-								["gk"] = "@function.outer",
-								["gK"] = "@class.outer",
-							},
-						},
-						-- swap = {
-						-- 	-- only works in params, not data structures (e.g. arrays)
-						-- 	--
-						-- 	-- in python, swapping args is never necessary, as params should always
-						-- 	-- be specified as keywords (not positionally)
-						-- 	enable = true,
-						-- 	swap_next = {
-						-- 		["[]"] = "@parameter.inner",
-						-- 		["gsj"] = "@function.outer",
-						-- 	},
-						-- 	swap_previous = {
-						-- 		["]["] = "@parameter.inner",
-						-- 		["gsk"] = "@function.outer",
-						-- 	},
-						-- },
-					},
+					-- TODO: https://github.com/nwhetsell/tree-sitter-lilypond
 
 					incremental_selection = { -- need to see a demo
 						enable = true,
@@ -801,9 +724,102 @@ require("lazy").setup( --
 					},
 				})
 
+				require("nvim-treesitter").install({
+					-- https://github.com/nvim-treesitter/nvim-treesitter#supported-languages
+
+					"bash",
+					"css",
+					"diff",
+					"gitcommit",
+					"gitignore",
+					"go",
+					"gomod",
+					"gosum",
+					"html",
+					"javascript", -- includes jsx (probably)
+					"jsdoc",
+					"json",
+					"lua",
+					"markdown",
+					"markdown_inline",
+					"muttrc",
+					"nginx",
+					"python",
+					"rasi",
+					"rust",
+					"sql",
+					"toml",
+					"tsx",
+					"typescript",
+					"vim",
+					"vimdoc",
+					"yaml",
+					"zig",
+					-- "csv", -- useless
+					-- "htmldjango",
+					-- "jsonc", -- not supported in nvim v0.12
+					-- "latex", -- requires tree-sitter-cli
+					-- "scheme",
+				})
+
+				-- 0.12 no longer starts treesitter automatically per filetype
+				vim.api.nvim_create_autocmd("FileType", {
+					callback = function()
+						-- pcall ignores errors on fake filetypes, e.g. fidget
+						pcall(vim.treesitter.start)
+					end,
+				})
+
 				vim.cmd.set("foldexpr=nvim_treesitter#foldexpr()") -- https://www.jmaguire.tech/img/code_folding.png
 			end,
 		},
+
+		{
+			"echasnovski/mini.ai",
+			event = "VeryLazy",
+			config = function()
+				local ai = require("mini.ai")
+
+				ai.setup({
+					n_lines = 500,
+					custom_textobjects = {
+						a = ai.gen_spec.treesitter({ a = "@parameter.outer", i = "@parameter.inner" }), -- parameter outer/inner (aa/ia)
+						c = ai.gen_spec.treesitter({ a = "@class.outer", i = "@class.inner" }), -- class outer/inner (ac/ic)
+						f = ai.gen_spec.treesitter({ a = "@function.outer", i = "@function.inner" }), -- function definition outer/inner (af/if) — overrides mini.ai's built-in function calls
+					},
+				})
+
+				-- move keymaps: jump to next/prev function or class start
+				-- note: for md sections, use tadmccorkle
+				local function jump(id, forward)
+					local tobj = ai.find_textobject("a", id, {
+						search_method = forward and "next" or "prev",
+						n_lines = 500,
+					})
+					if tobj == nil then
+						return
+					end
+					vim.cmd("normal! m'")
+					vim.api.nvim_win_set_cursor(0, { tobj.from.line, tobj.from.col - 1 })
+					-- vim.cmd("normal! zv")
+					vim.cmd.norm("zz")
+				end
+
+				vim.keymap.set("n", "gj", function()
+					pcall(jump, "f", true)
+				end) -- default gj behavior is now in j
+				vim.keymap.set("n", "gJ", function()
+					pcall(jump, "c", true)
+				end) -- default gJ (join with spaces) is never desired
+				vim.keymap.set("n", "gk", function()
+					pcall(jump, "f", false)
+				end)
+				vim.keymap.set("n", "gK", function()
+					pcall(jump, "c", false)
+				end)
+			end,
+		},
+
 		{
 			-- TS-aware commentstring (slow)
 			"joosepalviste/nvim-ts-context-commentstring",
@@ -828,15 +844,15 @@ require("lazy").setup( --
 		-- not mono tabline
 		-- underline current word (not highlight, not bold)
 
-		"bgwdotdev/gleam-theme-nvim", -- the only one that meets all 4 criteria
 		"hejops/kwrite-theme-nvim",
-		"maya-sama/kawaii.nvim",
 		"sebasruiz09/fizz.nvim",
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
+		-- "bgwdotdev/gleam-theme-nvim", -- not enough contrast
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
 		-- "e-q/okcolors.nvim", -- few colors, italic methods
 		-- "github-main-user/lytmode.nvim", -- highlight current (dim)
 		-- "iagorrr/noctis-high-contrast.nvim",
+		-- "maya-sama/kawaii.nvim", -- unreadable diff
 		-- "michaelfresco/space-terminal.nvim", -- highlight current
 		-- "miikanissi/modus-themes.nvim", -- very good, but has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
@@ -869,19 +885,19 @@ require("lazy").setup( --
 			end,
 		},
 
-		{
-			"zootedb0t/citruszest.nvim",
-			lazy = true,
-			config = function()
-				require("citruszest").setup({
-					option = {
-						transparent = false,
-						bold = false,
-						italic = false,
-					},
-				})
-			end,
-		},
+		-- { -- broken for Dockerfile
+		-- 	"zootedb0t/citruszest.nvim",
+		-- 	lazy = true,
+		-- 	config = function()
+		-- 		require("citruszest").setup({
+		-- 			option = {
+		-- 				transparent = false,
+		-- 				bold = false,
+		-- 				italic = false,
+		-- 			},
+		-- 		})
+		-- 	end,
+		-- },
 
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
 		-- https://vimcolorschemes.com/i/new/b.dark
