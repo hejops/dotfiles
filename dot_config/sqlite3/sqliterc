@@ -1,7 +1,11 @@
 # https://github.com/search?q=path%3A**%2Fsqliterc&type=code
 # https://sqlite.org/cli.html
 
-.mode tabs # default is now table, which is horrendous
+# default is now table, which is horrendous -- https://sqlite.org/climode.html#output_mode_list_
+# truncates long lines by default
+.mode list -limits off
+# .mode list --colsep /
+
 # .width 100
 # .headers off
 .nullvalue NULL
