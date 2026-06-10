@@ -865,6 +865,8 @@ require("lazy").setup( --
 		-- underline current word (not highlight, not bold)
 
 		"hejops/kwrite-theme-nvim",
+		"kcayme/bearded-arc.nvim",
+		"kimjbaran/voyager.nvim", -- wcag aaa
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "bgwdotdev/gleam-theme-nvim", -- not enough contrast
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
@@ -873,7 +875,7 @@ require("lazy").setup( --
 		-- "iagorrr/noctis-high-contrast.nvim",
 		-- "maya-sama/kawaii.nvim", -- unreadable diff
 		-- "michaelfresco/space-terminal.nvim", -- highlight current
-		-- "miikanissi/modus-themes.nvim", -- very good, but has light
+		-- "miikanissi/modus-themes.nvim", -- wcag aaa, but has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
 		-- "olivercederborg/poimandres.nvim", -- dim line column
 		-- "sebasruiz09/fizz.nvim", -- bad at markdown links
