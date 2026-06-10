@@ -53,18 +53,36 @@ local cfg = { -- {{{
 	-- },
 } -- }}}
 
+-- ~/.local/share/nvim/site/pack/core/opt
+
+-- if vim.version().minor >= 12 then
+for _, repo in pairs({
+
+	"aymericbeaumet/vim-symlink", -- TODO: can this just be an autocmd?
+	"romainl/vim-cool", -- clear highlight after search
+	"tpope/vim-repeat",
+	"tpope/vim-surround",
+}) do
+	vim.pack.add({ { src = "https://github.com/" .. repo } }) -- only installs
+	local x, _ = repo:gsub(".+/", "")
+	vim.cmd.packadd(x)
+	-- require(x).setup({}) -- no
+end
+-- end
+
+-- vim.opt.termguicolors = true
+-- vim.pack.add({ { src = "https://github.com/stevearc/conform.nvim" } })
+-- vim.cmd.packadd("conform.nvim")
+-- require("conform").setup({})
+
 require("lazy").setup( --
 	{
 
 		-- essentials {{{
 
-		"aymericbeaumet/vim-symlink", -- TODO: can this just be an autocmd?
-		"mfussenegger/nvim-lint",
-		"romainl/vim-cool", -- clear highlight after search
+		"mfussenegger/nvim-lint", -- plugins that later involve require(foo) cannot trivially be moved to vim.pack
 		"stevearc/conform.nvim",
-		"tpope/vim-fugitive",
-		"tpope/vim-repeat",
-		"tpope/vim-surround",
+		"tpope/vim-fugitive", -- same for plugins that declare Commands
 		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} },
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
 
