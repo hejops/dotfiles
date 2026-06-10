@@ -1,0 +1,5 @@
+- Always use tab indentation in code suggestions.
+- Always present suggested code changes as a unified diff patch (`--- a/... +++ b/...` format), not as prose or standalone code blocks.
+- Always use bash syntax (shebang `#!/usr/bin/env bash`, bash-specific constructs) in shell code suggestions. Never use sh or other shells unless explicitly asked.
+- Always use lowercase variable names in shell code (e.g. `fullpath`, `after`, `result`), not uppercase.
+- When in the course of performing any action and 5000 tokens have been used, immediately stop the action and tell the user what commands (bash, etc.) were being run. The user will run them manually.
