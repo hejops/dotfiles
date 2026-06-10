@@ -53,7 +53,6 @@ _base_completer() {
 		# displayed (with the prefix highlighted)
 		COMPREPLY=("${matches[@]}")
 	fi
-
 }
 
 _complete_make() {
@@ -122,7 +121,9 @@ then
 		echo -e "WARNING: major postgresql update\n"
 	fi
 
-	if sudo pacman -Syu; then
+	if
+		sudo pacman -Syu
+	then
 		rm /tmp/updates
 
 		# may get unset after update? not sure what causes it
@@ -154,7 +155,7 @@ ps --pid "$PPID" | grep -Fq wezterm &&
 	# \S (et al) is not supported. there is no noticeable performance
 	# difference
 	# https://www.bashsupport.com/bash/variables/bash_rematch/
-	[[ $(du -csh "$SLSK"/complete | tail -n1) =~ ^([0-9]+).*G ]] &&
+	[[ $(du -csh "$SLSK/complete" | tail -n1) =~ ^([0-9]+).*G ]] &&
 	# [0] = full line (like awk)
 	# [@] = full line + all matches
 	((BASH_REMATCH[1] >= 3)) &&
@@ -181,7 +182,9 @@ fi
 
 unset x
 
-if ssh-add -l | grep -Fq 'no identities'; then
+if
+	ssh-add -l | grep -Fq 'no identities'
+then
 	find ~/.ssh -name 'gitlab*' | grep -v .pub | \xargs ssh-add -q
 fi
 
@@ -293,7 +296,6 @@ alias ls='exa ${EXA_ARGS[*]}'
 alias lsl="ls --sort=modified"
 
 vv() {
-
 	# # shellcheck disable=SC2329
 	# f() {
 	# 	line=$1
@@ -304,7 +306,7 @@ vv() {
 	#
 	# 	echo "$f"
 	# 	echo
-	# 	bat --color always --style=auto --line-range "$start": "$f"
+	# 	bat --color always --style=auto --line-range "$start:" "$f"
 	# }
 	# export -f f
 	# line=$(rgl --line-number . | fzf --preview='f {}' --preview-window='right,60%,border')
@@ -341,7 +343,7 @@ yc() {
 # 	xargs notmuch show --part=2
 
 # < ~/.config/mpv/library fzf |
-# 	prepend "$MU"/ |
+# 	prepend "$MU/" |
 # 	largs mpv
 
 m() {
@@ -464,7 +466,6 @@ rge() {
 	echo "$staged" |
 		head |
 		xargs nvim -p +"/\v$pat"
-
 }
 
 sd() {
@@ -478,7 +479,7 @@ sd() {
 		if
 			files firefox | grep "$HDD"
 		then
-			inotifywait -e moved_to "$HDD"/movies
+			inotifywait -e moved_to "$HDD/movies"
 		fi
 		killall firefox
 
@@ -509,12 +510,17 @@ rt() {
 		done |
 		# to preserve the old behaviour (>1 args), remove -n1
 		largs -o fix_tags
-
 }
 
 ytm() {
 	f=$(mktemp)
 	"$EDITOR" +startinsert "$f"
+
+	while
+		yt-dlp 'ytsearch1:foo' --get-id 2>&1 | grep -q "Sign in to confirm you’re not a bot."
+	do
+		"$EDITOR" "$f"
+	done
 
 	waitdie mpv
 
@@ -792,7 +798,6 @@ gdm() { # {{{
 		xargs git diff "$span" 2> /dev/null
 
 	# https://gitlab.com/gitlab-org/cli/-/issues/7704
-
 } # }}}
 
 gbe() {
@@ -965,7 +970,6 @@ gc() {
 			xargs "${cmd[@]}"
 
 	fi
-
 }
 
 _git_commit() {
@@ -1110,7 +1114,6 @@ guns() {
 	git log --oneline "$1" |
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border' --ansi --accept-nth=1 |
 		xargs -I{} git checkout {} -- "$f"
-
 }
 
 gpick() {
@@ -1178,14 +1181,13 @@ _git_branch() { # {{{
 	# resolved in the current branch, -before- the checkout
 
 	commit_unstaged_changes() {
-
 		# we always compare the current branch to the current state of
 		# master (-before- fetch)
 
 		# presumably, ' M	' can be safely ignored?
 		# git diff-tree HEAD "$target"
 		# git diff-index "$target"
-		# git diff --numstat "$target"...HEAD
+		# git diff --numstat "$target...HEAD"
 
 		git diff-index "$base_branch" |
 			grep -P '00000 [AM]	' |
@@ -1245,14 +1247,15 @@ _git_branch() { # {{{
 	then
 		git pull
 	fi
-
 } # }}}
 
 _git_branch_fzf() {
 	: switch interactively to existing branch, aliased to b
 	# does not handle existing remote branch; use gbr instead
 
-	if git status --porcelain | grep -P '^\w'; then
+	if
+		git status --porcelain | grep -P '^\w'
+	then
 		echo "staged changes must be restored first; use gA"
 		return
 	fi
@@ -1284,7 +1287,6 @@ _git_branch_fzf() {
 		fzf --prompt="Switch to branch (current: $(_git_current_branch)): " --preview="$prv_cmd" --preview-window='right,80%,border' --ansi)
 	# [[ -z $branch ]] && return
 	_git_branch "$branch"
-
 }
 
 gbd() {
@@ -1311,7 +1313,6 @@ _gssh() { # {{{
 	# password not strictly necessary
 	ssh-keygen -t ed25519 -C hejops1@gmail.com -f "$HOME/.ssh/github_$(date -I)"
 	ssh -T git@github.com 2>&1 | grep -q success && echo ok
-
 } # }}}
 
 gmm() {
@@ -1322,7 +1323,9 @@ gmm() {
 	# TODO: for forks, need to sync fork (in gh), then git pull
 	git merge "origin/$(_gmaster)"
 
-	if git status --porcelain | grep -q ^UU; then
+	if
+		git status --porcelain | grep -q ^UU
+	then
 		gcon
 	fi
 
@@ -1447,7 +1450,6 @@ gnew() { # {{{
 	git push -u origin master
 	git status
 	git remote set-head origin --auto
-
 } # }}}
 
 # grbr() {
@@ -1539,7 +1541,6 @@ gld() {
 	else
 		git diff "origin/$(_gmaster)...origin/$branch" # base case
 	fi
-
 }
 
 gci() { watch -n 30 'glab ci list -P 10 | grep -P "^\(" | column -t'; }
@@ -1648,7 +1649,6 @@ gll() {
 		colt |
 		fzf --preview="echo {} | awk '{print \$2}' | render" --preview-window='right,60%,border'
 	# TODO: accept -> b
-
 }
 
 # }}}
@@ -1937,7 +1937,6 @@ sqt() {
 }
 
 psch() {
-
 	# psql \d+ is too verbose, so we must use pg_dump
 
 	while read -r line; do
@@ -1974,7 +1973,6 @@ psch() {
 	rg -l "$prefix$tbl" "$REPO" |
 		head -n1 |
 		xargs nvim +'/\v'"$prefix\.$tbl"
-
 }
 
 sqq() {
@@ -2028,7 +2026,6 @@ jqt() {
 
 	< /dev/stdin jq -r "[$query] | @tsv" |
 		colt
-
 }
 
 # }}}
@@ -2147,7 +2144,6 @@ donuke() {
 
 	docker ps --all --quiet | xargs docker stop
 	docker ps --all --quiet | xargs docker rm
-
 }
 
 dodu() {
@@ -2240,22 +2236,62 @@ mi() {
 		jqt x y z |
 		sort -rn |
 		grep -v -e srt -e vtt
-
 }
 
 ffconcat() {
-	# cat *mp4 > out.mp4 does not work
+	# ls "$@" 2> /dev/null #|| return
+
+	if [[ $PWD == "$HOME" ]]; then
+		cd "$(find "$HDD/movies" -name VTS_01_1.VOB |
+			fzf |
+			cut -d/ -f-7)"
+	fi
+
+	if
+		[[ -d ./VIDEO_TS ]]
+	then
+		# doesn't work for all dvds, unfortunately
+		# https://code.ffmpeg.org/FFmpeg/FFmpeg/src/branch/release/7.1/tools/dvd2concat
+		dvd2concat "$PWD" > x.concat
+		vim x.concat # select streams manually
+		out="$(basename "$PWD").vob"
+		# -i <infile> must be after -protocol_whitelist
+		ffmpeg -f concat -safe 0 -protocol_whitelist file,subfile,concat -i x.concat \
+			-map 0:v -map 0:s? -map 0:a? -c copy "$out"
+		mpv "$out" && mv "$out" ..
+		# rm -rfI $PWD
+		return
+	fi
+
+	# TODO: err if filename has '
+
 	# https://trac.ffmpeg.org/wiki/Concatenate#Automaticallygeneratingtheinputfile
-	# TODO: for vobs, need to remove the first few (menus) and select
-	# correct lang -and- subs
-	ls "$@"
 	ext=$(<<< "$1" awk -F. '{print $NF}')
-	files=$(for f in "$@"; do
-		echo "file '$(realpath "$f")'" # single quotes must be preserved
-	done |
+	files=$(\ls -1 "$@" |
+		largs realpath |
+		sed "s/'/'\\\''/" |
+		largs -I{} echo "file '{}'" | # single quotes must be preserved
 		sort)
-	ffmpeg -f concat -safe 0 -i <(echo "$files") -c copy output."$ext" &&
-		rm -iv "$@"
+	# https://old.reddit.com/r/ffmpeg/comments/rt8twk/_/hqrfm6y/
+	ffmpeg -f concat -safe 0 -i <(echo "$files") -map 0:v -map 0:s? -map 0:a -c copy "$1.conc.$ext" #&& rm -iv "$@"
+}
+
+srtconcat() {
+	files=$(find . -type f |
+		grep -vw conc |
+		sort)
+	echo "$files"
+	read -r
+
+	sum=0
+	<<< "$files" grep mp4 |
+		while read -r f; do
+			srt=${f/.mp4/.en.srt}
+			# ids do not need to be shifted
+			ffmpeg -nostdin -itsoffset "$sum" -i "$srt" -f srt - 2> /dev/null
+			dur=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=noprint_wrappers=1:nokey=1 "$f") # https://superuser.com/a/945604
+			sum=$(echo "$sum+$dur" | bc)
+		done
 }
 
 # }}}
@@ -2268,6 +2304,7 @@ desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # remove seconds, f
 join2() { < /dev/stdin paste -d " " - -; }
 largs() { < /dev/stdin xargs --delimiter='\n' "$@"; } # split xargs by newline instead of space
 line() { < /dev/stdin sed -n "${1}p"; }
+math() { < /dev/stdin xargs -I{} echo "{}$1" | bc; }                                # foo | math '*3.6'
 mean() { < /dev/stdin awk '{ sum += $0; n++ } END { if (n > 0) print sum / n; }'; } # https://stackoverflow.com/a/19149931
 paren() { < /dev/stdin prepend '(' | append ')'; }
 prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
@@ -2278,6 +2315,18 @@ surround() { < /dev/stdin awk "{print \"$1\" \$0 \"$1\"}"; }
 tojson() { node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq; }
 urldec() { node --eval "console.log(decodeURIComponent(process.argv[1]))" "$1"; }
 urlenc() { node --eval "console.log(encodeURIComponent(process.argv[1]))" "$1"; }
+
+median() {
+	lines=$(< /dev/stdin sort)
+	mid=$(<<< "$lines" wc -l)
+	if ((mid % 2 == 0)); then
+		((mid /= 2))
+	else
+		((mid /= 2))
+		((++mid))
+	fi
+	<<< "$lines" sed -n "${mid}p"
+}
 
 # highlight query, but output the entire file
 # grep "$query\|$"
@@ -2334,11 +2383,9 @@ upload() {
 	# https://github.com/search?type=code&q=curl+catbox.moe+language%3AShell+fileupload
 
 	[[ ! -f $1 ]] && return
-	link=$(
-		curl -s --form "reqtype=fileupload" \
-			--form "fileToUpload=@$1" \
-			https://catbox.moe/user/api.php #| tee /dev/null
-	)
+	link=$(curl -s --form "reqtype=fileupload" \
+		--form "fileToUpload=@$1" \
+		https://catbox.moe/user/api.php) #| tee /dev/null
 
 	echo -en "Uploaded to: \e[1m$link\n" # idk what that escape does
 	echo -n "$link" | xclip -sel c
@@ -2383,26 +2430,47 @@ sunpos() {
 }
 
 subs() {
+	# curl 'https://api3.subdl.com/auto?query=tt0152525' | jq -r .results[0].link
+
+	# https://cinemasubtitles.com (no search, need google)
+
+	# curl -s 'https://www.azsubtitles.com/api/search?q=laura+les+ombres' \
+	# 	-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0' \
+	# 	-H 'Cookie: cf_clearance=10WvuPKhcoe2bxhMww8wrqg.ieZEFj7Z1nWyQ_awjLU-1781021806-1.2.1.1-NXFLkWTtJBhCLuMg0Ftawyyqp5iPQsQy.gEPZ__xH4ZtQr8zLN5uMKV2Y0X3cmBakdPeTSpIt3wIYxL3PsIpPt.2y1hpg.3A5rA_GSPAGLwzmx2g9A0At2MOauGzRu0m.J_Dux6Xgx.cZElBZGXA.0J.S4jxrwiFqcOqM7mgJzoIon2uLhMpxWFT9KMsHM0TV6dKUE5taHXrwji4P3WoCLTpqcsOeSgcBJdu_G0Bnkhofk5PNfo5YmZJMuwlWbaHGvig7vHoUtucb3n7qsZxeBPFtvsumtd59EFfZqE9cCyrscC4kYukTppRgk1i4ntyqJosXrGrkq0ttpGXmcShDSz8wdWUn3TMIYuJmjtD7FOV6vkGDgx3SICQibTs4md7Xe34ZQHMr75o9KjhrUHfdEaQtoMA2C57.k0UjEWn8Ws'
+
+	set -x
+	cookie="Cookie: cf_clearance=$(get_cookie "name = 'cf_clearance' and host = '.azsubtitles.com'")"
+	args=(
+		-H "$cookie"
+		-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0'
+	)
+
 	# https://www.azsubtitles.com/restful-api
-	f=$(fzf)
-	c "https://www.azsubtitles.com/api/search?q=${1// /+}" | # TODO: fname -> infer title
+	cd "$HDD/movies"
+	f=$(fzf --preview=)
+	c "${args[@]}" "https://www.azsubtitles.com/api/search?q=${1// /+}" | # TODO: fname -> infer title
+		grep . |
+		# tee /dev/stderr |
 		jq -er '.Items[0] | .UID' |
 		prepend 'https://www.azsubtitles.com/api/movie' |
-		xargs curl -sL |
+		xargs curl -sL "${args[@]}" | # TODO: doesn't work?
 		# File can contain a list of episodes, but we usually just want the first element
 		jq -er '.AllSubs[] | select(.Language.Title == "English") | .File[0].Url' |
+		prepend 'https://www.azsubtitles.com' |
+		# https://www.azsubtitles.com/data/2013/8/4/Andala Rakshasi (2012).[760692.andala.rakshasi.2012.english].srt
 		sort |
 		# head -n1 |
 		fzf -0 --preview="curl -sL --globoff {} | head -n50" |
-		sed -r 's/ /%20/g' |            # url must be encoded
-		xargs curl --globoff > "$f".srt # but also need globoff to ignore {}[]
+		sed -r 's/ /%20/g' |                         # url must be encoded
+		xargs curl "${args[@]}" --globoff > "$f.srt" # but also need globoff to ignore {}[]
+
+	set +x
 
 	# # requires unzip
 	# c 'https://subf2m.co/subtitles/parivaar' |
 	# 	grep -Po "/subtitles/[^/]+/english/\d+" |
 	# 	prepend https://subf2m.co |
 	# 	append /download
-
 }
 
 inci() {
@@ -2443,14 +2511,24 @@ rewe() {
 
 # }}}
 
-wt() {
-	c 'https://www.meteoblue.com/en/weather/week/dresden_germany_2935022' |
-		grep -Po -m28 '\d+(&nbsp;°C| km/h| h)' | # TODO: rainfall
-		dehtml |
-		awk '{if (NR%4==0) {print $0} else {printf "%s\t", $0}}' | # printf does not support + or ,
-		# head -n7 |
-		colt
+repeat() {
+	n=$1
+	shift
+	seq 1 "$n" |
+		while read -r _; do
+			time "$@"
+		done
 }
+
+# wt() {
+# 	c 'https://www.meteoblue.com/en/weather/week/dresden_germany_2935022' |
+# 		grep -Po -m28 '\d+(&nbsp;°C| km/h| h)' | # TODO: rainfall
+# 		dehtml |
+# 		awk '{if (NR%4==0) {print $0} else {printf "%s\t", $0}}' | # printf does not support + or ,
+# 		# head -n7 |
+# 		colt |
+# 		nl
+# }
 
 vib() {
 	: open vite page in browser
@@ -2522,7 +2600,6 @@ w2g() {
 	# 	jq -r '.results[0].name')
 	# # urlenc "$loc"
 	# firefox "https://www.google.com/maps/search/$(urlenc "$loc")"
-
 }
 
 erw() {
@@ -2560,7 +2637,6 @@ erw() {
 	# cut -d' ' -f2 |
 	# tail -n3 |
 	# xargs -I{} firefox 'https://www.google.com/maps?q={}'
-
 }
 
 timer() {
@@ -2568,9 +2644,17 @@ timer() {
 	notify-send -u critical 'done'
 }
 
-nomon() {
+mon() {
 	xrandr --output HDMI-A-1 --auto
 	pactl set-card-profile alsa_card.pci-0000_04_00.1 off
+}
+
+tv() {
+	xrandr --listmonitors |
+		# grep -F '*' | # not always correct
+		grep '3840/632' | # not always correct
+		awk '{print $NF}' |
+		xargs -I{} xrandr --output {} --off
 }
 
 mw() {
@@ -2659,6 +2743,7 @@ at() {
 		if ((now > end)); then
 			end=$(date --date="tomorrow $1" +%s)
 		fi
+		echo "sleep $(((end - now) / 60))m"
 		sleep $((end - now))
 	}
 
@@ -2759,16 +2844,16 @@ topa() {
 	f() {
 		# because what's stopping me from just making another sqlite
 		# call?
-		artist=$(< /dev/stdin)
+		artist=$(< /dev/stdin tr -d '"')
 		q=$(< ~/disq/queries/artists.sql sed -rn '/GetAlbums/,/;/p' | # extract the query we want
 			sed -r "s/\?/'$artist'/")                                    # inject the arg
 		# xargs -I{} sqlite3 -- ~/disq/collection2.db '{}'
-		sqlite3 -tabs -- ~/disq/collection2.db "$q" 2> /dev/null |
+		sqlite3 -ascii -newline $'\n' -separator $'\t' -- ~/disq/collection2.db "$q" 2> /dev/null |
 			colt
 	}
 	export -f f
 
-	< ~/gripts/disq/queries/top_artists_by_top_n_ratings.sql sqlite3 -tabs \
+	< ~/gripts/disq/queries/top_artists_by_top_n_ratings.sql sqlite3 -ascii -newline $'\n' -separator $'\t' \
 		~/gripts/disq/collection2.db 2> /dev/null |
 		fzf --reverse --no-sort --preview='echo {} | cut -f1 | f' --preview-window='right,60%,border'
 
@@ -2808,10 +2893,8 @@ randalb() { # {{{
 		EOF
 	)
 
-	# size=0
-	((size = 0, max = 50 * 1024 ** 2)) # 50 GB
+	((size = 0, max = 50 * 1024)) # 50 GB
 	db=~/disq/collection2.db
-	dirs=()
 
 	rows=$(sqlite3 -json "$db" "$sql" 2> /dev/null | jq -c .[])
 
@@ -2825,44 +2908,41 @@ randalb() { # {{{
 		# try: 30s (3x)
 		# lazy: 8s (4x)
 
-		# d=$(find "$MU/$artist" -mindepth 1 -iname "$album*" |
-		# 	grep . |
-		# 	head -n1) || continue
-
 		d=$({
 			if [[ -d $MU/$artist ]]; then
 				find "$MU/$artist" -mindepth 1 -iname "$album*"
 			else
 				find "$MU" -maxdepth 1 -iname "$artist" -print0 |
-					xargs -0 -I{} find {} -mindepth 1 -iname "$album*"
+					\xargs -0 -I{} find {} -mindepth 1 -iname "$album*"
 			fi
 		} |
 			grep . |
 			head -n1) || continue
 
-		dirs+=("$d")
-		((size += $(du -cs "$d" | tail -n1 | cut -f1)))
+		echo "$d"
+		((size += $(du -mcs "$d" | tail -n1 | cut -f1)))
 		((size >= max)) && break
 
 	done <<< "$rows"
-
-	printf "%s\n" "${dirs[@]}" | sort
-
 } # }}}
 
 lba() {
 	# curl -sL --fail "https://letterboxd.com/hejops$url" > /dev/null && continue
 
-	curl -sL 'https://letterboxd.com/ajax/activity-pagination/hejops/following/' |
+	curl -sL -H 'User-Agent: M' -H 'TE: trailers' \
+		'https://letterboxd.com/ajax/activity-pagination/hejops/following/' |
 		grep -P 'rated-(8|9|10)' |
 		grep -Po '/film/[^/]+' |
 		sort -u |
 		while read -r x; do
-			curl -sL --fail "https://letterboxd.com/hejops$x" > /dev/null && continue
+			curl -sL --fail -H 'User-Agent: M' -H 'TE: trailers' "https://letterboxd.com/hejops$x/activity" |
+				sponge /dev/stdout |
+				grep -Fqw rated && continue
 			echo "https://letterboxd.com$x"
 		done |
-		fzf -m |
+		# fzf -m |
 		xargs -n1 xdg-open
+	exit 0
 }
 
 tsg() {
@@ -2931,7 +3011,9 @@ georank() {
 # echo ${files[@]} | entr -cr $cmd
 
 kb() {
-	if lsusb | grep -iq ergo; then
+	if
+		lsusb | grep -iq ergo
+	then
 		# https://en.akkogear.com/faq/how-do-i-get-hold-tap-keys-by-via/
 		# https://github.com/gabrielmscampos/ergodash-fw
 		# https://github.com/AndrewKlement/ErgoDash_VIA/blob/main/ErgodashVia/keymap.json
@@ -2943,11 +3025,15 @@ kb() {
 
 		ci https://usevia.app/design
 
-	elif lsusb | grep -qw Elora; then
+	elif
+		lsusb | grep -qw Elora
+	then
 		/opt/vial-appimage/vial-appimage.AppImage
 
-	elif lsusb | grep -q Kinesis; then
-		f=/run/media/"$USER"/ADV360/layouts/layout1.txt
+	elif
+		lsusb | grep -q Kinesis
+	then
+		f=/run/media/"$USER/ADV360/layouts/layout1.txt"
 		if [[ ! -f $f ]]; then
 			echo 'connect first'
 			inotifywait -e create "/run/media/$USER"
@@ -2980,8 +3066,7 @@ _unused() {
 	# find ~/scripts -maxdepth 1 -type f -atime -3 -exec basename {} \; |
 	# 	sort -u |
 	# 	grep -v gitignore |
-	# 	prepend "$HOME"/.local/bin/ #| largs chezmoi add -f
-
+	# 	prepend "$HOME/.local/bin/" #| largs chezmoi add -f
 }
 
 ,pgrep() { \pgrep "$1" | xargs ps; } # ps for runtime
@@ -2991,19 +3076,44 @@ ya() { vol --auto && mpv --video=no "ytdl://ytsearch10:'$*'"; }
 yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '{title, description, webpage_url, channel_url}'; }
 yt() { vol --auto && mpv --force-window "ytdl://ytsearch10:'$*'"; }
 
+rand() { for x in "$@"; do echo "$x"; done | shuf -n1; }
 rng() {
-	# for ((i = 0; i < ${2:-1}; i++)); do
-	# 	echo $((1 + RANDOM % ${1:-100}))
-	# done
+	_rng() { echo "$((1 + RANDOM % $1))"; }
 
+	prev=
 	for n in "$@"; do
 		if ((n != prev)); then
 			[[ -n $prev ]] && echo
 			echo -en "$n"
 		fi
-		echo -en "\t$((1 + RANDOM % n))"
+		echo -en "\t$(_rng "$n")"
 		prev=$n
 	done
+	echo
+}
+
+pi() {
+	args=(
+		40 # dohn
+		90 # riem
+		52 # pach
+	)
+	rng "${args[@]}" | shuf
+
+	rand gold:32 wtc:48 fs:69 moz1:145 | # keyboard
+		shuf -n1 |
+		tee /dev/stderr |
+		# the fact that this is valid is kind of cursed
+		# this is equivalent to `... | cut | xargs rng`
+		rng "$(cut -d: -f2)"
+
+	{
+		rand ehre:254 roma:175        # choral
+		rand mess:264 matt:304 bm:163 # reduction
+	} |
+		shuf -n1 |
+		tee /dev/stderr |
+		rng "$(cut -d: -f2)"
 }
 
 ys() { # read youtube subs in less
@@ -3057,40 +3167,42 @@ nico() {
 	rm -i "$1"
 }
 
-epk() {
-	: fix malformed epubs
-
-	# according to the spec, `mimetype` must be the first listed file. note
-	# that malformed epubs are still readable in zathura, so this is mainly
-	# to prevent yazi from treatting malformed epubs as zip.
-
-	for f in *.epub; do
-		{
-			# tmpdir=tmp
-			# tmpname=foo
-			tmpdir="$f.tmp"
-			tmpname="$f.tmpf"
-
-			# https://github.com/ikrukov/epub/blob/c663821de66d57b3d138dc9125251f40ea755c2c/script/pack_epub#L25
-			# https://www.mobileread.com/forums/showthread.php?t=299415
-
-			unzip -l "$f" > /dev/null 2> /dev/null || return                 # corrupt (unreadable)
-			file --mime-type "$f" | grep -q 'application/epub+zip' && return # ok
-
-			unzip "$f" -d "$tmpdir"
-			cd "$tmpdir" || :
-			echo 'application/epub+zip' > mimetype
-			zip -X -0 --quiet "$tmpname" mimetype
-			zip -X -9 --quiet --no-dir-entries --recurse-paths "$tmpname" META-INF OEBPS
-			cd ..
-			\mv "$tmpdir/$tmpname.zip" "$f"
-			\rm -rf "$tmpdir"
-			echo "fixed $f"
-		} #&
-	done
-
-	# wait
-}
+# epk() {
+# 	: fix malformed epubs - doesnt always work
+#
+# 	# according to the spec, `mimetype` must be the first listed file. note
+# 	# that malformed epubs are still readable in zathura, so this is mainly
+# 	# to prevent yazi from treatting malformed epubs as zip.
+#
+# 	for f in *.epub; do
+# 		{
+# 			# tmpdir=tmp
+# 			# tmpname=foo
+# 			tmpdir="$f.tmp"
+# 			tmpname="$f.tmpf"
+#
+# 			# https://github.com/ikrukov/epub/blob/c663821de66d57b3d138dc9125251f40ea755c2c/script/pack_epub#L25
+# 			# https://www.mobileread.com/forums/showthread.php?t=299415
+#
+# 			unzip -l "$f" > /dev/null 2> /dev/null || continue                 # corrupt (unreadable)
+# 			file --mime-type "$f" | grep -q 'application/epub+zip' && continue # ok
+#
+# 			# TODO: may not actually fix the epub
+#
+# 			unzip "$f" -d "$tmpdir"
+# 			cd "$tmpdir" || :
+# 			echo 'application/epub+zip' > mimetype
+# 			zip -X -0 --quiet "$tmpname" mimetype
+# 			zip -X -9 --quiet --no-dir-entries --recurse-paths "$tmpname" META-INF OEBPS
+# 			cd ..
+# 			\mv "$tmpdir/$tmpname.zip" "$f"
+# 			\rm -rf "$tmpdir"
+# 			echo "fixed $f"
+# 		} #&
+# 	done
+#
+# 	# wait
+# }
 
 gev() {
 	: get env var
@@ -3119,7 +3231,7 @@ scan() {
 		((n++))
 	done
 	pdfunite "$(find . -name "$f-*" | sort -V)" "$f.pdf"
-	rm -I "$f"-*
+	rm -I "$f-"*
 }
 
 gcpd() {
