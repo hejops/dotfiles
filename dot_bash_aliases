@@ -3,6 +3,8 @@
 # if possible, this file should remain under 1000 LOC. interactive shell
 # startup time should remain under 0.02 s
 
+# completion {{{
+
 _base_completer() {
 	# https://mill-build.org/blog/14-bash-zsh-completion.html#_conclusion
 	# https://www.gnu.org/software/bash/manual/html_node/A-Programmable-Completion-Example.html
@@ -56,6 +58,7 @@ _base_completer() {
 }
 
 _complete_make() {
+	# TODO: -C awareness is nice to have, but probably difficult to impl
 	[[ ! -f ./Makefile ]] && return
 	f() { < ./Makefile grep -Po "^${1:-[a-z]}[a-z-]*:" | tr -d :; }
 	_base_completer f
@@ -78,6 +81,7 @@ complete -o bashdefault -o default -F _complete_git git
 
 # complete -o bashdefault -o default -F 'f() { < package.json jq -r ".scripts|keys[]" | grep "${1:-.}"; }; _base_completer f' pnpm
 
+# }}}
 # startup {{{
 
 # https://silverrainz.me/blog/2025-09-systemd-fzf-aliases.html
@@ -87,12 +91,6 @@ complete -o bashdefault -o default -F _complete_git git
 # systemd-analyze critical-chain
 #
 # sudo systemctl disable NetworkManager-wait-online.service # https://askubuntu.com/a/1018731
-#
-# journalctl --disk-usage                                                          # current usage
-# journalctl -b -u systemd-journald | grep max                                     # current max
-# sudo journalctl --vacuum-time=3d                                                 # truncate
-# sudo sed -i -r 's/#SystemMaxUse.+/SystemMaxUse=100M/' /etc/systemd/journald.conf # set max (should be done on arch install)
-# journalctl --since="$(date -d"$1 hour ago" -I)"
 
 # TODO: SystemMaxUse only affects system.journal? does not prevent
 # /var/log/journal from filling up
@@ -456,11 +454,12 @@ rge() {
 
 	fi
 
-	# pat="${@[-1]}" # invalid syntax
 	pat="${@: -1}" # last arg of array https://unix.stackexchange.com/a/503475
-	if [[ -f $pat || -d $pat ]]; then
+	if
+		(($# > 1)) && [[ -f $pat || -d $pat ]]
+	then
 		x=("$@")
-		pat="${x[-2]}"
+		pat="${x[-2]}" # pat is 2nd last arg
 	fi
 
 	echo "$staged" |
@@ -610,30 +609,30 @@ git_root() {
 	fi
 }
 
-gh() {
-	# TODO: better handled in vim
-
-	_git_http() {
-		url=$1
-		if [[ $url == http* ]]; then
-			echo "$url"
-		else
-			tr <<< "$url" : / | sed -r 's|git@|https://|; s|.git$||'
-		fi
-	}
-
-	: open remote url
-
-	if ! repo=$(_get_remote); then
-		echo "Current repo has no remote"
-		return
-	fi
-
-	url=${repo%*.git}
-	url=$(_git_http "$url")
-	echo "$url"
-	xdg-open "$url"
-}
+# gh() {
+# 	# TODO: better handled in vim
+#
+# 	_git_http() {
+# 		url=$1
+# 		if [[ $url == http* ]]; then
+# 			echo "$url"
+# 		else
+# 			tr <<< "$url" : / | sed -r 's|git@|https://|; s|.git$||'
+# 		fi
+# 	}
+#
+# 	: open remote url
+#
+# 	if ! repo=$(_get_remote); then
+# 		echo "Current repo has no remote"
+# 		return
+# 	fi
+#
+# 	url=${repo%*.git}
+# 	url=$(_git_http "$url")
+# 	echo "$url"
+# 	xdg-open "$url"
+# }
 
 # }}}
 # git history {{{
@@ -689,15 +688,22 @@ _git_log_fzf() { # {{{
 		[[ $# -eq 1 ]] &&
 			[[ $1 == $(_gmaster) ]]
 	then
+		log_args+=("$1")
+
 		# git does not allow flag overrides (i.e. --merges will not
 		# work), and merge commits are always after. thus, we just show
 		# child commit in preview
 		# https://stackoverflow.com/a/9870218
-		# TODO: also show merge commit (MR)
-		fzf_args+=(--no-sort) # TODO: prefer word match
-		# prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git log --reverse --ancestry-path {}..$(_gmaster) --oneline 2>/dev/null | head -n1 | cut -d' ' -f1 | xargs git show"
-		prv_cmd="echo {} | cut -d' ' -f1 | xargs git show"
-		fzf_args+=(--preview="$prv_cmd")
+		prv_cmd="
+			echo {} | cut -d' ' -f1 | xargs -I{} git log --reverse --ancestry-path {}..$(_gmaster) --oneline 2>/dev/null | head -n1 | cut -d' ' -f1 | xargs git show | grep -FC1 !;
+			echo {} | cut -d' ' -f1 | xargs git show
+		"
+
+		fzf_args+=(
+			# TODO: prefer word match
+			--no-sort
+			--preview="$prv_cmd"
+		)
 
 	elif
 		# other dev branch
@@ -816,8 +822,12 @@ git_log() {
 }
 
 gxx() {
+	# -S only shows changes where the number of occurrences of <pat> did not change (modify only)
+	# -G shows all changes <pat> was changed (modify+add+delete)
+
 	: show commits whose changes contain a pattern
 	# TODO: git show --color=always breaks grepdiff?
+	# TODO: optional 2nd arg (file)
 	prv_cmd="echo {} | cut -f1 | xargs git show -U1 | grepdiff \"$1\" --output-matching=hunk"
 	git log --branches --format="%h%x09%S%x09%s" --pickaxe-regex -S "$1" | # WARN: slow with large histories
 		fzf -m --preview="$prv_cmd" --preview-window='right,60%,border'
@@ -986,6 +996,7 @@ _git_commit() {
 
 	prv_cmd=$(
 		cat <<- EOF
+			echo {} | awk '{print \$NF}' | xargs git diff --staged --color=always | grep . ||
 			echo {} | awk '{print \$NF}' | xargs git diff --color=always | grep . ||
 			echo {} | awk '{print \$NF}' | xargs bat --color always --style=auto 2>/dev/null
 		EOF
@@ -1075,7 +1086,7 @@ gcp() {
 }
 
 gA() {
-	: un-add, unstage
+	: unadd, unstage
 	# i usually want restore more often (?)
 	# set -x
 	git restore --staged "$@" \
@@ -1300,6 +1311,18 @@ gbd() {
 		xargs -r git branch -D
 }
 
+gbdo() {
+	: delete branches older than 60 days
+	now=$(date +%s)
+	git branch --sort=committerdate |
+		while read -r b; do
+			epoch=$(git log -n1 --format=%cI "$b" | xargs date +%s -d)
+			days="$(((now - epoch) / 86400))"
+			if ((days <= 60)); then break; fi
+			git branch --delete "$b" || continue # cannot delete means mr not closed?
+		done
+}
+
 # }}}
 # git remote -- functions that involve remote repository {{{
 
@@ -1333,6 +1356,7 @@ gmm() {
 }
 
 g,() {
+	# TODO: fetch, if rebase was made (shas diverge?), pull --rebase
 	git pull && return
 	git diff --name-only "$(_gmaster)..origin/$(_gmaster)" | _commit_or_discard
 	git pull && git push
@@ -1590,6 +1614,21 @@ gmrf() {
 }
 
 glj() {
+	: view job durations of pipeline
+	# TODO: branch name -> mr id -> select from pipelines
+	url="https://gitlab.novum-engineering.com/api/v4/projects/265/pipelines/$1/jobs"
+	curl -sL "$url" \
+		-H "PRIVATE-TOKEN: $GL_TOKEN" |
+		jq -c '.[]|{name,started_at,finished_at}|select(.finished_at)' |
+		while read -r j; do
+			c=$(<<< "$j" jq .started_at | xargs date +%s -d)
+			f=$(<<< "$j" jq .finished_at | xargs date +%s -d)
+			echo "$(((f - c) / 60)) $(<<< "$j" jq -r .name)"
+		done |
+		sort -n
+}
+
+gljl() {
 	: view job logs of current mr
 	# TODO: do in vim
 	f() {
@@ -1779,16 +1818,16 @@ tsc() {
 	"$cmd" "$@"
 }
 
-jimp() {
-	: add all found dependencies -- use with caution
-	rg -t ts -Io ' from "[^:/]+";$' |
-		sort -u |
-		cut -d'"' -f2 |
-		while read -r pkg; do
-			< package.json grep -Fq "\"$pkg\"" || echo "$pkg"
-		done |
-		xargs pnpm add
-}
+# jimp() {
+# 	: add all found dependencies -- use with caution
+# 	rg -t ts -Io ' from "[^:/]+";$' |
+# 		sort -u |
+# 		cut -d'"' -f2 |
+# 		while read -r pkg; do
+# 			< package.json grep -Fq "\"$pkg\"" || echo "$pkg"
+# 		done |
+# 		xargs pnpm add
+# }
 
 jx() {
 	pkgmgr() {
@@ -1849,6 +1888,20 @@ jup() {
 # 	jq .devDependencies[] |
 # 	xargs pnpm remove
 
+vib() {
+	: open vite page in browser
+	cd "$REPO"
+	pgrep node |
+		grep vite |
+		cut -d/ -f5 |
+		cut -d- -f2- |
+		\xargs -I{} rg --no-heading --with-filename server_name.+{} |
+		grep dev |
+		awk '{print $NF}' |
+		tr -d ';' |
+		\xargs -I{} chromium http://{} &
+}
+
 # }}}
 # c {{{
 
@@ -1897,10 +1950,6 @@ chemo() {
 
 # }}}
 # sql {{{
-
-if [[ -n $POSTGRES_URL ]]; then
-	alias psql='psql $POSTGRES_URL'
-fi
 
 sq() {
 	: sq file.sql sql-command
@@ -1990,7 +2039,9 @@ sqq() {
 		< "$f" sed -rn "/^$s/,/;/p"
 	}
 	export -f f
-	rgl -t sql '^-- name:' | fzr --preview='echo {} | f'
+	rgl -t sql '^-- name:' |
+		sort -k3 | # sort by func name
+		fzr --preview='echo {} | f'
 	unset f
 }
 
@@ -2033,6 +2084,12 @@ jqt() {
 
 alias dolf='docker logs --tail=1 -f'
 alias dolst='docker logs --since="$(date -I --date=today)"'
+
+# docker ps --all --format=json |
+# 	jq -r 'select(.State!="running")|.Names' |
+# 	xargs -I{} docker logs {} --tail=10
+
+dob() { docker build --no-cache --progress=plain .; }
 
 dps() {
 	# # docker ps adds too much padding, and cannot truncate long values
@@ -2166,7 +2223,42 @@ dodu() {
 # 	xargs -I{} sudo docker ps -f id={}
 
 # }}}
+# journalctl {{{
+
+# journalctl -b -u systemd-journald | grep max                                     # current max (4 G)
+# sudo sed -i -r 's/#SystemMaxUse.+/SystemMaxUse=100M/' /etc/systemd/journald.conf # set max (should be done on arch install)
+alias jcd="journalctl --disk-usage"          # current usage
+alias jcv="sudo journalctl --vacuum-time=3d" # truncate
+jcs() { journalctl --output=json --since="$(date -d"$1 hour ago" -I)"; }
+
+# journalctl --since="$(date -d"24 hour ago" -I)" --output=json |
+# 	grep -i -e wifi -e wlan -e wlp |
+# 	jq -crs 'unique_by(.MESSAGE)|sort_by(.SYSLOG_TIMESTAMP)[]|select(.SYSLOG_TIMESTAMP)|{t:.SYSLOG_TIMESTAMP,m:.MESSAGE}'
+
+# }}}
 # ssh {{{
+
+bb() {
+	: ssh into server with credentials
+	# bw config server
+
+	j=$(bw list items)
+	# export j # leaks
+
+	# shellcheck disable=SC2329
+	f() { <<< "$j" jq --color-output ".[]|select(.name==\"$1\")"; }
+	export -f f
+
+	name=$(<<< "$j" jq -r '.[]|select(.login.password)|.name' |
+		fzf --tac --no-sort --preview='f {}' --preview-window='right,60%,border')
+	unset f
+
+	[[ -z $name ]] && return
+	<<< "$j" jq -r ".[]|select(.name==\"$name\")|.login.password" |
+		xclip -selection clipboard
+	echo "copied password for $name"
+	unset j
+}
 
 # rsync ~/.config/readline/inputrc "$remote:$HOME/.inputrc"
 # ssh "$remote" 'touch ~/.hushlogin' # suppress annoying ubuntu login msg
@@ -2187,20 +2279,8 @@ dodu() {
 # https://www.redhat.com/sysadmin/ssh-automation-sshpass
 
 # }}}
+
 # files, navigation {{{
-
-zd() { zip -jr "${1%/}" "${1%/}"; }                         # zip directory (flat); stripping trailing slash is important
-zin() { < /dev/stdin zip --junk-paths --names-stdin "$1"; } # pipe files from stdin to zip
-
-mcd() {
-	: mkdir any number of paths, cd to last
-	# it is uncommon for >1 arg to be passed, so this is more for cd
-	# [[ $# -eq 0 ]] && return
-	local p
-	for p in "$@"; do mkdir -p "$p" || :; done
-	# shellcheck disable=SC2164
-	[[ -d $p ]] && cd "$p"
-}
 
 if [[ -n $MU ]]; then
 	: wrap rm in a python check to prevent accidental deletion of some dir
@@ -2219,6 +2299,19 @@ if \"$MU\" in {x.rstrip('/') for x in sys.argv}:
 		command rm -v "$@"
 	}
 fi
+
+zd() { zip -jr "${1%/}" "${1%/}"; }                         # zip directory (flat); stripping trailing slash is important
+zin() { < /dev/stdin zip --junk-paths --names-stdin "$1"; } # pipe files from stdin to zip
+
+mcd() {
+	: mkdir any number of paths, cd to last
+	# it is uncommon for >1 arg to be passed, so this is more for cd
+	# [[ $# -eq 0 ]] && return
+	local p
+	for p in "$@"; do mkdir -p "$p" || :; done
+	# shellcheck disable=SC2164
+	[[ -d $p ]] && cd "$p"
+}
 
 files() {
 	: list files in use by a process
@@ -2292,6 +2385,15 @@ srtconcat() {
 			dur=$(ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=noprint_wrappers=1:nokey=1 "$f") # https://superuser.com/a/945604
 			sum=$(echo "$sum+$dur" | bc)
 		done
+}
+
+mw() {
+	: resume watched movie
+	rg -INo "$HDD/movies.+" ~/.local/state/mpv/watch_later |
+		grep . |
+		while read -r f; do [[ -f $f ]] && echo "$f"; done |
+		fzf --preview= |
+		largs mpv
 }
 
 # }}}
@@ -2602,42 +2704,110 @@ w2g() {
 	# firefox "https://www.google.com/maps/search/$(urlenc "$loc")"
 }
 
-erw() {
-	: determine stopping points along a gpx route
-
-	prev_lat=
-	prev_lng=
-	d=0
-
-	for x in {D..N}; do echo "$x"; done |
-		xargs -I{} curl -sL --globoff \
-			'https://www.elberadweg.de/gps/Elberadweg%20-%20Labsk%C3%A1%20stezka%20[Abschnitt%20{}%20links].gpx' |
-		tac |
-		grep -F '<trkpt' |
-		while read -r line; do
-			lat=$(<<< "$line" cut -d'"' -f2)
-			lng=$(<<< "$line" cut -d'"' -f4)
-
-			if [[ -n $prev_lat ]]; then
-				# https://stackoverflow.com/a/1253545
-				d=$(echo "scale=8; $d + (111 * sqrt( ($lat-$prev_lat)^2 + ($lng-$prev_lng)^2 ))" | bc)
-			fi
-
-			if [[ $d == .* ]]; then
-				d=0$d
-			elif (($(<<< "$d" cut -d. -f1) % 80 == 0)); then
-				echo "$d $lat,$lng"
-			fi
-
-			prev_lat=$lat
-			prev_lng=$lng
-		done |
-		awk -F. '!a[$1]++'
-
-	# cut -d' ' -f2 |
-	# tail -n3 |
-	# xargs -I{} firefox 'https://www.google.com/maps?q={}'
+gcpd() {
+	# german cities by population density
+	curl -sL https://www.citypopulation.de/en/germany/cities/ |
+		grep City |
+		sed -r 's|td>|&\t|g' |
+		dehtml | #2> /dev/null |
+		tr -d , |
+		awk -F$'\t' '{print $8/$9,$3,$1,$8,$9}' |
+		sort -n |
+		colt
 }
+
+unesco() {
+	# https://osm4wiki.toolforge.org/cgi-bin/wiki/wiki-osm.pl?project=de&article=Welterbe_in_Deutschland&section=Aktuelle_Welterbest%C3%A4tten
+
+	c 'https://de.wikipedia.org/wiki/Welterbe_in_Deutschland#Aktuelle_Welterbest%C3%A4tten' |
+		sed -r '/Die UNESCO strich dieses Gebiet/,$d' |
+		grep -w Lage | # note: regions/groups do not have a geographical point and are not included
+		grep -P '^<td><a' |
+		while read -r line; do
+			<<< "$line" grep -Po 'params[^:]+' |
+				head -n1 |
+				grep -Po '[0-9.]+' |
+				\xargs
+			<<< "$line" cut -d'"' -f2
+		done |
+		join2 |
+		tr ' ' '\t' |
+		sort -V |
+		colt
+}
+
+wnd() {
+	: wiki news of the day
+	c 'https://en.wikipedia.org/wiki/Portal:Current_events' |
+		grep -P '(^\<ul\>\<li\>.+external text|itvstart)' |
+		dehtml |
+		awk '{print $0"\n"}' |
+		fold -s |
+		sed "/$(date -I --date=yesterday)/,\$d"
+}
+
+wnm() {
+	: wiki news of the month
+	# shellcheck disable=SC2329
+	f() {
+		# https://news.ycombinator.com/item?id=12292723
+		# https://old.reddit.com/r/commandline/comments/mty60c
+		< /dev/stdin cut -d/ -f3 |
+			\xargs -I{} curl -sL 'https://en.wikipedia.org/w/api.php?format=json&action=query&titles={}&prop=extracts&explaintext=true' |
+			jq -r '.query.pages[].extract' |
+			fold -sw75
+	}
+	export -f f
+
+	c "https://en.wikipedia.org/wiki/Portal:Current_events/$(date +%B_%Y)" |
+		grep -Po '/wiki/[^"]+' |
+		count |
+		awk '$1>=7{print $2}' |
+		sort |
+		fzr --preview='echo {} | f'
+
+	unset f
+}
+
+# }}}
+
+# erw() {
+# 	: determine stopping points along a gpx route
+#
+# 	prev_lat=
+# 	prev_lng=
+# 	d=0
+#
+# 	for x in {D..N}; do echo "$x"; done |
+# 		xargs -I{} curl -sL --globoff \
+# 			'https://www.elberadweg.de/gps/Elberadweg%20-%20Labsk%C3%A1%20stezka%20[Abschnitt%20{}%20links].gpx' |
+# 		tac |
+# 		grep -F '<trkpt' |
+# 		while read -r line; do
+# 			lat=$(<<< "$line" cut -d'"' -f2)
+# 			lng=$(<<< "$line" cut -d'"' -f4)
+#
+# 			if [[ -n $prev_lat ]]; then
+# 				# https://stackoverflow.com/a/1253545
+# 				d=$(echo "scale=8; $d + (111 * sqrt( ($lat-$prev_lat)^2 + ($lng-$prev_lng)^2 ))" | bc)
+# 			fi
+#
+# 			if [[ $d == .* ]]; then
+# 				d=0$d
+# 			elif (($(<<< "$d" cut -d. -f1) % 80 == 0)); then
+# 				echo "$d $lat,$lng"
+# 			fi
+#
+# 			prev_lat=$lat
+# 			prev_lng=$lng
+# 		done |
+# 		awk -F. '!a[$1]++'
+#
+# 	# cut -d' ' -f2 |
+# 	# tail -n3 |
+# 	# xargs -I{} firefox 'https://www.google.com/maps?q={}'
+#
+# }
 
 timer() {
 	sleep "${1}m"
@@ -2655,14 +2825,6 @@ tv() {
 		grep '3840/632' | # not always correct
 		awk '{print $NF}' |
 		xargs -I{} xrandr --output {} --off
-}
-
-mw() {
-	rg -INo "$HDD/movies.+" ~/.local/state/mpv/watch_later |
-		grep . |
-		while read -r f; do [[ -f $f ]] && echo "$f"; done |
-		fzf --preview= |
-		largs mpv
 }
 
 de() {
@@ -2701,27 +2863,6 @@ fr() {
 	done
 }
 
-bb() {
-	# bw config server
-
-	j=$(bw list items)
-	# export j # leaks
-
-	# shellcheck disable=SC2329
-	f() { <<< "$j" jq --color-output ".[]|select(.name==\"$1\")"; }
-	export -f f
-
-	name=$(<<< "$j" jq -r '.[]|select(.login.password)|.name' |
-		fzf --tac --no-sort --preview='f {}' --preview-window='right,60%,border')
-	unset f
-
-	[[ -z $name ]] && return
-	<<< "$j" jq -r ".[]|select(.name==\"$name\")|.login.password" |
-		xclip -selection clipboard
-	echo "copied password for $name"
-	unset j
-}
-
 e() {
 	: open recent command in dummy sh file
 	f=./foo.sh
@@ -2750,28 +2891,6 @@ at() {
 	sleep_until "$1"
 	shift
 	"$@"
-}
-
-wn() {
-	: wiki news of the month
-	# shellcheck disable=SC2329
-	f() {
-		# https://news.ycombinator.com/item?id=12292723
-		# https://old.reddit.com/r/commandline/comments/mty60c
-		< /dev/stdin cut -d/ -f3 |
-			\xargs -I{} curl -sL 'https://en.wikipedia.org/w/api.php?format=json&action=query&titles={}&prop=extracts&explaintext=true' |
-			jq -r .query.pages[].extract |
-			fold -sw75
-	}
-	export -f f
-	c 'https://en.wikipedia.org/wiki/Portal:Current_events/September_2025' |
-		grep -Po '/wiki/[^"]+' |
-		count |
-		awk '$1>=7{print $2}' |
-		sort |
-		fzr --preview='echo {} | f'
-
-	unset f
 }
 
 nmsr() {
@@ -2896,7 +3015,7 @@ randalb() { # {{{
 	((size = 0, max = 50 * 1024)) # 50 GB
 	db=~/disq/collection2.db
 
-	rows=$(sqlite3 -json "$db" "$sql" 2> /dev/null | jq -c .[])
+	rows=$(sqlite3 -json "$db" "$sql" 2> /dev/null | jq -c '.[]')
 
 	while read -r row; do
 
@@ -2924,6 +3043,7 @@ randalb() { # {{{
 		((size >= max)) && break
 
 	done <<< "$rows"
+	printf "%s\n" "${dirs[@]}" | sort
 } # }}}
 
 lba() {
@@ -2988,21 +3108,6 @@ tsgr() {
 # 		xargs xdg-open
 # }
 
-# curl -sL 'https://www.geoguessr.com/api/v3/users/6118c9f48db3190001c6d471' | jq
-# curl -sL 'https://www.geoguessr.com/api/v3/users/6118c9f48db3190001c6d471/stats' | jq
-# curl -sL 'https://www.geoguessr.com/api/v4/ranked-system/best/6118c9f48db3190001c6d471' | jq
-# curl -sL 'https://www.geoguessr.com/api/v4/ranked-system/progress/6118c9f48db3190001c6d471' | jq
-
-georank() {
-	curl -sL 'https://www.geoguessr.com/api/v4/ranked-team-duels/me/teams/6097bf310e78f000019d9747' \
-		--cookie "_ncfa=$(get_cookie _ncfa)" |
-		jq -e '
-		def cutoff: .bucket.promotionIndex;
-		def current: .bucket.teams[] | select(.teamId == "6097bf310e78f000019d9747-6118c9f48db3190001c6d471") | .position;
-		if .bucket then current<cutoff end
-	' > /dev/null && echo ok
-}
-
 # < ~/geo/geo.csv shuf -n3 | cut -d, -f-2
 
 # could replace xfer with this
@@ -3031,7 +3136,7 @@ kb() {
 		/opt/vial-appimage/vial-appimage.AppImage
 
 	elif
-		lsusb | grep -q Kinesis
+		lsusb | grep -qw Kinesis
 	then
 		f=/run/media/"$USER/ADV360/layouts/layout1.txt"
 		if [[ ! -f $f ]]; then
@@ -3204,16 +3309,6 @@ nico() {
 # 	# wait
 # }
 
-gev() {
-	: get env var
-	find . -type f -name '.*env' -print0 |
-		# probably better to force upper, but whatever
-		\xargs -0 grep -Pi "$1" |
-		awk -F: '!a[$2]++' |
-		sed -r 's/:/	/' |
-		colt
-}
-
 scan() {
 	cd ~/scores || return
 	f=$1
@@ -3232,38 +3327,6 @@ scan() {
 	done
 	pdfunite "$(find . -name "$f-*" | sort -V)" "$f.pdf"
 	rm -I "$f-"*
-}
-
-gcpd() {
-	# german cities by population density
-	curl -sL https://www.citypopulation.de/en/germany/cities/ |
-		grep City |
-		sed -r 's|td>|&\t|g' |
-		dehtml | #2> /dev/null |
-		tr -d , |
-		awk -F$'\t' '{print $8/$9,$3,$1,$8,$9}' |
-		sort -n |
-		colt
-}
-
-unesco() {
-	# https://osm4wiki.toolforge.org/cgi-bin/wiki/wiki-osm.pl?project=de&article=Welterbe_in_Deutschland&section=Aktuelle_Welterbest%C3%A4tten
-
-	c 'https://de.wikipedia.org/wiki/Welterbe_in_Deutschland#Aktuelle_Welterbest%C3%A4tten' |
-		sed -r '/Die UNESCO strich dieses Gebiet/,$d' |
-		grep -w Lage | # note: regions/groups do not have a geographical point and are not included
-		grep -P '^<td><a' |
-		while read -r line; do
-			<<< "$line" grep -Po 'params[^:]+' |
-				head -n1 |
-				grep -Po '[0-9.]+' |
-				\xargs
-			<<< "$line" cut -d'"' -f2
-		done |
-		join2 |
-		tr ' ' '\t' |
-		sort -V |
-		colt
 }
 
 wce() {

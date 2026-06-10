@@ -20,16 +20,32 @@ end
 local curr_branch = git_dir ~= nil and util:get_command_output(git .. "branch --show-current", true) -- or ""
 
 -- this file will be watched for changes
-local head_file = string.format("%s/.git/refs/heads/%s", git_dir, curr_branch)
+-- TODO: update on branch change
+local head_file = string.format(
+	-- .git/HEAD only contains ref: refs/heads/curr-branch
+	-- .git/logs/HEAD changes even on status/checkout/etc
+	-- "%s/.git/refs/heads/%s", -- may be cleared
+	"%s/.git/logs/refs/heads/%s",
+	git_dir,
+	curr_branch
+)
 local master_file = string.format("%s/.git/refs/remotes/origin/%s", git_dir, "master")
 
 ---@type { [string]: number }
 M.cache = {}
 
+local function get_current_hash()
+	-- nil if no commits made
+	return util:get_command_output( --
+		string.format([[ < '%s' tail -n1 | awk '{print $2}' ]], head_file),
+		true
+	)
+end
+
 if git_dir and has_remote then
 	-- print(f)
 
-	M.head_sha = util:read_file(head_file) -- nil if no commits made
+	M.head_sha = get_current_hash()
 	if M.head_sha then
 		M.origin_master_sha = util:read_file(master_file) or util:get_command_output(git .. " rev-parse HEAD", true)
 		M.cache[(M.origin_master_sha or "") .. M.head_sha] = commits_ahead(M.origin_master_sha, M.head_sha)
@@ -56,7 +72,7 @@ local function update_branch()
 	watcher:start(head_file, {}, vim.schedule_wrap(update_branch))
 	watcher2:start(master_file, {}, vim.schedule_wrap(update_branch))
 
-	local new_head_sha = util:read_file(head_file)
+	local new_head_sha = get_current_hash()
 	local new_master_sha = util:read_file(master_file)
 
 	-- os.execute("notify-send " .. M.head_sha)
@@ -75,6 +91,7 @@ local function update_branch()
 	elseif new_master_sha and M.origin_master_sha ~= new_master_sha then
 		-- will probably be 0
 		-- M.cache[new_master_sha .. M.head_sha] = commits_ahead(new_master_sha, M.head_sha)
+		-- M.cache[new_master_sha .. (M.head_sha or "")] = 0
 		M.cache[new_master_sha .. M.head_sha] = 0
 		M.origin_master_sha = new_master_sha
 	end

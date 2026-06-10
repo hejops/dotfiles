@@ -207,6 +207,8 @@ local function get_title(tab)
 		return get_bash_dir()
 	elseif proc == "ssh" then
 		return string.match(title, "@[^:]+") or proc
+	elseif proc == "claude" then
+		return "claude"
 	elseif
 		proc == "nvim" --
 		or title:sub(1, 2) == "x0"
