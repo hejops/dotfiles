@@ -1160,6 +1160,8 @@ gbr() {
 _git_branch() { # {{{
 	: switch to new branch, or existing branch. with no arg, switches to master
 
+	# TODO: on nvim v0.12, opens new tab listing files
+
 	[[ -z $1 ]] && return
 
 	# new branches are always based off latest master; the default
@@ -1230,14 +1232,16 @@ _git_branch() { # {{{
 		git switch "$new_branch"
 	else
 		# new local branch
-
-		# TODO: git pull can error if merging origin/master produces merge conflict (why would there be conflict though)
-		# may be fixed by 'gb master ; git pull'
-
-		# --no-edit skips merge commit msg (which we never care about)
-		git pull --commit --no-edit origin "$base_branch:$base_branch" # https://stackoverflow.com/a/16560695
-		git switch --create "$new_branch" "$base_branch"
+		git fetch origin
+		git switch --create "$new_branch" origin/master
 	fi
+
+	# # TODO: if local master 'ahead' of origin/master:
+	# git fetch origin
+	# git switch someotherbranch
+	# git branch -f master origin/master
+	# (branch -f x not allowed while on x)
+	# generally, commits should never be made on local master
 
 	# set +x
 
