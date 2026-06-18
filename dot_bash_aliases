@@ -464,7 +464,7 @@ rge() {
 
 	echo "$staged" |
 		head |
-		xargs nvim -p +"/\v$pat"
+		xargs nvim -p +"/\v${pat//\//\\\/}"
 }
 
 sd() {
@@ -559,7 +559,6 @@ alias s=_git_commit # should increasingly be done in vim
 # alias gdnw="git diff --color-words --no-index"
 # alias gm,='_git_branch && gmm'
 alias g..="git push --force-with-lease origin \$(_git_current_branch)"
-alias g.="git push"
 alias gC="git show HEAD | cat; git reset --soft HEAD~1"                                         # un-commit, but keep changes staged
 alias gCH="git show --oneline HEAD | cat; echo; read -r -p 'confirm?'; git reset --hard HEAD~1" # un-commit, and discard changes
 alias gdn="git diff --no-index"                                                                 # https://stackoverflow.com/a/17433969 -- TODO: handle symlinks
@@ -631,6 +630,8 @@ git_root() {
 # }}}
 # git history {{{
 
+gpar() { git log -n1 --format=%H "$1^@"; } # get parent hash
+
 _git_log_fzf() { # {{{
 	_in_git_repo || return
 
@@ -662,13 +663,15 @@ _git_log_fzf() { # {{{
 	)
 
 	if
+		# only logs of file/dir
 		[[ -f $1 || -d $1 ]]
 	then
 		log_args+=("$@")
 		prv_cmd="echo {} | cut -d' ' -f1 | xargs -I{} git show --color=always {} $1" # restrict diff to selected file/dir
 
 	elif
-		<<< "$1" grep -Fq ... # from...to
+		# range from...to
+		<<< "$1" grep -Fq ...
 	then
 		log_args+=("$@")
 
@@ -689,7 +692,7 @@ _git_log_fzf() { # {{{
 		# child commit in preview
 		# https://stackoverflow.com/a/9870218
 		prv_cmd="
-			echo {} | cut -d' ' -f1 | xargs -I{} git log --reverse --ancestry-path {}..$(_gmaster) --oneline 2>/dev/null | head -n1 | cut -d' ' -f1 | xargs git show | grep -FC1 !; 
+			echo {} | cut -d' ' -f1 | xargs -I{} git log --reverse --ancestry-path {}..$(_gmaster) --oneline 2>/dev/null | head -n1 | cut -d' ' -f1 | xargs git show | grep -FC1 !;
 			echo {} | cut -d' ' -f1 | xargs git show
 		"
 
@@ -700,19 +703,25 @@ _git_log_fzf() { # {{{
 		)
 
 	elif
-		# other dev branch
-		[[ $# -eq 1 ]] &&
-			git branch --remote | grep -Fqx "  origin/$1"
-	then
-		git pull > /dev/null 2> /dev/null
-		log_args+=("origin/$1")
-
-	elif
 		m=$(_gmaster) && [[ $(_git_current_branch) == "$m" ]]
 	then
 		: on master
+		# TODO: should just match above
 
-	elif [[ -n $m ]]; then # dev branch
+	# elif
+	# 	# remote dev branch (rare)
+	# 	[[ $# -eq 1 ]] &&
+	# 		git branch --remote | grep -Fqx "  origin/$1"
+	# then
+	# 	git pull > /dev/null 2> /dev/null
+	# 	log_args+=("origin/$1")
+
+	elif
+		[[ -z $m ]]
+	then
+		: no remote yet - rare
+
+	else # dev branch
 		# note: use origin/master, because i tend to not actually
 		# update my local master
 
@@ -726,10 +735,11 @@ _git_log_fzf() { # {{{
 		# https://i.sstatic.net/PboEt.png
 		# https://stackoverflow.com/a/24186641
 
-		log_args+=(--first-parent "origin/$m...HEAD")
+		log_args+=(
+			# --first-parent # discards commits introduced by a merge commit (not good)
+			"origin/$m...HEAD"
+		)
 
-	else
-		: no remote yet
 	fi
 
 	# there is literally nothing to see in merge commits (Merge branch 'x'
@@ -1002,27 +1012,34 @@ _git_commit() {
 
 	# by default, git status does not enter dirs containing only 1
 	# (untracked) file
-	sel=$(
-		# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
-		#   $2					       $NF
-		# ? README.md
-		#
-		# $2 is more useful for tracked files (since it more closely maps to v1
-		# labels), but for untracked files this duplicates the file path, so we
-		# stick to $1
-		#
-		# https://git-scm.com/docs/git-status#_changed_tracked_entries
-		#
-		# HACK: i have no idea how to 'return' multiple columns inside
-		# a ternary, so concat with a space as an ugly workaround
-		<<< "$status" awk '{print ($1=="?") ? $0 : $2" "$NF}' |
-			fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
-	)
+	# sel=$(
+	# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
+	#   $2					       $NF
+	# ? README.md
+	#
+	# $2 is more useful for tracked files (since it more closely maps to v1
+	# labels), but for untracked files this duplicates the file path, so we
+	# stick to $1
+	#
+	# https://git-scm.com/docs/git-status#_changed_tracked_entries
+	#
+	# HACK: i have no idea how to 'return' multiple columns inside
+	# a ternary, so concat with a space as an ugly workaround
+	<<< "$status" awk '{print ($1=="?") ? $0 : $2" "$NF}' |
+		fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
+	# )
 	# fzh --multi --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
 
 	# add untracked files first
-	echo "$sel" | grep -P '^\?' | awk '{print $NF}' | xargs git add
-	echo "$sel" | awk '{print $NF}' | xargs git commit -v
+	# echo "$sel" | grep -P '^\?' | awk '{print $NF}' | xargs git add
+	# echo "$sel" | awk '{print $NF}' | xargs git commit -v
+}
+
+gres() {
+	: finish resolving merge conflict and commit
+	# s | grep -v ^D | cut -c4- | largs git add
+	git status --porcelain | grep ^UU | cut -c4- | largs git add
+	git commit -v
 }
 
 gsq() {
@@ -1141,20 +1158,41 @@ alias gbc="git switch --create"
 
 gbr() {
 	: switch to remote branch
-	git fetch
+	git fetch --prune # useless, because we don't prune stale branches on remote
 
 	if (($# > 0)); then
-		git switch "$1"
+		if
+			<<< "$1" grep -Pqx '\d+'
+		then
+			glab mr list --output=json |
+				jq -r ".[]|select(.iid==$1)|.source_branch" |
+				xargs git switch
+		else
+			git switch "$1"
+		fi
+		git pull # not pulling causes bizarre problems when trying to gb
 		return
 	fi
 
 	git branch --remotes |
-		seen |
-		# TODO: filter out branches that exist locally
+		grep -v HEAD |
+		sed 's|origin/||' |
+		while read -r branch; do
+			if
+				git branch | tr -d ' *' | grep -Fqx "$branch"
+			then
+				continue
+			fi
+			last_commit=$(git log -n1 --format=%ct "origin/$branch")
+			cutoff=$(date -d '7 days ago' +%s)
+			if (("$last_commit" < "$cutoff")); then
+				continue
+			fi
+			echo "origin/$branch"
+		done |
 		fzf |
-		cut -d/ -f2 |
-		# --guess (default) switches to remote branch if found, but must remove origin/
-		xargs git switch # --create
+		cut -d/ -f2 | # --guess (default) switches to remote branch if found, but origin/ must be removed
+		xargs git switch
 }
 
 _git_branch() { # {{{
@@ -1307,6 +1345,24 @@ gbd() {
 		grep -v "^\*" | # TODO: this means we cannot delete current branch; consider sed s/^*//
 		awk '{print $1}' |
 		xargs -r git branch -D
+
+	# cleanup glab stack
+	branches=$(git branch | grep -P -- '-[0-9a-f]{8,}$')
+	jsons=$(find "$(_get_repo_root)/.git/stacked" -name '*json')
+
+	echo "$jsons" |
+		while read -r f; do
+			hash=$(basename "$f" | cut -d. -f1)
+			if
+				! <<< "$branches" grep -Fqw "$hash"
+			then
+				echo "branch $hash was deleted"
+				next_hash=$(< "$f" jq -r .next)
+				next_json=$(<<< "$jsons" grep -Fqw "$next_hash")
+				< "$next_json" jq '.prev=""' | sponge "$next_json"
+				rm -v "$f"
+			fi
+		done
 }
 
 gbdo() {
@@ -1321,8 +1377,52 @@ gbdo() {
 		done
 }
 
+gbs() {
+	: extract changes to separate branch
+
+	curr=$(git branch --show-current)
+
+	files_changed=$(git diff --name-only origin/master..HEAD |
+		grep _test) # TODO: fzf
+
+	# prepare changes for new branch
+	<<< "$files_changed" xargs git diff origin/master..HEAD > new-branch.patch
+
+	# undo curr branch, taking into account renames
+	while IFS= read -r f; do
+		if
+			git show origin/master:"$f" > /dev/null 2> /dev/null
+		then
+			git checkout master -- "$f"
+		else
+			git rm "$f"
+		fi
+	done <<< "$files_changed"
+
+	git commit -m "test: undo changes to integration tests"
+	git push
+
+	git switch --create go-integ master
+	git apply < new-branch.patch
+	<<< "$files_changed" xargs git add # maybe add -u
+
+	git commit -m "test: inherit changes from $curr"
+	git push
+}
+
 # }}}
 # git remote -- functions that involve remote repository {{{
+
+g.() {
+	b=$(_git_current_branch | awk -F- '{print $NF}')
+	if
+		find "$(_get_repo_root)/.git/stacked" -name "$b.json" | grep -q .
+	then
+		glab stack sync
+	else
+		git push
+	fi
+}
 
 _gssh() { # {{{
 	: init github ssh key
@@ -1363,11 +1463,7 @@ g,() {
 gcon() { # {{{
 	# https://nitaym.github.io/ourstheirs/
 
-	# make db-up && make db-vet && make db-generate
-	# cr
-	# gcon
-
-	: resolve conflicts, if any, and merge
+	: resolve conflicts WITHOUT merging
 
 	markers='^[<=>|]{7}'
 
@@ -1384,27 +1480,31 @@ gcon() { # {{{
 			cut -c3-
 	}
 
-	# not up to date with master yet
-	if
-		! _git_has_conflicts &&
-			(("$(git rev-list --left-right --count "origin/$(_gmaster)...HEAD" | cut -f1)" > 0))
-	then
-		gmm || return
-		gcon
-	fi
+	# # not up to date with master yet
+	# if
+	# 	! _git_has_conflicts &&
+	# 		(("$(git rev-list --left-right --count "origin/$(_gmaster)...HEAD" | cut -f1)" > 0))
+	# then
+	# 	gmm || return # WARN: infinite loop
+	# 	gcon
+	# fi
 
 	# only conflict is lock file
-	if ! git status --porcelain |
-		grep ^UU |
-		grep -vx 'UU pnpm-lock.yaml'; then
+	if
+		! git status --porcelain |
+			grep ^UU |
+			grep -qvx 'UU pnpm-lock.yaml'
+	then
 
 		pnpm install
 		_git_get_conflicts | xargs git add
-		git commit -v
+		# git commit -v
 
-	elif ! git status --porcelain |
-		grep ^UU |
-		grep -v 'go.sum$'; then
+	elif
+		! git status --porcelain |
+			grep ^UU |
+			grep -qv 'go.sum$'
+	then
 
 		cd "$(git status --porcelain |
 			grep ^UU |
@@ -1414,7 +1514,7 @@ gcon() { # {{{
 		cd -
 
 		_git_get_conflicts | xargs git add
-		git commit -v
+		# git commit -v
 
 	fi
 
@@ -1436,10 +1536,7 @@ gcon() { # {{{
 		_git_get_conflicts | xargs nvim -p +'/\v'"$markers"
 	done
 
-	# _git_get_conflicts | xargs git add
-	# git commit -v
-
-	_git_get_conflicts | xargs git commit -iv
+	# _git_get_conflicts | xargs git commit --include -v
 }        # }}}
 gnew() { # {{{
 	: push to newly created remote
@@ -1498,6 +1595,69 @@ gnew() { # {{{
 
 # gitlab {{{
 
+stack() {
+	# TODO: order by mr
+	find "$(_get_repo_root)/.git/stacked" -name "*.json" | xargs jq .
+}
+
+alias sf="glab stack first"
+alias sl="glab stack list"
+alias sm="glab stack move"
+
+sv() {
+	if
+		git status --porcelain | grep -P '^[A-Z]'
+	then
+		: files already staged
+	else
+		files=$(_git_commit | cut -c3-)
+		echo "$files" |
+			while read -r f; do
+				if
+					[[ -f $f ]]
+				then
+					git add "$f"
+				else
+					git rm "$f"
+				fi
+			done
+
+	fi
+
+	# echo 'amending old diff'
+
+	# even if we are at the last diff, only create new mr (save) when there
+	# really are new changes
+
+	# still, save should only be allowed when we are at the last diff
+
+	# b=$(_git_current_branch | awk -F- '{print $NF}')
+	# if
+	# 	# last diff, save
+	# 	find "$(_get_repo_root)/.git/stacked" -name "$b.json" |
+	# 		cat |
+	# 		\xargs jq -e '.next==""' > /dev/null
+	# then
+	# 	echo 'creating new diff'
+	# 	echo "$files" | xargs glab stack save
+	# else
+
+	glab stack amend
+
+	# fi
+}
+
+# if not in a stack, noop
+# must revert all unstaged changes (gu .)
+# TODO: remember branch, then go back to it
+# TODO: if err, handle conflicts (like gcon) and rebase --continue
+sy() {
+	glab stack sync "$@" && return
+	gcon
+	git status --porcelain | grep ^UU | cut -c3- | xargs git add
+	git rebase --continue
+}
+
 # TODO: run after clone
 # git config set --local user.email "$EMAIL"
 # git config set --local user.name "$NAME"
@@ -1511,23 +1671,25 @@ gnew() { # {{{
 # all mrs made by me
 alias gmer='seq 1 2 | parallel -n1 glab mr list --output=json --assignee=@me --merged --per-page=9999 -p | jq .[] | jqt iid source_branch title | sort -n'
 
-# # similar to b (but slower)
-# glab mr list --author=@me --output=json |
-# 	jq -r .[] |
-# 	jqt detailed_merge_status source_branch title |
-# 	sort
-
-gmw() {
-	: mrs merged in the last week
-	glab mr list --merged --output=json |
-		# jq -r 'sort_by(.merged_at)[]|select(.merged_at>="'"$(date --date='1 week ago' -I)"'")|["- !"+(.iid|tostring),.title]|@tsv'
-		jq -r 'sort_by(.merged_at)[]|select(.merged_at>="'"$(date --date='1 week ago' -I)"'")|[.iid,.title]|@tsv'
+glau() {
+	: list authors by mr count
+	glab api projects/:fullpath/merge_requests --paginate |
+		jq -r '.[]|select(.merged_by).author.username' |
+		sort |
+		uniq -c |
+		sort -rn
 }
 
-# apt 1.36
-# snap 1.43/1.54, but cannot read config file (lol)
+# gmw() {
+# 	: mrs merged in the last week - gl master more useful
+# 	glab mr list --merged --output=json |
+# 		# jq -r 'sort_by(.merged_at)[]|select(.merged_at>="'"$(date --date='1 week ago' -I)"'")|["- !"+(.iid|tostring),.title]|@tsv'
+# 		jq -r 'sort_by(.merged_at)[]|select(.merged_at>="'"$(date --date='1 week ago' -I)"'")|[.iid,.title]|@tsv'
+# }
 
 gld() {
+	: view diff of mr
+
 	# note: to see diff of current branch, just use gdm
 	[[ $PWD != *$REPO* ]] && cd "$REPO"
 
@@ -1535,16 +1697,23 @@ gld() {
 		if
 			<<< "$1" grep -Pqx '\d+' # mr id
 		then
-			# no need fetch, probably
-			glab mr diff "$1" | sed '/Subproject commit/d' | delta
+			# still need fetch/pull
+			glab mr diff "$1" | delta
 			return
+
+		elif
+			<<< "$1" grep -Pqx '[0-9a-f]+' # commit hash
+		then
+			git diff "$1...origin/$branch"
+
 		elif
 			git branch --all | grep -Fqw "$1" # branch name
 		then
 			git fetch
 			git diff "origin/$(_gmaster)...origin/$1"
-			return
 		fi
+
+		return
 	fi
 
 	prv_cmd="echo {} | awk '{print \$NF}' | xargs -I{} git log --oneline origin/{}"
@@ -1556,136 +1725,46 @@ gld() {
 	[[ -z $branch ]] && return
 
 	git fetch
-	if
-		(($# == 1)) && <<< "$1" grep -Pqx '[0-9a-f]+' # commit hash
-	then
-		git diff "$1...origin/$branch"
-	else
-		git diff "origin/$(_gmaster)...origin/$branch" # base case
-	fi
+	git diff "origin/$(_gmaster)...origin/$branch" # base case
 }
 
+# watch most recent pipelines of all mrs (better in vim)
 gci() { watch -n 30 'glab ci list -P 10 | grep -P "^\(" | column -t'; }
 
-gmrc() {
-	: find recent mr that is most likely the predecessor of the current mr
-
-	# current mr numstat
-	curr=$(git diff --numstat "$(_gmaster)"..HEAD | # not sure if ... better
-		grep -Fvw -e 0 -e '=>' |
-		sort -rn)
-
-	# based on numstat of previous mrs, find max similarity (in terms of
-	# files changed)
-	git log --oneline --since="$(date -I --date='1 month ago')" |
-		grep 'Merge branch' |
-		cut -d' ' -f1 |
-		head |
-		while read -r sha; do
-
-			xx=$(git show --format= --numstat "$sha" |
-				sort -rn |
-				# cut -f3 | xargs grep |
-				while read -r _ _ f; do <<< "$curr" grep "$f" || :; done |
-				wc -l)
-
-			echo "$xx $sha"
-
-		done |
-		sort -rn |
-		head -n1 |
-		cut -d' ' -f2 |
-		xargs git show |
-		grep -Po '!\d+'
+glj() {
+	: get job logs of latest pipeline
+	glab ci get --output=json |
+		jq -c '.jobs[]' |
+		jqt name id status |
+		grep -v -e success -e manual |
+		fzf --exit-0 --accept-nth=2 |
+		xargs glab ci trace
 }
 
-alias bf=gmrf
+gljd() {
+	: view job durations of latest pipeline
+	# can be followed up with glj
+	url="https://gitlab.novum-engineering.com/api/v4/projects/265/pipelines/${1:-$(glab ci get --output=json | jq .id)}/jobs"
+	curl -sL "$url" \
+		-H "PRIVATE-TOKEN: $GL_TOKEN" |
+		jq -c '.[]|{name,started_at,finished_at}|select(.finished_at)' |
+		while read -r j; do
+			c=$(<<< "$j" jq .started_at | \xargs date +%s -d)
+			f=$(<<< "$j" jq .finished_at | \xargs date +%s -d)
+			echo "$(((f - c) / 60)) $(<<< "$j" jq -r .name)"
+		done |
+		sort -n
+}
 
 gmrf() {
-	# branches with ci fail
+	# like b, but aware of closed mrs etc
+	# the 1s lag time (glab mr list) is enough for me to not want to use it
 	branch=$(glab mr list --author=@me --output=json |
 		# jq -r '.[]|select(.detailed_merge_status=="ci_must_pass")|.source_branch' # or "conflict"
 		jq -r .[] |
 		jqt iid source_branch title[:30] detailed_merge_status |
 		fzr --preview="echo {} | awk '{print \$2}' | xargs git log --oneline --color=always" --accept-nth=2)
 	_git_branch "$branch"
-}
-
-glj() {
-	: view job durations of pipeline
-	# TODO: branch name -> mr id -> select from pipelines
-	url="https://gitlab.novum-engineering.com/api/v4/projects/265/pipelines/$1/jobs"
-	curl -sL "$url" \
-		-H "PRIVATE-TOKEN: $GL_TOKEN" |
-		jq -c '.[]|{name,started_at,finished_at}|select(.finished_at)' |
-		while read -r j; do
-			c=$(<<< "$j" jq .started_at | xargs date +%s -d)
-			f=$(<<< "$j" jq .finished_at | xargs date +%s -d)
-			echo "$(((f - c) / 60)) $(<<< "$j" jq -r .name)"
-		done |
-		sort -n
-}
-
-gljl() {
-	: view job logs of current mr
-	# TODO: do in vim
-	f() {
-		id=$1
-		glab ci get --output=json --pipeline-id "$1" |
-			jq ".jobs[]|select(.name==\"$2\")|.web_url" |
-			xargs --verbose -I{} curl -sL \
-				-H "Cookie: _gitlab_session=$GL_SESSION" '{}/raw' |
-			sed -n '/GRPC/,$p'
-	}
-	export -f f
-	job=$1
-	if [[ -z $job ]]; then
-		echo "no job specified"
-		return
-	fi
-	glab ci list --output=json |
-		jq ".[]|select(.ref==\"$(_git_current_branch)\")|.id" |
-		fzf --preview="f {} $job" --preview-window='right,95%,border' --reverse --tac
-	unset f
-}
-
-gll() {
-	: like b, but better?
-
-	# shellcheck disable=SC2329
-	render() {
-		# slow (up to 2 s); 2 glab calls
-
-		j=$(cat /dev/stdin |
-			xargs glab mr list --output=json --source-branch |
-			jq .[])
-
-		ci_pass=$(<<< "$j" jq -r .source_branch |
-			xargs glab ci get --output=json --branch |
-			jq -r '.status=="success"')
-
-		coms=$(<<< "$j" jq -r .iid |
-			xargs glab mr view -c --output=json --per-page=9999 |
-			jq -r '.Notes[]|select(.type=="DiffNote" or .type=="DiscussionNote")|{created_at,body,author:.author.username,pos:.position.line_range.start.line_code,resolved}' |
-			jq -s 'sort_by(.pos,.created_at)')
-
-		coms_r=$(echo "$coms" |
-			jq '
-				def grouped: group_by(.pos);
-				def tot: grouped|length;
-				def unresolved: tot-([grouped[] | map(.resolved)[0]]|length);
-				"\(unresolved)/\(tot)"
-			')
-
-		<<< "$j" jq '{iid,title,no_conflicts:.has_conflicts|not}|.ci_pass='"$ci_pass"'|.comments='"$coms_r"
-	}
-
-	export -f render
-	glab mr list --output=json --not-label=stale --assignee=@me |
-		jq -cr '.[]|"\(.iid)\t\(.source_branch)\t\(.title)"' |
-		colt |
-		fzf --preview="echo {} | awk '{print \$2}' | render" --preview-window='right,60%,border'
-	# TODO: accept -> b
 }
 
 # }}}
@@ -2087,7 +2166,7 @@ alias dolst='docker logs --since="$(date -I --date=today)"'
 # 	jq -r 'select(.State!="running")|.Names' |
 # 	xargs -I{} docker logs {} --tail=10
 
-dob() { docker build --no-cache --progress=plain .; }
+dob() { docker build --no-cache --progress=plain "${1:-.}"; }
 
 dps() {
 	# # docker ps adds too much padding, and cannot truncate long values
@@ -2298,6 +2377,8 @@ if \"$MU\" in {x.rstrip('/') for x in sys.argv}:
 	}
 fi
 
+alias mtime="stat -c %y"
+
 zd() { zip -jr "${1%/}" "${1%/}"; }                         # zip directory (flat); stripping trailing slash is important
 zin() { < /dev/stdin zip --junk-paths --names-stdin "$1"; } # pipe files from stdin to zip
 
@@ -2356,6 +2437,9 @@ mw() {
 # }}}
 # stdout manipulation {{{
 
+# groupby 3rd col, summing 1st col
+# awk '{sum[$3] += $1} END {for (dir in sum) print sum[dir], "\t", dir}'
+
 # ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; } # lines to comma-delimited str (rare?)
 append() { < /dev/stdin awk "{print \$0 \"$1\"}"; }
 count() { < /dev/stdin sort | uniq -c | sort -n; }           # i have done this too many times
@@ -2363,6 +2447,7 @@ desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # remove seconds, f
 join2() { < /dev/stdin paste -d " " - -; }
 largs() { < /dev/stdin xargs --delimiter='\n' "$@"; } # split xargs by newline instead of space
 line() { < /dev/stdin sed -n "${1}p"; }
+lower() { < /dev/stdin tr '[:upper:]' '[:lower:]'; }
 mean() { < /dev/stdin awk '{ sum += $0; n++ } END { if (n > 0) print sum / n; }'; } # https://stackoverflow.com/a/19149931
 paren() { < /dev/stdin prepend '(' | append ')'; }
 prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
@@ -2668,6 +2753,25 @@ wnm() {
 }
 
 # }}}
+
+sqcl() {
+	: squash claude memories into config dir
+	# https://code.claude.com/docs/en/memory#storage-location
+	# not officially xdg compliant https://github.com/anthropics/claude-code/issues/1455
+	#
+	# currently in a weird state where some memories are in xdg, some not
+	cat ~/.claude/projects/*/memory/* ~/.config/claude/projects/*/memory/* |
+		perl -0777 -pe 's/([^\n])\n([^\n])/$1 $2/g' | # squash each paragraph to single line
+		grep -P '^[A-Z]' |
+		prepend '- ' |
+		tee ~/.claude/CLAUDE.md
+
+	# symlink all projects to use global file
+
+	for f in ~/.config/claude/projects/*/memory/MEMORY.md; do
+		ln -vsf ~/.claude/CLAUDE.md "$f"
+	done
+}
 
 # erw() {
 # 	: determine stopping points along a gpx route
