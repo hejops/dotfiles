@@ -27,6 +27,15 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 	end,
 })
 
+-- without schedule, BufReadPost is too early
+vim.api.nvim_create_autocmd("BufReadPost", {
+	callback = function()
+		vim.schedule(function()
+			pcall(vim.treesitter.start)
+		end)
+	end,
+})
+
 -- highlight yanked text
 vim.api.nvim_create_autocmd("TextYankPost", {
 	callback = function()
@@ -117,6 +126,17 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 	end,
 })
 
+-- vim.api.nvim_create_autocmd("BufWritePost", {
+-- 	callback = function()
+-- 		if vim.bo.filetype ~= "sh" then
+-- 			return
+-- 		end
+-- 		-- vim.cmd
+-- 		os.execute([[sed -i -r ' s/\t(if) ([<])/\t\1\n\2/g ' ]] .. vim.fn.expand("%"))
+-- 		vim.cmd("e")
+-- 	end,
+-- })
+
 local function md_to_pdf()
 	local _in = vim.fn.expand("%") -- basename!
 	local out = string.gsub(_in, "%.md", ".pdf")
@@ -140,11 +160,11 @@ local function md_to_pdf()
 	end
 end
 
--- compile md -> pdf
-vim.api.nvim_create_autocmd("BufWritePost", {
-	pattern = { "*.md" },
-	callback = md_to_pdf,
-})
+-- -- compile md -> pdf
+-- vim.api.nvim_create_autocmd("BufWritePost", {
+-- 	pattern = { "*.md" },
+-- 	callback = md_to_pdf,
+-- })
 
 vim.api.nvim_create_autocmd({ "WinEnter" }, {
 	callback = function(event)

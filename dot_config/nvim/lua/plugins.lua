@@ -53,18 +53,36 @@ local cfg = { -- {{{
 	-- },
 } -- }}}
 
+-- ~/.local/share/nvim/site/pack/core/opt
+
+-- if vim.version().minor >= 12 then
+for _, repo in pairs({
+
+	"aymericbeaumet/vim-symlink", -- TODO: can this just be an autocmd?
+	"romainl/vim-cool", -- clear highlight after search
+	"tpope/vim-repeat",
+	"tpope/vim-surround",
+}) do
+	vim.pack.add({ { src = "https://github.com/" .. repo } }) -- only installs
+	local x, _ = repo:gsub(".+/", "")
+	vim.cmd.packadd(x)
+	-- require(x).setup({}) -- no
+end
+-- end
+
+-- vim.opt.termguicolors = true
+-- vim.pack.add({ { src = "https://github.com/stevearc/conform.nvim" } })
+-- vim.cmd.packadd("conform.nvim")
+-- require("conform").setup({})
+
 require("lazy").setup( --
 	{
 
 		-- essentials {{{
 
-		"aymericbeaumet/vim-symlink", -- TODO: can this just be an autocmd?
-		"mfussenegger/nvim-lint",
-		"romainl/vim-cool", -- clear highlight after search
+		"mfussenegger/nvim-lint", -- plugins that later involve require(foo) cannot trivially be moved to vim.pack
 		"stevearc/conform.nvim",
-		"tpope/vim-fugitive",
-		"tpope/vim-repeat",
-		"tpope/vim-surround",
+		"tpope/vim-fugitive", -- same for plugins that declare Commands
 		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} },
 		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
 
@@ -696,6 +714,8 @@ require("lazy").setup( --
 				},
 			},
 
+			-- https://github.com/catgoose/nvim/blob/3e28809767c88833175a59b4b91fad38ba81460c/lua/plugins/treesitter.lua#L134
+			-- https://github.com/tom-doerr/dotfiles/blob/4e467289fcacada15d0a75a39d62cf25ac226f78/CLAUDE.md?plain=1#L218
 			config = function()
 				require("nvim-treesitter").setup({
 
@@ -845,7 +865,8 @@ require("lazy").setup( --
 		-- underline current word (not highlight, not bold)
 
 		"hejops/kwrite-theme-nvim",
-		"sebasruiz09/fizz.nvim",
+		"kcayme/bearded-arc.nvim",
+		"kimjbaran/voyager.nvim", -- wcag aaa
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "bgwdotdev/gleam-theme-nvim", -- not enough contrast
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
@@ -854,9 +875,10 @@ require("lazy").setup( --
 		-- "iagorrr/noctis-high-contrast.nvim",
 		-- "maya-sama/kawaii.nvim", -- unreadable diff
 		-- "michaelfresco/space-terminal.nvim", -- highlight current
-		-- "miikanissi/modus-themes.nvim", -- very good, but has light
+		-- "miikanissi/modus-themes.nvim", -- wcag aaa, but has light
 		-- "mistweaverco/retro-theme.nvim", -- good, except for unreadable inactive tab
 		-- "olivercederborg/poimandres.nvim", -- dim line column
+		-- "sebasruiz09/fizz.nvim", -- bad at markdown links
 		-- "sonya-sama/kawaii.nvim", -- dims current line
 		-- "thejian/nvim-moonwalk", -- unreadable git status
 
