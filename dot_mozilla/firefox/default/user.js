@@ -323,7 +323,7 @@ user_pref("network.http.max-persistent-connections-per-server", 8);
 user_pref("network.http.pipelining", true);
 user_pref("network.http.pipelining.maxrequests", 8);
 user_pref("network.http.proxy.pipelining", true);
-user_pref("network.http.referer.XOriginPolicy", 2);
+user_pref("network.http.referer.XOriginPolicy", 0); // need 0 for osm
 user_pref("network.http.referer.XOriginTrimmingPolicy", 2);
 user_pref("network.http.request.max-start-delay", 0);
 user_pref("network.http.speculative-parallel-limit", 0);
@@ -399,7 +399,7 @@ user_pref("security.dialog_enable_delay", 0);
 user_pref("security.sandbox.content.level", 3);
 user_pref("services.blocklist.clock_skew_seconds", 0);
 user_pref("services.settings.clock_skew_seconds", 0);
-user_pref("sidebar.animation.duration-ms", 0);
+user_pref("sidebar.animation.duration-ms", 0); // sidebar can be stuck in either state, but esc forces collapse
 user_pref("sidebar.animation.enabled", false);
 user_pref("sidebar.animation.expand-on-hover.duration-ms", 0);
 user_pref("sidebar.backupState", '{"panelOpen":false,"launcherWidth":240,"expandedLauncherWidth":240,"launcherExpanded":true,"launcherVisible":true}'); // biome-ignore format:x
