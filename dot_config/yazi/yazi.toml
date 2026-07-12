@@ -5,7 +5,7 @@
 # TODO: disable icons
 # TODO: color scheme
 
-[manager]
+[mgr]
 linemode       = "size"      # what gets displayed next to items
 ratio          = [ 0, 2, 3 ] # array must contain 3 items
 scrolloff      = 5
@@ -16,25 +16,30 @@ sort_dir_first = false
 sort_reverse   = true
 sort_sensitive = false
 
+# sixel_fraction  = 15
 [preview]
 cache_dir       = ""
 image_filter    = "triangle"
 image_quality   = 75
 max_height      = 900
 max_width       = 600
-sixel_fraction  = 15
 tab_size        = 2
 ueberzug_offset = [ 0, 0, 0, 0 ]
 ueberzug_scale  = 1
 
 [opener]
-edit = [ { run = '$EDITOR "$@"', desc = "$EDITOR", block = true, for = "unix" } ]
+
+gpxsee = [ #
+  { run = 'notify-send "$(mimetype "$@")"; gpxsee "$@"', orphan = true, for = "unix" },
+]
+
+# edit = [ { run = '$EDITOR "$@"', desc = "$EDITOR", block = true, for = "unix" } ]
 
 open = [
   # { run = 'feh -dFZ "$@"', desc = "Open", for = "linux" },
   # i like that mimeapps is easily configurable, but i don't like that you can't (?) specify args
-  { run = 'mimeopen "$@"', desc = "Open", for = "linux" }, # ~/.config/mimeapps.list
-  { run = 'xdg-open "$@"', desc = "Open", for = "linux" },
+  { run = 'mimeopen "$@"', for = "linux" }, # ~/.config/mimeapps.list
+  { run = 'xdg-open "$@"', for = "linux" },
 ]
 
 reveal = [ #
@@ -50,26 +55,32 @@ play = [ #
 ]
 
 [open]
-rules = [ #
-  { name = "*/", use = [ "edit", "open", "reveal" ] },
-  { mime = "text/*", use = [ "edit", "reveal" ] },
-  { mime = "image/*", use = [ "open", "reveal" ] },
-  { mime = "{audio,video}/*", use = [ "play", "reveal" ] },
-  { mime = "inode/x-empty", use = [ "edit", "reveal" ] },
-  { mime = "application/epub+zip", use = [ "open" ] },
+rules = [
+  # only mime, not name
+  # yazi uses file -bL --mime-type, not mimetype
+  # to force real mime, use https://github.com/yazi-rs/plugins/tree/main/mime-ext.yazi
+
   { mime = "application/*zip", use = [ "extract", "reveal" ] },
-  { mime = "application/x-{tar,bzip*,7z-compressed,xz,rar}", use = [ "extract", "reveal" ] },
+  { mime = "application/epub+zip", use = [ "open" ] },
   { mime = "application/json", use = [ "edit", "reveal" ] },
+  { mime = "application/x-{tar,bzip*,7z-compressed,xz,rar}", use = [ "extract", "reveal" ] },
+  { mime = "inode/x-empty", use = [ "edit", "reveal" ] },
+  { mime = "text/xml", use = [ "gpxsee" ] },                                                  # WARN: matches normal xml
+
   { mime = "*/javascript", use = [ "edit", "reveal" ] },
+  { mime = "image/*", use = [ "open", "reveal" ] },
+  { mime = "text/*", use = [ "edit", "reveal" ] },
+  { mime = "{audio,video}/*", use = [ "play", "reveal" ] },
+
   { mime = "*", use = [ "open", "reveal" ] },
 ]
 
+# macro_workers    = 25
+# micro_workers    = 10
 [tasks]
 bizarre_retry    = 5
 image_alloc      = 536870912 # 512MB
 image_bound      = [ 0, 0 ]
-macro_workers    = 25
-micro_workers    = 10
 suppress_preload = false
 
 [plugin]
@@ -91,7 +102,17 @@ suppress_preload = false
 # apparently, most file previews just work ootb, which is quite good
 # TODO: epub (bsdtar), mp3/flac/etc (mediainfo)
 
-prepend_previewers = [ { mime = "audio/*", run = "media" } ]
+preloaders = [
+  # { name = "*", cond = "!mime", run = "mime", multi = true, prio = "high" },
+  { mime = "video/*", run = "video" },
+]
+
+prepend_previewers = [
+
+  { mime = "application/subrip", run = "mediainfo" }, #
+  { mime = "audio/*", run = "media" },
+  # { mime = "video/*", run = "noop" },
+]
 
 [input]
 cd_offset        = [ 0, 2, 50, 3 ]
