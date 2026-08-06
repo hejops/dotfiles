@@ -366,7 +366,57 @@ local function keys()
 		{ mods = "CTRL", key = "PageDown", action = act.DisableDefaultAssignment },
 		{ mods = "CTRL", key = "PageUp", action = act.DisableDefaultAssignment },
 		{ mods = "CTRL", key = "Tab", action = act.DisableDefaultAssignment },
-		{ mods = "CTRL", key = "g", action = act(hint_url) },
+		{
+			mods = "CTRL",
+			key = "g",
+			-- action = act(hint_url),
+			action = wezterm.action_callback(function(window, pane)
+				local text = pane:get_lines_as_text(pane:get_dimensions().viewport_rows)
+				if not text:match("…") then -- … comes from vim?
+					-- no urls were wrapped
+					window:perform_action(act(hint_url), pane)
+					return
+				end
+				text = text:gsub("%s+…", "")
+				-- wezterm.log_info("Unwrapped text (first 200 chars): " .. unwrapped:sub(1, 200))
+
+				local urls = {}
+				for url in text:gmatch("https?://[^%s]+") do
+					table.insert(urls, url)
+					wezterm.log_info("Found URL: " .. url)
+				end
+
+				if #urls == 0 then
+					return
+				end
+
+				if #urls == 1 then
+					-- wezterm.log_info("Opening single URL: " .. urls[1])
+					wezterm.open_with(urls[1])
+					return
+				end
+
+				-- Multiple URLs: use InputSelector
+				local choices = {}
+				for i, url in ipairs(urls) do
+					table.insert(choices, { label = url, id = tostring(i) })
+				end
+
+				window:perform_action(
+					wezterm.action.InputSelector({
+						action = wezterm.action_callback(function(_, _, id, label)
+							if id then
+								-- wezterm.log_info("Selected: " .. label)
+								wezterm.open_with(label)
+							end
+						end),
+						choices = choices,
+						title = "Open URL",
+					}),
+					pane
+				)
+			end),
+		},
 		-- { mods = "CTRL", key = "t", action = SpawnTabNext() },
 		-- { mods = "CTRL", key = "z", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
 		{ mods = "WIN", key = "f", action = act.DisableDefaultAssignment },
