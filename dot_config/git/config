@@ -87,7 +87,7 @@
 	conflictstyle = zdiff3	; smarter diff3 https://ductile.systems/zdiff3/
 
 [pull]
-	rebase = false		; always decide how to handle merges
+	rebase = true		; there is little downside to always rebasing
 
 [push]
 	autoSetupRemote = true
