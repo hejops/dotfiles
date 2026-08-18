@@ -762,7 +762,6 @@ require("lazy").setup( --
 					"lua",
 					"markdown",
 					"markdown_inline",
-					"muttrc",
 					"nginx",
 					"python",
 					"rasi",
@@ -779,6 +778,7 @@ require("lazy").setup( --
 					-- "htmldjango",
 					-- "jsonc", -- not supported in nvim v0.12
 					-- "latex", -- requires tree-sitter-cli
+					-- "muttrc",
 					-- "scheme",
 				})
 
@@ -866,7 +866,7 @@ require("lazy").setup( --
 
 		"hejops/kwrite-theme-nvim",
 		"kcayme/bearded-arc.nvim",
-		"kimjbaran/voyager.nvim", -- wcag aaa
+		-- "kimjbaran/voyager.nvim", -- wcag aaa
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "bgwdotdev/gleam-theme-nvim", -- not enough contrast
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
