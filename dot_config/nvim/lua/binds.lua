@@ -52,6 +52,59 @@ vim.keymap.set("n", "zx", function()
 	vim.cmd.norm("gg")
 end)
 
+-- show glab diff
+-- caveat: prints output, then scrolls to top
+vim.keymap.set("n", "<leader>md", function()
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_open_win(buf, true, {
+		relative = "editor",
+		width = math.floor(vim.o.columns * 0.9),
+		height = math.floor(vim.o.lines * 0.9),
+		row = math.floor(vim.o.lines * 0.05),
+		col = math.floor(vim.o.columns * 0.05),
+		style = "minimal",
+		border = "rounded",
+	})
+	vim.fn.jobstart("glab mr diff | delta --paging=never", {
+		term = true,
+		on_exit = function()
+			vim.schedule(function()
+				vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-\\><C-n>gg", true, false, true), "n", false)
+			end)
+		end,
+	})
+	vim.keymap.set("n", "q", "<cmd>close<cr>", { buffer = buf })
+end)
+
+-- rename current buffer
+vim.keymap.set("n", "<leader>R", function()
+	vim.cmd("w") -- otherwise old file remains
+
+	local old = vim.api.nvim_buf_get_name(0)
+	if old == "" then
+		vim.notify("buffer has no file name", vim.log.levels.ERROR)
+		return
+	end
+
+	vim.ui.input({ prompt = "rename to: ", default = old }, function(new)
+		if not new or new == "" or new == old then
+			return
+		end
+
+		local ok = os.execute(string.format("git mv -- %q %q 2>/dev/null", old, new))
+		if ok ~= 0 then
+			ok = os.execute(string.format("mv -- %q %q", old, new))
+		end
+		if ok ~= 0 then
+			vim.notify("rename failed", vim.log.levels.ERROR)
+			return
+		end
+
+		vim.cmd("keepalt edit " .. vim.fn.fnameescape(new))
+		vim.cmd("bdelete " .. vim.fn.bufnr(old))
+	end)
+end)
+
 vim.keymap.set("n", "z|", function()
 	-- duplicate buffer in split (invaluable for merge conflict)
 	local ln = vim.fn.line(".")
