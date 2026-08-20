@@ -1,5 +1,20 @@
 -- vim.cmd("autocmd BufNewFile,BufRead *.h setlocal filetype=c")
 
+vim.api.nvim_create_autocmd("VimLeave", {
+	callback = function()
+		vim.cmd("mksession! ~/.config/nvim/session.vim")
+	end,
+})
+
+vim.api.nvim_create_autocmd("VimEnter", {
+	nested = true,
+	callback = function()
+		if vim.fn.argc() == 0 then
+			vim.cmd("source ~/.config/nvim/session.vim")
+		end
+	end,
+})
+
 vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "set nocursorline | norm zz" })
 vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 
