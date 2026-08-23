@@ -120,7 +120,8 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 vim.api.nvim_create_autocmd("BufWritePost", {
 	pattern = vim.fn.expand("~") .. "/.ssh/config",
 	callback = function()
-		os.execute([[sed -i -r 's/^[ \t]*/\t/g; s/^\t(Host .+)?$/\1/' ]] .. vim.fn.expand("%"))
+		-- TODO: move to conform
+		os.execute([[sed -r -i 's/^[ \t]*/\t/g; s/^\t(Host .+)?$/\1/' ]] .. vim.fn.expand("%"))
 		vim.cmd("e")
 	end,
 })
@@ -201,6 +202,10 @@ vim.api.nvim_create_autocmd("BufNewFile", {
 	callback = function()
 		local parent = vim.fn.expand("%:p:h")
 		if vim.uv.fs_stat(parent) then
+			return
+		end
+
+		if parent:match("%$") then
 			return
 		end
 
