@@ -191,11 +191,6 @@ fi
 # }}}
 # aliases {{{
 
-# alias dr=discogs_rate
-# alias lc=leetcode.py # shadows lc binary (who?)
-# alias mb=musicbrainz
-# alias trk=trackratings.py
-# alias wd=waitdie
 alias ex=extract
 alias gm=getmail
 alias met=metronome
@@ -204,11 +199,11 @@ alias sk=slock
 alias tt=taptempo
 alias xo=xdg-open
 
-alias rab='exec yazi "$HDD/books"'
-alias rad='exec yazi "$SLSK/complete"' # TODO: investigate `ya pub`
-alias rag='exec yazi "$HDD/guitar"'
-alias ram='exec yazi "$MU"'
-alias rat='exec yazi "$HDD/movies"' # "$HDD/torrent"
+alias rab='exec lf "$HDD/books"'
+alias rad='exec lf "$SLSK/complete"' # TODO: investigate `ya pub`
+alias rag='exec lf "$HDD/guitar"'
+alias ram='exec lf "$MU"'
+alias rat='exec lf "$HDD/movies"' # "$HDD/torrent"
 
 # alias dA="dc artist:"
 # alias dc="discogs_collection filter"
@@ -260,12 +255,7 @@ mem() {
 		awk '{print $0/1000000}' # bc does not handle floats
 }
 
-# alias y="bash ~/gripts/disq/ytm.sh"
-
-y() {
-	vol 30
-	bash ~/gripts/disq/ytm.sh
-}
+alias y="vol 30; bash ~/gripts/disq/ytm.sh"
 
 EXA_ARGS=(
 
@@ -516,28 +506,55 @@ ytm() {
 	"$EDITOR" +startinsert "$f"
 
 	while
-		yt-dlp 'ytsearch1:foo' --get-id 2>&1 | grep -q "Sign in to confirm you’re not a bot."
+		yt-dlp 'ytsearch1:foo' --get-id 2>&1 |
+			grep -q "Sign in to confirm you’re not a bot."
 	do
 		"$EDITOR" "$f"
 	done
 
 	waitdie mpv
 
-	all_ids=
-	while read -r query; do
-		echo "$query"
+	_search() {
+		# TODO: WEB returns more results? (4x)
 		curl -sL 'https://music.youtube.com/youtubei/v1/search' \
 			-H 'Content-Type: application/json' \
-			--data-raw '{"context":{"client":{"clientName":"WEB_REMIX","clientVersion":"1.20240904.01.01"}},"query":"'"$query"'","params":"EgWKAQIIAWoSEAMQBBAJEA4QChAFEBEQEBAV"}' |
-			gron |
+			--data-raw '{"context":{"client":{"clientName":"WEB_REMIX","clientVersion":"1.20240904"}},"query":"'"$query"'"}' |
 			grep videoId |
-			cut -d'"' -f2 |
-			uniq |
+			cut -d'"' -f4 |
+			uniq
+	}
+
+	all_ids=""
+	while read -r query; do
+		echo "$query"
+
+		if
+			# a b c d/e/f
+			# caveat: terms in the slash part must not contain
+			# space; otherwise we would never know how to split
+			# correctly
+			<<< "$query" grep -Fq /
+		then
+			front=$(<<< "$query" awk '{$NF==""; print $0}')
+			<<< "$query" awk '{print $NF}' |
+				tr / '\n' |
+				prepend "$front" |
+				while read -r q; do
+					_search "$q" | head -n1
+				done |
+				# xargs -I{} mpv --video=no 'https://youtube.com/watch?v={}'
+				prepend 'https://youtube.com/watch?v=' |
+				xargs mpv --video=no
+			continue
+		fi
+
+		_search "$query" |
 			while read -r id; do # deduplicate across queries; somewhat useful i guess?
 				<<< "$all_ids" grep -Fqw -- "$id" && continue
 				all_ids+=" $id"
 				echo "$id"
 			done |
+			# xargs -I{} mpv is not correct
 			prepend 'https://youtube.com/watch?v=' |
 			xargs mpv --video=no
 	done < "$f"
@@ -582,8 +599,8 @@ gdns() { gdn -U0 <(sort -u "$1") <(sort -u "$2"); } # sort lines and diff
 gls() { git ls-files "${1:-.}"; }
 glsat() { git ls-tree -r --name-only "${1:-HEAD}"; } # https://superuser.com/a/429694
 
-_get_remote() { git config --get remote.origin.url; }
 _git_current_branch() { git branch --show-current; }
+_git_remote() { git config --get remote.origin.url; }
 _in_git_repo() { git rev-parse --is-inside-work-tree > /dev/null 2> /dev/null; }
 
 _get_repo_root() {
@@ -608,31 +625,6 @@ git_root() {
 		cd "$REPO" || :
 	fi
 }
-
-# gh() {
-# 	# TODO: better handled in vim
-#
-# 	_git_http() {
-# 		url=$1
-# 		if [[ $url == http* ]]; then
-# 			echo "$url"
-# 		else
-# 			tr <<< "$url" : / | sed -r 's|git@|https://|; s|.git$||'
-# 		fi
-# 	}
-#
-# 	: open remote url
-#
-# 	if ! repo=$(_get_remote); then
-# 		echo "Current repo has no remote"
-# 		return
-# 	fi
-#
-# 	url=${repo%*.git}
-# 	url=$(_git_http "$url")
-# 	echo "$url"
-# 	xdg-open "$url"
-# }
 
 # }}}
 # git history {{{
@@ -1526,9 +1518,6 @@ gmw() {
 		jq -r 'sort_by(.merged_at)[]|select(.merged_at>="'"$(date --date='1 week ago' -I)"'")|[.iid,.title]|@tsv'
 }
 
-# apt 1.36
-# snap 1.43/1.54, but cannot read config file (lol)
-
 gld() {
 	# note: to see diff of current branch, just use gdm
 	[[ $PWD != *$REPO* ]] && cd "$REPO"
@@ -1649,45 +1638,6 @@ gljl() {
 		jq ".[]|select(.ref==\"$(_git_current_branch)\")|.id" |
 		fzf --preview="f {} $job" --preview-window='right,95%,border' --reverse --tac
 	unset f
-}
-
-gll() {
-	: like b, but better?
-
-	# shellcheck disable=SC2329
-	render() {
-		# slow (up to 2 s); 2 glab calls
-
-		j=$(cat /dev/stdin |
-			xargs glab mr list --output=json --source-branch |
-			jq .[])
-
-		ci_pass=$(<<< "$j" jq -r .source_branch |
-			xargs glab ci get --output=json --branch |
-			jq -r '.status=="success"')
-
-		coms=$(<<< "$j" jq -r .iid |
-			xargs glab mr view -c --output=json --per-page=9999 |
-			jq -r '.Notes[]|select(.type=="DiffNote" or .type=="DiscussionNote")|{created_at,body,author:.author.username,pos:.position.line_range.start.line_code,resolved}' |
-			jq -s 'sort_by(.pos,.created_at)')
-
-		coms_r=$(echo "$coms" |
-			jq '
-				def grouped: group_by(.pos);
-				def tot: grouped|length;
-				def unresolved: tot-([grouped[] | map(.resolved)[0]]|length);
-				"\(unresolved)/\(tot)"
-			')
-
-		<<< "$j" jq '{iid,title,no_conflicts:.has_conflicts|not}|.ci_pass='"$ci_pass"'|.comments='"$coms_r"
-	}
-
-	export -f render
-	glab mr list --output=json --not-label=stale --assignee=@me |
-		jq -cr '.[]|"\(.iid)\t\(.source_branch)\t\(.title)"' |
-		colt |
-		fzf --preview="echo {} | awk '{print \$2}' | render" --preview-window='right,60%,border'
-	# TODO: accept -> b
 }
 
 # }}}
@@ -1818,53 +1768,6 @@ tsc() {
 	"$cmd" "$@"
 }
 
-# jimp() {
-# 	: add all found dependencies -- use with caution
-# 	rg -t ts -Io ' from "[^:/]+";$' |
-# 		sort -u |
-# 		cut -d'"' -f2 |
-# 		while read -r pkg; do
-# 			< package.json grep -Fq "\"$pkg\"" || echo "$pkg"
-# 		done |
-# 		xargs pnpm add
-# }
-
-jx() {
-	pkgmgr() {
-		if [[ -f yarn.lock ]]; then
-			echo yarn
-		elif [[ -f $(_get_repo_root)/pnpm-lock.yaml ]]; then
-			echo pnpm
-		else
-			echo npm
-		fi
-
-	}
-
-	cmd=$(< package.json jq -r .scripts | grep : | fzh | cut -d'"' -f2)
-	[[ -n $cmd ]] && "$(pkgmgr)" "$cmd"
-}
-
-jmake() {
-	: convert scripts to Makefile
-
-	keys=$(< package.json jq -r '.scripts | keys[]')
-
-	cmds=$(echo "$keys" |
-		while read -r cmd; do
-			echo "${cmd//:/-}:" # make targets cannot contain :
-			< package.json jq -r '.scripts."'"$cmd"'"' |
-				sed 's/&& /\n/g; s/\"/"/g' |
-				prepend '\t'
-			echo
-		done)
-
-	cat <<- EOF | tee -a Makefile
-		.PHONY: $(<<< "$keys" tr : - | xargs)
-		$cmds
-	EOF
-}
-
 jup() {
 	# https://stackoverflow.com/a/47948461
 	_js_pkgs() { < package.json jq -r '[.dependencies, .devDependencies] | add | keys[]'; }
@@ -1985,45 +1888,6 @@ sqt() {
 		fzf --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 }
 
-psch() {
-	# psql \d+ is too verbose, so we must use pg_dump
-
-	while read -r line; do
-		eval "$line"
-	done <<< "$(rg --hidden '^POSTGRES' "$REPO" |
-		grep -v -e template -e Makefile -e .sh |
-		cut -d: -f2-)"
-
-	# env has all the correct values, but domain:port is wrong. the
-	# mapping is found in a docker-compose.yml
-
-	inner_port=$(<<< "$POSTGRES_URL" grep -Po '\d+') || return
-	outer_port=$(rg -Iom1 "\d+:$inner_port" "$REPO" | # one can only hope the correct file is selected
-		head -n1 |
-		cut -d: -f1)
-	POSTGRES_URL=$(<<< "$POSTGRES_URL" sed -r "s|@[^/]+|@localhost:$outer_port|")
-
-	# getting the quoting right is extremely difficult, so just
-	# dump to file
-	pg_dump --schema-only "$POSTGRES_URL" > /tmp/s
-
-	# new tables will not be in schema file
-	prefix='CREATE TABLE (public\.)?'
-
-	# TODO: sqruff would be nice...
-	prv_cmd="cat /tmp/s | sed -rn '/$prefix{} /,/\);/p' | bat --color always --style=auto --language=sql 2>/dev/null"
-
-	tbl=$(psql "$POSTGRES_URL" -c '\dt' |
-		awk 'NR>3{print $3}' |
-		grep . |
-		fzf --preview="$prv_cmd" \
-			--preview-window='right,60%,border' --ansi) || return
-
-	rg -l "$prefix$tbl" "$REPO" |
-		head -n1 |
-		xargs nvim +'/\v'"$prefix\.$tbl"
-}
-
 sqq() {
 	: view sqlc queries
 	# TODO: this needs to be in vim
@@ -2136,50 +2000,6 @@ dolc() {
 	# dolf "$name"
 }
 
-doslow() {
-	: list slowest steps in a docker log
-
-	if [[ $# -eq 0 ]]; then
-		# devc logs
-		grep -RPh '\d+/\d+\]' .config/Code/logs/*/window1/exthost/ms-vscode-remote.remote-containers |
-			grep -P '\d{3,}\.\ds$' |
-			cut -d= -f2- |
-			sort -nr |
-			sort -u |
-			# dedup by step
-			while read -r line; do
-				step=$(<<< "$line" cut -d' ' -f2)
-				if ! <<< "$prev" grep -Fq "$step"; then
-					echo "$prev"
-				fi
-				prev=$line
-			done |
-			awk '{print $NF,$0}' |
-			sort -nr |
-			cut -f2- -d' '
-
-		return
-	fi
-
-	if
-		steps=$(< "$1" grep -P '^#\d+ DONE' |
-			sort -Vu |
-			awk '!a[$1]++') &&
-			[[ -n $steps ]]
-	then
-		paste <(echo "$steps") \
-			<(<<< "$steps" cut -d' ' -f1 |
-				while read -r n; do
-					< "$1" grep "$n" |
-						tac |
-						grep -Pm1 "$n \[" |
-						cut -d' ' -f2-
-				done)
-	else
-		echo all ok
-	fi
-}
-
 dorm() {
 	docker stop "$@"
 	docker rm "$@"
@@ -2259,21 +2079,6 @@ bb() {
 	echo "copied password for $name"
 	unset j
 }
-
-# rsync ~/.config/readline/inputrc "$remote:$HOME/.inputrc"
-# ssh "$remote" 'touch ~/.hushlogin' # suppress annoying ubuntu login msg
-
-# sget() {
-# 	remote=$1
-# 	if [[ -f $1 ]]; then
-# 		rsync --no-relative --files-from="$1" "$remote:/" .
-# 	else
-# 		rsync --exclude=".*/" "$remote:$1" .
-# 	fi
-# }
-
-# sget() { rsync --exclude=".*/" "$1:$2" .; }
-# sput() { rsync --exclude=".*/" "$2" "$1:~/"; }
 
 # https://gist.github.com/cmbaughman/6a2ae275e0c0f39f42d95a728e07f796
 # https://www.redhat.com/sysadmin/ssh-automation-sshpass
@@ -2356,14 +2161,12 @@ ffconcat() {
 		return
 	fi
 
-	# TODO: err if filename has '
-
 	# https://trac.ffmpeg.org/wiki/Concatenate#Automaticallygeneratingtheinputfile
 	ext=$(<<< "$1" awk -F. '{print $NF}')
 	files=$(\ls -1 "$@" |
 		largs realpath |
-		sed "s/'/'\\\''/" |
-		largs -I{} echo "file '{}'" | # single quotes must be preserved
+		grep -vw conc |
+		while read -r file; do printf "file %q\n" "$file"; done |
 		sort)
 	# https://old.reddit.com/r/ffmpeg/comments/rt8twk/_/hqrfm6y/
 	ffmpeg -f concat -safe 0 -i <(echo "$files") -map 0:v -map 0:s? -map 0:a -c copy "$1.conc.$ext" #&& rm -iv "$@"
@@ -2401,8 +2204,9 @@ mw() {
 
 # ljoin() { < /dev/stdin tr '\n' , | sed 's/,$//'; } # lines to comma-delimited str (rare?)
 append() { < /dev/stdin awk "{print \$0 \"$1\"}"; }
-count() { < /dev/stdin sort | uniq -c | sort -n; }           # i have done this too many times
-desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; } # remove seconds, for ease of filtering logs
+count() { < /dev/stdin sort | uniq -c | sort -n; }             # i have done this too many times
+desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; }   # remove seconds, for ease of filtering logs
+heta() { < /dev/stdin awk 'NR==1 {print $0} END {print $0}'; } # first and last line
 join2() { < /dev/stdin paste -d " " - -; }
 largs() { < /dev/stdin xargs --delimiter='\n' "$@"; } # split xargs by newline instead of space
 line() { < /dev/stdin sed -n "${1}p"; }
@@ -2521,58 +2325,34 @@ get_cookie() {
 	rm tmp.db > /dev/null
 }
 
-sunpos() {
-	# azimuth 1.7 - 1.8(?)
-	# sun enters window as low as 1.35
-	{
-		curl -sL https://raw.githubusercontent.com/mourner/suncalc/refs/heads/master/suncalc.js |
-			sed -rn '$d; /easier/,$p'
-		echo "console.log(JSON.stringify(SunCalc.getPosition(new Date(), $(curl -sL "https://ipinfo.io" | jq -r .loc))))"
-	} | node
-}
-
 subs() {
 	# curl 'https://api3.subdl.com/auto?query=tt0152525' | jq -r .results[0].link
 
 	# https://cinemasubtitles.com (no search, need google)
 
-	# curl -s 'https://www.azsubtitles.com/api/search?q=laura+les+ombres' \
-	# 	-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0' \
-	# 	-H 'Cookie: cf_clearance=10WvuPKhcoe2bxhMww8wrqg.ieZEFj7Z1nWyQ_awjLU-1781021806-1.2.1.1-NXFLkWTtJBhCLuMg0Ftawyyqp5iPQsQy.gEPZ__xH4ZtQr8zLN5uMKV2Y0X3cmBakdPeTSpIt3wIYxL3PsIpPt.2y1hpg.3A5rA_GSPAGLwzmx2g9A0At2MOauGzRu0m.J_Dux6Xgx.cZElBZGXA.0J.S4jxrwiFqcOqM7mgJzoIon2uLhMpxWFT9KMsHM0TV6dKUE5taHXrwji4P3WoCLTpqcsOeSgcBJdu_G0Bnkhofk5PNfo5YmZJMuwlWbaHGvig7vHoUtucb3n7qsZxeBPFtvsumtd59EFfZqE9cCyrscC4kYukTppRgk1i4ntyqJosXrGrkq0ttpGXmcShDSz8wdWUn3TMIYuJmjtD7FOV6vkGDgx3SICQibTs4md7Xe34ZQHMr75o9KjhrUHfdEaQtoMA2C57.k0UjEWn8Ws'
-
 	set -x
-	cookie="Cookie: cf_clearance=$(get_cookie "name = 'cf_clearance' and host = '.azsubtitles.com'")"
-	args=(
-		-H "$cookie"
-		-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0'
-	)
 
-	# https://www.azsubtitles.com/restful-api
-	cd "$HDD/movies"
-	f=$(fzf --preview=)
-	c "${args[@]}" "https://www.azsubtitles.com/api/search?q=${1// /+}" | # TODO: fname -> infer title
-		grep . |
-		# tee /dev/stderr |
-		jq -er '.Items[0] | .UID' |
-		prepend 'https://www.azsubtitles.com/api/movie' |
-		xargs curl -sL "${args[@]}" | # TODO: doesn't work?
-		# File can contain a list of episodes, but we usually just want the first element
-		jq -er '.AllSubs[] | select(.Language.Title == "English") | .File[0].Url' |
-		prepend 'https://www.azsubtitles.com' |
-		# https://www.azsubtitles.com/data/2013/8/4/Andala Rakshasi (2012).[760692.andala.rakshasi.2012.english].srt
-		sort |
-		# head -n1 |
-		fzf -0 --preview="curl -sL --globoff {} | head -n50" |
-		sed -r 's/ /%20/g' |                         # url must be encoded
-		xargs curl "${args[@]}" --globoff > "$f.srt" # but also need globoff to ignore {}[]
+	# args=(
+	# 	-H "$cookie"
+	# 	-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/152.0'
+	# )
 
-	set +x
+	# https://www.azsubtitles.com/restful-api -- horrendous full text search
 
 	# # requires unzip
 	# c 'https://subf2m.co/subtitles/parivaar' |
 	# 	grep -Po "/subtitles/[^/]+/english/\d+" |
 	# 	prepend https://subf2m.co |
 	# 	append /download
+
+	# subf2m and opensubtitles support imdb id
+
+	cd "$HDD/movies"
+	f=$(find . |
+		grep -Fv .srt |
+		fzf --preview=)
+
+	set +x
 }
 
 inci() {
@@ -2611,7 +2391,25 @@ rewe() {
 	echo "sqrt( (${_x[0]}-${_x[1]})^2 + (${_x[2]}-${_x[3]})^2 )" | bc
 }
 
+get_sess_cookie() {
+	: session cookies cannot be retrieved with get_cookie
+	url=$1
+	data=$2
+	name=$3
+	curl "$url" \
+		--silent \
+		--cookie-jar - \
+		--output /dev/null \
+		--data-raw "$data" |
+		awk "\$6 == \"$name\" { print \$7 }"
+}
+
 # }}}
+
+# c "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&hourly=temperature_2m,precipitation,wind_speed_10m&models=dwd_icon_seamless&forecast_days=7" |
+# 	jq -r '.hourly|[.time,.temperature_2m]|transpose[]|@tsv' |
+# 	grep T18 |
+# 	sort -n -k2
 
 repeat() {
 	n=$1
@@ -2621,16 +2419,6 @@ repeat() {
 			time "$@"
 		done
 }
-
-# wt() {
-# 	c 'https://www.meteoblue.com/en/weather/week/dresden_germany_2935022' |
-# 		grep -Po -m28 '\d+(&nbsp;°C| km/h| h)' | # TODO: rainfall
-# 		dehtml |
-# 		awk '{if (NR%4==0) {print $0} else {printf "%s\t", $0}}' | # printf does not support + or ,
-# 		# head -n7 |
-# 		colt |
-# 		nl
-# }
 
 vib() {
 	: open vite page in browser
@@ -2912,6 +2700,15 @@ nmsr() {
 	# TODO: on select, reply to email?
 }
 
+nmrw() {
+	notmuch search --format=json "body:'kennen wir erst'" |
+		jq -r '.[].thread' |
+		while read -r t; do notmuch show --part=5 "$t" |
+			pdftotext - - |
+			grep -P '\d(g|m?l)$'; done |
+		count
+}
+
 # rgf redirect ~/.local/state/mpv/watch_later |
 # 	xargs rm
 
@@ -2959,6 +2756,8 @@ topa() {
 	# ~/gripts/disq is older, ~/disq is newer and uses sqlc. both use the
 	# same db (hardlinked). no attempt has been made to unify the two
 
+	# sqlite3 -table ~/disq/collection2.db "with five as (select * from albums where rating = 5) select max(name), title, year from five inner join albums_artists as aa on aa.album_id = five.id inner join artists on aa.artist_id = artists.id group by album_id order by name, title"
+
 	# shellcheck disable=SC2329
 	f() {
 		# because what's stopping me from just making another sqlite
@@ -2974,9 +2773,8 @@ topa() {
 
 	< ~/gripts/disq/queries/top_artists_by_top_n_ratings.sql sqlite3 -ascii -newline $'\n' -separator $'\t' \
 		~/gripts/disq/collection2.db 2> /dev/null |
+		# cut -f1 | sed -r 's/.*/[a=&]/' | tr '\n' / | sed 's|/| / |g'
 		fzf --reverse --no-sort --preview='echo {} | cut -f1 | f' --preview-window='right,60%,border'
-
-	# topa | cut -f1 | sed -r 's/.*/[a=&]/' | tr '\n' / | sed 's|/| / |g'
 
 	# fzf --preview='echo {} | cut -f1 | xargs -d"\n" ~/disq/disq -artist' --preview-window='right,60%,border'
 
@@ -3047,11 +2845,10 @@ randalb() { # {{{
 } # }}}
 
 lba() {
-	# curl -sL --fail "https://letterboxd.com/hejops$url" > /dev/null && continue
-
 	curl -sL -H 'User-Agent: M' -H 'TE: trailers' \
 		'https://letterboxd.com/ajax/activity-pagination/hejops/following/' |
-		grep -P 'rated-(8|9|10)' |
+		# grep -P 'rated-(8|9|10)' |
+		grep -P '(rated-(8|9|10)|★★★★)' |
 		grep -Po '/film/[^/]+' |
 		sort -u |
 		while read -r x; do
@@ -3181,60 +2978,36 @@ ya() { vol --auto && mpv --video=no "ytdl://ytsearch10:'$*'"; }
 yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '{title, description, webpage_url, channel_url}'; }
 yt() { vol --auto && mpv --force-window "ytdl://ytsearch10:'$*'"; }
 
-rand() { for x in "$@"; do echo "$x"; done | shuf -n1; }
-rng() {
-	_rng() { echo "$((1 + RANDOM % $1))"; }
-
-	prev=
-	for n in "$@"; do
-		if ((n != prev)); then
-			[[ -n $prev ]] && echo
-			echo -en "$n"
-		fi
-		echo -en "\t$(_rng "$n")"
-		prev=$n
-	done
-	echo
-}
+rand() { for x in "$@"; do echo "$x"; done | shuf -n1; } # random item from element
+rng() { echo "$((1 + RANDOM % $1))"; }
 
 pi() {
-	args=(
-		40 # dohn
-		90 # riem
-		52 # pach
+	echo dohn
+	rng 40
+
+	rand 772 776 784 787 869.1
+
+	items=(
+		riem:90                                              # 4 part
+		pach:52                                              # simple fugue
+		"$(rand fs:69 moz1:145 corelli:346)"                 # keyboard (mid)
+		"$(rand gold:32 wtc:48 brahms:178)"                  # keyboard (hard)
+		"$(rand ehre:254 roma:175 mess:264 matt:304 bm:163)" # choral+reduction
 	)
-	rng "${args[@]}" | shuf
 
-	rand gold:32 wtc:48 fs:69 moz1:145 | # keyboard
+	for _ in {1..2}; do
+		rand "${items[@]}" | # TODO: prevent repeat (might as well shuf -n2)
+			tee /dev/stderr |
+			# the fact that rng somehow takes stdin is kind of
+			# cursed; this is equivalent to `... | cut | xargs rng`
+			rng "$(cut -d: -f2)"
+	done
+	find ~/scores -type f |
 		shuf -n1 |
 		tee /dev/stderr |
-		# the fact that this is valid is kind of cursed
-		# this is equivalent to `... | cut | xargs rng`
-		rng "$(cut -d: -f2)"
-
-	{
-		rand ehre:254 roma:175        # choral
-		rand mess:264 matt:304 bm:163 # reduction
-	} |
-		shuf -n1 |
-		tee /dev/stderr |
-		rng "$(cut -d: -f2)"
-}
-
-ys() { # read youtube subs in less
-	yt-dlp -j "$1" |
-		jq . |
-		grep '=vtt' |
-		grep -v tlang |
-		tail -n1 | # auto subs are listed first
-		cut -d'"' -f4 |
-		xargs curl -sL |
-		dehtml |
-		grep -v -- '-->' |
-		grep -Pvx '\s*' |
-		tr '\n' ' ' |
-		fold --spaces |
-		less
+		largs pdfinfo 2> /dev/null |
+		awk '$1=="Pages:" {print $2}' |
+		rng "$(\xargs)"
 }
 
 nico() {
