@@ -162,25 +162,26 @@ ps --pid "$PPID" | grep -Fq wezterm &&
 # SSH_AUTH_SOCK=/home/joseph/.ssh/agent/s.CAJYxPkRy2.agent.QOE8rEUDrL
 # SSH_AGENT_PID=5221
 
-if
-	# note: ls foo bar fails if any arg does not exit
-	x=$(! ls /tmp/ssh-XXXXXX*/agent.* 2> /dev/null &&
-		# openssh v10.1
-		# https://www.openssh.org/txt/release-10.1
-		! ls ~/.ssh/agent/s.*.agent.* 2> /dev/null)
-then
-	# pkill ssh-agent # deletes all existing sockets
-	eval "$(ssh-agent -s)" > /dev/null
-fi
-
-if [[ -z $SSH_AUTH_SOCK ]]; then
+# TODO: use wezterm agent
+# https://wezterm.org/ssh.html
+if [[ -z $SSH_AUTH_SOCK || ! -f $SSH_AUTH_SOCK ]]; then
+	if
+		# note: ls foo bar fails if any arg does not exit
+		x=$(! ls /tmp/ssh-XXXXXX*/agent.* 2> /dev/null &&
+			# openssh v10.1
+			# https://www.openssh.org/txt/release-10.1
+			! ls ~/.ssh/agent/s.*.agent.* 2> /dev/null)
+	then
+		# pkill ssh-agent # deletes all existing sockets
+		eval "$(ssh-agent -s)" > /dev/null
+	fi
 	SSH_AUTH_SOCK=$(<<< "$x" head -n1)
 	export SSH_AUTH_SOCK
+	unset x
 fi
 
-unset x
-
 if
+	# note: if agent not started, produces different msg (stderr)
 	ssh-add -l | grep -Fq 'no identities'
 then
 	find ~/.ssh -name 'gitlab*' | grep -v .pub | \xargs ssh-add -q
@@ -314,7 +315,7 @@ vv() {
 
 	line=$(rg --hidden --line-number --no-heading . |
 		# https://news.ycombinator.com/item?id=45677142
-		fzf -d: -n 2.. --preview-window "right:50%:+{2}" --preview "bat --color=always --highlight-line {2} {1}")
+		fzf --query="${1:-}" --delimiter=: --nth=2.. --preview-window="right:50%:+{2}" --preview="bat --color=always --highlight-line {2} {1}")
 
 	[[ -z $line ]] && return
 
@@ -557,6 +558,7 @@ alias bv="b && v"
 alias cr=git_root
 alias gb=_git_branch # new branch
 alias gl=git_log
+alias gls="git ls-files"
 alias s=_git_commit # should increasingly be done in vim
 
 # discouraged due to double index keypresses: gt gf gb
@@ -578,7 +580,6 @@ gdns() { gdn -U0 <(sort -u "$1") <(sort -u "$2"); } # sort lines and diff
 # git info {{{
 # functions that only report info
 
-gls() { git ls-files "${1:-.}"; }
 glsat() { git ls-tree -r --name-only "${1:-HEAD}"; } # https://superuser.com/a/429694
 
 _get_remote() { git config --get remote.origin.url; }
@@ -772,7 +773,10 @@ v() { # {{{
 
 	# readarray avoids 'xargs nvim' wezterm bug
 	# https://github.com/wezterm/wezterm/issues/4287#issuecomment-3289326309
-	readarray -t f < <(git log --max-count=50 --no-merges --first-parent --name-only --pretty= |
+	readarray -t f < <({
+		git log --max-count=50 --first-parent --name-only --pretty= --no-merges origin/master...HEAD | grep . ||
+			git log --max-count=50 --first-parent --name-only --pretty=
+	} |
 		# TODO: filter deleted
 		grep -Fv -e .sql.go |
 		prepend "$(_get_repo_root)"/ |
@@ -914,7 +918,23 @@ _commit_or_discard() {
 		f=$(_get_repo_root)/$f
 		[[ -f $f ]] || continue
 		if
-			git commit -v --untracked-files=no "$f"
+
+			# NOTE: without </dev/tty, nvim opens extra buffer
+			#
+			# in nvim 0.12, if stdin is not a tty, nvim now reads
+			# stdin into a buffer automatically (previously it
+			# would ignore or error). This supports piping content
+			# into nvim (e.g. echo "hello" | nvim).
+			#
+			# The side effect is that the stdin that nvim does
+			# receive (from the parent process of nvim -- git in
+			# this case) gets slurped into a [No Name] buffer.
+			#
+			# because of this, we need to replace the pipe (stdin)
+			# with /dev/tty (the terminal), restoring default nvim
+			# behaviour.
+
+			git commit -v --untracked-files=no "$f" < /dev/tty
 		then
 			committed=0
 		else
@@ -980,14 +1000,14 @@ gc() {
 		! git diff --staged --diff-filter=AMD --quiet
 	then
 		: committing staged changes
-		"${cmd[@]}"
+		"${cmd[@]}" < /dev/tty
 
 	else
 		# 4. all files that have changed in the current dir
 		git diff --name-only . |
 			prepend "$(_get_repo_root)/" |
 			grep -v .gitignore |
-			xargs "${cmd[@]}"
+			xargs "${cmd[@]}" #< /dev/tty
 
 	fi
 }
@@ -1012,9 +1032,11 @@ _git_commit() {
 		EOF
 	)
 
-	status=$(git status --porcelain=2 --untracked-files=all)
-
-	[[ -z $status ]] && return
+	status=$(
+		# TODO: DU -> git rm?
+		git status --porcelain=2 --untracked-files=all | grep ^u ||
+			git status --porcelain=2 --untracked-files=all
+	) || return
 
 	# by default, git status does not enter dirs containing only 1
 	# (untracked) file
@@ -1022,16 +1044,11 @@ _git_commit() {
 	# 1 .M N... 100644 100644 100644 <hash> <hash> package.json
 	#   $2					       $NF
 	# ? README.md
-	#
-	# $2 is more useful for tracked files (since it more closely maps to v1
-	# labels), but for untracked files this duplicates the file path, so we
-	# stick to $1
-	#
-	# https://git-scm.com/docs/git-status#_changed_tracked_entries
-	#
-	# HACK: i have no idea how to 'return' multiple columns inside
-	# a ternary, so concat with a space as an ugly workaround
-	<<< "$status" awk '{print ($1=="?") ? $0 : $2" "$NF}' |
+	<<< "$status" awk '
+		/^\?/ { print; next }
+		/^2 R[.M]/ { print $2, $(NF-1); next }	# renames: show new path
+		{ print $2, $NF }
+	' |
 		fzf --multi --reverse --preview="$prv_cmd" --preview-window='right,60%,border' --ansi
 	# )
 	# fzh --multi --preview="$prv_cmd" --preview-window='right,60%,border' --ansi)
@@ -1044,6 +1061,7 @@ _git_commit() {
 gres() {
 	: finish resolving merge conflict and commit
 	# s | grep -v ^D | cut -c4- | largs git add
+	# TODO: not always -c4-
 	git status --porcelain | grep ^UU | cut -c4- | largs git add
 	git commit -v
 }
@@ -1093,7 +1111,10 @@ gRev() {
 		sha=$(_git_log_fzf "$@")
 	fi
 	git checkout -f "$sha" -- .
-	git commit -av
+	# TODO: Run :checkhealth in nvim to spot issues, or bisect by adding
+	# --cmd 'set noloadplugins' instead of --clean to narrow it down to a
+	# plugin vs core config issue.
+	GIT_EDITOR="nvim --clean" git commit -av
 }
 
 gcp() {
@@ -1105,7 +1126,6 @@ gcp() {
 gA() {
 	: unadd, unstage
 	# i usually want restore more often (?)
-	# set -x
 	git restore --staged "$@" \
 		2> /dev/null || # committed; without --staged, changes are discarded!
 		git reset "$@"  # not committed yet
@@ -1163,6 +1183,8 @@ alias gB=gbc
 alias gbc="git switch --create"
 
 gbr() {
+	# TODO: pull origin $branch
+
 	: switch to remote branch
 	git fetch --prune # useless, because we don't prune stale branches on remote
 
@@ -1176,7 +1198,7 @@ gbr() {
 		else
 			git switch "$1"
 		fi
-		git pull # not pulling causes bizarre problems when trying to gb
+		git pull origin "$1" # not pulling causes bizarre problems when trying to gb
 		return
 	fi
 
@@ -1255,12 +1277,10 @@ _git_branch() { # {{{
 			# relatively uncommon, and there are probably better ways to update master
 			# func retval is not propagated to parent
 			git checkout "$base_branch" || return 1
-			timeout 30 git pull
+			timeout 30 git pull origin "$base_branch"
 		fi
 		return
 	fi
-
-	# set -x
 
 	# TODO: does this pull?
 	commit_unstaged_changes "$base_branch"
@@ -1277,7 +1297,9 @@ _git_branch() { # {{{
 	else
 		# new local branch
 		git fetch origin
-		git switch --create "$new_branch" origin/master
+		# --no-track: don't set up "upstream" configuration, even if
+		# branch.autoSetupMerge is true
+		git switch --create "$new_branch" --no-track origin/master
 	fi
 
 	# # TODO: if local master 'ahead' of origin/master:
@@ -1298,8 +1320,9 @@ _git_branch() { # {{{
 			grep .) &&
 			((behind > 0))
 	then
-		git pull
+		git pull origin "$new_branch"
 	fi
+	set +x
 } # }}}
 
 _git_branch_fzf() {
@@ -1352,34 +1375,56 @@ gbd() {
 		awk '{print $1}' |
 		xargs -r git branch -D
 
-	# cleanup glab stack
-	branches=$(git branch | grep -P -- '-[0-9a-f]{8,}$')
-	jsons=$(find "$(_get_repo_root)/.git/stacked" -name '*json')
+	# # cleanup glab stack
+	# branches=$(git branch | grep -P -- '-[0-9a-f]{8,}$')
+	# jsons=$(find "$(_get_repo_root)/.git/stacked" -name '*json')
+	#
+	# echo "$jsons" |
+	# 	while read -r f; do
+	# 		hash=$(basename "$f" | cut -d. -f1)
+	# 		if
+	# 			! <<< "$branches" grep -Fqw "$hash"
+	# 		then
+	# 			echo "branch $hash was deleted"
+	# 			next_hash=$(< "$f" jq -r .next)
+	# 			next_json=$(<<< "$jsons" grep -Fqw "$next_hash")
+	# 			< "$next_json" jq '.prev=""' | sponge "$next_json"
+	# 			rm -v "$f"
+	# 		fi
+	# 	done
+}
 
-	echo "$jsons" |
-		while read -r f; do
-			hash=$(basename "$f" | cut -d. -f1)
+gbfix() {
+	: fix branches with upstream erroneously set to origin/master
+	git branch -vv |
+		grep -F '[origin/master' |
+		while read -r line; do
+			b=$(<<< "$line" tr -d '*' | awk '{print $1}')
 			if
-				! <<< "$branches" grep -Fqw "$hash"
+				# never pushed, or already merged to master
+				! git branch --set-upstream-to="origin/$b" "$b" 2> /dev/null |
+					grep -q 'does not exist'
 			then
-				echo "branch $hash was deleted"
-				next_hash=$(< "$f" jq -r .next)
-				next_json=$(<<< "$jsons" grep -Fqw "$next_hash")
-				< "$next_json" jq '.prev=""' | sponge "$next_json"
-				rm -v "$f"
+				git branch -D "$b"
 			fi
 		done
 }
 
 gbdo() {
-	: delete branches older than 60 days
+	# TODO:
+	# error: the branch '...' is not fully merged
+	# hint: If you are sure you want to delete it, run 'git branch -D ...'
+	# hint: Disable this message with "git config set advice.forceDeleteBranch false"
+
+	: delete branches older than 30 days
 	now=$(date +%s)
 	git branch --sort=committerdate |
 		while read -r b; do
-			epoch=$(git log -n1 --format=%cI "$b" | xargs date +%s -d)
+			epoch=$(git log -n1 --format=%cI "$b" | \xargs date +%s -d)
 			days="$(((now - epoch) / 86400))"
-			if ((days <= 60)); then break; fi
-			git branch --delete "$b" || continue # cannot delete means mr not closed?
+			if ((days <= 30)); then break; fi
+			git push origin --delete "$b" || : # delete remote branch first
+			git branch --delete "$b"           # then local
 		done
 }
 
@@ -1416,18 +1461,29 @@ gbs() {
 	git push
 }
 
+gbrename() {
+	new=$1
+	curr=$(_git_current_branch)
+	git branch --move "$curr" "$new"
+	git push origin --set-upstream "$new"
+	git push origin --delete "$curr" # deletes mr
+	g.                               # creates new mr
+
+	# caveat: source branch change can only be done in gitlab ui
+}
+
 # }}}
 # git remote -- functions that involve remote repository {{{
 
 g.() {
-	b=$(_git_current_branch | awk -F- '{print $NF}')
-	if
-		find "$(_get_repo_root)/.git/stacked" -name "$b.json" | grep -q .
-	then
-		glab stack sync
-	else
-		git push
-	fi
+	# b=$(_git_current_branch | awk -F- '{print $NF}')
+	# if
+	# 	find "$(_get_repo_root)/.git/stacked" -name "$b.json" | grep -q .
+	# then
+	# 	glab stack sync
+	# else
+	git push
+	# fi
 }
 
 _gssh() { # {{{
@@ -1447,6 +1503,7 @@ gmm() {
 	[[ $(_git_current_branch) == $(_gmaster) ]] && return
 	# https://stackoverflow.com/a/20103414
 	git fetch origin
+	# don't rebase, because this produces multiple "conflict resolutions"
 	# TODO: for forks, need to sync fork (in gh), then git pull
 	git merge "origin/$(_gmaster)"
 
@@ -1471,7 +1528,7 @@ gcon() { # {{{
 
 	: resolve conflicts WITHOUT merging
 
-	markers='^[<=>|]{7}'
+	markers='^[<=>|]{7}' # 'HEAD(:|$)'
 
 	_git_has_conflicts() {
 		rg -q --hidden "$markers"
@@ -1526,18 +1583,7 @@ gcon() { # {{{
 
 	# git diff --name-only --diff-filter=U --relative
 
-	# in case of submodule conflict:
-	# cd $submodule
-	# gu .
-	# git merge $hash (git should tell you which hash -- how to script?)
-	# git add $submodule
-	# git commit
-
 	while _git_has_conflicts; do
-		if [[ -f .abort ]]; then
-			git merge --abort
-			return
-		fi
 		echo "Unresolved conflicts remaining!"
 		_git_get_conflicts | xargs nvim -p +'/\v'"$markers"
 	done
@@ -1601,69 +1647,6 @@ gnew() { # {{{
 
 # gitlab {{{
 
-stack() {
-	# TODO: order by mr
-	find "$(_get_repo_root)/.git/stacked" -name "*.json" | xargs jq .
-}
-
-alias sf="glab stack first"
-alias sl="glab stack list"
-alias sm="glab stack move"
-
-sv() {
-	if
-		git status --porcelain | grep -P '^[A-Z]'
-	then
-		: files already staged
-	else
-		files=$(_git_commit | cut -c3-)
-		echo "$files" |
-			while read -r f; do
-				if
-					[[ -f $f ]]
-				then
-					git add "$f"
-				else
-					git rm "$f"
-				fi
-			done
-
-	fi
-
-	# echo 'amending old diff'
-
-	# even if we are at the last diff, only create new mr (save) when there
-	# really are new changes
-
-	# still, save should only be allowed when we are at the last diff
-
-	# b=$(_git_current_branch | awk -F- '{print $NF}')
-	# if
-	# 	# last diff, save
-	# 	find "$(_get_repo_root)/.git/stacked" -name "$b.json" |
-	# 		cat |
-	# 		\xargs jq -e '.next==""' > /dev/null
-	# then
-	# 	echo 'creating new diff'
-	# 	echo "$files" | xargs glab stack save
-	# else
-
-	glab stack amend
-
-	# fi
-}
-
-# if not in a stack, noop
-# must revert all unstaged changes (gu .)
-# TODO: remember branch, then go back to it
-# TODO: if err, handle conflicts (like gcon) and rebase --continue
-sy() {
-	glab stack sync "$@" && return
-	gcon
-	git status --porcelain | grep ^UU | cut -c3- | xargs git add
-	git rebase --continue
-}
-
 # TODO: run after clone
 # git config set --local user.email "$EMAIL"
 # git config set --local user.name "$NAME"
@@ -1675,7 +1658,7 @@ sy() {
 # glab auth login
 
 # all mrs made by me
-alias gmer='seq 1 2 | parallel -n1 glab mr list --output=json --assignee=@me --merged --per-page=9999 -p | jq .[] | jqt iid source_branch title | sort -n'
+alias gmer='glab api --paginate "merge_requests?state=merged&scope=created_by_me&per_page=100" | jq -s "add | .[]" | jqt iid source_branch title | sort -n'
 
 glau() {
 	: list authors by mr count
@@ -1686,25 +1669,25 @@ glau() {
 		sort -rn
 }
 
-# gmw() {
-# 	: mrs merged in the last week - gl master more useful
-# 	glab mr list --merged --output=json |
-# 		# jq -r 'sort_by(.merged_at)[]|select(.merged_at>="'"$(date --date='1 week ago' -I)"'")|["- !"+(.iid|tostring),.title]|@tsv'
-# 		jq -r 'sort_by(.merged_at)[]|select(.merged_at>="'"$(date --date='1 week ago' -I)"'")|[.iid,.title]|@tsv'
-# }
-
 gld() {
 	: view diff of mr
 
 	# note: to see diff of current branch, just use gdm
-	[[ $PWD != *$REPO* ]] && cd "$REPO"
+	[[ -n ${REPO:-} ]] && ! _in_git_repo && cd "$REPO"
 
-	if (($# == 1)); then
+	if (($# >= 1)); then
 		if
 			<<< "$1" grep -Pqx '\d+' # mr id
 		then
-			# still need fetch/pull
-			glab mr diff "$1" | delta
+			if (($# >= 2)); then
+				# gld <mr id> <start hash>
+				git fetch
+				branch=$(glab mr view "$1" | grep source_branch | awk '{print $2}')
+				git diff "$2...origin/$branch"
+			else
+				# still need fetch/pull
+				glab mr diff "$1" | delta
+			fi
 			return
 
 		elif
@@ -1749,17 +1732,8 @@ glj() {
 
 gljd() {
 	: view job durations of latest pipeline
-	# can be followed up with glj
-	url="https://gitlab.novum-engineering.com/api/v4/projects/265/pipelines/${1:-$(glab ci get --output=json | jq .id)}/jobs"
-	curl -sL "$url" \
-		-H "PRIVATE-TOKEN: $GL_TOKEN" |
-		jq -c '.[]|{name,started_at,finished_at}|select(.finished_at)' |
-		while read -r j; do
-			c=$(<<< "$j" jq .started_at | \xargs date +%s -d)
-			f=$(<<< "$j" jq .finished_at | \xargs date +%s -d)
-			echo "$(((f - c) / 60)) $(<<< "$j" jq -r .name)"
-		done |
-		sort -n
+	glab api "projects/:fullpath/pipelines/$1/jobs?per_page=100" |
+		jq -r 'sort_by(.duration) | .[] | "\(.duration // 0 | floor)s\t\(.name)"'
 }
 
 gmrf() {
@@ -2499,8 +2473,9 @@ math() { < /dev/stdin xargs -I{} echo "{}$1" | bc; }                            
 mean() { < /dev/stdin awk '{ sum += $0; n++ } END { if (n > 0) print sum / n; }'; } # https://stackoverflow.com/a/19149931
 paren() { < /dev/stdin prepend '(' | append ')'; }
 prepend() { < /dev/stdin awk "{print \"$1\" \$0}"; }
-seen() { < /dev/stdin awk '!a[$0]++'; }        # https://paweldu.dev/posts/awk-clever-way-to-remove-duplicate-lines/
-strsplit() { < /dev/stdin \xargs -n1 -d"$1"; } # x=($(echo x,y,z | strsplit ,)) ; echo ${x[2]}
+relat() { < /dev/stdin awk 'NR==1{base=$1} {printf "%.2f %s\n", $1/base, $2}'; } # scale 1st numeric column by first value
+seen() { < /dev/stdin awk '!a[$0]++'; }                                          # https://paweldu.dev/posts/awk-clever-way-to-remove-duplicate-lines/
+strsplit() { < /dev/stdin \xargs -n1 -d"$1"; }                                   # x=($(echo x,y,z | strsplit ,)) ; echo ${x[2]}
 sum() { < /dev/stdin paste -sd+ | bc; }
 surround() { < /dev/stdin awk "{print \"$1\" \$0 \"$1\"}"; }
 tojson() { node --eval "console.log(JSON.stringify($(< /dev/stdin)))" | jq; }
@@ -2561,6 +2536,19 @@ plot() {
 		# tail -n10000 |
 		jqt time[0:19] latency |
 		time gnuplot --persist -e "$script"
+}
+
+log_dur() {
+	: calculate per-step durations of a log
+	< /dev/stdin sort |
+		awk '{
+			split($1, t, /[T:.]/)
+			ms = (t[2]*3600 + t[3]*60 + t[4]) * 1000 + (t[5]+0) / 1000
+			if (NR == 1) printf "%9s  %s\n", "", $0
+			else printf "%8.1fms  %s\n", ms - prev, $0
+			prev = ms
+		}
+	'
 }
 
 # }}}
@@ -2629,7 +2617,6 @@ subs() {
 	# 	-H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:151.0) Gecko/20100101 Firefox/151.0' \
 	# 	-H 'Cookie: cf_clearance=10WvuPKhcoe2bxhMww8wrqg.ieZEFj7Z1nWyQ_awjLU-1781021806-1.2.1.1-NXFLkWTtJBhCLuMg0Ftawyyqp5iPQsQy.gEPZ__xH4ZtQr8zLN5uMKV2Y0X3cmBakdPeTSpIt3wIYxL3PsIpPt.2y1hpg.3A5rA_GSPAGLwzmx2g9A0At2MOauGzRu0m.J_Dux6Xgx.cZElBZGXA.0J.S4jxrwiFqcOqM7mgJzoIon2uLhMpxWFT9KMsHM0TV6dKUE5taHXrwji4P3WoCLTpqcsOeSgcBJdu_G0Bnkhofk5PNfo5YmZJMuwlWbaHGvig7vHoUtucb3n7qsZxeBPFtvsumtd59EFfZqE9cCyrscC4kYukTppRgk1i4ntyqJosXrGrkq0ttpGXmcShDSz8wdWUn3TMIYuJmjtD7FOV6vkGDgx3SICQibTs4md7Xe34ZQHMr75o9KjhrUHfdEaQtoMA2C57.k0UjEWn8Ws'
 
-	set -x
 	cookie="Cookie: cf_clearance=$(get_cookie "name = 'cf_clearance' and host = '.azsubtitles.com'")"
 	args=(
 		-H "$cookie"
@@ -2701,6 +2688,13 @@ rewe() {
 }
 
 # }}}
+
+# history | tail | awk '$1="$" {print $0}' # drops cmd output though; handle that at wezterm level
+# git diff origin/master...$branch -- $f | git apply --3way # copy changes from other branch to this branch. merge conflict causes `apply` to error
+
+# dump=stderr
+# < dump grep : | grep $HOME | fzr --preview='echo {} | cut -d: -f1 | xargs cat'
+# TODO: lnum to bat
 
 repeat() {
 	n=$1
@@ -3346,7 +3340,6 @@ ys() { # read youtube subs in less
 }
 
 nico() {
-	# set -x
 	# TODO: investigate --headless mode
 	: launch searches in nicotine
 	[[ ! -f $1 ]] && return
