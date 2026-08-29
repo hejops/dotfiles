@@ -37,10 +37,12 @@
 " https://github.com/noctuid/dotfiles/blob/master/browsing/.config/tridactyl/tridactylrc
 " https://gitlab.com/Seirdy/dotfiles/blob/master/.config/tridactyl/tridactylrc
 
-sanitise tridactyllocal tridactylsync
+" TODO: configversion 2.0?
+" https://github.com/tridactyl/tridactyl/blob/341aa6621d94fea25231a17f9b01e538e2150641/src/lib/config.ts#L107
 
-" TODO: when started by cron, all scripts that invoke notify-send may fail
-" exclaim notify-send hi
+" tridactyllocal now clears settings, and should not be used
+" https://github.com/Gitoffthelawn/tridactyl/commit/de37f815e9c43fce3183de163b7772cd31119f08
+sanitise tridactylsync
 
 bindurl booking.com y composite js document.location.href.replace(/label=[^&]+&/,"").replace(/sid=[^&]+&/,"").replace(/aid=[^&]+&/,"").replace(/ac_meta=[^&]+&/,"") | clipboard yank
 
