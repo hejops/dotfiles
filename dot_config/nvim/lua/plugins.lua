@@ -877,6 +877,36 @@ require("lazy").setup( --
 			end,
 		},
 
+		{
+			"monokkai/solarized-sonokai",
+			config = function()
+				require("solarized-sonokai").setup({ italic_comments = false })
+			end,
+		},
+
+		{
+			"shawilly/ponokai",
+			lazy = true,
+			config = function()
+				vim.g.ponokai_disable_italic_comment = true
+				vim.g.ponokai_current_word = "underline"
+			end,
+		},
+
+		-- { -- broken for Dockerfile
+		-- 	"zootedb0t/citruszest.nvim",
+		-- 	lazy = true,
+		-- 	config = function()
+		-- 		require("citruszest").setup({
+		-- 			option = {
+		-- 				transparent = false,
+		-- 				bold = false,
+		-- 				italic = false,
+		-- 			},
+		-- 		})
+		-- 	end,
+		-- },
+
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "bgwdotdev/gleam-theme-nvim", -- not enough contrast
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
@@ -908,29 +938,6 @@ require("lazy").setup( --
 		-- "lancewilhelm/horizon-extended.nvim", -- italic keywords
 		-- "ph1losof/morta.nvim", -- italic keywords
 		-- "samharju/synthweave.nvim", -- italic vars
-
-		{
-			"shawilly/ponokai",
-			lazy = true,
-			config = function()
-				vim.g.ponokai_disable_italic_comment = true
-				vim.g.ponokai_current_word = "underline"
-			end,
-		},
-
-		-- { -- broken for Dockerfile
-		-- 	"zootedb0t/citruszest.nvim",
-		-- 	lazy = true,
-		-- 	config = function()
-		-- 		require("citruszest").setup({
-		-- 			option = {
-		-- 				transparent = false,
-		-- 				bold = false,
-		-- 				italic = false,
-		-- 			},
-		-- 		})
-		-- 	end,
-		-- },
 
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
 		-- https://vimcolorschemes.com/i/new/b.dark
