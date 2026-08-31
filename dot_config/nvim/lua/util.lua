@@ -225,6 +225,7 @@ end -- }}}
 
 ---@param fname string
 ---@return string?
+---if fname does not exist, returns nil
 function M:read_file(fname)
 	local fo = io.open(fname)
 	if not fo then
@@ -320,9 +321,9 @@ function M:md_toc()
 		vim.fn.expand("%:p")
 	)
 
-	local lnum
+	local lnum = 1
 	for i, l in pairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
-		if l:match("^# ") then
+		if l:match("^#( |$)") then -- not sure if this ( |$) actually works
 			lnum = i + 1
 			break
 		end
@@ -368,17 +369,20 @@ function M:sql_connections()
 
 	local connections = {}
 
+	-- note: vim.env does not load env (need export first)
+
 	for name, conn in pairs({
 		-- TODO: check ./config.yml (sqls), postgrestools.jsonc
-
 		foo = vim.env.HOME .. "/gripts/disq/collection2.db",
 		neon = "postgres://postgres:postgres@localhost:5432/dvdrental?sslmode=disable",
-		work = vim.env.POSTGRES_URL,
+		work = vim.env.POSTGRES_URL or M:get_command_output("echo $POSTGRES_URL", true),
 	}) do
 		if vim.uv.fs_stat(conn) or pg_connection_ok(conn) then
 			connections[name] = conn
 		end
 	end
+
+	-- print(vim.inspect(connections))
 
 	return connections
 end

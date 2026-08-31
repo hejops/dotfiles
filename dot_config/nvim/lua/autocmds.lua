@@ -1,5 +1,25 @@
 -- vim.cmd("autocmd BufNewFile,BufRead *.h setlocal filetype=c")
 
+vim.api.nvim_create_autocmd("VimLeave", {
+	callback = function()
+		-- TODO: close non file buffer
+		-- TODO: per branch
+		vim.cmd("mksession! ~/.config/nvim/session.vim")
+	end,
+})
+
+vim.api.nvim_create_autocmd("VimEnter", {
+	nested = true,
+	callback = function()
+		if not require("util"):in_git_repo() then
+			return
+		end
+		if vim.fn.argc() == 0 and not vim.tbl_contains(vim.v.argv, "+Man!") then
+			vim.cmd("source ~/.config/nvim/session.vim")
+		end
+	end,
+})
+
 vim.api.nvim_create_autocmd({ "InsertEnter" }, { command = "set nocursorline | norm zz" })
 vim.api.nvim_create_autocmd({ "InsertLeave" }, { command = "set cursorline" })
 
@@ -9,7 +29,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
 			return
 		end
 		local root_files = {
-			go = "go.mod",
+			-- go = "go.mod",
 			tex = "Tectonic.toml",
 		}
 		vim.fn.chdir(vim.fs.root(0, root_files[vim.bo.filetype] or ".git") or vim.fn.expand("%:p:h"))
@@ -61,28 +81,6 @@ vim.api.nvim_create_autocmd("ModeChanged", {
 	end,
 })
 
--- vim.api.nvim_create_autocmd("ModeChanged", {
--- 	pattern = { "V:n", "n:V", "v:n", "n:v" },
--- 	callback = function(ev)
--- 		local match = ev.match
--- 		if vim.tbl_contains({ "n:V", "n:v" }, match) then
--- 			-- vim.b.user_yank_last_pos = vim.fn.getpos(".")
--- 			vim.b.user_yank_last_pos = vim.api.nvim_win_get_cursor(0)
--- 		else
--- 			-- if vim.tbl_contains({ "V:n", "v:n" }, match) then
--- 			if vim.v.operator == "y" then
--- 				local last_pos = vim.b.user_yank_last_pos
--- 				if last_pos then
--- 					-- vim.fn.setpos(".", last_pos)
--- 					vim.api.nvim_win_set_cursor(0, last_pos)
--- 				end
--- 			end
--- 			vim.b.user_yank_last_pos = nil
--- 			-- end
--- 		end
--- 	end,
--- })
-
 -- show line diagnostics on hover
 -- TODO: disable the virtual line (since it's redundant and only shows the last diagnostic)
 vim.api.nvim_create_autocmd("CursorHold", {
@@ -125,46 +123,6 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 		vim.cmd("e")
 	end,
 })
-
--- vim.api.nvim_create_autocmd("BufWritePost", {
--- 	callback = function()
--- 		if vim.bo.filetype ~= "sh" then
--- 			return
--- 		end
--- 		-- vim.cmd
--- 		os.execute([[sed -i -r ' s/\t(if) ([<])/\t\1\n\2/g ' ]] .. vim.fn.expand("%"))
--- 		vim.cmd("e")
--- 	end,
--- })
-
-local function md_to_pdf()
-	local _in = vim.fn.expand("%") -- basename!
-	local out = string.gsub(_in, "%.md", ".pdf")
-	local compile = string.format(
-		[[ lowdown -sTms %s | pdfroff -tik -Kutf8 -mspdf > %s 2>/dev/null ]], --
-		vim.fn.shellescape(_in),
-		vim.fn.shellescape(out)
-	)
-	vim.fn.jobstart(compile)
-	if
-		#io.popen(string.format(
-			-- lsof tries to read nonsense dirs on ubuntu, and fails
-			-- can't stat() overlay file system /var/lib/docker/overlay2/.../merged
-			-- can't stat() nsfs file system /run/docker/netns/...
-			"lsof '%s' 2>/dev/null || ps aux | grep zathura | grep '%s'", --
-			out,
-			out
-		)):read("*a") == 0
-	then
-		vim.fn.jobstart(string.format("zathura %s >/dev/null 2>/dev/null", out))
-	end
-end
-
--- -- compile md -> pdf
--- vim.api.nvim_create_autocmd("BufWritePost", {
--- 	pattern = { "*.md" },
--- 	callback = md_to_pdf,
--- })
 
 vim.api.nvim_create_autocmd({ "WinEnter" }, {
 	callback = function(event)
@@ -248,13 +206,6 @@ vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "text", "mail", "rst" },
 	callback = function()
 		vim.opt_local.spell = true
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = { "dotenv" },
-	callback = function()
-		vim.opt_local.commentstring = "# %s"
 	end,
 })
 

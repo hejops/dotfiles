@@ -52,6 +52,59 @@ vim.keymap.set("n", "zx", function()
 	vim.cmd.norm("gg")
 end)
 
+-- show glab diff
+-- caveat: prints output, then scrolls to top
+vim.keymap.set("n", "<leader>md", function()
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_open_win(buf, true, {
+		relative = "editor",
+		width = math.floor(vim.o.columns * 0.9),
+		height = math.floor(vim.o.lines * 0.9),
+		row = math.floor(vim.o.lines * 0.05),
+		col = math.floor(vim.o.columns * 0.05),
+		style = "minimal",
+		border = "rounded",
+	})
+	vim.fn.jobstart("glab mr diff | delta --paging=never", {
+		term = true,
+		on_exit = function()
+			vim.schedule(function()
+				vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-\\><C-n>gg", true, false, true), "n", false)
+			end)
+		end,
+	})
+	vim.keymap.set("n", "q", "<cmd>close<cr>", { buffer = buf })
+end)
+
+-- rename current buffer
+vim.keymap.set("n", "<leader>R", function()
+	vim.cmd("w") -- otherwise old file remains
+
+	local old = vim.api.nvim_buf_get_name(0)
+	if old == "" then
+		vim.notify("buffer has no file name", vim.log.levels.ERROR)
+		return
+	end
+
+	vim.ui.input({ prompt = "rename to: ", default = old }, function(new)
+		if not new or new == "" or new == old then
+			return
+		end
+
+		local ok = os.execute(string.format("git mv -- %q %q 2>/dev/null", old, new))
+		if ok ~= 0 then
+			ok = os.execute(string.format("mv -- %q %q", old, new))
+		end
+		if ok ~= 0 then
+			vim.notify("rename failed", vim.log.levels.ERROR)
+			return
+		end
+
+		vim.cmd("keepalt edit " .. vim.fn.fnameescape(new))
+		vim.cmd("bdelete " .. vim.fn.bufnr(old))
+	end)
+end)
+
 vim.keymap.set("n", "z|", function()
 	-- duplicate buffer in split (invaluable for merge conflict)
 	local ln = vim.fn.line(".")
@@ -63,6 +116,19 @@ vim.keymap.set("n", "z|", function()
 	vim.cmd.norm("zt")
 	vim.cmd.wincmd("h")
 end)
+
+vim.keymap.set( --
+	"n",
+	"MM", -- M> doesn't work
+	-- accept all incoming changes in merge conflict
+	-- may not work if incoming is only a deletion?
+	[[?\v^\<{7}<cr>]] -- go to top
+		.. [[d/\v^\={7}<cr>]] -- delete until (but not including) middle
+		.. "dd" -- delete middle
+		.. [[/\v^\>{7}<cr>]] -- go bottom
+		.. "dd"
+		.. [[/\v^\<{7}<cr>]]
+)
 
 -- TODO:
 -- !wezterm start --new-tab --cwd=. 2>/dev/null
@@ -154,8 +220,27 @@ vim.keymap.set("n", "<c-h>", "gT")
 vim.keymap.set("n", "<c-l>", "gt")
 vim.keymap.set("n", "<c-r>", "g<tab>") -- moving tabs left/right is an antipattern; close them instead
 vim.keymap.set("n", "r", "<nop>")
-vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- close all other tabs and unload buffers -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
-vim.keymap.set("n", "rx", ":tabonly<cr>") -- close all other tabs (without unloading buffers)
+-- vim.keymap.set("n", "rd", ":%bd|e#<cr>zz") -- close all other tabs and unload buffers -- https://dev.to/believer/close-all-open-vim-buffers-except-the-current-3f6i
+vim.keymap.set("n", "rX", ":tabonly<cr>") -- close all other tabs (without unloading buffers)
+vim.keymap.set(
+	"n",
+	"rx",
+	-- close duplicate tabs
+	-- TODO: "if no git changes, close" variant
+	-- from claude
+	function()
+		local seen_buffers = {}
+		for _, tabid in ipairs(vim.api.nvim_list_tabpages()) do
+			local win = vim.api.nvim_tabpage_get_win(tabid)
+			local bufid = vim.api.nvim_win_get_buf(win)
+			if seen_buffers[bufid] then
+				vim.api.nvim_command("tabclose " .. vim.api.nvim_tabpage_get_number(tabid))
+			else
+				seen_buffers[bufid] = 1
+			end
+		end
+	end
+)
 
 -- vim.keymap.set("t", "<c-.>", "<c-\\><c-n>gt") -- navigate tab from term; c-h/c-l are taken by readline
 -- vim.keymap.set("t", "<c-x>", "<c-\\><c-n>gT") -- not very ergonomic tbh
@@ -507,6 +592,33 @@ local ft_binds = { -- {{{
 	sql = {
 		{ "n", "<leader>H", require("pickers").devdocs },
 
+		{
+			"n",
+			"K",
+			function()
+				-- create/table
+				-- TODO: insert into -> insert-into
+
+				local kw = vim.fn.getline("."):match("[A-Z ]+")
+				if not kw then
+					return
+				end
+
+				kw = kw:lower():gsub(" $", ""):gsub(" ", "/"):gsub("drop/.+", "drop")
+				-- print(kw)
+
+				-- TODO: remove all links
+				local cmd = string.format(
+					[[ curl -sL https://clickhouse.com/docs/sql-reference/statements/%s | sed '1,/navbar-header/d; /pagination-nav/,$d' | html2markdown | fold -s ]],
+					kw
+				)
+
+				local out = require("util"):get_command_output(cmd)
+				local lines = require("util"):split(out, "\n")
+				require("util"):open_float(lines, "markdown")
+			end,
+		},
+
 		-- yeah...
 		-- yap}o^[pjj^V/)^Mk$y/VALUES<fc>^B<80>kb^Mj0^V/)^MkPkkcabSET^M^[ddkc2wUPDATE^[vipr, +/=^M/;^Md0Bch=^[^M{jfI<80><fd>5c6lUpdate^[^M
 	},
@@ -515,6 +627,10 @@ local ft_binds = { -- {{{
 		{ "n", "q", "ZZ" },
 		{ "n", "x", "ZZ" },
 		{ "n", "<esc>", "ZZ" },
+	},
+
+	dockerfile = {
+		{ "n", "<bar>", [[:'{+1,'}-1s/\v\nRUN / \&\& \\\r\t/g<cr>]] },
 	},
 
 	sh = {
@@ -526,6 +642,11 @@ local ft_binds = { -- {{{
 		{ "n", "<leader>H", [[:.s/\v -H/ \\\r&/g|w<cr>]] },
 		{ "n", "<leader>X", ":!chmod +x %<cr>" }, -- TODO: shebang
 		{ "n", "@", 'f"hciw{[@]}<esc>F[P' }, -- string var to array
+
+		-- TODO:
+		-- '<,'>s/\v\|\n\s*/| /g
+		-- '<,'>s/\v\n/; /g
+		{ "n", "yl", "vipJ0Yu" }, -- single pipe command, TODO:
 
 		{
 			"n",
@@ -677,6 +798,36 @@ local ft_binds = { -- {{{
 		-- 		end
 		-- 	end,
 		-- },
+
+		{
+			"i",
+			"<c-z>",
+			"(x) => {}<c-o>i<c-o>h",
+		},
+	},
+
+	mermaid = {
+		{
+			"n",
+			"yg",
+			function() -- mermaid-ascii -> gitlab
+				local cmd = string.format(
+					-- all nodes must be declared (can be last)
+					-- edge labels must be inside arrows, and must have trailing space
+					[[
+echo '```mermaid'
+
+< '%s' grep -P '^[^%%]' | # note: %% is lua escape
+	sed -r 's/-->\|([^|]+)\|/--\1 -->/g'
+
+echo '```'
+]],
+					vim.fn.expand("%:p"),
+					vim.fn.expand("%:p")
+				)
+				vim.fn.setreg("+", require("util"):get_command_output(cmd))
+			end,
+		},
 	},
 
 	rust = {
@@ -814,6 +965,8 @@ local ft_binds = { -- {{{
 					vim.api.nvim_buf_set_lines(0, lnum, lnum + 2, false, { -- 0-indexed, [start,end)
 						string.format("if %s; err!= nil {", curr_line), -- TODO: reuse [!=]=
 					})
+				elseif vim.fn.expand("%"):match("_test.go$") then
+					vim.api.nvim_buf_set_lines(0, lnum + 1, lnum + 1, false, { "assert.NoError(t, err)" })
 				else
 					vim.api.nvim_buf_set_lines(0, lnum + 1, lnum + 1, false, { "if err!=nil{panic(err)}" })
 				end
@@ -895,7 +1048,44 @@ local ft_binds = { -- {{{
 		-- https://github.com/tadmccorkle/markdown.nvim#lists
 
 		{ "n", "<leader>t", require("util").md_toc },
-		{ "n", "<leader>x", ":Dispatch zola serve<cr>" },
+
+		{
+			"n",
+			"KK",
+
+			-- ":Dispatch zola serve<cr>",
+
+			function() -- mermaid-ascii -> gitlab
+				search_for("^```mermaid", true)()
+				local start = vim.fn.line(".") + 1
+				search_for("^```$", false, false)()
+				local end_ = vim.fn.line(".") - 1
+
+				local cmd = string.format(
+					-- gl: edge labels must be inside arrows, and must have trailing space
+					-- ma: edge labels outside arrows, in pipe
+					[[
+< '%s' sed -n '%s,%sp' |
+  # sed -r 's/-->\|([^|]+)\|/--\1 -->/g' |
+  sed -r 's/--([^->]+) -->/-->|\1|/g' |
+  mermaid-ascii
+]],
+					vim.fn.expand("%:p"),
+					start,
+					end_
+				)
+
+				print(start, end_)
+
+				local out = require("util"):get_command_output(cmd)
+				local lines = require("util"):split(out, "\n")
+				vim.cmd.norm("K")
+				require("util"):open_float(lines) -- TODO: closes itself
+
+				-- local front = "new | setlocal buftype=nofile bufhidden=hide noswapfile | silent! 0read! "
+				-- vim.cmd(front .. cmd)
+			end,
+		},
 
 		{
 			"n",
@@ -1086,6 +1276,8 @@ local function c_compiler_cmd()
 	return cmd .. " " .. table.concat(cmds[cmd], " ")
 end -- }}}
 
+local pg_url -- TODO: store somewhere else
+
 -- run current file and dump stdout to scratch buffer
 local function exec() -- {{{
 	local ft = vim.bo.filetype
@@ -1124,6 +1316,7 @@ local function exec() -- {{{
 		d2 = "d2 " .. curr_file, -- svg (for ascii, use D2Preview autocmd)
 		html = "firefox " .. curr_file,
 		javascript = "node " .. curr_file,
+		mermaid = "mermaid-ascii --file " .. curr_file,
 		sh = "env bash " .. curr_file,
 
 		-- the iffy langs
@@ -1168,12 +1361,21 @@ local function exec() -- {{{
 		end,
 
 		sql = function()
-			-- rarely used nowadays
-			return string.format(
-				[[psql %s --expanded --file='%s']],
-				assert(require("util"):sql_connections().work, "POSTGRES_URL not set"),
-				curr_file
-			)
+			-- local url = assert(require("util"):sql_connections().work, "POSTGRES_URL not set")
+
+			local url = require("util"):sql_connections().work or pg_url
+			if not url then
+				local cmd = [[rg --hidden -Io "postgresql://[^$\"' ]+" $REPO | sort -u | grep localhost]]
+				local out = require("util"):get_command_output(cmd)
+				local opts = require("util"):lines(out, true)
+				local n = vim.fn.inputlist(opts) -- 1-indexed
+				url = opts[n]:gsub("[0-9]+: ", "")
+				print("connecting to", url)
+				pg_url = url
+				-- require("util"):sql_connections().work = url
+			end
+
+			return string.format([[psql %s --expanded --file='%s']], url, curr_file)
 		end,
 
 		python = function()

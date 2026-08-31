@@ -125,10 +125,11 @@ if is_work then
 end
 
 local font_size = ({
+	-- ["3840x3240"] = 24.0, -- ???
 	["1920x1080"] = 16.0, -- work laptop, 2k
+	["1920x1200"] = 13.0, -- work single, 2k
 	["3840x1200"] = 13.0, -- work dual, 2x2k
 	["3840x2160"] = 10.0, -- home, 4k
-	-- ["3840x3240"] = 24.0, -- ???
 })[dimensions] or 18.0
 
 -- note: source han sans is implicitly used as fallback for cn/jp/kr (which is
@@ -348,19 +349,19 @@ local function keys()
 		},
 
 		-- { mods = "CTRL", key = "t", action = SpawnTabNext() },
-		{ mods = "WIN", key = "f", action = act.DisableDefaultAssignment },
-		{ mods = leader, key = "u", action = act.DisableDefaultAssignment },
-
-		-- { mods = leader, key = "o", action = act.MoveTabRelative(1) }, -- moving tabs is probably an antipattern
+		-- { mods = leader, key = "g", action = act(hint_file) },
 		-- { mods = leader, key = "p", action = act.ActivateCommandPalette },
+		-- { mods = leader, key = "u", action = act.DisableDefaultAssignment },
 		-- { mods = leader, key = "x", action = act.EmitEvent("view-history-in-pager") },
-		-- { mods = leader, key = "y", action = act.MoveTabRelative(-1) }, -- u reserved -- org.freedesktop.ibus.panel.emoji unicode-hotkey ['<Control><Shift>u']
+		{ mods = "WIN", key = "f", action = act.DisableDefaultAssignment },
 		{ mods = leader, key = "h", action = act.ActivateTabRelative(-1) },
 		{ mods = leader, key = "i", action = act.ShowTabNavigator },
 		{ mods = leader, key = "j", action = act.ScrollByPage(1) },
 		{ mods = leader, key = "k", action = act.ScrollByPage(-1) },
 		{ mods = leader, key = "l", action = act.ActivateTabRelative(1) }, -- default: show log
+		{ mods = leader, key = "o", action = act.MoveTabRelative(1) }, -- moving tabs is probably an antipattern
 		{ mods = leader, key = "t", action = act.SpawnCommandInNewTab({ cwd = wezterm.home_dir }) }, -- TODO: also adjacent?
+		{ mods = leader, key = "u", action = act.MoveTabRelative(-1) },
 		{ mods = leader, key = "x", action = wezterm.action.CloseCurrentTab({ confirm = true }) },
 	}
 

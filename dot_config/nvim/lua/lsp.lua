@@ -4,6 +4,15 @@
 -- multiple LSPs lead to strange behaviour (e.g. renaming symbol twice)
 -- https://neovim.io/doc/user/lsp.html#vim.lsp.ClientConfig
 
+-- was removed in 0.12
+vim.api.nvim_create_user_command("LspRestart", function()
+	for _, client in ipairs(vim.lsp.get_clients()) do
+		client:stop()
+	end
+	vim.diagnostic.reset()
+	vim.cmd("e")
+end, {})
+
 vim.env.GOEXPERIMENT = "jsonv2" -- consider moving to FileType autocmd, or bashrc
 
 -- https://github.com/fatih/dotfiles/blob/52e459c991e1fa8125fb28d4930f13244afecd17/init.lua#L748
@@ -173,6 +182,7 @@ local servers = { -- {{{
 		end,
 	},
 
+	coq_lsp = {}, -- file ext is .v
 	dockerls = {},
 	marksman = {}, -- why should md ever have any concept of root_dir?
 	nginx_language_server = {},
@@ -317,7 +327,10 @@ local servers = { -- {{{
 				-- still raises cryptic `build constraints exclude ...` warnings, and
 				-- only real env var allows go run
 				env = { GOEXPERIMENT = "jsonv2" },
-				buildFlags = { "-tags=goexperiment.jsonv2" },
+				buildFlags = {
+					"-tags=goexperiment.jsonv2",
+					"-tags=integration", -- TODO: get from rg
+				},
 
 				hints = { -- https://github.com/golang/tools/blob/master/gopls/doc/inlayHints.md
 					assignVariableTypes = true,

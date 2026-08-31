@@ -84,7 +84,7 @@ require("lazy").setup( --
 		"stevearc/conform.nvim",
 		"tpope/vim-fugitive", -- same for plugins that declare Commands
 		{ "folke/todo-comments.nvim", dependencies = { "nvim-lua/plenary.nvim" }, opts = {} },
-		{ "numtostr/comment.nvim", opts = {} }, -- replaces vim-commentary
+		-- { "numtostr/comment.nvim", opts = {} }, -- gc is now built in (v0.10)
 
 		-- }}}
 
@@ -103,12 +103,12 @@ require("lazy").setup( --
 		{ "wansmer/treesj", opts = {}, cmd = { "TSJToggle", "TSJSplit", "TSJJoin" } }, -- very slow; TODO: <leader>j conflicts with trouble
 		{ "yochem/jq-playground.nvim", ft = "json" },
 
-		{
-			"norcalli/nvim-colorizer.lua",
-			config = function()
-				require("colorizer").setup()
-			end,
-		},
+		-- {
+		-- 	"norcalli/nvim-colorizer.lua", -- TODO: change to catgoose, but idc tbh
+		-- 	config = function()
+		-- 		require("colorizer").setup()
+		-- 	end,
+		-- },
 
 		-- {
 		-- 	"devkvlt/go-tags.nvim", -- gone??
@@ -237,6 +237,7 @@ require("lazy").setup( --
 					"goimports-reviser",
 					"golines",
 					"mdslw",
+					"oxfmt",
 					"prettier", -- only for html/yaml, iirc
 					"shellharden",
 					"shfmt",
@@ -762,7 +763,6 @@ require("lazy").setup( --
 					"lua",
 					"markdown",
 					"markdown_inline",
-					"muttrc",
 					"nginx",
 					"python",
 					"rasi",
@@ -779,6 +779,7 @@ require("lazy").setup( --
 					-- "htmldjango",
 					-- "jsonc", -- not supported in nvim v0.12
 					-- "latex", -- requires tree-sitter-cli
+					-- "muttrc",
 					-- "scheme",
 				})
 
@@ -849,13 +850,13 @@ require("lazy").setup( --
 				-- "typescript",
 				"typescriptreact",
 			},
+			-- https://github.com/JoosepAlviste/nvim-ts-context-commentstring/wiki/Integrations#commentnvim
 			config = function()
-				-- https://github.com/JoosepAlviste/nvim-ts-context-commentstring/wiki/Integrations#commentnvim
 				require("ts_context_commentstring").setup({ enable_autocmd = false })
-				local h = require("ts_context_commentstring.integrations.comment_nvim").create_pre_hook()
-				require("Comment").setup({ pre_hook = h })
 			end,
-		}, -- }}}
+		},
+
+		-- }}}
 		-- colorschemes {{{
 
 		-- above average contrast

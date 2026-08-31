@@ -1,5 +1,89 @@
 -- lua print(require("lint").get_running()[1])
 
+-- NOTE: nvim-lint only ever sets diagnostics on the current buffer (bufnr
+-- passed to the parser). It has no concept of module-wide results; it runs the
+-- linter once per buffer and scopes everything to that buffer. bufadd for
+-- other files is not done anywhere.
+--
+-- in view of this, nvim-lint should not be used
+
+-- TODO: configure linters https://golangci-lint.run/usage/linters/#asasalint
+-- decorder, dogsled, errchkjson, errorlint, funlen, goconst, grouper?, iface,
+-- importas, lll, nestif, nilnil, nlreturn, nolintlint, nonamedreturns,
+-- tagalign, usestdlibvars, unconvert, unparam, unused, varnamelen, whitespace
+
+local ns = vim.api.nvim_create_namespace("golangcilint")
+local last_by_file = {}
+
+local function apply_diagnostics()
+	local bufnr = vim.api.nvim_get_current_buf()
+	local name = vim.api.nvim_buf_get_name(bufnr)
+	vim.diagnostic.set(ns, bufnr, last_by_file[name] or {})
+end
+
+local function run_golangcilint()
+	local mod = vim.fn.findfile("go.mod", ".;")
+	if mod == "" then
+		return
+	end
+	local root = vim.fn.fnamemodify(mod, ":p:h")
+	local output = {}
+
+	vim.fn.jobstart("golangci-lint run --output.json.path=stdout --show-stats=false ./... 2>/dev/null", {
+		cwd = root,
+		stdout_buffered = true,
+		on_stdout = function(_, data)
+			if data then
+				output = data
+			end
+		end,
+		on_exit = function()
+			local raw = table.concat(output, "\n")
+			local ok, decoded = pcall(vim.json.decode, raw)
+			if not ok or not decoded.Issues then
+				return
+			end
+
+			last_by_file = {}
+			for _, issue in ipairs(decoded.Issues) do
+				local path = vim.fs.normalize(root .. "/" .. issue.Pos.Filename)
+				last_by_file[path] = last_by_file[path] or {}
+				table.insert(last_by_file[path], {
+					lnum = issue.Pos.Line - 1,
+					col = issue.Pos.Column - 1,
+					end_lnum = issue.Pos.Line - 1,
+					end_col = issue.Pos.Column - 1,
+					severity = vim.diagnostic.severity.WARN,
+					source = issue.FromLinter,
+					message = issue.Text,
+				})
+			end
+
+			vim.schedule(function()
+				for path, diags in pairs(last_by_file) do
+					local bufnr = vim.fn.bufnr(path)
+					if bufnr == -1 then
+						bufnr = vim.fn.bufadd(path)
+					end
+					vim.diagnostic.set(ns, bufnr, diags)
+				end
+			end)
+		end,
+	})
+end
+
+vim.api.nvim_create_autocmd("BufWritePost", { pattern = "*.go", callback = run_golangcilint })
+vim.api.nvim_create_autocmd("BufEnter", {
+	pattern = "*.go",
+	callback = function()
+		if vim.tbl_isempty(last_by_file) then
+			run_golangcilint()
+		else
+			apply_diagnostics()
+		end
+	end,
+})
+
 ---@type {[string]: table}
 local linters = {
 	-- https://github.com/mfussenegger/nvim-lint#available-linters
@@ -16,7 +100,6 @@ local linters = {
 	dockerfile = { "hadolint" }, -- can be quite noisy
 	dotenv = { "dotenv_linter" },
 	gitcommit = { "gitlint" },
-	go = { "golangcilint" },
 	html = { "markuplint" },
 	htmldjango = { "djlint" },
 	javascript = { "biomejs" }, -- should resolve to repo root
@@ -27,6 +110,8 @@ local linters = {
 	python = { "ruff" }, -- may have duplicate with ruff lsp
 	typescript = { "biomejs" },
 	typescriptreact = { "biomejs" },
+
+	-- TODO: amtool check-config
 	yaml = { "yaml_shellcheck", "glab", "loki" },
 
 	sql = {
@@ -53,20 +138,18 @@ end
 -- https://github.com/orumin/dotfiles/blob/62d7afe8a9bf53/nvim/lua/configs/plugin/lsp/linter_config.lua#L7
 require("lint").linters_by_ft = linters
 
--- TODO: configure linters https://golangci-lint.run/usage/linters/#asasalint
--- decorder, dogsled, errchkjson, errorlint, funlen, goconst, grouper?, iface,
--- importas, lll, nestif, nilnil, nlreturn, nolintlint, nonamedreturns,
--- tagalign, usestdlibvars, unconvert, unparam, unused, varnamelen, whitespace
--- require("lint").linters.golangci.args = {}
-
-require("lint").linters.golangcilint.args[#require("lint").linters.golangcilint.args] = function()
-	return vim.fs.root(0, "go.mod") .. "/..."
-end
-
 require("lint").linters.markdownlint.args = {
 	"--disable",
 	"MD010", -- no hard tabs (they only appear in Go blocks)
 	"--stdin",
+}
+
+require("lint").linters.hadolint.args = {
+	"--ignore",
+	"DL3008", -- pin apt version
+	"-f",
+	"json",
+	"-",
 }
 
 local x = vim.fs.root(0, "biome.json")
