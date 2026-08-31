@@ -301,6 +301,7 @@ vim.keymap.set("n", "<leader>U", ":exec 'undo' undotree()['seq_last']<cr>") -- r
 vim.keymap.set("n", "<leader>n", [[:%g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("n", "<leader>r", [[:%s/\v/g<Left><Left>]]) -- TODO: % -> g/PATT/
 vim.keymap.set("v", "D", [[:g/\v/d<Left><Left>]]) -- delete lines
+vim.keymap.set("v", "K", [[:g!/\v/d<Left><Left>]]) -- keep lines
 vim.keymap.set("v", "n", [[:g/\v/norm <Left><Left><Left><Left><Left><Left>]])
 vim.keymap.set("v", "r", [[:s/\v/g<Left><Left>]])
 
@@ -1039,20 +1040,19 @@ local function c_compiler_cmd()
 			-- https://clang.llvm.org/docs/index.html
 			-- https://clang.llvm.org/docs/ClangCommandLineReference.html#target-independent-compilation-options
 
-			"-fsanitize="
-				.. table.concat({
-					"undefined", -- https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html#ubsan-checks
-					"leak", -- included in address https://clang.llvm.org/docs/LeakSanitizer.html
+			"-fsanitize=" .. table.concat({
+				"undefined", -- https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html#ubsan-checks
+				"leak", -- included in address https://clang.llvm.org/docs/LeakSanitizer.html
 
-					-- clang does not specify whether sanitizers are incompatible.
-					-- however, they do provide estimates of expected slowdown
+				-- clang does not specify whether sanitizers are incompatible.
+				-- however, they do provide estimates of expected slowdown
 
-					-- "address", -- 2x https://clang.llvm.org/docs/AddressSanitizer.html
-					-- "memory", -- 3x https://clang.llvm.org/docs/MemorySanitizer.html
-					-- "realtime", -- not general purpose
-					-- "thread", -- 5x https://clang.llvm.org/docs/ThreadSanitizer.html
-					-- "type", -- experimental https://clang.llvm.org/docs/TypeSanitizer.html
-				}, ","),
+				-- "address", -- 2x https://clang.llvm.org/docs/AddressSanitizer.html
+				-- "memory", -- 3x https://clang.llvm.org/docs/MemorySanitizer.html
+				-- "realtime", -- not general purpose
+				-- "thread", -- 5x https://clang.llvm.org/docs/ThreadSanitizer.html
+				-- "type", -- experimental https://clang.llvm.org/docs/TypeSanitizer.html
+			}, ","),
 			"-ftime-trace", -- dump compilation profile to <file>.json (https://github.com/aras-p/ClangBuildAnalyzer, ninjatracing)
 			-- "-fbounds-safety", -- 21.0: https://clang.llvm.org/docs/BoundsSafetyAdoptionGuide.html
 		},
@@ -1106,7 +1106,6 @@ local function exec() -- {{{
 
 		-- d = "dmd -run " .. curr_file,
 		-- dhall = "dhall-to-json --file " .. curr_file,
-		-- elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 		-- elvish = "elvish " .. curr_file,
 		-- fennel = "fennel " .. curr_file,
 		-- haskell = "runghc " .. curr_file,
@@ -1119,6 +1118,7 @@ local function exec() -- {{{
 		-- ocaml = "ocaml " .. curr_file,
 		-- ruby = "ruby " .. curr_file,
 		-- zig = "zig run " .. curr_file,
+		elixir = "elixir " .. curr_file, -- note: time elixir -e "" takes 170 ms lol
 
 		-- the normal langs
 		d2 = "d2 " .. curr_file, -- svg (for ascii, use D2Preview autocmd)
@@ -1221,10 +1221,10 @@ local function exec() -- {{{
 			if node_version < "v23.6.0" then
 				table.insert(args, "--experimental-strip-types")
 			end
-			if node_version >= "v22.7.0" then
-				-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
-				table.insert(args, "--experimental-transform-types")
-			end
+			-- if node_version >= "v22.7.0" then
+			-- 	-- https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
+			-- 	table.insert(args, "--experimental-transform-types")
+			-- end
 			table.insert(args, curr_file)
 
 			return table.concat(args, " ")
