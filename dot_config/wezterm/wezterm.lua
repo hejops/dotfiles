@@ -186,6 +186,7 @@ local function get_title(tab)
 	local title = assert(pane.title) -- may be ""
 	-- local dir = assert(pane.current_working_dir.path)
 	local dir = pane.current_working_dir and pane.current_working_dir.path or ""
+	dir = dir:gsub("/$", "")
 	local proc = basename(assert(pane.foreground_process_name))
 
 	local function get_bash_dir()
