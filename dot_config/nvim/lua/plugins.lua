@@ -871,14 +871,6 @@ require("lazy").setup( --
 		},
 
 		{
-			"kcayme/bearded-arc.nvim",
-			config = function()
-				-- https://github.com/kcayme/bearded-arc.nvim#configuration
-				require("bearded-arc").setup({ styles = { comments = { italic = false } } })
-			end,
-		},
-
-		{
 			"monokkai/solarized-sonokai",
 			config = function()
 				require("solarized-sonokai").setup({ italic_comments = false })
@@ -894,7 +886,23 @@ require("lazy").setup( --
 			end,
 		},
 
-		-- { -- broken for Dockerfile
+		{
+			"jakubkarlicek/molokai-nvim",
+			config = function()
+				require("molokai-nvim").setup({ italic = false })
+			end,
+		},
+
+		-- comment too dim
+		-- {
+		-- 	"kcayme/bearded-arc.nvim",
+		-- 	config = function()
+		-- 		-- https://github.com/kcayme/bearded-arc.nvim#configuration
+		-- 		require("bearded-arc").setup({ styles = { comments = { italic = false } } })
+		-- 	end,
+		-- },
+
+		-- { -- broken for Dockerfile (keywords not highlighted)
 		-- 	"zootedb0t/citruszest.nvim",
 		-- 	lazy = true,
 		-- 	config = function()
