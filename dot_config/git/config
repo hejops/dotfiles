@@ -91,6 +91,9 @@
 
 [push]
 	autoSetupRemote = true
+	default = current ; push current branch to a remote branch of the same name, regardless of what upstream is set to
+; merge_request.create interferes with glab stack
+; to fix sync failures, existing mrs must be closed
 ; https://github.com/search?q=pushOption+merge_request.create&type=code
 	pushOption = merge_request.create
 
@@ -113,8 +116,8 @@
 	; https://dandavison.github.io/delta/full---help-output.html
 	navigate = true    # use n and N to move between diff sections
 	side-by-side = true		# best in wide terminals
-	line-numbers-left-format = ""
-	line-numbers-right-format = "│ "
+	;line-numbers-left-format = ""
+	;line-numbers-right-format = "│ "
 
 	commit-decoration-style = bold yellow box ul
 	file-decoration-style = none
@@ -126,6 +129,8 @@
 	map-styles = bold purple => syntax brown, bold cyan => syntax green
 
 	max-line-length = 0
+	;wrap-max-lines = 0  # no wrapping
+	;width = 160
 
 ; https://www.benji.dog/articles/git-config/
 ; note: i don't use hasconfig:remote.*.url because i don't like having my org
