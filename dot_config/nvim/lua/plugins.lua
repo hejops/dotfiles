@@ -865,15 +865,56 @@ require("lazy").setup( --
 		-- not mono tabline
 		-- underline current word (not highlight, not bold)
 
-		"hejops/kwrite-theme-nvim",
-		"kcayme/bearded-arc.nvim",
-		-- "kimjbaran/voyager.nvim", -- wcag aaa
+		{
+			"hejops/kwrite-theme-nvim",
+			dir = vim.uv.fs_stat(vim.fn.expand("~/theme")) and vim.fn.expand("~/theme") or nil,
+		},
+
+		{
+			"kcayme/bearded-arc.nvim",
+			config = function()
+				-- https://github.com/kcayme/bearded-arc.nvim#configuration
+				require("bearded-arc").setup({ styles = { comments = { italic = false } } })
+			end,
+		},
+
+		{
+			"monokkai/solarized-sonokai",
+			config = function()
+				require("solarized-sonokai").setup({ italic_comments = false })
+			end,
+		},
+
+		{
+			"shawilly/ponokai",
+			lazy = true,
+			config = function()
+				vim.g.ponokai_disable_italic_comment = true
+				vim.g.ponokai_current_word = "underline"
+			end,
+		},
+
+		-- { -- broken for Dockerfile
+		-- 	"zootedb0t/citruszest.nvim",
+		-- 	lazy = true,
+		-- 	config = function()
+		-- 		require("citruszest").setup({
+		-- 			option = {
+		-- 				transparent = false,
+		-- 				bold = false,
+		-- 				italic = false,
+		-- 			},
+		-- 		})
+		-- 	end,
+		-- },
+
 		-- "bakageddy/alduin.nvim", -- some keywords too dim
 		-- "bgwdotdev/gleam-theme-nvim", -- not enough contrast
 		-- "c9rgreen/vim-colors-modus", -- mono tabline
 		-- "e-q/okcolors.nvim", -- few colors, italic methods
 		-- "github-main-user/lytmode.nvim", -- highlight current (dim)
 		-- "iagorrr/noctis-high-contrast.nvim",
+		-- "kimjbaran/voyager.nvim", -- wcag aaa, but mono tabline
 		-- "maya-sama/kawaii.nvim", -- unreadable diff
 		-- "michaelfresco/space-terminal.nvim", -- highlight current
 		-- "miikanissi/modus-themes.nvim", -- wcag aaa, but has light
@@ -898,29 +939,6 @@ require("lazy").setup( --
 		-- "lancewilhelm/horizon-extended.nvim", -- italic keywords
 		-- "ph1losof/morta.nvim", -- italic keywords
 		-- "samharju/synthweave.nvim", -- italic vars
-
-		{
-			"shawilly/ponokai",
-			lazy = true,
-			config = function()
-				vim.g.ponokai_disable_italic_comment = true
-				vim.g.ponokai_current_word = "underline"
-			end,
-		},
-
-		-- { -- broken for Dockerfile
-		-- 	"zootedb0t/citruszest.nvim",
-		-- 	lazy = true,
-		-- 	config = function()
-		-- 		require("citruszest").setup({
-		-- 			option = {
-		-- 				transparent = false,
-		-- 				bold = false,
-		-- 				italic = false,
-		-- 			},
-		-- 		})
-		-- 	end,
-		-- },
 
 		-- https://github.com/topics/neovim-theme?l=lua&o=desc&s=updated
 		-- https://vimcolorschemes.com/i/new/b.dark

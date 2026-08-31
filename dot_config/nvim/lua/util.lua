@@ -207,6 +207,7 @@ function M:random_colorscheme() -- {{{
 
 	-- ~/.local/share/nvim/lazy/*/colors/*.{lua,vim}
 
+	math.randomseed(os.time()) -- otherwise always deterministic
 	local files = vim.fn.globpath("~/.local/share/nvim/lazy/", "*/colors/*.{lua,vim}", false, true)
 	local f = files[math.random(#files)]
 	local scheme = vim.fn.fnamemodify(f, ":t:r")

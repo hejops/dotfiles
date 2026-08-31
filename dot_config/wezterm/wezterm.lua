@@ -274,78 +274,8 @@ end)
 -- }}}
 -- keys {{{
 
--- local function file_exists(fname)
--- 	-- https://stackoverflow.com/a/4991602
--- 	local f = io.open(fname, "r")
--- 	if f ~= nil then
--- 		io.close(f)
--- 		return true
--- 	else
--- 		return false
--- 	end
--- end
-
 local function keys()
 	local leader = "SHIFT|CTRL"
-
-	-- https://github.com/wez/wezterm/issues/1362#issuecomment-1000457693
-	-- https://wezfurlong.org/wezterm/config/lua/keyassignment/QuickSelectArgs.html
-	local hint_url = {
-		QuickSelectArgs = {
-			patterns = {
-				-- https://wezfurlong.org/wezterm/config/lua/config/hyperlink_rules.html
-				-- "\\b\\w+://\\S+[)/a-zA-Z0-9-]+",
-				"\\b\\w+://\\S+[/a-zA-Z0-9-]+",
-			},
-			action = wezterm.action_callback(function(window, pane)
-				local url = window:get_selection_text_for_pane(pane)
-
-				-- -- first determine if ff has xcb problem
-				-- if is_ubuntu and not file_exists("/var/lib/snapd/lib/gl/libxcb.so.1") then
-				-- 	os.execute("notify-send 'xcb broken!'")
-				-- 	return
-				-- end
-
-				-- log("opening: " .. url)
-				-- if string.find(url, "youtu") then
-				-- 	wezterm.open_with(url, "mpv")
-				-- 	return
-				-- end
-				-- xdg-open on ubuntu wrongly chooses chromium, might as well be explicit
-				wezterm.open_with(url, "firefox")
-			end),
-		},
-	}
-
-	-- like hint_url but open in nvim/less
-	local hint_file = {
-		QuickSelectArgs = {
-			patterns = { [[\.?/[^ ]+]] }, -- there is proably a better regex
-			action = wezterm.action_callback(function(window, pane)
-				local url = window:get_selection_text_for_pane(pane)
-				window:perform_action(act.SpawnCommandInNewTab({ args = { "less", "-R", url } }), pane)
-			end),
-		},
-	}
-
-	-- spawn new tab adjacent to current one, with same cwd
-	local function SpawnTabNext()
-		-- https://old.reddit.com/r/wezterm/comments/1d71ei3/_/l759axf/
-		---@return number?
-		local function active_tab_index(window)
-			for _, item in ipairs(window:mux_window():tabs_with_info()) do
-				if item.is_active then
-					return item.index
-				end
-			end
-		end
-
-		return wezterm.action_callback(function(window, pane)
-			local idx = active_tab_index(window) -- important: determine where to position tab -before- spawning new tab
-			window:perform_action(act.SpawnTab("CurrentPaneDomain"), pane)
-			window:perform_action(act.MoveTab(idx + 1), pane)
-		end)
-	end
 
 	local _keys = {
 
@@ -370,19 +300,36 @@ local function keys()
 		{
 			mods = "CTRL",
 			key = "g",
-			-- action = act(hint_url),
 			action = wezterm.action_callback(function(window, pane)
 				local text = pane:get_lines_as_text(pane:get_dimensions().viewport_rows)
-				if not text:match("…") then -- … comes from vim?
+				if not text:match("…") then -- … comes from vim; adjust accordingly
 					-- no urls were wrapped
+
+					-- https://github.com/wez/wezterm/issues/1362#issuecomment-1000457693
+					-- https://wezfurlong.org/wezterm/config/lua/keyassignment/QuickSelectArgs.html
+					local hint_url = {
+						QuickSelectArgs = {
+							patterns = {
+								-- https://wezfurlong.org/wezterm/config/lua/config/hyperlink_rules.html
+								-- "\\b\\w+://\\S+[)/a-zA-Z0-9-]+",
+								"\\b\\w+://\\S+[/a-zA-Z0-9-]+",
+							},
+							action = wezterm.action_callback(function(window, pane)
+								local url = window:get_selection_text_for_pane(pane)
+								-- xdg-open on ubuntu wrongly chooses chromium, might as well be explicit
+								wezterm.open_with(url, "firefox")
+							end),
+						},
+					}
 					window:perform_action(act(hint_url), pane)
+
 					return
 				end
 				text = text:gsub("%s+…", "")
 				-- wezterm.log_info("Unwrapped text (first 200 chars): " .. unwrapped:sub(1, 200))
 
 				local urls = {}
-				for url in text:gmatch("https?://[^%s]+") do
+				for url in text:gmatch("https?://[^%s']+") do
 					table.insert(urls, url)
 					wezterm.log_info("Found URL: " .. url)
 				end
@@ -411,41 +358,30 @@ local function keys()
 								wezterm.open_with(label)
 							end
 						end),
-						choices = choices,
+						choices = choices, -- note: rendered with trailing space
 						title = "Open URL",
 					}),
 					pane
 				)
 			end),
 		},
+
 		-- { mods = "CTRL", key = "t", action = SpawnTabNext() },
-		-- { mods = "CTRL", key = "z", action = act.ClearScrollback("ScrollbackAndViewport") }, -- note: ctrl-l is bound to readline's forward-word
-		{ mods = "WIN", key = "f", action = act.DisableDefaultAssignment },
-
-		{ mods = leader, key = "o", action = act.MoveTabRelative(1) }, -- moving tabs is probably an antipattern
-		{ mods = leader, key = "u", action = act.MoveTabRelative(-1) },
-
 		-- { mods = leader, key = "g", action = act(hint_file) },
 		-- { mods = leader, key = "p", action = act.ActivateCommandPalette },
-		-- { mods = leader, key = "w", action = act.EmitEvent("watch") }, -- moved to vim
+		-- { mods = leader, key = "u", action = act.DisableDefaultAssignment },
 		-- { mods = leader, key = "x", action = act.EmitEvent("view-history-in-pager") },
+		{ mods = "WIN", key = "f", action = act.DisableDefaultAssignment },
 		{ mods = leader, key = "h", action = act.ActivateTabRelative(-1) },
 		{ mods = leader, key = "i", action = act.ShowTabNavigator },
 		{ mods = leader, key = "j", action = act.ScrollByPage(1) },
 		{ mods = leader, key = "k", action = act.ScrollByPage(-1) },
-		{ mods = leader, key = "l", action = act.ActivateTabRelative(1) },
+		{ mods = leader, key = "l", action = act.ActivateTabRelative(1) }, -- default: show log
+		{ mods = leader, key = "o", action = act.MoveTabRelative(1) }, -- moving tabs is probably an antipattern
 		{ mods = leader, key = "t", action = act.SpawnCommandInNewTab({ cwd = wezterm.home_dir }) }, -- TODO: also adjacent?
+		{ mods = leader, key = "u", action = act.MoveTabRelative(-1) },
 		{ mods = leader, key = "x", action = wezterm.action.CloseCurrentTab({ confirm = true }) },
 	}
-
-	-- local function get_active_pane(panes)
-	-- 	for i, p in ipairs(panes) do
-	-- 		-- log(i, p)
-	-- 		if p.is_active then
-	-- 			return i
-	-- 		end
-	-- 	end
-	-- end
 
 	return _keys
 end
