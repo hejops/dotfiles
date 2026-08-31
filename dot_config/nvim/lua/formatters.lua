@@ -1,10 +1,8 @@
 -- note: BufWritePost executes after conform
 
 local js_formatters = {
+	"oxfmt", -- TODO: if oxfmtrc exists
 	-- "sanitize_inner_semicolons",
-	"biome_remove_unused_imports",
-	"biome_squash_imports",
-	"biome",
 	-- "prettier",
 	-- stop_after_first = true,
 }
@@ -18,6 +16,8 @@ require("conform").setup({
 			prepend_args = { "--config", vim.env.HOME .. "/.config/cbfmt.toml" },
 		},
 
+		-- WARN: slow if pkg cache empty
+		-- TODO: use fork zchee? (77 ahead)
 		["goimports-reviser"] = { args = { "$FILENAME" } }, -- '-format' introduces additional formatting, which i don't like
 
 		golines = {
@@ -53,47 +53,6 @@ require("conform").setup({
 			},
 		},
 
-		biome = {
-			-- important: at work, use top-level biome.json
-			-- note: cwd must be a func, not a string
-			-- cwd = require("util").root_directory,
-			condition = function()
-				return not vim.uv.fs_stat(".prettierrc.json")
-			end,
-			args = (function()
-				local args = {
-					"check", -- includes import sorting, but lint only uses default settings with no overrides
-					"--write",
-					"--stdin-file-path",
-					"$FILENAME",
-				}
-				-- if not vim.fs.root(0, "biome.json") then
-				-- 	-- default is tab (although this may not be noticeable due to the
-				-- 	-- tabstop autocmd)
-				-- 	table.insert(args, "--indent-style=space")
-				-- end
-				return args
-			end)(),
-		},
-
-		biome_remove_unused_imports = {
-			command = require("conform.util").from_node_modules("biome"),
-			args = {
-				"lint",
-				"--write",
-				"--unsafe",
-				"--only=lint/correctness/noUnusedImports",
-				"--stdin-file-path",
-				"$FILENAME",
-			},
-		},
-
-		biome_squash_imports = {
-			command = "squash-biome-imports",
-			args = { "$FILENAME" },
-			stdin = false,
-		},
-
 		-- note: for <script> to be formatted properly, type= is required
 		-- https://github.com/prettier/prettier/blob/main/tests/format/html/js/js.html
 		prettier = {
@@ -124,12 +83,18 @@ require("conform").setup({
 			command = "sed",
 			-- note: vim uses \r (inexplicably), sed uses \n
 			-- TODO: also break while? (but definitely not for)
+			-- TODO: also break `if [[`?
 			args = { "-r", [[ s/(^|\t)(if|elif) ([<a-z])/\1\2\n\3/g ]] },
 		},
 
 		sh_trim_newlines = { -- trim newlines inside {}
 			command = "sed",
 			args = { "-rz", [[ s/(\) \{\n)\n+/\1/g ; s/\n+(\n\})/\1/g ]] },
+		},
+
+		md_replace_nbsp = {
+			command = "sed",
+			args = { "-r", [[ s/\xc2\xa0/ /g ]] },
 		},
 
 		-- "$foo".xyz -> "$foo.xyz"
@@ -140,10 +105,15 @@ require("conform").setup({
 			-- do echo "$l"; done
 			-- "$pat"*
 			-- json
+			-- TODO: handle left `f=foo"$bar"` (very rare though, and usually matches
+			-- jq expressions)
 			args = {
 				"-r",
 				-- [[ s/"(\$[^"{(]+)"([^ );'*>]+)/"\1\2"/g ]],
-				[[ s/"(\$[a-zA-Z]+)"([^ );'*>]+)/"\1\2"/g ]],
+				-- s/\v"\$(\w+)"(\S+)/"$\1\2"/g
+				-- unfortunately, sed does not have \w \S; \w → [[:alnum:]_], \S → [^[:space:]]
+				-- HACK: don't touch curl
+				[[ /--data-raw/! s/"(\$[a-zA-Z]+)"([^ );'*>]+)/"\1\2"/g ]],
 			},
 		},
 
@@ -241,7 +211,25 @@ require("conform").setup({
 			},
 		},
 
-		sqruff = { exit_codes = { 0, 1 } },
+		-- TODO: native ch formatter
+
+		-- .sqruff is read on each sqruff call
+		sqruff = {
+			exit_codes = { 0, 1 },
+			condition = function()
+				return not require("util"):buf_contains("ENGINE =", 50)
+			end,
+		},
+
+		-- capitalises keywords, but not types (probably ok) and ENGINE values (not
+		-- ok!)
+		chfmt = {
+			command = "clickhouse-format",
+			args = { "--multiquery", "--comments" },
+			-- condition = function()
+			-- 	return not require("util"):buf_contains("ENGINE =", 50)
+			-- end,
+		},
 
 		dhall = { command = "dhall", args = { "format" } },
 
@@ -269,7 +257,7 @@ require("conform").setup({
 			stdin = true,
 		},
 
-		uniq = { command = "uniq" },
+		cat_s = { command = "cat -s" },
 
 		sanitize_nbsp = {
 			command = "sed",
@@ -285,6 +273,16 @@ require("conform").setup({
 			-- https://d2lang.com/tour/auto-formatter/
 			command = "d2",
 			args = { "fmt", "-" },
+		},
+
+		-- TODO: scan_folded_as_literal doesn't work when invoked via conform, but
+		-- works invoked directly
+		yamlfmt = {
+			args = {
+				"-conf",
+				(vim.fs.root(0, { ".git" }) or ".") .. "/.yamlfmt",
+				"-",
+			},
 		},
 	},
 
@@ -321,7 +319,6 @@ require("conform").setup({
 		},
 
 		-- json = { "jq" },
-		-- yaml = { "biome", "prettier", stop_after_first = true }, -- TODO: no .clangd parser
 		asm = { "asmfmt" },
 		c = { "clang-tidy", "clang-format" }, -- both provided by clangd
 		cpp = { "clang-format" }, -- clang-tidy is slow!
@@ -335,10 +332,15 @@ require("conform").setup({
 		htmldjango = { "djlint" },
 		jq = { "jqfmt" }, -- pending https://github.com/noperator/jqfmt/issues/5
 		jsonl = { "jq" },
-		lua = { "stylua" },
-		mail = { "sanitize_nbsp", "trim_whitespace", "uniq" },
-		make = { "shfmt_makefile" },
-		markdown = { "mdslw", "cbfmt", "prettier" },
+		lua = { "stylua", "trim_whitespace" },
+		mail = { "sanitize_nbsp", "trim_whitespace", "cat_s" },
+		make = { "shfmt_makefile", "trim_whitespace", "cat_s" },
+		markdown = {
+			"mdslw",
+			"cbfmt", -- format code blocks
+			"oxfmt",
+			"md_replace_nbsp", -- not sure why mdslw does this
+		},
 		nginx = { "nginxfmt" },
 		proto = { "buf" },
 		rust = { "rustfmt" },
@@ -349,17 +351,18 @@ require("conform").setup({
 		toml = { "taplo" },
 		typst = { "prettypst", "typstyle", stop_after_first = true }, -- neither indents lists properly by default
 		xml = { "xmlformatter" },
+		yaml = { "yamlfmt", "prettier", stop_after_first = true }, -- TODO: no .clangd parser
 
-		-- python = {
-		-- 	"ruff_organize_imports",
-		-- 	"ruff_fix",
-		-- 	"ruff_format",
-		-- }, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
+		python = {
+			"ruff_organize_imports",
+			"ruff_fix",
+			"ruff_format",
+		}, -- TODO: pyproject.toml: [tool.ruff.isort] force-single-line = true
 
-		-- json = js_formatters,
 		javascript = js_formatters,
 		javascriptreact = js_formatters,
-		jsonc = js_formatters, -- TODO: biome selects parser based on file ext if it is not "special" (e.g. tsconfig.json)
+		json = js_formatters,
+		jsonc = js_formatters,
 		typescript = js_formatters,
 		typescriptreact = js_formatters,
 
@@ -374,9 +377,10 @@ require("conform").setup({
 
 		sql = {
 			-- "pg_format", -- default formatting violates sqlfluff
-			"sqruff", -- relies on .sqruff; TODO: || coerced to | |?
+			"sqruff", -- relies on .sqruff; TODO: disable if ch
 			-- sqruff erroneously inserts a trailing newline; sqlfluff doesn't. why
 			-- do people rewrite in rust without feature parity?
+			-- "chfmt",
 			"trim_newlines",
 			"trim_whitespace",
 			-- "sqlfluff",
