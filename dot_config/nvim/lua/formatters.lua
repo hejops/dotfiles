@@ -315,7 +315,7 @@ require("conform").setup({
 			"sh_trim_newlines",
 			"shfmt",
 			"shellharden",
-			"sh_surround_quotes",
+			-- "sh_surround_quotes",
 		},
 
 		-- json = { "jq" },
