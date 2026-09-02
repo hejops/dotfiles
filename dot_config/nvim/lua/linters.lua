@@ -102,14 +102,15 @@ local linters = {
 	gitcommit = { "gitlint" },
 	html = { "markuplint" },
 	htmldjango = { "djlint" },
-	javascript = { "biomejs" }, -- should resolve to repo root
-	javascriptreact = { "biomejs" },
 	lua = { vim.fn.executable("luacheck") == 1 and "luacheck" or nil },
 	make = { "checkmake", "checkmake2" },
 	proto = { "buf_lint" },
 	python = { "ruff" }, -- may have duplicate with ruff lsp
-	typescript = { "biomejs" },
-	typescriptreact = { "biomejs" },
+
+	javascript = { "oxlint" }, -- should resolve to repo root
+	javascriptreact = { "oxlint" },
+	typescript = { "oxlint" },
+	typescriptreact = { "oxlint" },
 
 	-- TODO: amtool check-config
 	yaml = { "yaml_shellcheck", "glab", "loki" },
@@ -151,9 +152,6 @@ require("lint").linters.hadolint.args = {
 	"json",
 	"-",
 }
-
-local x = vim.fs.root(0, "biome.json")
-require("lint").linters.biomejs.cmd = x and x .. "/node_modules/.bin/biome" or "biome"
 
 -- https://github.com/rrunner/dotfiles/blob/d55d90ed5d481fc/nvim/.config/nvim/lua/plugins/linting.lua#L17
 require("lint").linters.ruff.args = { -- {{{
