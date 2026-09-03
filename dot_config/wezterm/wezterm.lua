@@ -23,28 +23,16 @@ local function get_output(cmd)
 	return out
 end
 
--- local function extend(t1, t2)
--- 	for _, v in ipairs(t2) do
--- 		table.insert(t1, v)
--- 	end
--- end
-
--- wezterm.on("gui-startup", function()
--- 	local _, _, window = wezterm.mux.spawn_window({ args = { "yazi" } })
--- 	window:spawn_tab({ args = { "yazi" } })
--- 	window:spawn_tab({ args = { "yazi" } })
--- end)
-
 -- behaviour {{{
 
 -- config.default_domain = "unix"
 -- config.enable_kitty_graphics = false -- ranger: iterm2
+-- config.initial_cols = 200
+-- config.initial_rows = 50
 config.default_cwd = wezterm.home_dir
 config.default_prog = { "bash" } -- source .bashrc
 config.pane_focus_follows_mouse = true
 config.switch_to_last_active_tab_when_closing_tab = true
-config.initial_cols = 200
-config.initial_rows = 50
 
 -- https://github.com/P1n3appl3/config/blob/46b4935f2a0d9cf88ebc444bac5b10c03e8c6df3/dotfiles/.config/wezterm/wezterm.lua#L46
 -- https://github.com/wez/wezterm/blob/main/docs/config/lua/wezterm/on.md#example-opening-whole-scrollback-in-vim
@@ -189,9 +177,9 @@ local function get_title(tab)
 	dir = dir:gsub("/$", "")
 	local proc = basename(assert(pane.foreground_process_name))
 
-	local function get_bash_dir()
-		return dir == os.getenv("HOME") and "~" or "> " .. basename(dir)
-	end
+	-- if true then
+	-- 	return proc
+	-- end
 
 	-- return table.concat({
 	-- 	proc,
@@ -202,66 +190,60 @@ local function get_title(tab)
 	-- os.execute("notify-send " .. proc)
 	-- os.execute(string.format("notify-send '%s'", title))
 
+	-- nvim: f: basename
+	-- bash: ~ or $PWD/
+	-- else: proc
+
 	if proc == "" and dir == "" then -- mpv?
 		-- os.execute(string.format("notify-send '%s'", dir))
 		return "unknown"
 	elseif proc == "bash" then
-		return get_bash_dir()
+		-- TODO: dir is always home, regardless of cd
+		-- os.execute("notify-send " .. os.getenv("HOME"))
+		return dir:gsub("/$", "") == os.getenv("HOME") and "~" or "> " .. basename(dir)
 	elseif proc == "ssh" then
 		return string.match(title, "@[^:]+") or proc
 	elseif proc == "claude" then
 		return "claude"
-	elseif
-		proc == "nvim" --
-		or title:sub(1, 2) == "x0"
-	then
-		-- this is the only situation where we ever check the title. when nvim is
-		-- started from yazi (i.e. yazi -> nvim), proc still remains yazi, which
-		-- makes sense, because yazi does not (and should not) exec.
-		--
-		-- if only proc is checked, it would be impossible to react to yazi -> nvim
-		-- and nvim -> yazi. to work around this, we force nvim to set a reserved
-		-- title on startup (which is caught in this condition), and another title
-		-- on exit (which is caught in the next condition).
-
-		return "f: " .. basename(title):gsub("^x0", ""):sub(1, 20)
-	elseif
-		proc == "yazi" --
-		or title == "___"
-	then
-		-- note: nvim -> bash tends to end up here. this is probably because nvim
-		-- sets exit title faster than pane.foreground_process_name can update.
-		-- pressing super should set the title correctly (but not for
-		-- nvim->bash->mpv, for example)
-
-		-- os.execute(string.format("notify-send '%s'", proc))
-
-		-- return basename(dir)
-
-		return string.format("d: %s", basename(dir))
+	-- elseif
+	-- 	proc == "nvim" --
+	-- 	or title:sub(1, 2) == "\0"
+	-- then
+	-- 	-- this is the only situation where we ever check the title. when nvim is
+	-- 	-- started from yazi (i.e. yazi -> nvim), proc still remains yazi, which
+	-- 	-- makes sense, because yazi does not (and should not) exec.
+	-- 	--
+	-- 	-- if only proc is checked, it would be impossible to react to yazi -> nvim
+	-- 	-- and nvim -> yazi. to work around this, we force nvim to set a reserved
+	-- 	-- title on startup (which is caught in this condition), and another title
+	-- 	-- on exit (which is caught in the next condition).
+	--
+	-- 	return "f: " .. basename(title):gsub("^\0", ""):sub(1, 20)
+	-- elseif
+	-- 	proc == "lf" --
+	-- 	or title == "\0\0\0"
+	-- then
+	-- 	-- note: nvim -> bash tends to end up here. this is probably because nvim
+	-- 	-- sets exit title faster than pane.foreground_process_name can update.
+	-- 	-- pressing super should set the title correctly (but not for
+	-- 	-- nvim->bash->mpv, for example)
+	--
+	-- 	-- os.execute(string.format("notify-send '%s'", proc))
+	--
+	-- 	-- return basename(dir)
+	--
+	-- 	return string.format("d: %s", basename(dir))
 	else
+		return proc
 		-- os.execute("notify-send unreachable!")
-		error("unreachable")
+		-- error("unreachable")
 	end
 
 	--
 end
 
 wezterm.on("format-window-title", function(tab, pane, tabs, panes, cfg)
-	local title = get_title(tab) -- only applies to wezterm windows
-
-	local dir = pane.current_working_dir and pane.current_working_dir.path or ""
-
-	-- attaching branch info to tab title is silly, because it uses a lot of space
-
-	-- yazi always executes commands from ~
-	local branch = get_output(string.format("git -C %s branch --show-current", dir)):gsub("\n", "")
-	if branch == "" then
-		return title
-	else
-		-- return string.format("[%s] %s", branch, title)
-		return string.format("%s [%s]", title, branch)
-	end
+	return get_title(tab) -- only applies to wezterm windows
 end)
 
 wezterm.on("format-tab-title", function(tab, tabs, panes, cfg, hover, max_width)

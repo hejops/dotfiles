@@ -2213,6 +2213,23 @@ mi() {
 		grep -v -e srt -e vtt
 }
 
+strip_ext() { < /dev/stdin sed -r 's/\.[^.]*$//'; }
+
+ffsub() {
+	f=$1
+	base=$(<<< "$f" strip_ext)
+	sub=$(\ls -1 "$base"*{vtt,srt} 2> /dev/null | grep .) || return
+	out="$f.sub.mkv"
+	if [[ -f $out ]]; then return; fi
+	ffmpeg -i "$f" -i "$sub" \
+		-map 0 -map 1:0 \
+		-c copy \
+		-disposition:s:0 default \
+		-metadata:s:s:0 language=eng \
+		-metadata:s:s:0 title="English" \
+		"$out"
+}
+
 ffconcat() {
 	# ls "$@" 2> /dev/null #|| return
 
@@ -2288,6 +2305,7 @@ count() { < /dev/stdin sort | uniq -c | sort -n; }             # i have done thi
 desec() { < /dev/stdin sed -r 's/:[0-9]{2}\.[0-9]{8,}Z//'; }   # remove seconds, for ease of filtering logs
 heta() { < /dev/stdin awk 'NR==1 {print $0} END {print $0}'; } # first and last line
 join2() { < /dev/stdin paste -d " " - -; }
+join2t() { < /dev/stdin paste -d "\t" - -; }
 largs() { < /dev/stdin xargs --delimiter='\n' "$@"; } # split xargs by newline instead of space
 line() { < /dev/stdin sed -n "${1}p"; }
 lower() { < /dev/stdin tr '[:upper:]' '[:lower:]'; }
@@ -3096,38 +3114,6 @@ pkill1() { \pgrep "$1" | sed 1d | xargs kill; } # kill all procs except 1st
 ya() { vol --auto && mpv --video=no "ytdl://ytsearch10:'$*'"; }
 yi() { yt-dlp --dump-single-json --skip-download "$1" 2> /dev/null | jq -r '{title, description, webpage_url, channel_url}'; }
 yt() { vol --auto && mpv --force-window "ytdl://ytsearch10:'$*'"; }
-
-rand() { for x in "$@"; do echo "$x"; done | shuf -n1; } # random item from element
-rng() { echo "$((1 + RANDOM % $1))"; }
-
-pi() {
-	echo dohn
-	rng 40
-
-	rand 772 776 784 787 869.1
-
-	items=(
-		riem:90                                              # 4 part
-		pach:52                                              # simple fugue
-		"$(rand fs:69 moz1:145 corelli:346)"                 # keyboard (mid)
-		"$(rand gold:32 wtc:48 brahms:178)"                  # keyboard (hard)
-		"$(rand ehre:254 roma:175 mess:264 matt:304 bm:163)" # choral+reduction
-	)
-
-	for _ in {1..2}; do
-		rand "${items[@]}" | # TODO: prevent repeat (might as well shuf -n2)
-			tee /dev/stderr |
-			# the fact that rng somehow takes stdin is kind of
-			# cursed; this is equivalent to `... | cut | xargs rng`
-			rng "$(cut -d: -f2)"
-	done
-	find ~/scores -type f |
-		shuf -n1 |
-		tee /dev/stderr |
-		largs pdfinfo 2> /dev/null |
-		awk '$1=="Pages:" {print $2}' |
-		rng "$(\xargs)"
-}
 
 nico() {
 	# TODO: investigate --headless mode

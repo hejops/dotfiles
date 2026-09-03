@@ -44,7 +44,12 @@ end
 -- other situations, vim.cmd.norm(seq) should yield more correct behaviour.
 --- @param seq string
 function M:literal_keys(seq)
-	vim.api.nvim_feedkeys(seq, "n", false) -- .. '/'
+	vim.api.nvim_feedkeys(
+		-- seq,
+		vim.api.nvim_replace_termcodes(seq, false, true, true),
+		"n",
+		false
+	) -- .. '/'
 end
 
 --- @param s string
