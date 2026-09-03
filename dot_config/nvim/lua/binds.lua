@@ -15,7 +15,7 @@ vim.keymap.set("i", "<c-c>", "<esc>", { remap = true, silent = true }) -- <c-c> 
 vim.keymap.set("i", "<c-h>", "<s-left>") -- TODO: would be good to be able to switch tabs
 vim.keymap.set("i", "<c-j>", "<c-o>$<c-j>")
 vim.keymap.set("i", "<c-l>", "<s-right>")
-vim.keymap.set("n", "!", ":!")
+vim.keymap.set("n", "!", ":!") -- TODO: %! to overwrite current file
 vim.keymap.set("n", "-", "~h") -- +/- are just j/k
 vim.keymap.set("n", "/", [[/\v]]) -- always use verymagic
 vim.keymap.set("n", "<c-c>", "<nop>")
