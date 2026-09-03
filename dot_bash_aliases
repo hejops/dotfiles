@@ -629,7 +629,8 @@ git_root() {
 # }}}
 # git history {{{
 
-gpar() { git log -n1 --format=%H "$1^@"; } # get parent hash
+gchild() { git rev-list --ancestry-path "$1"..HEAD | tail -1; } # opposite of abc^
+gpar() { git log -n1 --format=%H "$1^@"; }                      # get parent hash
 
 _git_log_fzf() { # {{{
 	_in_git_repo || return
@@ -931,6 +932,7 @@ _commit_or_discard() {
 			committed=0
 		else
 			# TODO: checkout fails if f is staged; must gA
+			# TODO: broken precommit hook = checks out all files individually
 			git checkout -- "$f"
 		fi
 	done < /dev/stdin
@@ -1048,14 +1050,6 @@ _git_commit() {
 	# add untracked files first
 	# echo "$sel" | grep -P '^\?' | awk '{print $NF}' | xargs git add
 	# echo "$sel" | awk '{print $NF}' | xargs git commit -v
-}
-
-gres() {
-	: finish resolving merge conflict and commit
-	# s | grep -v ^D | cut -c4- | largs git add
-	# TODO: not always -c4-
-	git status --porcelain | grep ^UU | cut -c4- | largs git add
-	git commit -v
 }
 
 gsq() {
@@ -1457,9 +1451,15 @@ gbrename() {
 	new=$1
 	curr=$(_git_current_branch)
 	git branch --move "$curr" "$new"
-	git push origin --set-upstream "$new"
-	git push origin --delete "$curr" # deletes mr
-	g.                               # creates new mr
+	if
+		# has upstream bracn
+		git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2> /dev/null
+	then
+
+		git push origin --set-upstream "$new"
+		git push origin --delete "$curr" # deletes mr
+		g.                               # creates new mr
+	fi
 
 	# caveat: source branch change can only be done in gitlab ui
 }
@@ -1490,6 +1490,13 @@ _gssh() { # {{{
 	ssh -T git@github.com 2>&1 | grep -q success && echo ok
 } # }}}
 
+g,() {
+	# TODO: fetch, if rebase was made (shas diverge?), pull --rebase
+	git pull && return
+	git diff --name-only "$(_gmaster)..origin/$(_gmaster)" | _commit_or_discard
+	git pull && git push
+}
+
 gmm() {
 	: merge master into dev branch
 	[[ $(_git_current_branch) == $(_gmaster) ]] && return
@@ -1498,43 +1505,21 @@ gmm() {
 	# don't rebase, because this produces multiple "conflict resolutions"
 	# TODO: for forks, need to sync fork (in gh), then git pull
 	git merge "origin/$(_gmaster)"
-
-	if
-		git status --porcelain | grep -q ^UU
-	then
-		gcon
-	fi
-
-	gbd # debatable
-}
-
-g,() {
-	# TODO: fetch, if rebase was made (shas diverge?), pull --rebase
-	git pull && return
-	git diff --name-only "$(_gmaster)..origin/$(_gmaster)" | _commit_or_discard
-	git pull && git push
+	gbd # debatable, but usually ok
+	gcon && gres && g.
 }
 
 gcon() { # {{{
 	# https://nitaym.github.io/ourstheirs/
 
-	: resolve conflicts WITHOUT merging
+	: resolve conflicts WITHOUT merging, returns 1 if markers still present
 
 	markers='^[<=>|]{7}' # 'HEAD(:|$)'
 
-	_git_has_conflicts() {
-		rg -q --hidden "$markers"
-		return $?
-	}
-
-	_git_get_conflicts() {
-		# submodule conflicts don't really need to be resolved?
-		git status --porcelain --ignore-submodules=all |
-			grep -P '^([A-Z])\1 ' |
-			sort -u |
-			cut -c3-
-	}
-
+	# _git_has_conflicts() {
+	# 	rg -q --hidden "$markers"
+	# 	return $?
+	# }
 	# # not up to date with master yet
 	# if
 	# 	! _git_has_conflicts &&
@@ -1544,44 +1529,35 @@ gcon() { # {{{
 	# 	gcon
 	# fi
 
-	# only conflict is lock file
-	if
-		! git status --porcelain |
-			grep ^UU |
-			grep -qvx 'UU pnpm-lock.yaml'
-	then
-
-		pnpm install
-		_git_get_conflicts | xargs git add
-		# git commit -v
-
-	elif
-		! git status --porcelain |
-			grep ^UU |
-			grep -qv 'go.sum$'
-	then
-
-		cd "$(git status --porcelain |
-			grep ^UU |
-			cut -d' ' -f2 |
-			xargs dirname)"
-		go mod tidy
-		cd -
-
-		_git_get_conflicts | xargs git add
-		# git commit -v
-
-	fi
-
 	# git diff --name-only --diff-filter=U --relative
 
-	while _git_has_conflicts; do
-		echo "Unresolved conflicts remaining!"
-		_git_get_conflicts | xargs nvim -p +'/\v'"$markers"
-	done
+	git status --porcelain --ignore-submodules=all |
+		grep -P '^([A-Z])\1 ' | # better than looking for markers? TODO: porcelain=2
+		# sort -u |
+		cut -c3- |
+		xargs nvim -p +'/\v'"$markers"
 
-	# _git_get_conflicts | xargs git commit --include -v
-}        # }}}
+	if
+		git ls-files | xargs grep -Pq "$markers" 2> /dev/null
+	then
+		return 1
+	fi
+} # }}}
+
+gres() {
+	: finish resolving merge conflict and commit
+	# s | grep -v ^D | cut -c4- | largs git add
+	# TODO: not always -c4-
+	if
+		! files=$(git status --porcelain | grep ^UU)
+	then
+		echo "no conflicts"
+		return
+	fi
+	<<< "$files" cut -c4- | largs git add
+	git commit -v
+}
+
 gnew() { # {{{
 	: push to newly created remote
 
